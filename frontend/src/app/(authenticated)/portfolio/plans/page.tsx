@@ -96,8 +96,8 @@ export default function TradePlansPage() {
                 onClick={() => setStatusFilter(s)}
                 className={`px-3 py-1.5 rounded-lg text-xs font-semibold uppercase tracking-wide transition-colors ${
                   statusFilter === s
-                    ? 'bg-emerald-600 text-white'
-                    : 'bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-400 hover:bg-slate-200 dark:hover:bg-slate-700'
+                    ? 'bg-primary text-primary-foreground'
+                    : 'bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-400 hover:bg-accent hover:text-accent-foreground'
                 }`}
               >
                 {s}
@@ -144,7 +144,7 @@ export default function TradePlansPage() {
                     {plans.map(plan => (
                       <tr
                         key={plan.id}
-                        className="border-b border-slate-100 dark:border-slate-800 hover:bg-slate-50 dark:hover:bg-slate-900/50 cursor-pointer"
+                        className="border-b border-slate-100 dark:border-slate-800 hover:bg-accent cursor-pointer"
                         onClick={() => setSelectedPlan(plan)}
                       >
                         <td className="py-3 pr-4 font-bold text-slate-900 dark:text-slate-100">

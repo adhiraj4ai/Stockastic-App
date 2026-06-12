@@ -229,7 +229,7 @@ export default function FocusRankingPage() {
                     <div className="bg-white dark:bg-card rounded-2xl border border-border dark:border-slate-800 shadow-sm overflow-hidden flex flex-col">
                         <div className="px-5 py-4 border-b border-border dark:border-border bg-slate-50/20 dark:bg-muted flex items-center justify-between">
                             <div className="flex items-center gap-3">
-                                <Activity className="w-5 h-5 text-indigo-500" />
+                                <Activity className="w-5 h-5 text-primary" />
                                 <h2 className="text-sm font-semibold text-slate-900 dark:text-slate-100 uppercase tracking-wider">
                                     Smart Money Net Accumulation History
                                 </h2>
@@ -241,8 +241,8 @@ export default function FocusRankingPage() {
                                             className={cn(
                                                 'px-4 py-1.5 text-[10px] font-semibold rounded-lg transition-all duration-300 tracking-wider uppercase',
                                                 range === r
-                                                    ? 'bg-orange-500 text-white shadow'
-                                                    : 'text-slate-500 hover:text-slate-900 dark:hover:text-slate-200',
+                                                    ? 'bg-primary/10 text-primary border-primary/30 shadow'
+                                                    : 'text-slate-500 hover:bg-accent hover:text-accent-foreground',
                                             )}>
                                             {r}
                                         </button>
@@ -266,13 +266,13 @@ export default function FocusRankingPage() {
                         <div className="px-5 pb-5 flex flex-wrap gap-3">
                             {data.series.map(s => (
                                 <Link href={`/ticker/${s.symbol}`} key={s.symbol}>
-                                    <div className="group flex items-center gap-3 px-4 py-2 bg-slate-50/50 dark:bg-muted border border-border dark:border-border rounded-2xl hover:bg-white dark:hover:bg-slate-800 transition-all hover:scale-105 cursor-pointer">
+                                    <div className="group flex items-center gap-3 px-4 py-2 bg-slate-50/50 dark:bg-muted border border-border dark:border-border rounded-2xl hover:bg-accent hover:text-accent-foreground transition-all hover:scale-105 cursor-pointer">
                                         <span
                                             className="w-3 h-3 rounded-full flex-shrink-0 animate-pulse"
                                             style={{ backgroundColor: symbolColor(s.symbol) }}
                                         />
                                         <div className="flex flex-col">
-                                            <span className="text-xs font-semibold text-slate-900 dark:text-slate-200 group-hover:text-orange-500 transition-colors">
+                                            <span className="text-xs font-semibold text-slate-900 dark:text-slate-200 group-hover:text-primary transition-colors">
                                                 {s.symbol}
                                             </span>
                                             <span className="text-[9px] text-slate-400 font-bold uppercase tracking-tighter">
@@ -312,7 +312,7 @@ export default function FocusRankingPage() {
                                             const isAccumulation = entry.volume > 0;
 
                                             return (
-                                                <tr key={entry.symbol} className="group hover:bg-slate-50/60 dark:hover:bg-white/[0.02] transition-all duration-300">
+                                                <tr key={entry.symbol} className="group hover:bg-accent transition-all duration-300">
                                                     <td className="px-5 py-3.5">
                                                         <div
                                                             className="w-9 h-9 rounded-2xl flex items-center justify-center text-xs font-semibold text-white shadow-lg shadow-inner"
@@ -323,7 +323,7 @@ export default function FocusRankingPage() {
                                                     </td>
                                                     <td className="px-5 py-3.5">
                                                         <Link href={`/ticker/${entry.symbol}`}>
-                                                            <div className="font-semibold text-sm text-slate-900 dark:text-white group-hover:text-orange-500 transition-colors tracking-tight">
+                                                            <div className="font-semibold text-sm text-slate-900 dark:text-white group-hover:text-primary transition-colors tracking-tight">
                                                                 {entry.symbol}
                                                             </div>
                                                         </Link>
@@ -352,7 +352,7 @@ export default function FocusRankingPage() {
                                                     <td className="px-5 py-3.5">
                                                         {rankChange === null ? (
                                                             <div className="flex items-center gap-2 text-[10px] font-semibold text-slate-400 uppercase tracking-wider bg-slate-100/50 dark:bg-slate-800/50 px-3 py-1.5 rounded-full w-fit">
-                                                                <Zap className="w-3 h-3 text-orange-500" />
+                                                                <Zap className="w-3 h-3 text-primary" />
                                                                 New Focus
                                                             </div>
                                                         ) : rankChange > 0 ? (
@@ -393,7 +393,7 @@ export default function FocusRankingPage() {
                             {[...data.dates].reverse().map(date => {
                                 const entries = data.daily_rankings[date] ?? [];
                                 return (
-                                    <div key={date} className="flex flex-col h-full rounded-xl border border-border dark:border-border bg-slate-50/50 dark:bg-muted p-5 hover:border-orange-500/30 transition-all duration-300">
+                                    <div key={date} className="flex flex-col h-full rounded-xl border border-border dark:border-border bg-slate-50/50 dark:bg-muted p-5 hover:border-primary/30 transition-all duration-300">
                                         <div className="flex items-center justify-between mb-4">
                                             <span className="text-[11px] font-semibold text-slate-900 dark:text-slate-100 uppercase tracking-wider">{fmtDate(date)}</span>
                                             <span className="text-[9px] font-mono text-slate-400">10 ITEMS</span>
@@ -402,7 +402,7 @@ export default function FocusRankingPage() {
                                         <div className="space-y-2">
                                             {entries.map(entry => (
                                                 <Link href={`/ticker/${entry.symbol}`} key={entry.symbol}>
-                                                    <div className="group flex items-center gap-3 p-2 rounded-xl bg-white dark:bg-card border border-border dark:border-slate-800 hover:border-orange-500/50 transition-all cursor-pointer">
+                                                    <div className="group flex items-center gap-3 p-2 rounded-xl bg-white dark:bg-card border border-border dark:border-slate-800 hover:border-primary/50 transition-all cursor-pointer">
                                                         <span
                                                             className="w-6 h-6 rounded-lg flex items-center justify-center text-[10px] font-semibold text-white shrink-0"
                                                             style={{ backgroundColor: symbolColor(entry.symbol) }}
@@ -410,7 +410,7 @@ export default function FocusRankingPage() {
                                                             {entry.rank}
                                                         </span>
                                                         <div className="flex flex-col min-w-0 flex-1">
-                                                            <span className="text-[11px] font-semibold text-slate-900 dark:text-slate-200 truncate group-hover:text-orange-500 transition-colors">
+                                                            <span className="text-[11px] font-semibold text-slate-900 dark:text-slate-200 truncate group-hover:text-primary transition-colors">
                                                                 {entry.symbol}
                                                             </span>
                                                             <div className="flex items-center gap-1">

@@ -41,12 +41,12 @@ export const BreakoutWatchlist = ({ stocks }: BreakoutWatchlistProps) => {
                         breakouts.map((stock) => (
                             <TableRow
                                 key={stock.ticker}
-                                className="border-transparent hover:bg-slate-50 dark:hover:bg-slate-800 cursor-pointer group"
+                                className="border-transparent hover:bg-accent hover:text-accent-foreground cursor-pointer group"
                                 onClick={() => router.push(`/ticker/${stock.ticker}`)}
                             >
                                 <TableCell className="py-2 px-1">
                                     <div className="flex items-center gap-2">
-                                        <span className="font-bold text-slate-900 dark:text-slate-100 text-[11px] group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors">{stock.ticker}</span>
+                                        <span className="font-bold text-slate-900 dark:text-slate-100 text-[11px] group-hover:text-primary transition-colors">{stock.ticker}</span>
                                         <TrendingUp size={10} className="text-emerald-500" />
                                     </div>
                                 </TableCell>

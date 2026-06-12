@@ -34,7 +34,7 @@ function SummaryTile({ title, value, value2, subtext, icon: Icon, colorClass, tr
 
                 <div className="space-y-1">
                     <div className="flex items-baseline flex-wrap gap-x-4 gap-y-1">
-                        <span className="text-3xl font-semibold text-gray-900 dark:text-slate-100 tracking-tighter transition-all group-hover:text-blue-600 dark:group-hover:text-blue-400">
+                        <span className="text-3xl font-semibold text-gray-900 dark:text-slate-100 tracking-tighter transition-all group-hover:text-primary">
                             {value}
                         </span>
                         {value2 && (
@@ -141,13 +141,13 @@ export function MetricsDisplay({ stats, plotHtml, strategyId, experimentId, char
                 <div className="w-full bg-white dark:bg-card border border-gray-100 dark:border-slate-800 rounded-2xl overflow-hidden mb-8 shadow-sm" style={{ height: chartHeight }}>
                     <div className="px-5 py-3 bg-gray-50/50 dark:bg-slate-800/50 border-b border-gray-100 dark:border-slate-800 flex justify-between items-center">
                         <div className="flex items-center gap-2">
-                            <div className="w-2 h-2 bg-blue-500 rounded-full animate-pulse" />
+                            <div className="w-2 h-2 bg-primary rounded-full animate-pulse" />
                             <span className="text-[10px] font-bold text-gray-500 dark:text-slate-400">Strategy Performance Visualization</span>
                         </div>
                         <Button
                             variant="outline"
                             size="sm"
-                            className="h-8 text-[10px] font-bold border border-gray-200 dark:border-slate-800 hover:bg-white dark:hover:bg-slate-800 hover:border-blue-200 dark:hover:border-blue-900 transition-all dark:text-slate-100"
+                            className="h-8 text-[10px] font-bold border border-gray-200 dark:border-slate-800 hover:bg-accent hover:text-accent-foreground hover:border-primary/30 transition-all dark:text-slate-100"
                             onClick={() => {
                                 const newWindow = window.open('', '_blank');
                                 if (newWindow) {
@@ -190,7 +190,7 @@ export function MetricsDisplay({ stats, plotHtml, strategyId, experimentId, char
                     value2={fmtTile(data.sharpe_ratio || data['Sharpe Ratio'])}
                     subtext={`Profit Factor & Sharpe Ratio indicating risk-adjusted returns.`}
                     icon={BarChart3}
-                    colorClass="bg-indigo-500 bg-indigo-50 dark:bg-indigo-900/10 text-indigo-600 dark:text-indigo-400"
+                    colorClass="bg-primary bg-primary/10 dark:bg-primary/10 text-primary"
                 />
                 <SummaryTile
                     title="Strategy Precision"
@@ -198,7 +198,7 @@ export function MetricsDisplay({ stats, plotHtml, strategyId, experimentId, char
                     value2={`${data.total_trades || data['# Trades'] || 0} Trades`}
                     subtext={`${data['Total Winning Trades'] || 0} Win vs ${data['Total Losing Trades'] || 0} Loss.`}
                     icon={Target}
-                    colorClass="bg-blue-500 bg-blue-50 dark:bg-blue-900/10 text-blue-600 dark:text-blue-400"
+                    colorClass="bg-primary bg-primary/10 dark:bg-primary/10 text-primary"
                 />
                 <SummaryTile
                     title="Risk Tolerance"
@@ -218,7 +218,7 @@ export function MetricsDisplay({ stats, plotHtml, strategyId, experimentId, char
                             <CardTitle className="text-[11px] font-bold text-gray-600 dark:text-slate-400 flex items-center gap-2">
                                 {category === 'Performance Metrics' && <TrendingUp size={14} className="text-green-500" />}
                                 {category === 'Risk Metrics' && <AlertTriangle size={14} className="text-red-500" />}
-                                {category === 'Trade Metrics' && <Activity size={14} className="text-blue-500" />}
+                                {category === 'Trade Metrics' && <Activity size={14} className="text-primary" />}
                                 {category}
                             </CardTitle>
                         </CardHeader>
@@ -226,7 +226,7 @@ export function MetricsDisplay({ stats, plotHtml, strategyId, experimentId, char
                             <Table>
                                 <TableBody>
                                     {Object.entries(metrics).map(([label, value]: [string, any]) => (
-                                        <TableRow key={label} className="hover:bg-blue-50/30 dark:hover:bg-blue-900/10 border-gray-50 dark:border-slate-800 transition-colors">
+                                        <TableRow key={label} className="hover:bg-accent hover:text-accent-foreground border-gray-50 dark:border-slate-800 transition-colors">
                                             <TableCell className="py-2.5 px-5 text-xs font-semibold text-gray-500 dark:text-slate-500">
                                                 {label}
                                             </TableCell>

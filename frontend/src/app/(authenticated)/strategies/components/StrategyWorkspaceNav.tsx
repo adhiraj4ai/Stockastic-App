@@ -56,7 +56,7 @@ export function StrategyWorkspaceNav({ strategyId, active }: { strategyId: strin
                         <span className="text-lg font-bold truncate">{s?.name || 'Strategy'}</span>
                         {s && (
                             <span className={`text-[10px] uppercase font-bold px-2 py-0.5 rounded-full ${composed
-                                ? 'bg-blue-100 text-blue-700 dark:bg-blue-900/40 dark:text-blue-300'
+                                ? 'bg-primary/10 text-primary'
                                 : 'bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-300'}`}>
                                 {composed ? 'Composed' : 'Custom'}
                             </span>
@@ -65,7 +65,7 @@ export function StrategyWorkspaceNav({ strategyId, active }: { strategyId: strin
                     </div>
                     {s?.summary && <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5 max-w-3xl">{s.summary}</p>}
                 </div>
-                <Link href="/strategies/compare" className="text-xs text-blue-600 inline-flex items-center gap-1 shrink-0 mt-1">
+                <Link href="/strategies/compare" className="text-xs text-primary inline-flex items-center gap-1 shrink-0 mt-1">
                     <GitCompare size={13} /> Compare
                 </Link>
             </div>
@@ -75,7 +75,7 @@ export function StrategyWorkspaceNav({ strategyId, active }: { strategyId: strin
                     return (
                         <Link key={t.key} href={t.href(strategyId)}
                             className={`px-3 py-2 text-sm font-medium rounded-t-lg flex items-center gap-1.5 whitespace-nowrap border-b-2 transition-colors ${isActive
-                                ? 'border-blue-600 text-blue-600'
+                                ? 'border-primary text-primary'
                                 : 'border-transparent text-gray-500 hover:text-gray-800 dark:hover:text-gray-200'}`}>
                             <t.icon size={15} /> {t.label}
                         </Link>

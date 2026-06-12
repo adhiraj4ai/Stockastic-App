@@ -657,7 +657,7 @@ export default function StockDetailPage() {
 
     return (
         <DashboardLayout noPadding tickerPrice={data.price.close} priceChange={data.price.percent_change}>
-            <div className="bg-background text-foreground terminal-grid-light selection:bg-blue-500/10 font-sans relative">
+            <div className="bg-background text-foreground terminal-grid-light selection:bg-primary/10 font-sans relative">
 
 
                 <div className="px-8 py-10 space-y-10 relative z-10 animate-in fade-in slide-in-from-bottom-6 duration-1000">
@@ -697,19 +697,19 @@ export default function StockDetailPage() {
                                 <div className="flex items-center gap-6">
                                     <TabsList className="bg-slate-100 dark:bg-card border border-slate-200 dark:border-slate-800 p-1 h-10 rounded-xl shadow-smCondensed">
                                         {(currentUser?.permissions === 'all' || currentUser?.permissions?.['ticker_pa']) && (
-                                            <TabsTrigger value="price_action" className="rounded-lg px-4 text-xs font-bold data-[state=active]:bg-white dark:data-[state=active]:bg-slate-800 data-[state=active]:text-orange-500 dark:data-[state=active]:text-orange-500 data-[state=active]:shadow-sm transition-all">Price Action</TabsTrigger>
+                                            <TabsTrigger value="price_action" className="rounded-lg px-4 text-xs font-bold data-[state=active]:bg-white dark:data-[state=active]:bg-slate-800 data-[state=active]:shadow-sm transition-all">Price Action</TabsTrigger>
                                         )}
                                         {(currentUser?.permissions === 'all' || currentUser?.permissions?.['ticker_signals']) && (
-                                            <TabsTrigger value="signals" className="rounded-lg px-4 text-xs font-bold data-[state=active]:bg-white dark:data-[state=active]:bg-slate-800 data-[state=active]:text-orange-500 dark:data-[state=active]:text-orange-500 data-[state=active]:shadow-sm transition-all">Signals</TabsTrigger>
+                                            <TabsTrigger value="signals" className="rounded-lg px-4 text-xs font-bold data-[state=active]:bg-white dark:data-[state=active]:bg-slate-800 data-[state=active]:shadow-sm transition-all">Signals</TabsTrigger>
                                         )}
                                         {(currentUser?.permissions === 'all' || currentUser?.permissions?.['ticker_accumulation']) && (
-                                            <TabsTrigger value="accumulation" className="rounded-lg px-4 text-xs font-bold data-[state=active]:bg-white dark:data-[state=active]:bg-slate-800 data-[state=active]:text-orange-500 dark:data-[state=active]:text-orange-500 data-[state=active]:shadow-sm transition-all">Accumulation</TabsTrigger>
+                                            <TabsTrigger value="accumulation" className="rounded-lg px-4 text-xs font-bold data-[state=active]:bg-white dark:data-[state=active]:bg-slate-800 data-[state=active]:shadow-sm transition-all">Accumulation</TabsTrigger>
                                         )}
                                         {(currentUser?.permissions === 'all' || currentUser?.permissions?.['ticker_tech']) && (
-                                            <TabsTrigger value="technical" className="rounded-lg px-4 text-xs font-bold data-[state=active]:bg-white dark:data-[state=active]:bg-slate-800 data-[state=active]:text-orange-500 dark:data-[state=active]:text-orange-500 data-[state=active]:shadow-sm transition-all">Technical Analysis</TabsTrigger>
+                                            <TabsTrigger value="technical" className="rounded-lg px-4 text-xs font-bold data-[state=active]:bg-white dark:data-[state=active]:bg-slate-800 data-[state=active]:shadow-sm transition-all">Technical Analysis</TabsTrigger>
                                         )}
                                         {(currentUser?.permissions === 'all' || currentUser?.permissions?.['ticker_funds']) && (
-                                            <TabsTrigger value="fundamentals" className="rounded-lg px-4 text-xs font-bold data-[state=active]:bg-white dark:data-[state=active]:bg-slate-800 data-[state=active]:text-orange-500 dark:data-[state=active]:text-orange-500 data-[state=active]:shadow-sm transition-all">Fundamentals</TabsTrigger>
+                                            <TabsTrigger value="fundamentals" className="rounded-lg px-4 text-xs font-bold data-[state=active]:bg-white dark:data-[state=active]:bg-slate-800 data-[state=active]:shadow-sm transition-all">Fundamentals</TabsTrigger>
                                         )}
                                     </TabsList>
                                 </div>
@@ -739,7 +739,7 @@ export default function StockDetailPage() {
                                                     className={cn(
                                                         "px-3.5 py-1.5 rounded-lg text-xs font-bold transition-all duration-200",
                                                         timeRange === r
-                                                            ? "bg-white dark:bg-slate-800 text-orange-500 shadow-sm"
+                                                            ? "bg-white dark:bg-slate-800 text-primary shadow-sm"
                                                             : "text-slate-500 hover:text-slate-700 dark:hover:text-slate-200"
                                                     )}
                                                 >
@@ -764,7 +764,7 @@ export default function StockDetailPage() {
                                     {/* Fundamental Benchmarks */}
                                     <div className="glass-card-light rounded-2xl p-8 border border-slate-200 dark:border-slate-800/50 shadow-sm">
                                         <div className="flex items-center gap-3 mb-10">
-                                            <div className="p-2 rounded-xl bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 border border-blue-100 dark:border-blue-800">
+                                            <div className="p-2 rounded-xl bg-primary/10 text-primary border border-primary/20">
                                                 <BarChart2 size={18} />
                                             </div>
                                             <div>
@@ -805,7 +805,7 @@ export default function StockDetailPage() {
                                                         const formatVal = (val: any) => formatRupees(val);
 
                                                         return (
-                                                            <tr key={i} className="hover:bg-slate-50/50 dark:hover:bg-slate-800/50 transition-colors group">
+                                                            <tr key={i} className="hover:bg-accent transition-colors group">
                                                                 <td className="px-6 py-4 font-bold text-slate-700 dark:text-slate-300 whitespace-nowrap">
                                                                     <div className="flex items-center gap-1">
                                                                         {metric.name}
@@ -813,7 +813,7 @@ export default function StockDetailPage() {
                                                                     </div>
                                                                 </td>
                                                                 <td className="px-6 py-4 text-center">
-                                                                    <span className="px-2.5 py-1 rounded bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 font-bold text-[11px] ring-1 ring-blue-100 dark:ring-blue-800">{formatVal(auditedValue)}</span>
+                                                                    <span className="px-2.5 py-1 rounded bg-primary/10 text-primary font-bold text-[11px] ring-1 ring-primary/20">{formatVal(auditedValue)}</span>
                                                                 </td>
                                                                 <td className="px-6 py-4 text-center">
                                                                     <span className="px-2.5 py-1 rounded bg-amber-50 dark:bg-amber-900/30 text-amber-600 dark:text-amber-400 font-bold text-[11px] ring-1 ring-amber-100 dark:ring-amber-800">{formatVal(unauditedValue)}</span>
@@ -825,7 +825,7 @@ export default function StockDetailPage() {
                                                                             <span className="text-[8px] text-slate-400 dark:text-slate-500 font-mono leading-tight">{indicator?.sector_low_ticker || ''}</span>
                                                                         </div>
                                                                         <div className="flex-1 h-1 bg-slate-100 dark:bg-slate-800 rounded-full relative">
-                                                                            <div className="absolute top-1/2 left-1/4 w-1.5 h-1.5 -translate-y-1/2 bg-blue-500 rounded-full shadow-sm" />
+                                                                            <div className="absolute top-1/2 left-1/4 w-1.5 h-1.5 -translate-y-1/2 bg-primary rounded-full shadow-sm" />
                                                                         </div>
                                                                         <div className="flex flex-col items-end min-w-[40px]">
                                                                             <span className="text-xs text-emerald-500 font-bold uppercase">{indicator?.sector_high || '-'}</span>
@@ -869,11 +869,11 @@ export default function StockDetailPage() {
                                                 </thead>
                                                 <tbody className="divide-y divide-slate-50 dark:divide-slate-800">
                                                     {dividends.map((div, i) => (
-                                                        <tr key={i} className="hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors">
+                                                        <tr key={i} className="hover:bg-accent transition-colors">
                                                             <td className="px-6 py-4 font-bold text-slate-800 dark:text-slate-200">{div.fiscal_year}</td>
                                                             <td className="px-6 py-4"><Badge variant="outline" className="text-emerald-600 dark:text-emerald-400 border-emerald-100 dark:border-emerald-800/50 bg-emerald-50/30 dark:bg-emerald-900/20">{div.bonus_percent}%</Badge></td>
                                                             <td className="px-6 py-4 text-slate-600 dark:text-slate-400">{div.cash_percent}%</td>
-                                                            <td className="px-6 py-4 font-bold text-blue-600">{div.total_percent}%</td>
+                                                            <td className="px-6 py-4 font-bold text-primary">{div.total_percent}%</td>
                                                             <td className="px-6 py-4 text-slate-400 text-xs font-mono">{div.announced_date || div.date || '-'}</td>
                                                             <td className="px-6 py-4 text-right text-slate-400 text-xs font-mono">{div.book_close_date || '-'}</td>
                                                         </tr>
@@ -903,7 +903,7 @@ export default function StockDetailPage() {
                                                     variant="ghost"
                                                     size="sm"
                                                     onClick={() => setReportType('ANNUAL')}
-                                                    className={cn("rounded-lg px-4 font-bold text-[10px] transition-all", reportType === 'ANNUAL' ? "bg-white dark:bg-slate-700 text-orange-500 shadow-sm" : "text-slate-400 dark:text-slate-500")}
+                                                    className={cn("rounded-lg px-4 font-bold text-[10px] transition-all", reportType === 'ANNUAL' ? "bg-white dark:bg-slate-700 text-primary shadow-sm" : "text-slate-400 dark:text-slate-500")}
                                                 >
                                                     Annual
                                                 </Button>
@@ -911,7 +911,7 @@ export default function StockDetailPage() {
                                                     variant="ghost"
                                                     size="sm"
                                                     onClick={() => setReportType('QUARTERLY')}
-                                                    className={cn("rounded-lg px-4 font-bold text-[10px] transition-all", reportType === 'QUARTERLY' ? "bg-white dark:bg-slate-700 text-orange-500 shadow-sm" : "text-slate-400 dark:text-slate-500")}
+                                                    className={cn("rounded-lg px-4 font-bold text-[10px] transition-all", reportType === 'QUARTERLY' ? "bg-white dark:bg-slate-700 text-primary shadow-sm" : "text-slate-400 dark:text-slate-500")}
                                                 >
                                                     Quarterly
                                                 </Button>

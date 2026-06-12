@@ -338,7 +338,7 @@ function BacktestContent() {
                                             <button
                                                 key={m}
                                                 onClick={() => setMode(m)}
-                                                className={`flex-1 py-2.5 px-2 text-xs font-bold rounded-lg transition-all duration-200 capitalize ${mode === m ? 'bg-white dark:bg-slate-800 text-blue-700 dark:text-blue-400 shadow-sm scale-[1.02]' : 'text-gray-500 dark:text-slate-500 hover:text-gray-700 dark:hover:text-slate-300 hover:bg-gray-50 dark:hover:bg-slate-800/50'}`}
+                                                className={`flex-1 py-2.5 px-2 text-xs font-bold rounded-lg transition-all duration-200 capitalize ${mode === m ? 'bg-white dark:bg-slate-800 text-primary shadow-sm scale-[1.02]' : 'text-gray-500 dark:text-slate-500 hover:bg-accent hover:text-accent-foreground'}`}
                                             >
                                                 {m}
                                             </button>
@@ -359,7 +359,7 @@ function BacktestContent() {
                                         <select
                                             value={sector}
                                             onChange={e => setSector(e.target.value)}
-                                            className="w-full h-10 px-3 text-xs rounded-xl border border-slate-200 dark:border-slate-800 bg-gray-50/50 dark:bg-slate-950 text-slate-900 dark:text-slate-100 focus:bg-white dark:focus:bg-slate-900 focus:border-blue-200 dark:focus:border-blue-900/50 focus:ring-4 focus:ring-blue-500/5 outline-none transition-all shadow-sm"
+                                            className="w-full h-10 px-3 text-xs rounded-xl border border-slate-200 dark:border-slate-800 bg-gray-50/50 dark:bg-slate-950 text-slate-900 dark:text-slate-100 focus:bg-white dark:focus:bg-slate-900 focus-visible:ring-[3px] focus-visible:ring-ring/50 focus-visible:border-ring outline-none transition-all shadow-sm"
                                         >
                                             <option value="" className="dark:bg-card">Select sector...</option>
                                             {sectors.map(s => <option key={s.name} value={s.name} className="dark:bg-card">{s.name} ({s.count})</option>)}
@@ -394,7 +394,7 @@ function BacktestContent() {
                                         {Object.keys(defaultParams).length > 0 && (
                                             <button
                                                 onClick={() => setParameters(defaultParams)}
-                                                className="flex items-center gap-1 text-[9px] font-semibold text-gray-400 dark:text-slate-500 hover:text-blue-500 dark:hover:text-blue-400 transition-colors uppercase tracking-wide"
+                                                className="flex items-center gap-1 text-[9px] font-semibold text-gray-400 dark:text-slate-500 hover:text-primary transition-colors uppercase tracking-wide"
                                                 title="Reset to code defaults"
                                             >
                                                 <RotateCcw size={9} /> Reset
@@ -411,7 +411,7 @@ function BacktestContent() {
                                                     <span className="text-xs text-gray-600 dark:text-slate-400 truncate" title={p.label}>{p.label}</span>
                                                     <input type="number" value={p.value} step={p.type === 'float' ? (p.step ?? 0.1) : (p.step ?? 1)}
                                                         onChange={(e) => { const n = p.type === 'float' ? parseFloat(e.target.value) : parseInt(e.target.value, 10); if (!isNaN(n)) p.set(n); }}
-                                                        className="w-24 h-8 px-2 text-xs text-center border rounded-md border-gray-200 dark:border-slate-800 bg-gray-50/50 dark:bg-slate-950 dark:text-slate-100 font-mono outline-none focus:ring-1 focus:ring-blue-500" />
+                                                        className="w-24 h-8 px-2 text-xs text-center border rounded-md border-gray-200 dark:border-slate-800 bg-gray-50/50 dark:bg-slate-950 dark:text-slate-100 font-mono outline-none focus-visible:ring-[3px] focus-visible:ring-ring/50 focus-visible:border-ring" />
                                                 </div>
                                             ))}
                                         </div>
@@ -438,7 +438,7 @@ function BacktestContent() {
                                                                 : parseInt(raw, 10);
                                                             if (!isNaN(num)) setParam(name, num);
                                                         }}
-                                                        className="w-full h-9 px-3 text-xs text-center border rounded-md border-gray-200 dark:border-slate-800 focus:ring-1 focus:ring-blue-500 outline-none bg-gray-50/50 dark:bg-slate-950 dark:text-slate-100 font-medium font-mono"
+                                                        className="w-full h-9 px-3 text-xs text-center border rounded-md border-gray-200 dark:border-slate-800 focus-visible:ring-[3px] focus-visible:ring-ring/50 focus-visible:border-ring outline-none bg-gray-50/50 dark:bg-slate-950 dark:text-slate-100 font-medium font-mono"
                                                     />
                                                 </div>
                                             ))}
@@ -454,7 +454,7 @@ function BacktestContent() {
                                             type="number"
                                             value={initialBalance}
                                             onChange={e => setInitialBalance(Number(e.target.value))}
-                                            className="w-full h-10 px-3 text-xs rounded-xl border border-slate-200 dark:border-slate-800 bg-gray-50/50 dark:bg-slate-950 dark:text-slate-100 focus:bg-white dark:focus:bg-slate-900 focus:border-blue-200 dark:focus:border-blue-900/50 focus:ring-4 focus:ring-blue-500/5 outline-none transition-all shadow-sm"
+                                            className="w-full h-10 px-3 text-xs rounded-xl border border-slate-200 dark:border-slate-800 bg-gray-50/50 dark:bg-slate-950 dark:text-slate-100 focus:bg-white dark:focus:bg-slate-900 focus-visible:ring-[3px] focus-visible:ring-ring/50 focus-visible:border-ring outline-none transition-all shadow-sm"
                                             placeholder="100,000"
                                         />
                                     </div>
@@ -473,7 +473,7 @@ function BacktestContent() {
                                     <Button
                                         onClick={running ? handleCancel : handleRun}
                                         disabled={(mode === 'symbol' && !symbol) || (mode === 'sector' && !sector)}
-                                        className={`w-full h-11 text-xs font-bold uppercase tracking-wider shadow-lg active:scale-95 transition-all rounded-xl border-0 ${running ? 'bg-destructive text-white hover:opacity-90' : 'bg-blue-600 dark:bg-blue-700 hover:bg-blue-700 dark:hover:bg-blue-800 text-white shadow-blue-200 dark:shadow-blue-900/20'}`}
+                                        className={`w-full h-11 text-xs font-bold uppercase tracking-wider shadow-lg active:scale-95 transition-all rounded-xl border-0 ${running ? 'bg-destructive text-white hover:opacity-90' : 'bg-primary hover:bg-primary/90 text-primary-foreground'}`}
                                     >
                                         {running ? (
                                             <><div className="w-4 h-4 border border-white/30 border-t-white rounded-full animate-spin mr-2" /> Cancel Run</>
@@ -484,7 +484,7 @@ function BacktestContent() {
                                     <Button
                                         variant="outline"
                                         onClick={() => router.push(`/strategies/${strategyId}/optimize`)}
-                                        className="w-full h-11 text-xs font-bold uppercase tracking-wider border border-purple-200 dark:border-purple-900/50 text-purple-700 dark:text-purple-400 hover:bg-purple-50 dark:hover:bg-purple-900/20 dark:bg-card hover:border-purple-300 dark:hover:border-purple-800 active:scale-95 transition-all rounded-xl"
+                                        className="w-full h-11 text-xs font-bold uppercase tracking-wider border border-primary/30 text-primary hover:bg-primary/10 dark:bg-card hover:border-primary/50 active:scale-95 transition-all rounded-xl"
                                     >
                                         <Zap size={14} className="mr-2" /> Find Best Parameters
                                     </Button>
@@ -503,17 +503,17 @@ function BacktestContent() {
                             <div className="h-full flex flex-col">
                                 {/* Results header */}
                                 {!savedExperimentId && results.metadata ? (
-                                    <div className="bg-blue-600 px-6 py-4 flex items-center justify-between text-white border-b border-blue-700/50 shadow-inner">
+                                    <div className="bg-primary px-6 py-4 flex items-center justify-between text-primary-foreground border-b border-primary/50 shadow-inner">
                                         <div className="flex items-center gap-3">
                                             <div className="p-2 bg-white/20 rounded-lg backdrop-blur-sm"><Check size={16} /></div>
                                             <div>
-                                                <p className="text-xs font-bold text-white">Unsaved Experiment</p>
-                                                <p className="text-[10px] opacity-80 font-medium text-white/90">Results are temporary. Save to persist in history.</p>
+                                                <p className="text-xs font-bold">Unsaved Experiment</p>
+                                                <p className="text-[10px] opacity-80 font-medium">Results are temporary. Save to persist in history.</p>
                                             </div>
                                         </div>
                                         <div className="flex items-center gap-3">
-                                            <Button variant="ghost" size="sm" onClick={() => setResults(null)} className="text-white hover:bg-white/10 h-9 px-4 text-[10px] font-bold uppercase">Discard</Button>
-                                            <Button onClick={handleSaveExperiment} disabled={isSaving} className="bg-white text-blue-600 hover:bg-blue-50 h-9 px-5 text-[10px] font-semibold uppercase shadow-lg">
+                                            <Button variant="ghost" size="sm" onClick={() => setResults(null)} className="text-primary-foreground hover:bg-white/10 h-9 px-4 text-[10px] font-bold uppercase">Discard</Button>
+                                            <Button onClick={handleSaveExperiment} disabled={isSaving} className="bg-white text-primary hover:bg-white/90 h-9 px-5 text-[10px] font-semibold uppercase shadow-lg">
                                                 {isSaving ? 'Saving...' : 'Save Experiment'}
                                             </Button>
                                         </div>
@@ -527,7 +527,7 @@ function BacktestContent() {
                                                 <p className="text-[10px] opacity-80 font-medium">This run has been persisted to your strategy history.</p>
                                             </div>
                                         </div>
-                                        <Button variant="ghost" size="sm" onClick={() => window.open(`/strategies/${strategyId}/experiments/${savedExperimentId}`, '_blank')} className="bg-white/10 hover:bg-white/20 h-9 px-4 text-[10px] font-bold uppercase flex items-center gap-2 border border-white/10">
+                                        <Button variant="ghost" size="sm" onClick={() => window.open(`/strategies/${strategyId}/experiments/${savedExperimentId}`, '_blank')} className="bg-white/10 hover:bg-white/20 h-9 px-4 text-[10px] font-bold uppercase flex items-center gap-2 border border-white/20">
                                             <ExternalLink size={12} /> View Detail
                                         </Button>
                                     </div>
@@ -545,9 +545,9 @@ function BacktestContent() {
                                         /* Sector / All results table */
                                         <div className="flex flex-col h-full space-y-6">
                                             <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                                                <div className="bg-blue-50 dark:bg-blue-900/10 p-3 rounded-lg border border-blue-100 dark:border-blue-900/30">
-                                                    <p className="text-xs text-blue-600 dark:text-blue-400">Total Companies</p>
-                                                    <p className="text-lg font-bold text-blue-900 dark:text-blue-200">{results.total_companies}</p>
+                                                <div className="bg-primary/5 dark:bg-primary/10 p-3 rounded-lg border border-primary/20">
+                                                    <p className="text-xs text-primary">Total Companies</p>
+                                                    <p className="text-lg font-bold text-primary">{results.total_companies}</p>
                                                 </div>
                                                 <div className="bg-green-50 dark:bg-green-900/10 p-3 rounded-lg border border-green-100 dark:border-green-900/30">
                                                     <p className="text-xs text-green-600 dark:text-green-400">Successful Runs</p>
@@ -572,7 +572,7 @@ function BacktestContent() {
                                                     <Table>
                                                         <TableCaption className="text-slate-500 dark:text-slate-400">Individual Stock Performance in Sector</TableCaption>
                                                         <TableHeader>
-                                                            <TableRow className="bg-slate-50 dark:bg-slate-800 hover:bg-slate-50 dark:hover:bg-slate-800">
+                                                            <TableRow className="bg-slate-50 dark:bg-slate-800 hover:bg-accent">
                                                                 <TableHead className="text-slate-700 dark:text-slate-300">Symbol</TableHead>
                                                                 <TableHead className="text-right text-slate-700 dark:text-slate-300">Return</TableHead>
                                                                 <TableHead className="text-right text-slate-700 dark:text-slate-300">Win Rate</TableHead>
@@ -582,7 +582,7 @@ function BacktestContent() {
                                                         </TableHeader>
                                                         <TableBody>
                                                             {results.individual_results.map((r: any, idx: number) => (
-                                                                <TableRow key={idx} className="hover:bg-blue-50/20 dark:hover:bg-blue-900/10 border-border dark:border-slate-800">
+                                                                <TableRow key={idx} className="hover:bg-accent border-border dark:border-slate-800">
                                                                     <TableCell className="font-medium dark:text-slate-200">{r.symbol}</TableCell>
                                                                     <TableCell className={`text-right font-bold ${r.pnl_percent >= 0 ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'}`}>{r.pnl_percent?.toFixed(2)}%</TableCell>
                                                                     <TableCell className="text-right dark:text-slate-300">{r.win_rate?.toFixed(1)}%</TableCell>
@@ -602,17 +602,17 @@ function BacktestContent() {
                             /* Empty state */
                             <div className="h-full flex flex-col items-center justify-center p-12 text-center bg-muted/40">
                                 <div className="mb-6 p-6 surface">
-                                    <Play size={48} className="text-blue-600 dark:text-blue-400" />
+                                    <Play size={48} className="text-primary" />
                                 </div>
                                 <h3 className="text-2xl font-semibold text-gray-900 dark:text-slate-100 mb-3">Ready to Backtest</h3>
                                 <p className="text-base text-gray-600 dark:text-slate-400 max-w-lg mb-8 leading-relaxed">
                                     Configure your parameters on the left and run a backtest to see how your strategy would have performed with historical data.
                                 </p>
-                                <div className="bg-purple-50 dark:bg-purple-900/10 border border-purple-200 dark:border-purple-900/30 rounded-xl p-4 max-w-md">
-                                    <p className="text-sm text-purple-900 dark:text-purple-300 font-medium mb-2">💡 Pro Tip</p>
-                                    <p className="text-sm text-purple-700 dark:text-purple-400">
+                                <div className="bg-primary/5 border border-primary/20 rounded-xl p-4 max-w-md">
+                                    <p className="text-sm text-slate-900 dark:text-slate-100 font-medium mb-2">💡 Pro Tip</p>
+                                    <p className="text-sm text-slate-700 dark:text-slate-300">
                                         Need help finding the best parameters?{' '}
-                                        <button onClick={() => router.push(`/strategies/${strategyId}/optimize`)} className="text-purple-600 dark:text-purple-400 hover:text-purple-800 dark:hover:text-purple-300 font-bold underline">
+                                        <button onClick={() => router.push(`/strategies/${strategyId}/optimize`)} className="text-primary hover:text-primary/80 font-bold underline">
                                             Try Parameter Optimization →
                                         </button>
                                     </p>

@@ -223,7 +223,7 @@ function MatchingTradesContent() {
                                                 const isBroker = broker && String(tx.buyer_id) === String(broker);
 
                                                 return (
-                                                    <tr key={tx.id || idx} className="hover:bg-slate-50/50 dark:hover:bg-slate-800/50 transition-colors">
+                                                    <tr key={tx.id || idx} className="hover:bg-accent transition-colors">
                                                         <td className="px-6 py-3 font-mono text-xs text-slate-500 dark:text-slate-400">
                                                             {tx.contract_no}
                                                         </td>

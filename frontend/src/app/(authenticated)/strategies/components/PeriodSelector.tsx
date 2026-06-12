@@ -59,7 +59,7 @@ export function PeriodSelector({ startDate, endDate, setStartDate, setEndDate, r
                     <button
                         key={t}
                         onClick={() => setRangeType(t)}
-                        className={`flex-1 py-1.5 px-1 text-[10px] font-bold rounded-md transition-all ${rangeType === t ? 'bg-white dark:bg-slate-700 text-blue-600 dark:text-blue-400 shadow-sm' : 'text-gray-500 dark:text-slate-400 hover:text-gray-700 dark:hover:text-slate-200'}`}
+                        className={`flex-1 py-1.5 px-1 text-[10px] font-bold rounded-md transition-all ${rangeType === t ? 'bg-white dark:bg-slate-700 text-primary shadow-sm' : 'text-gray-500 dark:text-slate-400 hover:text-gray-700 dark:hover:text-slate-200'}`}
                     >
                         {t === 'all' ? 'ALL' : t.toUpperCase()}
                     </button>
@@ -79,7 +79,7 @@ export function PeriodSelector({ startDate, endDate, setStartDate, setEndDate, r
                                         !fromDate && "text-muted-foreground"
                                     )}
                                 >
-                                    <CalendarIcon className="mr-2 h-3.5 w-3.5 text-blue-500" />
+                                    <CalendarIcon className="mr-2 h-3.5 w-3.5 text-primary" />
                                     {fromDate ? format(fromDate, "MMM dd, y") : "Select..."}
                                 </Button>
                             </PopoverTrigger>
@@ -106,7 +106,7 @@ export function PeriodSelector({ startDate, endDate, setStartDate, setEndDate, r
                                         !toDate && "text-muted-foreground"
                                     )}
                                 >
-                                    <CalendarIcon className="mr-2 h-3.5 w-3.5 text-blue-500" />
+                                    <CalendarIcon className="mr-2 h-3.5 w-3.5 text-primary" />
                                     {toDate ? format(toDate, "MMM dd, y") : "Select..."}
                                 </Button>
                             </PopoverTrigger>
@@ -125,9 +125,9 @@ export function PeriodSelector({ startDate, endDate, setStartDate, setEndDate, r
             )}
 
             {!startDate && !endDate && rangeType !== 'custom' && (
-                <div className="flex items-center gap-2 p-2 bg-blue-50/50 dark:bg-blue-900/10 rounded-lg border border-blue-100 dark:border-blue-900/30">
-                    <CalendarIcon size={12} className="text-blue-500" />
-                    <span className="text-[10px] text-blue-600 dark:text-blue-400 font-medium">Running with full market history</span>
+                <div className="flex items-center gap-2 p-2 bg-primary/5 rounded-lg border border-primary/20">
+                    <CalendarIcon size={12} className="text-primary" />
+                    <span className="text-[10px] text-primary font-medium">Running with full market history</span>
                 </div>
             )}
         </div>

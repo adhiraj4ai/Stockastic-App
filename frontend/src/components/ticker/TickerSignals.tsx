@@ -547,7 +547,7 @@ export default function TickerSignals({ symbol, currentPrice, intelligence, fund
                                     }).map(sig => {
                                         const freshness = sig.last_event_date !== 'Steady' ? getFreshness(sig.last_event_date) : null;
                                         return (
-                                            <tr key={sig.id + sig.strategy_name} className={cn("transition-colors hover:bg-slate-50/50 dark:hover:bg-slate-800/50", freshness?.status === 'historical' && "opacity-40")}>
+                                            <tr key={sig.id + sig.strategy_name} className={cn("transition-colors hover:bg-accent", freshness?.status === 'historical' && "opacity-40")}>
                                                 <td className="px-4 py-3">
                                                     <div className="flex items-center gap-2">
                                                         <div className="w-2 h-2 rounded-full" style={{ backgroundColor: sig.icon_color || '#cbd5e1' }} />

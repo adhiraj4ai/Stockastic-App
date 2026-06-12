@@ -54,7 +54,7 @@ function OptimizeForm({ onOptimize, onCancel, optimizing }: any) {
                         setParamJson(e.target.value);
                         setJsonError('');
                     }}
-                    className="w-full h-48 p-3 border border-gray-300 rounded-md font-mono text-sm focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                    className="w-full h-48 p-3 border border-gray-300 rounded-md font-mono text-sm focus-visible:ring-[3px] focus-visible:ring-ring/50 focus-visible:border-ring"
                     placeholder='{\n "n1": [5, 30],\n "n2": [20, 100]\n}'
                 />
                 {jsonError && (
@@ -63,9 +63,9 @@ function OptimizeForm({ onOptimize, onCancel, optimizing }: any) {
                 <p className="text-xs text-gray-500 mt-2">
                     Format: <code className="bg-gray-100 px-1 rounded">{"{ \"param_name\": [min, max] }"}</code>
                 </p>
-                <div className="mt-2 p-3 bg-blue-50 border border-blue-200 rounded-md">
-                    <p className="text-xs text-blue-800 font-medium mb-1">Example:</p>
-                    <pre className="text-xs text-blue-700 font-mono">
+                <div className="mt-2 p-3 bg-muted border border-border rounded-md">
+                    <p className="text-xs text-muted-foreground font-medium mb-1">Example:</p>
+                    <pre className="text-xs text-muted-foreground font-mono">
                         {`{
   "n1": [5, 30],
   "n2": [20, 100],
@@ -79,7 +79,7 @@ function OptimizeForm({ onOptimize, onCancel, optimizing }: any) {
                 <Button variant="outline" onClick={onCancel} disabled={optimizing}>
                     Cancel
                 </Button>
-                <Button onClick={handleSubmit} disabled={optimizing} className="bg-purple-600 hover:bg-purple-700">
+                <Button onClick={handleSubmit} disabled={optimizing} className="bg-primary text-primary-foreground hover:bg-primary/90">
                     {optimizing ? 'Optimizing...' : 'Start Optimization'}
                 </Button>
             </div>

@@ -239,7 +239,7 @@ export function AccountSettingsDialog({
                         <Button variant="outline" onClick={() => onOpenChange(false)}>
                             Cancel
                         </Button>
-                        <Button onClick={handleSave} disabled={loading} className="bg-blue-600 hover:bg-blue-700 text-white">
+                        <Button onClick={handleSave} disabled={loading} className="bg-primary hover:bg-primary/90 text-primary-foreground">
                             {loading ? 'Saving...' : 'Save Changes'}
                         </Button>
                     </DialogFooter>

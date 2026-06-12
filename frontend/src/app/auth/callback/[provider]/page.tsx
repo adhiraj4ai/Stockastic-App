@@ -69,7 +69,7 @@ export default function SocialCallbackPage() {
                 <CardContent className="pt-6 px-8 pb-8 flex flex-col items-center justify-center min-h-[200px]">
                     {status === 'loading' && (
                         <div className="flex flex-col items-center gap-4">
-                            <Loader2 className="h-12 w-12 text-blue-600 animate-spin" />
+                            <Loader2 className="h-12 w-12 text-primary animate-spin" />
                             <p className="text-sm font-medium text-slate-500">Please wait while we secure your session...</p>
                         </div>
                     )}
@@ -90,7 +90,7 @@ export default function SocialCallbackPage() {
                             </div>
                             <button
                                 onClick={() => router.push('/login')}
-                                className="mt-4 text-blue-600 dark:text-blue-400 font-bold hover:underline text-sm"
+                                className="mt-4 text-primary font-bold hover:underline text-sm"
                             >
                                 Back to Login
                             </button>

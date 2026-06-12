@@ -120,19 +120,17 @@ function linearRegression(points: Array<[number, number]>): (x: number) => numbe
 // ─── Stat Card ────────────────────────────────────────────────────────────────
 
 function StatCard({
-    label, value, sub, color = 'indigo',
+    label, value, sub, color = 'primary',
 }: {
     label: string;
     value: string;
     sub?: string;
-    color?: 'emerald' | 'rose' | 'indigo' | 'blue' | 'orange';
+    color?: 'emerald' | 'rose' | 'primary';
 }) {
     const colorMap = {
         emerald: 'text-emerald-500 dark:text-emerald-400 bg-emerald-500/10',
         rose: 'text-rose-500 dark:text-rose-400 bg-rose-500/10',
-        indigo: 'text-indigo-500 dark:text-indigo-400 bg-indigo-500/10',
-        blue: 'text-blue-500 dark:text-blue-400 bg-blue-500/10',
-        orange: 'text-orange-500 dark:text-orange-400 bg-orange-500/10',
+        primary: 'text-primary bg-primary/10',
     };
     return (
         <div className="bg-white dark:bg-card border border-border dark:border-slate-800 rounded-2xl p-5 flex flex-col gap-1.5 shadow-sm">
@@ -734,7 +732,7 @@ function HistoryTable({ history }: { history: ForecastData['history'] }) {
     return (
         <div className="bg-white dark:bg-card border border-border dark:border-slate-800 rounded-2xl shadow-sm overflow-hidden">
             <div className="px-5 py-4 border-b border-border dark:border-slate-800 flex items-center gap-3">
-                <History size={16} className="text-orange-500" />
+                <History size={16} className="text-primary" />
                 <h3 className="text-sm font-bold text-slate-700 dark:text-slate-300">Historical Accumulation Events</h3>
                 <span className="ml-auto text-[11px] text-slate-400">{history.length} events</span>
             </div>
@@ -757,12 +755,12 @@ function HistoryTable({ history }: { history: ForecastData['history'] }) {
                             <tr
                                 key={i}
                                 className={cn(
-                                    'border-b border-slate-50 dark:border-slate-800/60 hover:bg-slate-50 dark:hover:bg-slate-800/40 transition-colors',
+                                    'border-b border-slate-50 dark:border-slate-800/60 hover:bg-accent transition-colors',
                                     i % 2 === 0 ? '' : 'bg-slate-50/50 dark:bg-card/30'
                                 )}
                             >
                                 <td className="px-4 py-3 font-mono font-bold text-slate-600 dark:text-slate-300 whitespace-nowrap">{row.date}</td>
-                                <td className="px-4 py-3 font-bold text-orange-500">{fmtIntensity(row.intensity)}</td>
+                                <td className="px-4 py-3 font-bold text-primary">{fmtIntensity(row.intensity)}</td>
                                 <td className="px-4 py-3 font-bold text-slate-700 dark:text-slate-300 tabular-nums">{fmtPrice(row.entry_price)}</td>
                                 <td className={cn('px-4 py-3 font-bold tabular-nums', row.return_5d == null ? 'text-slate-400' : row.return_5d >= 0 ? 'text-emerald-500' : 'text-rose-500')}>
                                     {fmtReturn(row.return_5d)}
@@ -828,19 +826,19 @@ function SymbolForecastView({ forecast, loadingForecast }: { forecast: ForecastD
                     label="LTP"
                     value={fmtPrice(current.ltp)}
                     sub={`As of ${current.date}`}
-                    color="indigo"
+                    color="primary"
                 />
                 <StatCard
                     label="Accumulation Intensity"
                     value={fmtIntensity(current.intensity)}
                     sub="vs avg daily volume"
-                    color={current.intensity >= 5 ? 'emerald' : current.intensity >= 2 ? 'orange' : 'indigo'}
+                    color={current.intensity >= 5 ? 'emerald' : current.intensity >= 2 ? 'primary' : 'primary'}
                 />
                 <StatCard
                     label="Volume Spike"
                     value={fmtIntensity(current.volume_spike)}
                     sub="relative to 20d avg"
-                    color={current.volume_spike >= 3 ? 'emerald' : 'indigo'}
+                    color={current.volume_spike >= 3 ? 'emerald' : 'primary'}
                 />
                 <StatCard
                     label="Net Acc. (10d)"
@@ -853,7 +851,7 @@ function SymbolForecastView({ forecast, loadingForecast }: { forecast: ForecastD
             {/* Win rates summary */}
             <div className="bg-white dark:bg-card border border-border dark:border-slate-800 rounded-2xl p-5 shadow-sm">
                 <div className="flex items-center gap-3 mb-3">
-                    <Target size={16} className="text-blue-500" />
+                    <Target size={16} className="text-primary" />
                     <span className="text-sm font-bold text-slate-700 dark:text-slate-300">
                         Symbol Study — {study.total_events} historical events
                     </span>
@@ -864,7 +862,7 @@ function SymbolForecastView({ forecast, loadingForecast }: { forecast: ForecastD
                             <div className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1">+{lag}</div>
                             <div className={cn(
                                 'text-xl font-semibold tabular-nums',
-                                study.win_rates[lag] >= 60 ? 'text-emerald-500' : study.win_rates[lag] >= 50 ? 'text-indigo-500' : 'text-rose-500'
+                                study.win_rates[lag] >= 60 ? 'text-emerald-500' : study.win_rates[lag] >= 50 ? 'text-primary' : 'text-rose-500'
                             )}>
                                 {fmtPct(study.win_rates[lag])}
                             </div>
@@ -886,7 +884,7 @@ function SymbolForecastView({ forecast, loadingForecast }: { forecast: ForecastD
             {/* Projection Target Cards */}
             <div>
                 <h3 className="text-sm font-bold text-slate-700 dark:text-slate-300 mb-3 flex items-center gap-2">
-                    <Target size={15} className="text-blue-500" />
+                    <Target size={15} className="text-primary" />
                     Projection Targets
                 </h3>
                 <ProjectionTargets forecast={forecast} />
@@ -928,13 +926,13 @@ function MarketStudyView({ data, loading }: { data: StudyData | null; loading: b
                     label="Total Events Studied"
                     value={study.total_events.toLocaleString()}
                     sub={`${study.symbols_covered} symbols · ${study.date_range.from} to ${study.date_range.to}`}
-                    color="indigo"
+                    color="primary"
                 />
                 <StatCard
                     label="20d Win Rate"
                     value={fmtPct(study.win_rates['20d'])}
                     sub="% of events where price rose"
-                    color={study.win_rates['20d'] >= 60 ? 'emerald' : study.win_rates['20d'] >= 50 ? 'indigo' : 'rose'}
+                    color={study.win_rates['20d'] >= 60 ? 'emerald' : study.win_rates['20d'] >= 50 ? 'primary' : 'rose'}
                 />
                 <StatCard
                     label="Avg 20d Return"
@@ -946,7 +944,7 @@ function MarketStudyView({ data, loading }: { data: StudyData | null; loading: b
                     label="Intensity Correlation"
                     value={study.correlation.intensity_vs_20d.toFixed(3)}
                     sub="intensity vs 20d return (r)"
-                    color={Math.abs(study.correlation.intensity_vs_20d) > 0.3 ? 'emerald' : 'indigo'}
+                    color={Math.abs(study.correlation.intensity_vs_20d) > 0.3 ? 'emerald' : 'primary'}
                 />
             </div>
 
@@ -1070,8 +1068,8 @@ export default function AccumulationPriceStudyPage() {
                                 'bg-white dark:bg-card text-slate-900 dark:text-white',
                                 'placeholder:text-slate-400 placeholder:font-normal',
                                 isSymbolMode
-                                    ? 'border-orange-400 dark:border-orange-500 ring-2 ring-orange-400/20'
-                                    : 'border-slate-200 dark:border-slate-700 focus:border-indigo-400 dark:focus:border-indigo-500 focus:ring-2 focus:ring-indigo-400/20'
+                                    ? 'border-primary ring-2 ring-primary/20'
+                                    : 'border-slate-200 dark:border-slate-700 focus-visible:ring-[3px] focus-visible:ring-ring/50 focus-visible:border-ring'
                             )}
                         />
                         {inputValue && (
@@ -1087,7 +1085,7 @@ export default function AccumulationPriceStudyPage() {
                     {isSymbolMode && (
                         <button
                             onClick={clearSymbol}
-                            className="flex items-center gap-1.5 text-[11px] font-bold text-slate-400 hover:text-slate-700 dark:hover:text-white px-3 py-2 rounded-xl border border-slate-200 dark:border-slate-700 hover:border-slate-400 dark:hover:border-slate-500 transition-all"
+                            className="flex items-center gap-1.5 text-[11px] font-bold text-slate-400 hover:bg-accent hover:text-accent-foreground px-3 py-2 rounded-xl border border-slate-200 dark:border-slate-700 transition-all"
                         >
                             <X size={12} />
                             Market Study
@@ -1106,7 +1104,7 @@ export default function AccumulationPriceStudyPage() {
                         Market Study
                     </button>
                     <ChevronRight size={12} />
-                    <span className="font-semibold text-orange-500 dark:text-orange-400">{symbol}</span>
+                    <span className="font-semibold text-primary">{symbol}</span>
                 </div>
             )}
 

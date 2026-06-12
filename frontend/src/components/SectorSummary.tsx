@@ -32,7 +32,7 @@ export function SectorSummary({ sectors }: { sectors: SectorData[] }) {
                             {sectors.map((sector) => {
                                 const isPositive = sector.change >= 0;
                                 return (
-                                    <TableRow key={sector.name} className="hover:bg-gray-50">
+                                    <TableRow key={sector.name} className="hover:bg-accent">
                                         <TableCell className="font-medium">{sector.name}</TableCell>
                                         <TableCell className={`text-right font-semibold ${isPositive ? 'text-green-600' : 'text-red-600'}`}>
                                             {isPositive ? '+' : ''}{sector.change.toFixed(2)}%

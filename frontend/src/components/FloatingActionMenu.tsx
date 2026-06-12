@@ -28,7 +28,7 @@ export function FloatingActionMenu({ onOpenChat, onOpenCalculator }: FloatingAct
                 onOpenCalculator?.();
                 setIsOpen(false);
             },
-            gradient: 'from-blue-600 to-purple-600'
+            gradient: 'from-primary to-primary/80'
         }
     ];
 
@@ -55,7 +55,7 @@ export function FloatingActionMenu({ onOpenChat, onOpenCalculator }: FloatingAct
             {/* Main Toggle Button */}
             <button
                 onClick={() => setIsOpen(!isOpen)}
-                className={`bg-gradient-to-r from-indigo-600 to-pink-600 text-white p-4 rounded-full shadow-sm hover:scale-110 transition-all ${isOpen ? 'rotate-45' : 'rotate-0'
+                className={`bg-gradient-to-r from-primary to-primary/80 text-primary-foreground p-4 rounded-full shadow-sm hover:scale-110 transition-all ${isOpen ? 'rotate-45' : 'rotate-0'
                     }`}
                 title={isOpen ? 'Close menu' : 'Quick actions'}
             >

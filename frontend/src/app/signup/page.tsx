@@ -196,7 +196,7 @@ export default function SignupPage() {
 
                         <Button
                             type="submit"
-                            className="w-full h-12 bg-slate-900 dark:bg-slate-100 hover:bg-black dark:hover:bg-white text-white dark:text-slate-900 font-bold rounded-xl transition-all shadow-lg active:scale-[0.98] text-[11px]"
+                            className="w-full h-12 bg-primary hover:bg-primary/90 text-primary-foreground font-bold rounded-xl transition-all shadow-lg active:scale-[0.98] text-[11px]"
                             disabled={loading}
                         >
                             {loading ? 'Creating Account...' : 'Sign Up'}
@@ -216,21 +216,21 @@ export default function SignupPage() {
                         <Button
                             variant="outline"
                             onClick={() => handleSocialLogin('google')}
-                            className="h-12 rounded-xl dark:border-slate-800 hover:bg-slate-50 dark:hover:bg-slate-800"
+                            className="h-12 rounded-xl dark:border-slate-800 hover:bg-accent hover:text-accent-foreground"
                         >
                             <Chrome className="h-5 w-5" />
                         </Button>
                         <Button
                             variant="outline"
                             onClick={() => handleSocialLogin('apple')}
-                            className="h-12 rounded-xl dark:border-slate-800 hover:bg-slate-50 dark:hover:bg-slate-800"
+                            className="h-12 rounded-xl dark:border-slate-800 hover:bg-accent hover:text-accent-foreground"
                         >
                             <Apple className="h-5 w-5" />
                         </Button>
                         <Button
                             variant="outline"
                             onClick={() => handleSocialLogin('microsoft')}
-                            className="h-12 rounded-xl dark:border-slate-800 hover:bg-slate-50 dark:hover:bg-slate-800"
+                            className="h-12 rounded-xl dark:border-slate-800 hover:bg-accent hover:text-accent-foreground"
                         >
                             <Binary className="h-5 w-5" />
                         </Button>
@@ -238,7 +238,7 @@ export default function SignupPage() {
 
                     <p className="mt-8 text-center text-sm text-slate-500 dark:text-slate-400 font-medium">
                         Already have an account?{' '}
-                        <Link href="/login" className="text-blue-600 dark:text-blue-400 font-bold hover:underline">
+                        <Link href="/login" className="text-primary font-bold hover:underline">
                             Log in
                         </Link>
                     </p>

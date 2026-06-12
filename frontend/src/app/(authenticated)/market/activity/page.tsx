@@ -130,7 +130,7 @@ export default function MarketActivityPage() {
                     <CardHeader className="p-5 border-b border-slate-50 dark:border-border flex flex-row items-center justify-between relative z-10">
                         <div className="space-y-1">
                             <CardTitle className="text-sm font-bold text-slate-900 dark:text-slate-100 tracking-tight flex items-center gap-2">
-                                <TrendingUp size={14} className="text-blue-500" />
+                                <TrendingUp size={14} className="text-primary" />
                                 {chartTitle} Performance Analysis
                             </CardTitle>
                             <p className="text-[10px] text-slate-500 dark:text-slate-400 font-medium">30-Day price trend of the top {limit} stocks in this category</p>
@@ -166,7 +166,7 @@ export default function MarketActivityPage() {
                             <TabsList className="inline-flex h-auto bg-slate-100 dark:bg-slate-800 p-1 rounded-lg sm:mb-0 mb-2 border sm:border-none border-slate-200 dark:border-border">
                             <TabsTrigger
                                 value="gainers"
-                                className="rounded-md px-4 py-2 text-xs font-bold uppercase tracking-wide data-[state=active]:bg-white dark:data-[state=active]:bg-slate-700 data-[state=active]:text-orange-500 data-[state=active]:shadow-sm transition-all"
+                                className="rounded-md px-4 py-2 text-xs font-bold uppercase tracking-wide data-[state=active]:shadow-sm transition-all"
                             >
                                 <div className="flex items-center justify-center gap-2">
                                     <Zap size={14} /> Top Gainers
@@ -174,7 +174,7 @@ export default function MarketActivityPage() {
                             </TabsTrigger>
                             <TabsTrigger
                                 value="turnover"
-                                className="rounded-md px-4 py-2 text-xs font-bold uppercase tracking-wide data-[state=active]:bg-white dark:data-[state=active]:bg-slate-700 data-[state=active]:text-orange-500 data-[state=active]:shadow-sm transition-all"
+                                className="rounded-md px-4 py-2 text-xs font-bold uppercase tracking-wide data-[state=active]:shadow-sm transition-all"
                             >
                                 <div className="flex items-center justify-center gap-2">
                                     <Magnet size={14} /> High Turnover
@@ -182,7 +182,7 @@ export default function MarketActivityPage() {
                             </TabsTrigger>
                             <TabsTrigger
                                 value="volume"
-                                className="rounded-md px-4 py-2 text-xs font-bold uppercase tracking-wide data-[state=active]:bg-white dark:data-[state=active]:bg-slate-700 data-[state=active]:text-orange-500 data-[state=active]:shadow-sm transition-all"
+                                className="rounded-md px-4 py-2 text-xs font-bold uppercase tracking-wide data-[state=active]:shadow-sm transition-all"
                             >
                                 <div className="flex items-center justify-center gap-2">
                                     <Droplets size={14} /> High Volume
@@ -190,7 +190,7 @@ export default function MarketActivityPage() {
                             </TabsTrigger>
                             <TabsTrigger
                                 value="roc"
-                                className="rounded-md px-4 py-2 text-xs font-bold uppercase tracking-wide data-[state=active]:bg-white dark:data-[state=active]:bg-slate-700 data-[state=active]:text-orange-500 data-[state=active]:shadow-sm transition-all"
+                                className="rounded-md px-4 py-2 text-xs font-bold uppercase tracking-wide data-[state=active]:shadow-sm transition-all"
                             >
                                 <div className="flex items-center justify-center gap-2">
                                     <Activity size={14} /> ROC Watchlist
@@ -205,7 +205,7 @@ export default function MarketActivityPage() {
                                 <select
                                     value={limit}
                                     onChange={(e) => setLimit(Number(e.target.value))}
-                                    className="appearance-none bg-white dark:bg-card border border-slate-200 dark:border-border text-xs font-bold rounded-lg pl-3 pr-8 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 cursor-pointer text-slate-700 dark:text-slate-300 transition-colors"
+                                    className="appearance-none bg-white dark:bg-card border border-slate-200 dark:border-border text-xs font-bold rounded-lg pl-3 pr-8 py-2 focus:outline-none focus-visible:ring-[3px] focus-visible:ring-ring/50 focus-visible:border-ring cursor-pointer text-slate-700 dark:text-slate-300 transition-colors"
                                 >
                                     <option value={10}>Top 10</option>
                                     <option value={20}>Top 20</option>
@@ -271,7 +271,7 @@ function ActivityTable({ data, type }: { data: ActivityData[], type: string }) {
                         {data.map((item) => (
                             <React.Fragment key={item.ticker}>
                                 <TableRow
-                                    className={`cursor-pointer hover:bg-slate-50 dark:hover:bg-white/5 border-slate-50 dark:border-border ${expandedRow === item.ticker ? 'bg-slate-50 dark:bg-muted' : ''}`}
+                                    className={`cursor-pointer hover:bg-accent border-slate-50 dark:border-border ${expandedRow === item.ticker ? 'bg-slate-50 dark:bg-muted' : ''}`}
                                     onClick={() => toggleRow(item.ticker)}
                                 >
                                     <TableCell className="p-2 pl-3">
@@ -310,7 +310,7 @@ function ActivityTable({ data, type }: { data: ActivityData[], type: string }) {
                                                         <div className="flex justify-between items-center bg-white dark:bg-card rounded-lg p-3 border border-border dark:border-border">
                                                             <div>
                                                                 <div className="text-[9px] text-slate-400 uppercase tracking-wider">W. Avg</div>
-                                                                <div className="text-sm font-bold text-blue-600">{item.analysis.weighted_avg_price}</div>
+                                                                <div className="text-sm font-bold text-primary">{item.analysis.weighted_avg_price}</div>
                                                             </div>
                                                             <div className="text-right">
                                                                 <div className="text-[9px] text-slate-400 uppercase tracking-wider">Trades</div>
@@ -342,7 +342,7 @@ function ActivityTable({ data, type }: { data: ActivityData[], type: string }) {
 
                                                         <button
                                                             onClick={(e) => { e.stopPropagation(); router.push(`/ticker/${item.ticker}`); }}
-                                                            className="w-full py-1.5 bg-blue-600 hover:bg-blue-700 text-white text-[10px] font-bold rounded flex items-center justify-center gap-1 transition-colors"
+                                                            className="w-full py-1.5 bg-primary hover:bg-primary/90 text-primary-foreground text-[10px] font-bold rounded flex items-center justify-center gap-1 transition-colors"
                                                         >
                                                             View Dashboard <ArrowUpRight size={12} />
                                                         </button>

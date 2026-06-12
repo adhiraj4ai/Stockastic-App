@@ -46,8 +46,9 @@
   --radius-4xl: calc(var(--radius) + 12px);
 }
 
-/* Light — warm neutral surface, single muted indigo accent.
-   Reference points: Stripe dashboard, Notion, Linear. */
+/* Light — warm neutral surface, single emerald brand accent.
+   Emerald = interactive (buttons, active tabs, checked, focus);
+   rose = losses, amber = warnings, violet = AI affordances. */
 :root {
   --radius: 0.5rem;
   --background: oklch(0.995 0.003 85);
@@ -56,7 +57,7 @@
   --card-foreground: oklch(0.22 0.01 85);
   --popover: oklch(1 0 0);
   --popover-foreground: oklch(0.22 0.01 85);
-  --primary: oklch(0.48 0.16 265);
+  --primary: oklch(0.596 0.145 163);
   --primary-foreground: oklch(0.99 0 0);
   --secondary: oklch(0.965 0.005 85);
   --secondary-foreground: oklch(0.22 0.01 85);
@@ -67,15 +68,15 @@
   --destructive: oklch(0.58 0.18 27);
   --border: oklch(0.91 0.005 85);
   --input: oklch(0.91 0.005 85);
-  --ring: oklch(0.48 0.16 265 / 30%);
+  --ring: oklch(0.596 0.145 163 / 30%);
   --sidebar: oklch(0.985 0.004 85);
   --sidebar-foreground: oklch(0.22 0.01 85);
-  --sidebar-primary: oklch(0.48 0.16 265);
+  --sidebar-primary: oklch(0.596 0.145 163);
   --sidebar-primary-foreground: oklch(0.99 0 0);
   --sidebar-accent: oklch(0.95 0.006 85);
   --sidebar-accent-foreground: oklch(0.22 0.01 85);
   --sidebar-border: oklch(0.91 0.005 85);
-  --sidebar-ring: oklch(0.48 0.16 265 / 30%);
+  --sidebar-ring: oklch(0.596 0.145 163 / 30%);
 }
 
 .dark {
@@ -85,7 +86,7 @@
   --card-foreground: oklch(0.97 0.004 85);
   --popover: oklch(0.205 0.005 85);
   --popover-foreground: oklch(0.97 0.004 85);
-  --primary: oklch(0.72 0.14 265);
+  --primary: oklch(0.765 0.135 163);
   --primary-foreground: oklch(0.17 0.004 85);
   --secondary: oklch(0.24 0.006 85);
   --secondary-foreground: oklch(0.97 0.004 85);
@@ -96,15 +97,15 @@
   --destructive: oklch(0.62 0.18 27);
   --border: oklch(0.28 0.006 85);
   --input: oklch(0.28 0.006 85);
-  --ring: oklch(0.72 0.14 265 / 35%);
+  --ring: oklch(0.765 0.135 163 / 35%);
   --sidebar: oklch(0.185 0.005 85);
   --sidebar-foreground: oklch(0.97 0.004 85);
-  --sidebar-primary: oklch(0.72 0.14 265);
+  --sidebar-primary: oklch(0.765 0.135 163);
   --sidebar-primary-foreground: oklch(0.17 0.004 85);
   --sidebar-accent: oklch(0.24 0.006 85);
   --sidebar-accent-foreground: oklch(0.97 0.004 85);
   --sidebar-border: oklch(0.28 0.006 85);
-  --sidebar-ring: oklch(0.72 0.14 265 / 35%);
+  --sidebar-ring: oklch(0.765 0.135 163 / 35%);
 }
 
 @layer base {

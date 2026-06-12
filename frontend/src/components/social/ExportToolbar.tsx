@@ -86,7 +86,7 @@ export function ExportToolbar({ captureRef, templateId, data, theme, disabled = 
     return (
         <div className="w-full max-w-md mx-auto space-y-3">
             <div className="grid grid-cols-2 gap-3">
-                <Button onClick={handleSave} disabled={disabled} className="gap-2 h-11 rounded-xl bg-orange-500 hover:bg-orange-600 text-white font-semibold">
+                <Button onClick={handleSave} disabled={disabled} className="gap-2 h-11 rounded-xl font-semibold">
                     <Download size={15} /> Save image
                 </Button>
                 <Button onClick={handleCopyImage} disabled={disabled} variant="outline" className="gap-2 h-11 rounded-xl font-semibold">

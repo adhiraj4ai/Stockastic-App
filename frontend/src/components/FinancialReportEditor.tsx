@@ -396,7 +396,7 @@ export default function FinancialReportEditor({ ticker, reportId, initialData, o
     if (loading) {
         return (
             <div className="flex flex-col items-center justify-center h-[400px] gap-4">
-                <div className="w-10 h-10 border-4 border-blue-600 border-t-transparent rounded-full animate-spin" />
+                <div className="w-10 h-10 border-4 border-primary border-t-transparent rounded-full animate-spin" />
                 <p className="text-gray-500 font-medium tracking-tight">Loading report structure...</p>
             </div>
         );
@@ -411,7 +411,7 @@ export default function FinancialReportEditor({ ticker, reportId, initialData, o
                         <ArrowLeft className="w-5 h-5" />
                     </Button>
                     <div className="flex items-center gap-3">
-                        <span className="text-lg font-bold text-blue-600 dark:text-blue-400">
+                        <span className="text-lg font-bold text-primary">
                             {fiscalYear || 'FY ????'} {reportType === 'QUARTERLY' ? `Q${quarter}` : 'Annual'}
                         </span>
                         <span className="text-sm text-gray-500 dark:text-slate-400 font-medium">{ticker}</span>
@@ -422,7 +422,7 @@ export default function FinancialReportEditor({ ticker, reportId, initialData, o
                 </div>
                 <div className="flex items-center gap-2">
                     {reportId && !isEditing ? (
-                        <Button onClick={() => setIsEditing(true)} size="sm" className="bg-blue-600 dark:bg-blue-500 hover:bg-blue-700 dark:hover:bg-blue-600 font-bold shadow-sm">
+                        <Button onClick={() => setIsEditing(true)} size="sm" className="bg-primary hover:bg-primary/90 text-primary-foreground font-bold shadow-sm">
                             Edit Report
                         </Button>
                     ) : (
@@ -431,7 +431,7 @@ export default function FinancialReportEditor({ ticker, reportId, initialData, o
                                 <Button
                                     variant="ghost"
                                     size="sm"
-                                    className="text-[10px] font-bold h-8 uppercase tracking-wider text-slate-500 hover:text-blue-600 dark:hover:text-blue-400 gap-2"
+                                    className="text-[10px] font-bold h-8 uppercase tracking-wider text-slate-500 hover:text-primary gap-2"
                                     onClick={() => downloadJsonTemplate(reportTemplate, `${ticker}_${reportType}_Template.json`, {
                                         ticker,
                                         fiscal_year: fiscalYear,
@@ -470,7 +470,7 @@ export default function FinancialReportEditor({ ticker, reportId, initialData, o
                                     Cancel
                                 </Button>
                             )}
-                            <Button onClick={handleSave} disabled={saving} size="sm" className="bg-blue-600 dark:bg-blue-500 hover:bg-blue-700 dark:hover:bg-blue-600 font-bold gap-2 min-w-[120px] shadow-sm">
+                            <Button onClick={handleSave} disabled={saving} size="sm" className="bg-primary hover:bg-primary/90 text-primary-foreground font-bold gap-2 min-w-[120px] shadow-sm">
                                 {saving ? 'Saving...' : <><Save className="w-4 h-4" /> Save Changes</>}
                             </Button>
                         </>
@@ -483,19 +483,19 @@ export default function FinancialReportEditor({ ticker, reportId, initialData, o
                 {/* Granular Data Tabs - Compact */}
                 <Tabs defaultValue="bs" className="w-full">
                     <TabsList className="bg-white dark:bg-card p-1 rounded-xl h-10 border dark:border-slate-800 inline-flex shadow-sm mb-2">
-                        <TabsTrigger value="bs" className="px-6 rounded-lg data-[state=active]:bg-gray-100 dark:data-[state=active]:bg-slate-800 data-[state=active]:text-orange-500 dark:data-[state=active]:text-orange-500 font-bold text-sm uppercase tracking-wider dark:text-slate-500">
+                        <TabsTrigger value="bs" className="px-6 rounded-lg data-[state=active]:bg-gray-100 dark:data-[state=active]:bg-slate-800 font-bold text-sm uppercase tracking-wider dark:text-slate-500">
                             Balance Sheet
                         </TabsTrigger>
-                        <TabsTrigger value="pl" className="px-6 rounded-lg data-[state=active]:bg-gray-100 dark:data-[state=active]:bg-slate-800 data-[state=active]:text-orange-500 dark:data-[state=active]:text-orange-500 font-bold text-sm uppercase tracking-wider dark:text-slate-500">
+                        <TabsTrigger value="pl" className="px-6 rounded-lg data-[state=active]:bg-gray-100 dark:data-[state=active]:bg-slate-800 font-bold text-sm uppercase tracking-wider dark:text-slate-500">
                             Profit & Loss
                         </TabsTrigger>
                         {template.sections.cash_flow && (
-                            <TabsTrigger value="cf" className="px-6 rounded-lg data-[state=active]:bg-gray-100 dark:data-[state=active]:bg-slate-800 data-[state=active]:text-orange-500 dark:data-[state=active]:text-orange-500 font-bold text-sm uppercase tracking-wider dark:text-slate-500">
+                            <TabsTrigger value="cf" className="px-6 rounded-lg data-[state=active]:bg-gray-100 dark:data-[state=active]:bg-slate-800 font-bold text-sm uppercase tracking-wider dark:text-slate-500">
                                 Cash Flow
                             </TabsTrigger>
                         )}
                         {reportType === 'ANNUAL' && (
-                            <TabsTrigger value="dividend" className="px-6 rounded-lg data-[state=active]:bg-gray-100 dark:data-[state=active]:bg-slate-800 data-[state=active]:text-orange-500 dark:data-[state=active]:text-orange-500 font-bold text-sm uppercase tracking-wider dark:text-slate-500">
+                            <TabsTrigger value="dividend" className="px-6 rounded-lg data-[state=active]:bg-gray-100 dark:data-[state=active]:bg-slate-800 font-bold text-sm uppercase tracking-wider dark:text-slate-500">
                                 Dividend
                             </TabsTrigger>
                         )}
@@ -505,7 +505,7 @@ export default function FinancialReportEditor({ ticker, reportId, initialData, o
                         {template.sections.balance_sheet.map(section => (
                             <div key={section.key} className="bg-white dark:bg-card rounded-2xl border dark:border-slate-800 shadow-sm p-4 pt-4 overflow-hidden">
                                 <div className="flex items-center gap-3 mb-2">
-                                    <div className="w-1 h-5 bg-blue-500 rounded-full" />
+                                    <div className="w-1 h-5 bg-primary rounded-full" />
                                     <h4 className="text-sm font-semibold uppercase text-gray-900 dark:text-slate-100 tracking-wider">{section.label}</h4>
                                 </div>
                                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-x-12 gap-y-1">
@@ -520,7 +520,7 @@ export default function FinancialReportEditor({ ticker, reportId, initialData, o
                                             <div className="relative w-40">
                                                 {isEditing ? (
                                                     <Input
-                                                        className="h-10 text-right font-mono text-sm focus:ring-blue-500 bg-white dark:bg-slate-800 border-gray-200 dark:border-slate-700 dark:text-slate-100"
+                                                        className="h-10 text-right font-mono text-sm focus-visible:ring-ring/50 bg-white dark:bg-slate-800 border-gray-200 dark:border-slate-700 dark:text-slate-100"
                                                         value={balanceSheet[`${section.key}.${p.key}`] || ''}
                                                         onChange={(e) => setBalanceSheet(prev => ({ ...prev, [`${section.key}.${p.key}`]: e.target.value }))}
                                                         onBlur={(e) => {
@@ -546,7 +546,7 @@ export default function FinancialReportEditor({ ticker, reportId, initialData, o
                         {(!reportId && !initialData?.fiscalYear) && (
                             <div className="bg-white dark:bg-card rounded-2xl border dark:border-slate-800 shadow-sm p-4 pt-4 overflow-hidden">
                                 <div className="flex items-center gap-3 mb-2">
-                                    <div className="w-1 h-5 bg-blue-500 rounded-full" />
+                                    <div className="w-1 h-5 bg-primary rounded-full" />
                                     <h4 className="text-sm font-semibold uppercase text-gray-900 dark:text-slate-100 tracking-wider">Report Identity</h4>
                                 </div>
                                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-x-12 gap-y-1">
@@ -559,7 +559,7 @@ export default function FinancialReportEditor({ ticker, reportId, initialData, o
                                                 placeholder="e.g. 081/82"
                                                 value={fiscalYear}
                                                 onChange={(e) => setFiscalYear(e.target.value)}
-                                                className="h-9 text-right font-mono text-xs border-gray-200 dark:border-slate-700 bg-white dark:bg-slate-800 dark:text-slate-100 focus:ring-blue-500"
+                                                className="h-9 text-right font-mono text-xs border-gray-200 dark:border-slate-700 bg-white dark:bg-slate-800 dark:text-slate-100 focus-visible:ring-ring/50"
                                             />
                                         </div>
                                     </div>
@@ -633,7 +633,7 @@ export default function FinancialReportEditor({ ticker, reportId, initialData, o
                         {/* Key Metrics - Compact 3 Columns */}
                         <div className="bg-white dark:bg-card rounded-2xl border dark:border-slate-800 shadow-sm p-4 pt-4 overflow-hidden">
                             <div className="flex items-center gap-3 mb-2">
-                                <div className="w-1 h-5 bg-indigo-500 rounded-full" />
+                                <div className="w-1 h-5 bg-primary rounded-full" />
                                 <h4 className="text-sm font-semibold uppercase text-gray-900 dark:text-slate-100 tracking-wider">Key Metrics</h4>
                             </div>
                             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-x-12 gap-y-1">
@@ -652,7 +652,7 @@ export default function FinancialReportEditor({ ticker, reportId, initialData, o
                                             <Input
                                                 type="number"
                                                 step={item.label.includes('EPS') ? '0.01' : '1'}
-                                                className="h-9 text-right font-mono text-xs focus:ring-indigo-500 border-gray-200 dark:border-slate-700 bg-white dark:bg-slate-800 dark:text-slate-100"
+                                                className="h-9 text-right font-mono text-xs focus-visible:ring-ring/50 border-gray-200 dark:border-slate-700 bg-white dark:bg-slate-800 dark:text-slate-100"
                                                 value={item.value}
                                                 onChange={(e) => item.onChange(e.target.value)}
                                             />
@@ -689,7 +689,7 @@ export default function FinancialReportEditor({ ticker, reportId, initialData, o
                         {template.sections.profit_loss.map(section => (
                             <div key={section.key} className="bg-white dark:bg-card rounded-2xl border dark:border-slate-800 shadow-sm p-4 pt-4 overflow-hidden">
                                 <div className="flex items-center gap-3 mb-2">
-                                    <div className="w-1 h-5 bg-indigo-500 rounded-full" />
+                                    <div className="w-1 h-5 bg-primary rounded-full" />
                                     <h4 className="text-sm font-semibold uppercase text-gray-900 dark:text-slate-100 tracking-wider">{section.label}</h4>
                                 </div>
                                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-x-12 gap-y-1">
@@ -703,7 +703,7 @@ export default function FinancialReportEditor({ ticker, reportId, initialData, o
                                             <div className="relative w-40">
                                                 {isEditing ? (
                                                     <Input
-                                                        className="h-9 text-right font-mono text-xs focus:ring-indigo-500 border-gray-200 dark:border-slate-700 bg-white dark:bg-slate-800 dark:text-slate-100"
+                                                        className="h-9 text-right font-mono text-xs focus-visible:ring-ring/50 border-gray-200 dark:border-slate-700 bg-white dark:bg-slate-800 dark:text-slate-100"
                                                         value={profitLoss[`${section.key}.${p.key}`] || ''}
                                                         onChange={(e) => setProfitLoss(prev => ({ ...prev, [`${section.key}.${p.key}`]: e.target.value }))}
                                                         onBlur={(e) => {
@@ -744,7 +744,7 @@ export default function FinancialReportEditor({ ticker, reportId, initialData, o
                                             <div className="relative w-40">
                                                 {isEditing ? (
                                                     <Input
-                                                        className="h-9 text-right font-mono text-xs focus:ring-emerald-500 border-gray-200 dark:border-slate-700 bg-white dark:bg-slate-800 dark:text-slate-100"
+                                                        className="h-9 text-right font-mono text-xs focus-visible:ring-ring/50 border-gray-200 dark:border-slate-700 bg-white dark:bg-slate-800 dark:text-slate-100"
                                                         value={cashFlow[`${section.key}.${p.key}`] || ''}
                                                         onChange={(e) => setCashFlow(prev => ({ ...prev, [`${section.key}.${p.key}`]: e.target.value }))}
                                                         onBlur={(e) => {
@@ -781,7 +781,7 @@ export default function FinancialReportEditor({ ticker, reportId, initialData, o
                                     <div className="relative w-40">
                                         {isEditing ? (
                                             <Input
-                                                className="h-10 text-right font-mono text-sm focus:ring-green-500 bg-white dark:bg-slate-800 border-gray-200 dark:border-slate-700 dark:text-slate-100"
+                                                className="h-10 text-right font-mono text-sm focus-visible:ring-ring/50 bg-white dark:bg-slate-800 border-gray-200 dark:border-slate-700 dark:text-slate-100"
                                                 value={bonusShare}
                                                 onChange={(e) => setBonusShare(e.target.value)}
                                                 placeholder="%"
@@ -802,7 +802,7 @@ export default function FinancialReportEditor({ ticker, reportId, initialData, o
                                     <div className="relative w-40">
                                         {isEditing ? (
                                             <Input
-                                                className="h-10 text-right font-mono text-sm focus:ring-green-500 bg-white dark:bg-slate-800 border-gray-200 dark:border-slate-700 dark:text-slate-100"
+                                                className="h-10 text-right font-mono text-sm focus-visible:ring-ring/50 bg-white dark:bg-slate-800 border-gray-200 dark:border-slate-700 dark:text-slate-100"
                                                 value={cashDividend}
                                                 onChange={(e) => setCashDividend(e.target.value)}
                                                 placeholder="%"
@@ -824,7 +824,7 @@ export default function FinancialReportEditor({ ticker, reportId, initialData, o
                                         {isEditing ? (
                                             <Input
                                                 type="date"
-                                                className="h-10 text-right font-mono text-sm focus:ring-green-500 bg-white dark:bg-slate-800 border-gray-200 dark:border-slate-700 dark:text-slate-100 dark:[color-scheme:dark]"
+                                                className="h-10 text-right font-mono text-sm focus-visible:ring-ring/50 bg-white dark:bg-slate-800 border-gray-200 dark:border-slate-700 dark:text-slate-100 dark:[color-scheme:dark]"
                                                 value={announcedDate}
                                                 onChange={(e) => setAnnouncedDate(e.target.value)}
                                             />
@@ -845,7 +845,7 @@ export default function FinancialReportEditor({ ticker, reportId, initialData, o
                                         {isEditing ? (
                                             <Input
                                                 type="date"
-                                                className="h-10 text-right font-mono text-sm focus:ring-green-500 bg-white dark:bg-slate-800 border-gray-200 dark:border-slate-700 dark:text-slate-100 dark:[color-scheme:dark]"
+                                                className="h-10 text-right font-mono text-sm focus-visible:ring-ring/50 bg-white dark:bg-slate-800 border-gray-200 dark:border-slate-700 dark:text-slate-100 dark:[color-scheme:dark]"
                                                 value={bookCloseDate}
                                                 onChange={(e) => setBookCloseDate(e.target.value)}
                                             />

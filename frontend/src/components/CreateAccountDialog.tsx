@@ -53,7 +53,7 @@ export function CreateAccountDialog({ isOpen, onOpenChange, onSuccess }: CreateA
                         <h2 className="text-xl font-bold text-gray-800 dark:text-slate-100">Create Portfolio</h2>
                         <p className="text-sm text-gray-500 dark:text-slate-400 mt-1">Organize your investments</p>
                     </div>
-                    <button onClick={() => onOpenChange(false)} className="p-1 rounded-full hover:bg-gray-100 dark:hover:bg-slate-800 transition-colors">
+                    <button onClick={() => onOpenChange(false)} className="p-1 rounded-full hover:bg-accent hover:text-accent-foreground transition-colors">
                         <X className="h-5 w-5 text-gray-500 dark:text-slate-400" />
                     </button>
                 </div>
@@ -68,7 +68,7 @@ export function CreateAccountDialog({ isOpen, onOpenChange, onSuccess }: CreateA
                                 value={name}
                                 onChange={(e) => setName(e.target.value)}
                                 placeholder="e.g. Retirement Fund"
-                                className="w-full px-4 py-2 bg-gray-50 dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition-all dark:text-slate-100"
+                                className="w-full px-4 py-2 bg-gray-50 dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-lg focus-visible:ring-[3px] focus-visible:ring-ring/50 focus-visible:border-ring outline-none transition-all dark:text-slate-100"
                                 autoFocus
                             />
                         </div>
@@ -106,7 +106,7 @@ export function CreateAccountDialog({ isOpen, onOpenChange, onSuccess }: CreateA
                                     value={balance}
                                     onChange={(e) => setBalance(e.target.value)}
                                     placeholder="e.g. 1000000"
-                                    className="w-full px-4 py-2 bg-gray-50 dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition-all dark:text-slate-100"
+                                    className="w-full px-4 py-2 bg-gray-50 dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-lg focus-visible:ring-[3px] focus-visible:ring-ring/50 focus-visible:border-ring outline-none transition-all dark:text-slate-100"
                                 />
                             </div>
                         )}
@@ -117,14 +117,14 @@ export function CreateAccountDialog({ isOpen, onOpenChange, onSuccess }: CreateA
                             type="button"
                             onClick={() => onOpenChange(false)}
                             disabled={loading}
-                            className="px-4 py-2 text-sm font-medium text-gray-700 dark:text-slate-300 hover:bg-gray-100 dark:hover:bg-slate-800 rounded-lg transition-colors"
+                            className="px-4 py-2 text-sm font-medium text-gray-700 dark:text-slate-300 hover:bg-accent hover:text-accent-foreground rounded-lg transition-colors"
                         >
                             Cancel
                         </button>
                         <button
                             type="submit"
                             disabled={loading || !name.trim()}
-                            className="px-4 py-2 text-sm font-bold text-white bg-blue-600 hover:bg-blue-700 rounded-lg shadow-sm transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                            className="px-4 py-2 text-sm font-bold text-primary-foreground bg-primary hover:bg-primary/90 rounded-lg shadow-sm transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                         >
                             {loading ? 'Creating...' : 'Create Account'}
                         </button>

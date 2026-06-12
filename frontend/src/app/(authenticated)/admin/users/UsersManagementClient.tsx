@@ -492,21 +492,21 @@ export default function UsersManagementClient() {
                     <TabsList className="bg-slate-100/50 dark:bg-muted border border-border dark:border-border p-1 rounded-xl h-11">
                         <TabsTrigger
                             value="directory"
-                            className="rounded-lg px-6 text-xs font-bold data-[state=active]:bg-white dark:data-[state=active]:bg-slate-800 data-[state=active]:text-orange-500 data-[state=active]:shadow-sm transition-all h-9"
+                            className="rounded-lg px-6 text-xs font-bold transition-all h-9"
                         >
                             <Users size={14} className="mr-2" />
                             User Directory
                         </TabsTrigger>
                         <TabsTrigger
                             value="permissions"
-                            className="rounded-lg px-6 text-xs font-bold data-[state=active]:bg-white dark:data-[state=active]:bg-slate-800 data-[state=active]:text-orange-500 data-[state=active]:shadow-sm transition-all h-9"
+                            className="rounded-lg px-6 text-xs font-bold transition-all h-9"
                         >
                             <Shield size={14} className="mr-2" />
                             Permissions & Tiers
                         </TabsTrigger>
                         <TabsTrigger
                             value="roles"
-                            className="rounded-lg px-6 text-xs font-bold data-[state=active]:bg-white dark:data-[state=active]:bg-slate-800 data-[state=active]:text-orange-500 data-[state=active]:shadow-sm transition-all h-9"
+                            className="rounded-lg px-6 text-xs font-bold transition-all h-9"
                         >
                             <Settings2 size={14} className="mr-2" />
                             Role Management
@@ -519,7 +519,7 @@ export default function UsersManagementClient() {
                 <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
                     <Card className="bg-white/50 dark:bg-card border-border dark:border-border">
                         <CardContent className="p-4 flex items-center gap-4">
-                            <div className="p-3 rounded-xl bg-blue-500/10 text-blue-500">
+                            <div className="p-3 rounded-xl bg-primary/10 text-primary">
                                 <Users size={20} />
                             </div>
                             <div>
@@ -606,7 +606,7 @@ export default function UsersManagementClient() {
                                 
                                 <Dialog open={isCreateDialogOpen} onOpenChange={setIsCreateDialogOpen}>
                                     <DialogTrigger asChild>
-                                        <Button className="gap-2 bg-slate-900 dark:bg-white text-white dark:text-black hover:bg-slate-800 dark:hover:bg-slate-200 transition-all">
+                                        <Button className="gap-2 bg-primary text-primary-foreground hover:bg-primary/90 transition-all">
                                             <UserPlus size={16} />
                                             Add User
                                         </Button>
@@ -733,9 +733,9 @@ export default function UsersManagementClient() {
                                                 >
                                                     Cancel
                                                 </Button>
-                                                <Button 
-                                                    type="submit" 
-                                                    className="bg-slate-900 dark:bg-white text-white dark:text-black"
+                                                <Button
+                                                    type="submit"
+                                                    className="bg-primary text-primary-foreground hover:bg-primary/90"
                                                     disabled={createLoading}
                                                 >
                                                     {createLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : "Create Account"}
@@ -782,10 +782,10 @@ export default function UsersManagementClient() {
                                             const RoleIcon = roleCfg.icon;
                                             const TierIcon = tierCfg.icon;
                                             return (
-                                                <TableRow key={user.id} className="hover:bg-slate-50/50 dark:hover:bg-white/5 transition-colors">
+                                                <TableRow key={user.id} className="hover:bg-accent hover:text-accent-foreground transition-colors">
                                                     <TableCell>
                                                         <div className="flex items-center gap-3">
-                                                            <div className="h-10 w-10 min-w-[40px] rounded-xl bg-slate-900 dark:bg-white text-white dark:text-black flex items-center justify-center font-bold text-xs overflow-hidden shadow-md">
+                                                            <div className="h-10 w-10 min-w-[40px] rounded-xl bg-primary text-primary-foreground flex items-center justify-center font-bold text-xs overflow-hidden shadow-md">
                                                                 {user.profile_picture ? (
                                                                     <img 
                                                                         src={user.profile_picture} 
@@ -899,10 +899,10 @@ export default function UsersManagementClient() {
                                                                                 className="flex items-center justify-between gap-2 cursor-pointer p-2 rounded-lg"
                                                                             >
                                                                                 <div className="flex items-center gap-2">
-                                                                                    <Icon size={14} className={cn(key === user.role ? "text-blue-500" : "text-slate-400")} />
-                                                                                    <span className={cn("text-sm", key === user.role && "font-bold text-blue-500")}>{config.label}</span>
+                                                                                    <Icon size={14} className={cn(key === user.role ? "text-primary" : "text-slate-400")} />
+                                                                                    <span className={cn("text-sm", key === user.role && "font-bold text-primary")}>{config.label}</span>
                                                                                 </div>
-                                                                                {key === user.role && <Check size={14} className="text-blue-500" />}
+                                                                                {key === user.role && <Check size={14} className="text-primary" />}
                                                                             </DropdownMenuItem>
                                                                         );
                                                                     })}
@@ -1024,18 +1024,18 @@ export default function UsersManagementClient() {
                                                         </TableCell>
                                                     </TableRow>
                                                     {group.keys.map(moduleKey => (
-                                                        <TableRow key={moduleKey} className="hover:bg-slate-50/50 dark:hover:bg-white/5 transition-colors group">
+                                                        <TableRow key={moduleKey} className="hover:bg-accent hover:text-accent-foreground transition-colors group">
                                                             <TableCell className="font-normal">
                                                                 <div className="flex items-center gap-3">
                                                                     <div className={cn(
                                                                         "p-2 rounded-lg transition-colors group-hover:bg-white/10 shadow-sm",
-                                                                        group.name === 'Global' ? "bg-blue-500/10 dark:bg-blue-500/5 text-blue-500" :
+                                                                        group.name === 'Global' ? "bg-primary/10 text-primary" :
                                                                         group.name === 'Market Suite' ? "bg-slate-500/10 dark:bg-slate-500/5 text-slate-500" :
-                                                                        group.name === 'Floorsheet Suite' ? "bg-indigo-500/10 dark:bg-indigo-500/5 text-indigo-500" :
+                                                                        group.name === 'Floorsheet Suite' ? "bg-primary/10 text-primary" :
                                                                         group.name === 'Portfolio Suite' ? "bg-emerald-500/10 dark:bg-emerald-500/5 text-emerald-500" :
-                                                                        group.name === 'Accumulation Suite' ? "bg-orange-500/10 dark:bg-orange-500/5 text-orange-500" :
+                                                                        group.name === 'Accumulation Suite' ? "bg-primary/10 text-primary" :
                                                                         group.name === 'Signals' ? "bg-pink-500/10 dark:bg-pink-500/5 text-pink-500" :
-                                                                        group.name === 'Ticker Intelligence' ? "bg-blue-500/10 dark:bg-blue-500/5 text-blue-500" :
+                                                                        group.name === 'Ticker Intelligence' ? "bg-primary/10 text-primary" :
                                                                         "bg-slate-100 dark:bg-muted text-slate-500 dark:text-slate-400"
                                                                     )}>
                                                                         {(() => {
@@ -1091,14 +1091,14 @@ export default function UsersManagementClient() {
                 <TabsContent value="roles" className="mt-0">
                     <Card className="bg-white/50 dark:bg-card border-border dark:border-border p-12 text-center shadow-xl">
                         <div className="flex flex-col items-center gap-4 max-w-md mx-auto">
-                            <div className="p-4 rounded-full bg-indigo-500/10 text-indigo-500">
+                            <div className="p-4 rounded-full bg-primary/10 text-primary">
                                 <Settings2 size={32} />
                             </div>
                             <h3 className="text-xl font-bold">Role Capabilities</h3>
                             <p className="text-slate-500 text-sm">
                                 Management of explicit role-based permissions (Admin, Manager, Subscriber) is currently harmonized with global system policies.
                             </p>
-                            <Badge variant="outline" className="mt-4 bg-indigo-500/5 border-indigo-500/20 text-indigo-500 uppercase tracking-wider text-[10px] py-1">
+                            <Badge variant="outline" className="mt-4 bg-primary/5 border-primary/20 text-primary uppercase tracking-wider text-[10px] py-1">
                                 System Governed
                             </Badge>
                         </div>

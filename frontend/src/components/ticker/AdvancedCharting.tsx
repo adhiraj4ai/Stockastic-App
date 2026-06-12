@@ -185,7 +185,7 @@ export function AdvancedCharting({ history, ticker, fundamental }: AdvancedChart
             <div className="px-6 py-4 border-b border-border dark:border-slate-800 flex flex-row items-center justify-between bg-white/50 dark:bg-card">
                 <div className="space-y-1">
                     <CardTitle className="text-[10px] font-bold text-slate-500 dark:text-slate-400 flex items-center gap-2">
-                        <BarChart3 size={14} className="text-blue-500" />
+                        <BarChart3 size={14} className="text-primary" />
                         Price Action & Volume Profile
                     </CardTitle>
                     <div className="flex gap-1">
@@ -195,8 +195,8 @@ export function AdvancedCharting({ history, ticker, fundamental }: AdvancedChart
                                 variant="outline"
                                 onClick={() => setTimeframe(t)}
                                 className={cn(
-                                    "text-[9px] font-bold px-2 py-0 border-border dark:border-slate-800 cursor-pointer hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors",
-                                    t === timeframe ? "bg-slate-900 dark:bg-slate-100 text-white dark:text-slate-900 border-slate-900 dark:border-border" : "text-slate-400 dark:text-slate-500 bg-transparent"
+                                    "text-[9px] font-bold px-2 py-0 border-border dark:border-slate-800 cursor-pointer hover:bg-accent hover:text-accent-foreground transition-colors",
+                                    t === timeframe ? "bg-primary/10 text-primary border-primary/30" : "text-slate-400 dark:text-slate-500 bg-transparent hover:bg-accent hover:text-accent-foreground"
                                 )}
                             >
                                 {t}

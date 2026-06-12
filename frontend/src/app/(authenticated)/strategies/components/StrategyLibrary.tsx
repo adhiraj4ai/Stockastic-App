@@ -38,7 +38,7 @@ function StratIcon({ s, size = 18 }: { s: Strategy; size?: number }) {
 function KindBadge({ kind }: { kind?: string }) {
     const composed = kind === 'composed';
     return <span className={`text-[10px] uppercase font-bold px-1.5 py-0.5 rounded ${composed
-        ? 'bg-blue-100 text-blue-700 dark:bg-blue-900/40 dark:text-blue-300'
+        ? 'bg-primary/10 text-primary'
         : 'bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-300'}`}>{composed ? 'Composed' : 'Custom'}</span>;
 }
 
@@ -47,9 +47,9 @@ function Actions({ s, router, compact }: { s: Strategy; router: any; compact?: b
     const go = (e: any, path: string) => { e.stopPropagation(); router.push(`/strategies/${s.id}${path}`); };
     return (
         <div className="flex items-center gap-1">
-            <button onClick={(e) => { e.stopPropagation(); router.push(openHref(s)); }} title="Open workspace" className="p-1.5 rounded-lg hover:bg-blue-50 dark:hover:bg-blue-900/30 text-blue-600"><Settings2 size={sz} /></button>
+            <button onClick={(e) => { e.stopPropagation(); router.push(openHref(s)); }} title="Open workspace" className="p-1.5 rounded-lg hover:bg-primary/10 text-primary"><Settings2 size={sz} /></button>
             <button onClick={(e) => go(e, '/backtest')} title="Backtest" className="p-1.5 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-600 dark:text-slate-300"><Play size={sz} /></button>
-            <button onClick={(e) => go(e, '/optimize')} title="Optimize" className="p-1.5 rounded-lg hover:bg-purple-50 dark:hover:bg-purple-900/30 text-purple-600"><Activity size={sz} /></button>
+            <button onClick={(e) => go(e, '/optimize')} title="Optimize" className="p-1.5 rounded-lg hover:bg-accent hover:text-accent-foreground text-primary"><Activity size={sz} /></button>
         </div>
     );
 }
@@ -97,7 +97,7 @@ export function StrategyLibrary({ strategies, onCreate }: { strategies: Strategy
                 <div className="flex gap-1 text-xs">
                     {(['all', 'composed', 'custom', 'published'] as Filter[]).map((f) => (
                         <button key={f} onClick={() => setFilter(f)}
-                            className={`px-2.5 py-1.5 rounded-lg capitalize ${filter === f ? 'bg-blue-600 text-white' : 'bg-gray-100 dark:bg-slate-800 text-gray-600 dark:text-slate-300'}`}>{f}</button>
+                            className={`px-2.5 py-1.5 rounded-lg capitalize ${filter === f ? 'bg-primary text-primary-foreground' : 'bg-gray-100 dark:bg-slate-800 text-gray-600 dark:text-slate-300'}`}>{f}</button>
                     ))}
                 </div>
                 <button onClick={() => setSort((s) => s === 'return_pct' ? 'sharpe' : s === 'sharpe' ? 'win_rate' : s === 'win_rate' ? 'name' : 'return_pct')}
@@ -107,12 +107,12 @@ export function StrategyLibrary({ strategies, onCreate }: { strategies: Strategy
                 <div className="flex p-0.5 bg-gray-100 dark:bg-slate-800 rounded-lg ml-auto">
                     {([['split', Columns2], ['cards', LayoutGrid], ['table', Table2]] as const).map(([v, Icon]) => (
                         <button key={v} onClick={() => setView(v)} title={v}
-                            className={`p-1.5 rounded-md ${view === v ? 'bg-white dark:bg-slate-700 shadow-sm text-blue-600' : 'text-gray-500'}`}><Icon size={16} /></button>
+                            className={`p-1.5 rounded-md ${view === v ? 'bg-white dark:bg-slate-700 shadow-sm text-primary' : 'text-gray-500'}`}><Icon size={16} /></button>
                     ))}
                 </div>
                 <button onClick={() => router.push('/strategies/scan')} title="Find the best strategy for a symbol"
-                    className="px-3 py-1.5 text-sm font-semibold rounded-lg border border-gray-200 dark:border-slate-700 inline-flex items-center gap-1.5 hover:border-blue-300 hover:text-blue-600"><Radar size={15} /> Scan</button>
-                {onCreate && <button onClick={onCreate} className="px-3 py-1.5 text-sm font-semibold rounded-lg bg-blue-600 text-white inline-flex items-center gap-1.5"><Plus size={15} /> New</button>}
+                    className="px-3 py-1.5 text-sm font-semibold rounded-lg border border-border inline-flex items-center gap-1.5 hover:border-primary hover:text-primary transition-colors"><Radar size={15} /> Scan</button>
+                {onCreate && <button onClick={onCreate} className="px-3 py-1.5 text-sm font-semibold rounded-lg bg-primary text-primary-foreground inline-flex items-center gap-1.5"><Plus size={15} /> New</button>}
             </div>
 
             {rows.length === 0 ? (
@@ -130,7 +130,7 @@ export function StrategyLibrary({ strategies, onCreate }: { strategies: Strategy
                         <tbody>
                             {rows.map((s) => (
                                 <tr key={s.id} onClick={() => router.push(openHref(s))}
-                                    className="border-t border-gray-100 dark:border-slate-800 hover:bg-gray-50 dark:hover:bg-slate-900/60 cursor-pointer">
+                                    className="border-t border-gray-100 dark:border-slate-800 hover:bg-accent cursor-pointer">
                                     <td className="px-4 py-2.5"><div className="flex items-center gap-2.5"><StratIcon s={s} size={15} /><div className="min-w-0"><div className="font-medium">{s.name}</div><div className="text-xs text-gray-400 truncate max-w-xs">{s.summary}</div></div></div></td>
                                     <td className="text-center"><KindBadge kind={s.kind} /></td>
                                     {COLS.map((c) => { const v = c.get(M(s)); return <td key={c.label} className={`text-right px-3 font-mono ${c.color ? c.color(v) : 'text-gray-600 dark:text-slate-300'}`}>{c.fmt(v)}</td>; })}
@@ -145,7 +145,7 @@ export function StrategyLibrary({ strategies, onCreate }: { strategies: Strategy
                 <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
                     {rows.map((s) => (
                         <div key={s.id} onClick={() => router.push(openHref(s))}
-                            className="cursor-pointer rounded-2xl border border-gray-100 dark:border-slate-800 p-4 hover:shadow-md hover:border-blue-200 dark:hover:border-blue-800 transition-all bg-white dark:bg-card">
+                            className="cursor-pointer rounded-2xl border border-gray-100 dark:border-slate-800 p-4 hover:shadow-md hover:border-primary/30 transition-all bg-white dark:bg-card">
                             <div className="flex items-center justify-between mb-2">
                                 <StratIcon s={s} />
                                 <div className="flex items-center gap-1.5">{isPublished(s) && <span className="w-2 h-2 rounded-full bg-emerald-500" />}<KindBadge kind={s.kind} /></div>
@@ -165,7 +165,7 @@ export function StrategyLibrary({ strategies, onCreate }: { strategies: Strategy
                     <div className="rounded-xl border border-gray-100 dark:border-slate-800 divide-y divide-gray-100 dark:divide-slate-800 max-h-[72vh] overflow-y-auto">
                         {rows.map((s) => (
                             <button key={s.id} onClick={() => setSel(s.id)}
-                                className={`w-full text-left px-3 py-2.5 hover:bg-gray-50 dark:hover:bg-slate-900/60 ${selected?.id === s.id ? 'bg-blue-50 dark:bg-blue-900/20' : ''}`}>
+                                className={`w-full text-left px-3 py-2.5 hover:bg-accent ${selected?.id === s.id ? 'bg-primary/10' : ''}`}>
                                 <div className="flex items-center justify-between gap-2">
                                     <span className="flex items-center gap-2 min-w-0"><StratIcon s={s} size={14} /><span className="font-medium text-sm truncate">{s.name}</span></span>
                                     <span className={`text-xs font-mono shrink-0 ${posColor(M(s).return_pct)}`}>{fmtPct(M(s).return_pct)}</span>
@@ -194,7 +194,7 @@ export function StrategyLibrary({ strategies, onCreate }: { strategies: Strategy
                                 </div>
                             </div>
                             <div className="flex gap-2 mt-5 flex-wrap">
-                                <button onClick={() => router.push(openHref(selected))} className="px-4 py-2 text-sm font-semibold rounded-lg bg-blue-600 text-white inline-flex items-center gap-1.5"><Settings2 size={15} /> Open Workspace</button>
+                                <button onClick={() => router.push(openHref(selected))} className="px-4 py-2 text-sm font-semibold rounded-lg bg-primary text-primary-foreground inline-flex items-center gap-1.5"><Settings2 size={15} /> Open Workspace</button>
                                 <button onClick={() => router.push(`/strategies/${selected.id}/backtest`)} className="px-4 py-2 text-sm font-semibold rounded-lg border border-gray-200 dark:border-slate-700 inline-flex items-center gap-1.5"><Play size={15} /> Backtest</button>
                                 <button onClick={() => router.push(`/strategies/${selected.id}/optimize`)} className="px-4 py-2 text-sm font-semibold rounded-lg border border-gray-200 dark:border-slate-700 inline-flex items-center gap-1.5"><Activity size={15} /> Optimize</button>
                             </div>

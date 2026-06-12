@@ -197,8 +197,8 @@ export default function VolumeProfilePage() {
                                         className={cn(
                                             "px-4 py-1.5 rounded-lg text-xs font-semibold transition-all",
                                             range === r.value
-                                                ? "bg-orange-500 text-white shadow"
-                                                : "text-slate-400 hover:text-slate-600 hover:bg-slate-100 dark:hover:bg-white/5"
+                                                ? "bg-primary/10 text-primary border-primary/30"
+                                                : "text-slate-400 hover:bg-accent hover:text-accent-foreground"
                                         )}
                                     >
                                         {r.label}
@@ -219,7 +219,7 @@ export default function VolumeProfilePage() {
                     </div>
                 ) : loading ? (
                     <div className="py-24 text-center">
-                        <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-indigo-500 mx-auto mb-6"></div>
+                        <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-primary mx-auto mb-6"></div>
                         <h3 className="text-xl font-semibold text-slate-800 dark:text-slate-100">Aggregating Floorsheet Data...</h3>
                         <p className="text-slate-500 mt-2 text-sm font-medium">Crunching transaction quantities across all price levels for {symbol}.</p>
                     </div>
@@ -227,7 +227,7 @@ export default function VolumeProfilePage() {
                     <div className="py-16 text-center border-2 border-dashed border-border dark:border-slate-800 rounded-xl">
                         <AlertCircle className="mx-auto h-12 w-12 text-rose-500 mb-4" />
                         <h3 className="text-lg font-semibold text-slate-800 dark:text-slate-100">{error}</h3>
-                        <Button onClick={() => setSymbol('')} variant="link" className="mt-2 font-semibold text-indigo-500">Try another symbol</Button>
+                        <Button onClick={() => setSymbol('')} variant="link" className="mt-2 font-semibold text-primary">Try another symbol</Button>
                     </div>
                 ) : data && (
                     <div className="grid grid-cols-1 xl:grid-cols-12 gap-6 animate-in fade-in slide-in-from-bottom-4 duration-700">

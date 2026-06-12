@@ -109,7 +109,7 @@ export default function AdminFundamentals({ ticker, data, hasFinancials = true }
     if (loading) {
         return (
             <div className="flex flex-col items-center justify-center py-10 gap-4">
-                <Loader2 className="w-8 h-8 text-blue-600 animate-spin" />
+                <Loader2 className="w-8 h-8 text-primary animate-spin" />
                 <p className="text-gray-500 font-medium">Loading metrics...</p>
             </div>
         );
@@ -165,7 +165,7 @@ export default function AdminFundamentals({ ticker, data, hasFinancials = true }
                                 variant="ghost"
                                 size="sm"
                                 onClick={() => setEditingMetadata(true)}
-                                className="h-7 w-7 p-0 text-gray-400 hover:text-gray-600 hover:bg-gray-100 dark:text-slate-500 dark:hover:text-slate-300 dark:hover:bg-slate-800"
+                                className="h-7 w-7 p-0 text-gray-400 hover:bg-accent hover:text-accent-foreground dark:text-slate-500"
                             >
                                 <Pencil className="w-3.5 h-3.5" />
                             </Button>
@@ -251,7 +251,7 @@ export default function AdminFundamentals({ ticker, data, hasFinancials = true }
                     {/* Valuation Metrics */}
                     <div className="space-y-6">
                         <div className="flex items-center gap-3 mb-2">
-                            <div className="w-1 h-5 bg-blue-500 rounded-full" />
+                            <div className="w-1 h-5 bg-primary rounded-full" />
                             <h3 className="text-xs font-bold text-gray-900 dark:text-slate-100 tracking-tight">Valuation</h3>
                         </div>
                         <div className="space-y-4">
@@ -299,7 +299,7 @@ export default function AdminFundamentals({ ticker, data, hasFinancials = true }
                     {/* Growth & Performance */}
                     <div className="space-y-6">
                         <div className="flex items-center gap-3 mb-2">
-                            <div className="w-1 h-5 bg-purple-500 rounded-full" />
+                            <div className="w-1 h-5 bg-primary rounded-full" />
                             <h3 className="text-xs font-bold text-gray-900 dark:text-slate-100 tracking-tight">Growth & performance</h3>
                         </div>
                         <div className="space-y-4">
@@ -356,7 +356,7 @@ export default function AdminFundamentals({ ticker, data, hasFinancials = true }
                                 size="sm"
                                 onClick={handleRefresh}
                                 disabled={calculating || !hasFinancials}
-                                className="w-full text-xs font-bold gap-2 dark:border-slate-700 dark:text-slate-300 dark:hover:bg-slate-700"
+                                className="w-full text-xs font-bold gap-2 dark:border-slate-700 dark:text-slate-300"
                             >
                                 <RefreshCw className={`w-3.5 h-3.5 ${calculating ? 'animate-spin' : ''}`} />
                                 {calculating ? 'Recalculating...' : hasFinancials ? 'Refresh Metrics' : 'Add Reports to Enable'}

@@ -117,7 +117,7 @@ export default function TrendsPage() {
 
     const SortIcon = ({ column }: { column: string }) => {
         if (sortConfig.key !== column) return <div className="w-4 h-4 opacity-20"><ChevronDown className="w-4 h-4" /></div>;
-        return sortConfig.direction === 'asc' ? <ChevronUp className="w-4 h-4 text-blue-500" /> : <ChevronDown className="w-4 h-4 text-blue-500" />;
+        return sortConfig.direction === 'asc' ? <ChevronUp className="w-4 h-4 text-primary" /> : <ChevronDown className="w-4 h-4 text-primary" />;
     };
 
     return (
@@ -133,8 +133,8 @@ export default function TrendsPage() {
                                     className={cn(
                                         "px-4 py-1.5 rounded-lg text-xs font-semibold transition-all duration-300 tracking-tighter whitespace-nowrap",
                                         range === t.value
-                                            ? "bg-orange-500 text-white shadow"
-                                            : "text-slate-400 hover:text-slate-600 dark:hover:text-slate-200"
+                                            ? "bg-primary/10 text-primary border border-primary/30 shadow"
+                                            : "text-slate-400 hover:bg-accent hover:text-accent-foreground"
                                     )}
                                 >
                                     {t.label}
@@ -147,8 +147,8 @@ export default function TrendsPage() {
                                 className={cn(
                                     "px-4 py-1.5 rounded-lg text-[10px] font-semibold transition-all duration-300 tracking-tighter whitespace-nowrap",
                                     selectedSector === 'All'
-                                        ? "bg-orange-500 text-white shadow"
-                                        : "text-slate-400 hover:text-slate-600 dark:hover:text-slate-200"
+                                        ? "bg-primary/10 text-primary border border-primary/30 shadow"
+                                        : "text-slate-400 hover:bg-accent hover:text-accent-foreground"
                                 )}
                             >
                                 ALL SECTORS
@@ -160,8 +160,8 @@ export default function TrendsPage() {
                                     className={cn(
                                         "px-4 py-1.5 rounded-lg text-[10px] font-semibold transition-all duration-300 tracking-tighter whitespace-nowrap",
                                         selectedSector === s.name
-                                            ? "bg-orange-500 text-white shadow"
-                                            : "text-slate-400 hover:text-slate-600 dark:hover:text-slate-200"
+                                            ? "bg-primary/10 text-primary border border-primary/30 shadow"
+                                            : "text-slate-400 hover:bg-accent hover:text-accent-foreground"
                                     )}
                                 >
                                     {s.name.toUpperCase()}
@@ -171,12 +171,12 @@ export default function TrendsPage() {
                     </div>
                     
                     <div className="relative group max-w-md w-full xl:w-80">
-                        <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 group-focus-within:text-blue-500 transition-colors" />
+                        <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 group-focus-within:text-primary transition-colors" />
                         <Input
                             placeholder="Filter symbols or brokers..."
                             value={search}
                             onChange={(e) => setSearch(e.target.value)}
-                            className="pl-11 pr-4 h-11 w-full rounded-xl bg-white dark:bg-card border-slate-200 dark:border-border shadow-none focus:ring-2 focus:ring-blue-500/20 dark:focus:ring-indigo-500/20 transition-all font-bold text-sm"
+                            className="pl-11 pr-4 h-11 w-full rounded-xl bg-white dark:bg-card border-slate-200 dark:border-border shadow-none transition-all font-bold text-sm"
                         />
                     </div>
                 </div>
@@ -187,7 +187,7 @@ export default function TrendsPage() {
                     <div className="overflow-x-auto relative">
                         <table className="w-full border-collapse">
                             <TableHeader>
-                                <TableRow className="bg-gray-50/50 dark:bg-slate-800/30 hover:bg-gray-50/50 dark:hover:bg-slate-800/30 border-b border-gray-100 dark:border-slate-800">
+                                <TableRow className="bg-gray-50/50 dark:bg-slate-800/30 hover:bg-accent border-b border-gray-100 dark:border-slate-800">
                                     <TableHead className="h-14 px-6 text-left cursor-pointer font-bold text-gray-900 dark:text-slate-100" onClick={() => handleSort('symbol')}>
                                         <div className="flex items-center gap-2">Symbol <SortIcon column="symbol" /></div>
                                     </TableHead>
@@ -207,7 +207,7 @@ export default function TrendsPage() {
                                     <TableHead className="text-right px-6 cursor-pointer font-bold text-gray-900 dark:text-slate-100" onClick={() => handleSort('ltp')}>
                                         <div className="flex items-center justify-end gap-2 text-[11px] uppercase tracking-wider">LTP <SortIcon column="ltp" /></div>
                                     </TableHead>
-                                    <TableHead className="text-right px-6 cursor-pointer font-bold text-orange-500 dark:text-orange-400 font-semibold tracking-wider text-[10px]" onClick={() => handleSort('wac')}>
+                                    <TableHead className="text-right px-6 cursor-pointer font-bold text-primary font-semibold tracking-wider text-[10px]" onClick={() => handleSort('wac')}>
                                         <div className="flex items-center justify-end gap-2">
                                             WAC 
                                             <InfoTooltip content="Weighted Average Cost: The estimated average price at which this broker accumulated their current position." />
@@ -251,18 +251,18 @@ export default function TrendsPage() {
                                                 animate={{ opacity: 1, x: 0 }}
                                                 transition={{ duration: 0.3, delay: idx * 0.02 }}
                                                 className={cn(
-                                                    "group border-b border-gray-50 dark:border-slate-800 hover:bg-blue-50/30 dark:hover:bg-slate-800/30 last:border-0 transition-all duration-200 cursor-pointer border-l-4 hover:shadow-lg hover:scale-[1.01] hover:-translate-y-0.5",
-                                                    (row.range_net || 0) > 0 ? "border-l-emerald-500/50 hover:border-l-emerald-500" : (row.range_net || 0) < 0 ? "border-l-rose-500/50 hover:border-l-rose-500" : "border-l-transparent hover:border-l-blue-400/50"
+                                                    "group border-b border-gray-50 dark:border-slate-800 hover:bg-accent last:border-0 transition-all duration-200 cursor-pointer border-l-4 hover:shadow-lg hover:scale-[1.01] hover:-translate-y-0.5",
+                                                    (row.range_net || 0) > 0 ? "border-l-emerald-500/50 hover:border-l-emerald-500" : (row.range_net || 0) < 0 ? "border-l-rose-500/50 hover:border-l-rose-500" : "border-l-transparent hover:border-l-primary/50"
                                                 )}
                                             >
                                                 <TableCell className="px-6 py-4">
                                                     <Link href={`/ticker/${row.symbol}`}>
-                                                        <span className="text-base font-medium text-slate-900 dark:text-indigo-400 leading-none hover:text-blue-600 dark:hover:text-white transition-colors cursor-pointer">{row.symbol}</span>
+                                                        <span className="text-base font-medium text-slate-900 dark:text-slate-100 leading-none hover:text-primary transition-colors cursor-pointer">{row.symbol}</span>
                                                     </Link>
                                                 </TableCell>
                                                 <TableCell className="px-6">
                                                     <Link href={`/broker/${row.broker}`}>
-                                                        <span className="px-3 py-1 bg-slate-100 dark:bg-white/[0.05] rounded-lg text-[10px] font-semibold border border-slate-200 dark:border-border hover:bg-blue-600 hover:text-white dark:hover:bg-indigo-600 transition-all cursor-pointer uppercase tracking-wider shadow-sm">
+                                                        <span className="px-3 py-1 bg-slate-100 dark:bg-white/[0.05] rounded-lg text-[10px] font-semibold border border-slate-200 dark:border-border hover:bg-primary hover:text-primary-foreground transition-all cursor-pointer uppercase tracking-wider shadow-sm">
                                                             Broker {row.broker}
                                                         </span>
                                                     </Link>
@@ -283,7 +283,7 @@ export default function TrendsPage() {
                                                 <TableCell className="text-right px-6 font-mono font-bold text-slate-800 dark:text-slate-200">
                                                     {formatRupees(row.ltp, 1)}
                                                 </TableCell>
-                                                <TableCell className="text-right px-6 font-mono font-bold text-orange-600 dark:text-orange-400">
+                                                <TableCell className="text-right px-6 font-mono font-bold text-primary">
                                                     {formatRupees(row.wac || 0, 1)}
                                                 </TableCell>
                                                 <TableCell className="text-center px-4">
@@ -303,7 +303,7 @@ export default function TrendsPage() {
                                                         <Button 
                                                             variant="ghost" 
                                                             size="icon" 
-                                                            className="h-9 w-9 bg-slate-100 dark:bg-white/[0.05] rounded-xl hover:bg-blue-600 hover:text-white dark:hover:bg-indigo-600 transition-all duration-300 opacity-0 group-hover:opacity-100"
+                                                            className="h-9 w-9 bg-slate-100 dark:bg-white/[0.05] rounded-xl hover:bg-primary hover:text-primary-foreground transition-all duration-300 opacity-0 group-hover:opacity-100"
                                                         >
                                                             <History className="w-4 h-4" />
                                                         </Button>
@@ -348,7 +348,7 @@ export default function TrendsPage() {
                                             size="sm"
                                             onClick={() => setPage(p => Math.max(1, p - 1))}
                                             disabled={page === 1}
-                                            className="h-9 px-4 rounded-xl font-semibold text-[10px] tracking-wider border-slate-200 dark:border-border hover:bg-slate-100 dark:hover:bg-white/5 transition-all"
+                                            className="h-9 px-4 rounded-xl font-semibold text-[10px] tracking-wider border-slate-200 dark:border-border hover:bg-accent hover:text-accent-foreground transition-all"
                                         >
                                             Previous
                                         </Button>
@@ -357,7 +357,7 @@ export default function TrendsPage() {
                                             size="sm"
                                             onClick={() => setPage(p => Math.min(totalPages, p + 1))}
                                             disabled={page >= totalPages}
-                                            className="h-9 px-4 rounded-xl font-semibold text-[10px] uppercase tracking-wider border-slate-200 dark:border-border hover:bg-slate-100 dark:hover:bg-white/5 transition-all"
+                                            className="h-9 px-4 rounded-xl font-semibold text-[10px] uppercase tracking-wider border-slate-200 dark:border-border hover:bg-accent hover:text-accent-foreground transition-all"
                                         >
                                             Next
                                         </Button>

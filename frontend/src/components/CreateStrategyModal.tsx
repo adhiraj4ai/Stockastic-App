@@ -147,14 +147,14 @@ export default function CreateStrategyModal({ isOpen, onClose, onSuccess }: Crea
                                         type="button"
                                         onClick={() => setMode(m.key)}
                                         className={`relative text-left p-3 rounded-xl border-2 transition-all ${active
-                                            ? 'border-blue-500 bg-blue-50 shadow-sm'
-                                            : 'border-slate-200 hover:border-slate-300 hover:bg-slate-50'}`}
+                                            ? 'border-primary bg-primary/10 shadow-sm'
+                                            : 'border-slate-200 hover:border-slate-300 hover:bg-accent hover:text-accent-foreground'}`}
                                     >
                                         {active && (
-                                            <span className="absolute top-2 right-2 text-blue-600"><Check size={15} /></span>
+                                            <span className="absolute top-2 right-2 text-primary"><Check size={15} /></span>
                                         )}
-                                        <Icon size={18} className={active ? 'text-blue-600' : 'text-slate-500'} />
-                                        <div className={`mt-2 text-sm font-semibold ${active ? 'text-blue-700' : 'text-slate-700'}`}>{m.title}</div>
+                                        <Icon size={18} className={active ? 'text-primary' : 'text-slate-500'} />
+                                        <div className={`mt-2 text-sm font-semibold ${active ? 'text-primary' : 'text-slate-700'}`}>{m.title}</div>
                                         <div className="text-[11px] text-slate-500 leading-snug mt-0.5">{m.desc}</div>
                                     </button>
                                 );
@@ -174,8 +174,8 @@ export default function CreateStrategyModal({ isOpen, onClose, onSuccess }: Crea
                                         type="button"
                                         onClick={() => setSelectedIcon(item.name)}
                                         className={`flex items-center justify-center p-2 rounded-lg transition-all ${isSelected
-                                            ? 'bg-blue-600 text-white shadow-md scale-110'
-                                            : 'bg-white text-gray-500 hover:text-blue-600 hover:bg-blue-50'
+                                            ? 'bg-primary text-primary-foreground shadow-md scale-110'
+                                            : 'bg-white text-gray-500 hover:bg-primary/10 hover:text-primary'
                                             }`}
                                         title={item.name}
                                     >
@@ -198,8 +198,8 @@ export default function CreateStrategyModal({ isOpen, onClose, onSuccess }: Crea
                                         type="button"
                                         onClick={() => setSelectedIconColor(color.value)}
                                         className={`h-10 w-10 rounded-lg flex items-center justify-center transition-all border-2 ${
-                                            isSelected 
-                                                ? "border-blue-500 scale-110 shadow-md" 
+                                            isSelected
+                                                ? "border-primary scale-110 shadow-md"
                                                 : "border-slate-200 hover:border-slate-300 hover:scale-105"
                                         }`}
                                         style={{ backgroundColor: color.value }}
@@ -238,7 +238,7 @@ export default function CreateStrategyModal({ isOpen, onClose, onSuccess }: Crea
                         <Button type="button" variant="outline" onClick={onClose} disabled={loading}>
                             Cancel
                         </Button>
-                        <Button type="submit" className="bg-blue-600 hover:bg-blue-700" disabled={loading}>
+                        <Button type="submit" className="bg-primary hover:bg-primary/90" disabled={loading}>
                             {loading ? 'Creating...' : 'Create Strategy'}
                         </Button>
                     </div>

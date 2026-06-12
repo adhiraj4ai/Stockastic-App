@@ -116,7 +116,7 @@ export default function SymbolForecastPage() {
         return (
             <DashboardLayout title={`${symbol} Forecast`} subtitle="Loading forecast data...">
                 <div className="flex items-center justify-center h-64">
-                    <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
+                    <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
                 </div>
             </DashboardLayout>
         );
@@ -169,7 +169,7 @@ export default function SymbolForecastPage() {
                                 <CardTitle>Model Information</CardTitle>
                                 <CardDescription>Current active forecasting model for {symbol}</CardDescription>
                             </div>
-                            <Badge className="bg-purple-100 text-purple-700 border-purple-200">
+                            <Badge className="bg-primary/10 text-primary border-primary/30">
                                 {model.model_type}
                             </Badge>
                         </div>

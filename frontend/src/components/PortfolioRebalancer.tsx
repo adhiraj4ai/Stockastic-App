@@ -87,16 +87,16 @@ export const PortfolioRebalancer: React.FC<PortfolioRebalancerProps> = ({ accoun
     <Card className="shadow-sm border-gray-200 dark:border-slate-800 dark:bg-card">
       <CardHeader className="flex flex-row items-center justify-between">
         <CardTitle className="text-lg flex items-center gap-2 dark:text-slate-100">
-          <Target className="h-5 w-5 text-blue-500" />
+          <Target className="h-5 w-5 text-primary" />
           Portfolio Rebalancer
         </CardTitle>
         <div className="flex items-center gap-4">
-          <div className={`text-xs font-bold px-3 py-1.5 rounded-full ${totalTargetPct > 100 ? 'bg-red-100 text-red-700' : 'bg-blue-50 text-blue-700'}`}>
+          <div className={`text-xs font-bold px-3 py-1.5 rounded-full ${totalTargetPct > 100 ? 'bg-red-100 text-red-700' : 'bg-primary/10 text-primary'}`}>
             Total Target: {totalTargetPct.toFixed(1)}%
           </div>
-          <button 
+          <button
             onClick={fetchSuggestions}
-            className="p-2 hover:bg-gray-100 dark:hover:bg-slate-800 rounded-full transition-colors"
+            className="p-2 hover:bg-accent hover:text-accent-foreground rounded-full transition-colors"
           >
             <RefreshCcw className={`h-4 w-4 ${loading ? 'animate-spin' : ''}`} />
           </button>
@@ -123,14 +123,14 @@ export const PortfolioRebalancer: React.FC<PortfolioRebalancerProps> = ({ accoun
             </TableHeader>
             <TableBody>
               {suggestions.map((s) => (
-                <TableRow key={s.ticker} className="hover:bg-gray-50/30 dark:hover:bg-slate-800/30">
+                <TableRow key={s.ticker} className="hover:bg-accent hover:text-accent-foreground">
                   <TableCell className="font-bold">{s.ticker}</TableCell>
                   <TableCell>
                     <div className="flex items-center gap-2">
                       <span className="text-xs font-medium w-10">{s.current_percentage.toFixed(1)}%</span>
                       <div className="w-20 h-1.5 bg-gray-100 dark:bg-slate-800 rounded-full overflow-hidden">
-                        <div 
-                          className="h-full bg-blue-500 rounded-full"
+                        <div
+                          className="h-full bg-primary rounded-full"
                           style={{ width: `${Math.min(s.current_percentage, 100)}%` }}
                         />
                       </div>
@@ -149,7 +149,7 @@ export const PortfolioRebalancer: React.FC<PortfolioRebalancerProps> = ({ accoun
                           }
                         }}
                       />
-                      {saving === s.ticker && <RefreshCcw className="h-3 w-3 animate-spin text-blue-500" />}
+                      {saving === s.ticker && <RefreshCcw className="h-3 w-3 animate-spin text-primary" />}
                     </div>
                   </TableCell>
                   <TableCell>

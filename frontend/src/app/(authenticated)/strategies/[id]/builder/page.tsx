@@ -20,10 +20,10 @@ type Kind = 'alpha' | 'regime' | 'stop' | 'exit';
 type Spec = { version: number; alpha: Node | null; regime: Node[]; stop: Node | null; exit: Node[]; rr: number | null; name?: string };
 
 const KIND: Record<Kind, { label: string; connective: string; icon: any; chip: string; bar: string }> = {
-    alpha: { label: 'Signal', connective: 'WHEN', icon: Zap, chip: 'bg-blue-100 text-blue-600 dark:bg-blue-900/40 dark:text-blue-300', bar: 'bg-blue-500' },
+    alpha: { label: 'Signal', connective: 'WHEN', icon: Zap, chip: 'bg-primary/10 text-primary', bar: 'bg-primary' },
     regime: { label: 'Filter', connective: 'AND ONLY IF', icon: Filter, chip: 'bg-amber-100 text-amber-600 dark:bg-amber-900/40 dark:text-amber-300', bar: 'bg-amber-500' },
     stop: { label: 'Risk', connective: 'PROTECT WITH', icon: Shield, chip: 'bg-rose-100 text-rose-600 dark:bg-rose-900/40 dark:text-rose-300', bar: 'bg-rose-500' },
-    exit: { label: 'Exit', connective: 'EXIT WHEN', icon: LogOut, chip: 'bg-violet-100 text-violet-600 dark:bg-violet-900/40 dark:text-violet-300', bar: 'bg-violet-500' },
+    exit: { label: 'Exit', connective: 'EXIT WHEN', icon: LogOut, chip: 'bg-primary/10 text-primary', bar: 'bg-primary' },
 };
 
 const defaultParams = (c?: Comp) => { const p: Record<string, any> = {}; (c?.params || []).forEach((pr) => p[pr.name] = pr.default); return p; };
@@ -84,7 +84,7 @@ function ActionBlock({ kind, comps, node, onChange, onRemove, onDuplicate, onMov
                     <div className="flex items-center gap-0.5 mt-0.5">
                         {onMoveUp && <button onClick={onMoveUp} title="Move up" className="text-gray-300 hover:text-gray-600 p-0.5"><ChevronUp size={15} /></button>}
                         {onMoveDown && <button onClick={onMoveDown} title="Move down" className="text-gray-300 hover:text-gray-600 p-0.5"><ChevronDown size={15} /></button>}
-                        {onDuplicate && <button onClick={onDuplicate} title="Duplicate" className="text-gray-300 hover:text-blue-500 p-0.5"><Copy size={14} /></button>}
+                        {onDuplicate && <button onClick={onDuplicate} title="Duplicate" className="text-gray-300 hover:text-primary p-0.5"><Copy size={14} /></button>}
                         {onRemove && <button onClick={onRemove} title="Remove" className="text-gray-300 hover:text-red-500 p-0.5"><X size={16} /></button>}
                     </div>
                 </div>
@@ -188,16 +188,16 @@ export default function StrategyBuilderPage() {
         <WorkspaceShell strategyId={id}>
             <div className="flex items-center justify-between mb-1 gap-3">
                 <input value={name} onChange={(e) => setName(e.target.value)} placeholder="Strategy name"
-                    className="text-xl font-bold bg-transparent outline-none border-b border-transparent focus:border-blue-300 flex-1 min-w-0 py-0.5" />
+                    className="text-xl font-bold bg-transparent outline-none border-b border-transparent focus:border-primary flex-1 min-w-0 py-0.5" />
                 <Button onClick={save} disabled={saving || !preview.valid} className="gap-1.5 bg-emerald-600 hover:bg-emerald-700 shrink-0"><Save size={16} /> {saving ? 'Saving…' : 'Save'}</Button>
             </div>
             {spec.alpha && preview.sentence
-                ? <div className="text-sm text-gray-500 mb-3 flex items-start gap-1.5"><Wand2 size={14} className="mt-0.5 text-blue-500 shrink-0" /> {preview.sentence}</div>
+                ? <div className="text-sm text-gray-500 mb-3 flex items-start gap-1.5"><Wand2 size={14} className="mt-0.5 text-primary shrink-0" /> {preview.sentence}</div>
                 : <div className="flex items-center gap-2 flex-wrap mb-3">
                     <span className="text-xs text-gray-400 inline-flex items-center gap-1"><Wand2 size={13} /> Start from a template:</span>
                     {TEMPLATES.map((t) => (
                         <button key={t.name} onClick={() => setSpec((s) => ({ version: 1, name: s.name, ...t.build() }))}
-                            className="px-2.5 py-1 text-xs rounded-full border border-gray-200 dark:border-slate-700 hover:border-blue-300 hover:text-blue-600">{t.name}</button>
+                            className="px-2.5 py-1 text-xs rounded-full border border-gray-200 dark:border-slate-700 hover:bg-primary/10 hover:text-primary hover:border-primary/30">{t.name}</button>
                     ))}
                 </div>}
 
@@ -224,7 +224,7 @@ export default function StrategyBuilderPage() {
                                             className="w-full text-left flex items-center gap-2 px-2 py-1.5 rounded-lg hover:bg-white dark:hover:bg-slate-800 group">
                                             <span className={`inline-flex items-center justify-center rounded-md w-6 h-6 shrink-0 ${KIND[kind].chip}`}><Icon size={12} /></span>
                                             <span className="text-sm truncate flex-1">{c.label}</span>
-                                            <Plus size={13} className="text-gray-300 group-hover:text-blue-500" />
+                                            <Plus size={13} className="text-gray-300 group-hover:text-primary" />
                                         </button>
                                     ))}
                                 </div>
@@ -289,7 +289,7 @@ export default function StrategyBuilderPage() {
                 </div>
                 <Button onClick={runBacktest} disabled={running || !preview.valid} className="gap-1.5"><Play size={16} /> {running ? 'Running…' : 'Run backtest'}</Button>
                 {spec.alpha && !preview.valid && <span className="text-xs text-red-500 flex items-center gap-1"><AlertTriangle size={13} /> {preview.error || 'invalid'}</span>}
-                <Link href={`/strategies/${id}/backtest`} className="text-xs text-blue-600 inline-flex items-center gap-1 ml-auto">Full backtest &amp; robustness <ExternalLink size={12} /></Link>
+                <Link href={`/strategies/${id}/backtest`} className="text-xs text-primary inline-flex items-center gap-1 ml-auto">Full backtest &amp; robustness <ExternalLink size={12} /></Link>
             </div>
 
             {running ? <PageLoader text="Running backtest…" /> : results ? (

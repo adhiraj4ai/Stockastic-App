@@ -180,7 +180,7 @@ export function PortfolioTable({
                         return (
                             <React.Fragment key={`${item.ticker}-${idx}`}>
                                 <TableRow
-                                    className={`transition-colors duration-150 cursor-pointer border-l-4 border-border/50 even:bg-muted/20 ${isExitPlanDialogOpen && selectedPortfolioItem?.ticker === item.ticker ? 'bg-indigo-500/10 border-l-indigo-500' : isUnderwater ? 'border-l-rose-500/50 hover:bg-rose-500/15 hover:border-l-rose-500' : hasStrategy ? 'border-l-emerald-500/50 hover:bg-emerald-500/15 hover:border-l-emerald-500' : 'border-l-transparent hover:bg-muted/40 hover:border-l-indigo-400/50'}`}
+                                    className={`transition-colors duration-150 cursor-pointer border-l-4 border-border/50 even:bg-muted/20 ${isExitPlanDialogOpen && selectedPortfolioItem?.ticker === item.ticker ? 'bg-primary/10 border-l-primary' : isUnderwater ? 'border-l-rose-500/50 hover:bg-rose-500/15 hover:border-l-rose-500' : hasStrategy ? 'border-l-emerald-500/50 hover:bg-emerald-500/15 hover:border-l-emerald-500' : 'border-l-transparent hover:bg-muted/40 hover:border-l-primary/50'}`}
                                     onClick={() => onStrategies(item)}
                                 >
                                     <TableCell className="text-center font-semibold text-muted-foreground text-xs py-4 px-6 tabular-nums">
@@ -196,7 +196,7 @@ export function PortfolioTable({
                                                     </Badge>
                                                 )}
                                                 {hasStrategy && (
-                                                    <Badge variant="secondary" className="bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 border-indigo-500/25 text-[9px] px-1.5 h-4 flex items-center gap-1 animate-pulse">
+                                                    <Badge variant="secondary" className="bg-primary/10 text-primary border-primary/25 text-[9px] px-1.5 h-4 flex items-center gap-1 animate-pulse">
                                                         <Radio className="h-2 w-2" /> Active
                                                     </Badge>
                                                 )}
@@ -205,7 +205,7 @@ export function PortfolioTable({
                                                 <div className="flex flex-wrap gap-1">
                                                     {item.stop_loss_price && <span className="text-xs bg-rose-500/10 text-rose-600 dark:text-rose-400 px-1.5 py-0.5 rounded-full border border-rose-500/25 font-semibold tabular-nums">SL: {Number(item.stop_loss_price).toFixed(0)}</span>}
                                                     {item.target_price && <span className="text-xs bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 px-1.5 py-0.5 rounded-full border border-emerald-500/25 font-semibold tabular-nums">TP: {Number(item.target_price).toFixed(0)}</span>}
-                                                    {rrRatio !== 'N/A' && <span className="text-xs bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 px-1.5 py-0.5 rounded-full border border-indigo-500/25 font-semibold tabular-nums">R/R: {rrRatio}</span>}
+                                                    {rrRatio !== 'N/A' && <span className="text-xs bg-primary/10 text-primary px-1.5 py-0.5 rounded-full border border-primary/25 font-semibold tabular-nums">R/R: {rrRatio}</span>}
                                                 </div>
                                             )}
                                         </div>
@@ -319,7 +319,7 @@ export function PortfolioTable({
                                             <Tooltip>
                                                 <TooltipTrigger asChild>
                                                     <button
-                                                        className={`p-2 rounded-lg transition-all ${isExitPlanDialogOpen && selectedPortfolioItem?.ticker === item.ticker ? 'bg-indigo-600 text-white shadow-sm rotate-0' : 'text-muted-foreground/70 hover:text-indigo-600 dark:hover:text-indigo-400 hover:bg-indigo-500/10 rotate-[-45deg] hover:rotate-0'}`}
+                                                        className={`p-2 rounded-lg transition-all ${isExitPlanDialogOpen && selectedPortfolioItem?.ticker === item.ticker ? 'bg-primary text-primary-foreground shadow-sm rotate-0' : 'text-muted-foreground/70 hover:text-primary hover:bg-primary/10 rotate-[-45deg] hover:rotate-0'}`}
                                                     >
                                                         <Target size={18} />
                                                     </button>

@@ -131,7 +131,7 @@ export default function TradingSignalAlerts() {
                         >
                             {/* Header Section */}
                             <div className="p-4 flex items-center gap-3 border-b border-border dark:border-border bg-slate-50/30 dark:bg-white/[0.01]">
-                                <div className="h-9 w-9 rounded-xl bg-indigo-50 dark:bg-indigo-900/20 text-indigo-600 dark:text-indigo-400 flex items-center justify-center shrink-0">
+                                <div className="h-9 w-9 rounded-xl bg-primary/10 text-primary flex items-center justify-center shrink-0">
                                     {group.icon}
                                 </div>
                                 <div className="min-w-0">
@@ -212,7 +212,7 @@ export default function TradingSignalAlerts() {
                     <div className="max-h-[60vh] overflow-y-auto px-6 pb-8">
                         {detailLoading ? (
                             <div className="py-20 text-center">
-                                <div className="h-8 w-8 border-b-2 border-indigo-500 rounded-full animate-spin mx-auto mb-4" />
+                                <div className="h-8 w-8 border-b-2 border-primary rounded-full animate-spin mx-auto mb-4" />
                                 <p className="text-sm font-bold text-slate-500 italic">Scanning institutional order flow...</p>
                             </div>
                         ) : detailSymbols.length === 0 ? (
@@ -234,7 +234,7 @@ export default function TradingSignalAlerts() {
                                             </span>
                                             <p className="text-[10px] font-bold text-slate-400 mt-0.5 uppercase tracking-tight">ACTIVE ALERT</p>
                                         </div>
-                                        <ArrowUpRight className="w-3 h-3 text-slate-300 group-hover:text-indigo-500" />
+                                        <ArrowUpRight className="w-3 h-3 text-slate-300 group-hover:text-primary" />
                                     </a>
                                 ))}
                             </div>

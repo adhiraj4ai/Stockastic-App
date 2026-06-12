@@ -41,19 +41,19 @@ export default function SocialPage() {
                             className={cn(
                                 'group flex items-center gap-3 p-3.5 rounded-2xl border transition-all text-left w-full',
                                 selectedId === tpl.id
-                                    ? 'bg-orange-500 border-orange-500 text-white shadow'
-                                    : 'bg-white dark:bg-card border-slate-200 dark:border-border text-slate-600 dark:text-slate-400 hover:border-orange-500/30',
+                                    ? 'bg-primary border-primary text-primary-foreground shadow'
+                                    : 'bg-white dark:bg-card border-slate-200 dark:border-border text-slate-600 dark:text-slate-400 hover:border-primary/30',
                             )}
                         >
                             <div className={cn(
                                 'p-2.5 rounded-xl transition-colors shrink-0',
-                                selectedId === tpl.id ? 'bg-white/20 text-white' : 'bg-slate-100 dark:bg-muted text-slate-500',
+                                selectedId === tpl.id ? 'bg-primary-foreground/20 text-primary-foreground' : 'bg-slate-100 dark:bg-muted text-slate-500',
                             )}>
                                 <tpl.icon size={17} />
                             </div>
                             <div className="min-w-0">
                                 <div className="font-bold text-sm tracking-tight">{tpl.name}</div>
-                                <div className={cn('text-[10px] truncate', selectedId === tpl.id ? 'text-white/70' : 'text-slate-500')}>{tpl.desc}</div>
+                                <div className={cn('text-[10px] truncate', selectedId === tpl.id ? 'text-primary-foreground/70' : 'text-slate-500')}>{tpl.desc}</div>
                             </div>
                         </button>
                     ))}
@@ -70,7 +70,7 @@ export default function SocialPage() {
                                     onClick={() => setRatio(r.id)}
                                     className={cn(
                                         'px-3 py-1.5 rounded-lg text-xs font-semibold flex items-center gap-1.5 transition-all whitespace-nowrap',
-                                        ratio === r.id ? 'bg-orange-500 text-white shadow' : 'text-slate-400 hover:text-slate-700 dark:hover:text-slate-200',
+                                        ratio === r.id ? 'bg-primary text-primary-foreground shadow' : 'text-slate-400 hover:bg-accent hover:text-accent-foreground',
                                     )}
                                 >
                                     <r.icon size={12} /> {r.label}
@@ -84,7 +84,7 @@ export default function SocialPage() {
                                     onClick={() => setTheme(th)}
                                     className={cn(
                                         'px-3 py-1.5 rounded-lg text-xs font-semibold flex items-center gap-1.5 transition-all capitalize',
-                                        theme === th ? 'bg-orange-500 text-white shadow' : 'text-slate-400 hover:text-slate-700 dark:hover:text-slate-200',
+                                        theme === th ? 'bg-primary text-primary-foreground shadow' : 'text-slate-400 hover:bg-accent hover:text-accent-foreground',
                                     )}
                                 >
                                     {th === 'dark' ? <Moon size={12} /> : <Sun size={12} />} {th}

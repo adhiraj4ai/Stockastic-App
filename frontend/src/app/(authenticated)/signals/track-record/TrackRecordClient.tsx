@@ -235,7 +235,7 @@ function ResultCell({ sig }: { sig: GeneratedSignal }) {
 
     if (sig.status === 'ACTIVE') {
         return (
-            <div className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-blue-500/10 text-blue-500 border border-blue-500/20 w-fit">
+            <div className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-primary/10 text-primary border border-primary/20 w-fit">
                 <Activity size={12} className="animate-pulse" />
                 <span className="text-[10px] font-bold uppercase tracking-wider">In Progress</span>
             </div>
@@ -247,7 +247,7 @@ function ResultCell({ sig }: { sig: GeneratedSignal }) {
             <div className="space-y-3 flex flex-col items-center">
                 <div className={cn(
                     "inline-flex items-center gap-2 px-3 py-1.5 rounded-full border",
-                    isBuy ? "bg-emerald-500/10 text-emerald-500 border-emerald-500/20" : "bg-blue-500/10 text-blue-500 border-blue-500/20"
+                    isBuy ? "bg-emerald-500/10 text-emerald-500 border-emerald-500/20" : "bg-primary/10 text-primary border-primary/20"
                 )}>
                     {isBuy ? <Trophy size={11} /> : <AlertCircle size={11} />}
                     <span className="text-[9px] font-bold uppercase tracking-wider">
@@ -261,7 +261,7 @@ function ResultCell({ sig }: { sig: GeneratedSignal }) {
                     </div>
                     <div>
                         <span className="text-slate-400 uppercase text-[8px] mr-1">{isBuy ? 'SELL @:' : 'BUYBACK @:'}</span>
-                        <span className={cn("font-semibold", isBuy ? "text-emerald-500" : "text-blue-500")}>{fmt(exitPrice)}</span>
+                        <span className={cn("font-semibold", isBuy ? "text-emerald-500" : "text-primary")}>{fmt(exitPrice)}</span>
                     </div>
                 </div>
             </div>
@@ -310,8 +310,8 @@ function FilterPill({ active, onClick, children }: {
             className={cn(
                 'px-4 py-2 rounded-xl text-xs font-bold transition-all duration-200 relative',
                 active
-                    ? 'bg-orange-500 text-white shadow'
-                    : 'bg-white dark:bg-slate-800/50 text-slate-500 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800'
+                    ? 'bg-primary/10 text-primary shadow'
+                    : 'bg-white dark:bg-slate-800/50 text-slate-500 dark:text-slate-400 hover:bg-accent hover:text-accent-foreground'
             )}
         >
             {children}
@@ -327,8 +327,8 @@ function StatCard({ label, value, sub, accent, icon: Icon, tooltip }: {
     const colors = {
         green: 'text-emerald-500 bg-emerald-500/10 border-emerald-500/20',
         red: 'text-rose-500 bg-rose-500/10 border-rose-500/20',
-        blue: 'text-blue-500 bg-blue-500/10 border-blue-500/20',
-        purple: 'text-purple-500 bg-purple-500/10 border-purple-500/20',
+        blue: 'text-primary bg-primary/10 border-primary/20',
+        purple: 'text-primary bg-primary/10 border-primary/20',
     };
 
     return (
@@ -337,7 +337,7 @@ function StatCard({ label, value, sub, accent, icon: Icon, tooltip }: {
                 "absolute -top-4 -right-4 w-16 h-16 rounded-full blur-2xl opacity-10 transition-all duration-500 group-hover:opacity-20",
                 accent === 'green' ? "bg-emerald-500" :
                 accent === 'red' ? "bg-rose-500" :
-                accent === 'blue' ? "bg-blue-500" : "bg-purple-500"
+                "bg-primary"
             )} />
 
             <div className="flex items-center justify-between">
@@ -368,7 +368,7 @@ function EngineRow({ stat }: { stat: EnginePerformance }) {
     const barWidth = resolved > 0 ? (stat.won / resolved) * 100 : 0;
 
     return (
-        <div className="flex items-center gap-4 py-3 px-4 rounded-2xl hover:bg-slate-50 dark:hover:bg-slate-800/30 transition-all">
+        <div className="flex items-center gap-4 py-3 px-4 rounded-2xl hover:bg-accent hover:text-accent-foreground transition-all">
             <div className="w-40 shrink-0">
                 <p className="text-xs font-bold text-slate-700 dark:text-slate-200 truncate">
                     {SOURCE_LABELS[stat.source] || stat.source}
@@ -397,7 +397,7 @@ function EngineRow({ stat }: { stat: EnginePerformance }) {
                 <div className="flex gap-3 text-[10px] font-bold tabular-nums">
                     <span className="text-emerald-500">{stat.won}W</span>
                     <span className="text-rose-500">{stat.lost}L</span>
-                    {stat.active > 0 && <span className="text-blue-500">{stat.active}A</span>}
+                    {stat.active > 0 && <span className="text-primary">{stat.active}A</span>}
                 </div>
                 <div className="text-right w-16">
                     <span className={cn(
@@ -518,7 +518,7 @@ export default function TrackRecordClient() {
                             const verdictLabels = { profitable: '✅ Profitable', marginal: '⚠️ Marginal', avoid: '❌ Avoid' };
                             return (
                                 <div key={eng.source}>
-                                    <button onClick={() => setExpandedEngine(isExpanded ? null : eng.source)} className="w-full flex items-center gap-4 py-4 px-6 hover:bg-slate-50 dark:hover:bg-slate-800/30 transition-all text-left">
+                                    <button onClick={() => setExpandedEngine(isExpanded ? null : eng.source)} className="w-full flex items-center gap-4 py-4 px-6 hover:bg-accent hover:text-accent-foreground transition-all text-left">
                                         <span className="text-xs font-mono font-bold text-slate-300 w-6">#{idx + 1}</span>
                                         <div className="w-40 shrink-0">
                                             <p className="text-xs font-bold text-slate-700 dark:text-slate-200 truncate">{SOURCE_LABELS[eng.source] || eng.source}</p>
@@ -539,7 +539,7 @@ export default function TrackRecordClient() {
                                             <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-3">
                                                 {[
                                                     { l: 'Consistency', v: `${eng.consistency_score}%`, c: eng.consistency_score >= 60 ? 'text-emerald-500' : 'text-rose-500' },
-                                                    { l: 'Avg Days', v: `${eng.avg_days_to_close}d`, c: 'text-blue-500' },
+                                                    { l: 'Avg Days', v: `${eng.avg_days_to_close}d`, c: 'text-primary' },
                                                     { l: 'Best Signal', v: `+${eng.best_signal_pnl}%`, c: 'text-emerald-500' },
                                                     { l: 'Worst Signal', v: `${eng.worst_signal_pnl}%`, c: 'text-rose-500' },
                                                     { l: 'Max Win Streak', v: `${eng.max_consecutive_wins}`, c: 'text-emerald-500' },
@@ -579,7 +579,7 @@ export default function TrackRecordClient() {
                                                 </div>
                                                 <div className="bg-white dark:bg-card rounded-2xl p-4 border border-border dark:border-slate-700/50">
                                                     <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-2">Sell Signals</p>
-                                                    <p className="text-lg font-semibold text-blue-500">{eng.sell_stats.win_rate}% <span className="text-xs text-slate-400 font-semibold">win rate</span></p>
+                                                    <p className="text-lg font-semibold text-primary">{eng.sell_stats.win_rate}% <span className="text-xs text-slate-400 font-semibold">win rate</span></p>
                                                     <p className="text-[10px] text-slate-400 font-semibold mt-1">{eng.sell_stats.won}W / {eng.sell_stats.lost}L / {eng.sell_stats.active}A</p>
                                                 </div>
                                                 <div className="bg-white dark:bg-card rounded-2xl p-4 border border-border dark:border-slate-700/50">
@@ -631,7 +631,7 @@ export default function TrackRecordClient() {
                         <input
                             value={search} onChange={e => setSearch(e.target.value)}
                             placeholder="Find symbol..."
-                            className="w-full pl-11 pr-4 py-2.5 bg-slate-50 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700/50 rounded-2xl text-xs font-bold focus:outline-none focus:ring-2 focus:ring-primary/20 dark:text-white transition-all shadow-inner"
+                            className="w-full pl-11 pr-4 py-2.5 bg-slate-50 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700/50 rounded-2xl text-xs font-bold outline-none focus-visible:ring-[3px] focus-visible:ring-ring/50 focus-visible:border-ring dark:text-white transition-all shadow-inner"
                         />
                     </div>
                 </div>
@@ -646,7 +646,7 @@ export default function TrackRecordClient() {
                                 className={cn(
                                     "px-3 py-1.5 rounded-full text-[10px] font-bold uppercase tracking-tight border transition-all",
                                     statusFilter === s
-                                        ? "bg-orange-500 text-white border-transparent shadow"
+                                        ? "bg-primary/10 text-primary border-primary/30 shadow"
                                         : "bg-transparent text-slate-400 border-slate-200 dark:border-slate-800 hover:border-slate-400"
                                 )}
                             >
@@ -696,7 +696,7 @@ export default function TrackRecordClient() {
                             ) : filtered.map((sig) => {
                                 const exitPrice = calcExitPrice(sig);
                                 return (
-                                    <tr key={sig.id} onClick={() => setSelectedSignal(sig)} className="group hover:bg-slate-50 dark:hover:bg-slate-800/30 transition-all duration-300 align-middle cursor-pointer">
+                                    <tr key={sig.id} onClick={() => setSelectedSignal(sig)} className="group hover:bg-accent hover:text-accent-foreground transition-all duration-300 align-middle cursor-pointer">
                                         <td className="px-8 py-8">
                                             <div className="flex items-center gap-3">
                                                 <Link href={`/ticker/${sig.symbol}`} className="font-bold text-xl text-slate-900 dark:text-white tracking-tight hover:text-primary transition-colors">
@@ -800,7 +800,7 @@ export default function TrackRecordClient() {
                                     <span className="text-[10px] font-bold text-slate-400 uppercase">{SOURCE_LABELS[sig.source] || sig.source}</span>
                                     {sig.signal_tier && <span className="text-[10px] text-slate-400 font-semibold">• {sig.signal_tier}</span>}
                                 </div>
-                                <button onClick={() => setSelectedSignal(null)} className="p-2 rounded-xl hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"><X size={16} className="text-slate-400" /></button>
+                                <button onClick={() => setSelectedSignal(null)} className="p-2 rounded-xl hover:bg-accent hover:text-accent-foreground transition-colors"><X size={16} className="text-slate-400" /></button>
                             </div>
 
                             <div className="p-6 space-y-5">
@@ -826,9 +826,9 @@ export default function TrackRecordClient() {
                                         <p className="text-[9px] font-bold text-emerald-400 uppercase">Target</p>
                                         <p className="text-lg font-semibold text-emerald-600 tabular-nums">{fmt(target)}</p>
                                     </div>}
-                                    <div className="bg-blue-50 dark:bg-blue-900/20 rounded-2xl p-3 border border-blue-200/50 dark:border-blue-700/50">
-                                        <p className="text-[9px] font-bold text-blue-400 uppercase">R:R Ratio</p>
-                                        <p className="text-lg font-semibold text-blue-600 tabular-nums">{rrRatio}</p>
+                                    <div className="bg-primary/5 dark:bg-primary/10 rounded-2xl p-3 border border-primary/20">
+                                        <p className="text-[9px] font-bold text-primary uppercase">R:R Ratio</p>
+                                        <p className="text-lg font-semibold text-primary tabular-nums">{rrRatio}</p>
                                     </div>
                                 </div>
 

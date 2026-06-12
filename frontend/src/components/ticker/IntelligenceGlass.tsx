@@ -59,7 +59,7 @@ export function IntelligenceGlass({
 
     const getVerdict = () => {
         if (combinedScore > 75) return { label: 'Strong Outperform', color: 'text-emerald-600 dark:text-emerald-400', glow: 'soft-glow-emerald', icon: ShieldCheck, status: 'OPTIMAL' };
-        if (combinedScore > 60) return { label: 'Bullish Momentum', color: 'text-blue-600 dark:text-blue-400', glow: 'soft-glow-blue', icon: BrainCircuit, status: 'FAVORABLE' };
+        if (combinedScore > 60) return { label: 'Bullish Momentum', color: 'text-primary', glow: 'soft-glow-blue', icon: BrainCircuit, status: 'FAVORABLE' };
         if (combinedScore > 40) return { label: 'Market Consensus', color: 'text-slate-600 dark:text-slate-400', glow: '', icon: Info, status: 'NEUTRAL' };
         return { label: 'High Fragility', color: 'text-rose-600 dark:text-rose-400', glow: 'soft-glow-rose', icon: AlertTriangle, status: 'BEARISH' };
     };
@@ -87,7 +87,7 @@ export function IntelligenceGlass({
                                 {signal && (
                                     <Badge className={cn(
                                         "px-1.5 py-0 rounded-[4px] text-[9px] font-bold border h-5",
-                                        signal === 'BUY' ? "bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 border-blue-200 dark:border-blue-800" : "bg-rose-50 dark:bg-rose-900/30 text-rose-600 dark:text-rose-400 border-rose-200 dark:border-rose-800"
+                                        signal === 'BUY' ? "bg-emerald-50 dark:bg-emerald-900/30 text-emerald-600 dark:text-emerald-400 border-emerald-200 dark:border-emerald-800" : "bg-rose-50 dark:bg-rose-900/30 text-rose-600 dark:text-rose-400 border-rose-200 dark:border-rose-800"
                                     )}>
                                         {signal}
                                     </Badge>
@@ -131,10 +131,10 @@ export function IntelligenceGlass({
             {(portfolioPosition || watchlistItem) && (
                 <div className="flex flex-wrap gap-2">
                     {portfolioPosition && (
-                        <div className="flex items-center gap-2 px-3 py-2 rounded-xl bg-indigo-50/80 dark:bg-indigo-900/20 border border-indigo-200/60 dark:border-indigo-800/40 w-full">
-                            <Briefcase size={14} className="text-indigo-500 shrink-0" />
+                        <div className="flex items-center gap-2 px-3 py-2 rounded-xl bg-primary/10 dark:bg-primary/10 border border-primary/20 dark:border-primary/20 w-full">
+                            <Briefcase size={14} className="text-primary shrink-0" />
                             <div className="flex items-center gap-3 flex-wrap text-[11px] font-bold flex-1 min-w-0">
-                                <span className="text-indigo-700 dark:text-indigo-300">In Portfolio</span>
+                                <span className="text-primary">In Portfolio</span>
                                 <span className="text-slate-500 dark:text-slate-400 font-mono">{portfolioPosition.quantity} units</span>
                                 <span className="text-slate-500 dark:text-slate-400 font-mono">@ {formatRupees(portfolioPosition.wacc)}</span>
                                 {portfolioPnl !== null && (
@@ -183,7 +183,7 @@ export function IntelligenceGlass({
                         <span className="text-base font-bold text-slate-900 dark:text-slate-100 tabular-nums">{fundamentalScore}%</span>
                     </div>
                     <div className="h-1.5 bg-slate-100 dark:bg-slate-800 rounded-full overflow-hidden">
-                        <div className="h-full bg-blue-500 rounded-full transition-all duration-1500" style={{ width: `${fundamentalScore}%` }} />
+                        <div className="h-full bg-primary rounded-full transition-all duration-1500" style={{ width: `${fundamentalScore}%` }} />
                     </div>
                 </div>
 

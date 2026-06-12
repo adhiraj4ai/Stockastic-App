@@ -201,8 +201,8 @@ export function TickerLanding() {
                                         "w-full flex items-center gap-3.5 px-4 py-3 text-left transition-colors",
                                         i !== 0 && "border-t border-border dark:border-slate-800/60",
                                         highlighted === i
-                                            ? "bg-slate-50 dark:bg-slate-800"
-                                            : "hover:bg-slate-50 dark:hover:bg-slate-800"
+                                            ? "bg-accent"
+                                            : "hover:bg-accent"
                                     )}
                                 >
                                     <div className="w-8 h-8 rounded-xl bg-emerald-50 dark:bg-emerald-900/30 flex items-center justify-center shrink-0">
@@ -222,12 +222,12 @@ export function TickerLanding() {
                                         "w-full flex items-center gap-3.5 px-4 py-3 text-left transition-colors",
                                         companies.length > 0 && "border-t border-border dark:border-slate-800/60",
                                         highlighted === companies.length
-                                            ? "bg-violet-50 dark:bg-violet-900/20"
-                                            : "hover:bg-violet-50 dark:hover:bg-violet-900/20"
+                                            ? "bg-primary/10"
+                                            : "hover:bg-primary/10"
                                     )}
                                 >
-                                    <div className="w-8 h-8 rounded-xl bg-violet-50 dark:bg-violet-900/30 flex items-center justify-center shrink-0">
-                                        <Sparkles size={14} className="text-violet-600 dark:text-violet-400" />
+                                    <div className="w-8 h-8 rounded-xl bg-primary/10 flex items-center justify-center shrink-0">
+                                        <Sparkles size={14} className="text-primary" />
                                     </div>
                                     <div className="min-w-0">
                                         <p className="text-sm font-bold text-slate-900 dark:text-slate-100 leading-none mb-0.5">Ask Stockastic AI</p>
@@ -250,7 +250,7 @@ export function TickerLanding() {
                                 <button
                                     key={s}
                                     onClick={() => go(s)}
-                                    className="px-3 py-1 rounded-full text-xs font-bold text-slate-500 dark:text-slate-400 bg-slate-100 dark:bg-slate-800 hover:bg-emerald-50 dark:hover:bg-emerald-900/30 hover:text-emerald-600 dark:hover:text-emerald-400 transition-colors"
+                                    className="px-3 py-1 rounded-full text-xs font-bold text-slate-500 dark:text-slate-400 bg-slate-100 dark:bg-slate-800 hover:bg-primary/10 hover:text-primary transition-colors"
                                 >
                                     {s}
                                 </button>

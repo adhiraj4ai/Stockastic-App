@@ -33,6 +33,7 @@ import {
     PopoverTrigger,
 } from "@/components/ui/popover"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
+import { Checkbox } from "@/components/ui/checkbox"
 import DashboardLayout from '@/components/DashboardLayout';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import UploadHistoryTable from './components/UploadHistoryTable';
@@ -891,8 +892,8 @@ export default function PipelinePage() {
                     {/* Main Pipeline Steps */}
                     <div className="space-y-3">
                         <div className="flex items-center gap-3 mb-2 px-2">
-                            <Activity className="w-5 h-5 text-blue-600 dark:text-indigo-400" />
-                            <h2 className="font-bold text-gray-900 dark:text-slate-100 text-lg text-[11px]">Active pipeline steps</h2>
+                            <Activity className="w-5 h-5 text-primary" />
+                            <h2 className="text-sm font-semibold text-slate-900 dark:text-slate-100">Active pipeline steps</h2>
                         </div>
 
                         {/* Step 1: Floorsheet */}
@@ -901,7 +902,7 @@ export default function PipelinePage() {
                                 {...getRootProps()}
                                 className={cn(
                                     "group relative rounded-2xl border-2 border-dashed p-4 transition-all duration-300",
-                                    isDragActive ? "border-blue-500 bg-blue-50/50 dark:border-indigo-500 dark:bg-indigo-900/20 scale-[1.01]" : "border-gray-100 dark:border-slate-800 bg-white dark:bg-card hover:border-blue-200 dark:hover:border-indigo-700",
+                                    isDragActive ? "border-primary bg-primary/5 scale-[1.01]" : "border-slate-100 dark:border-slate-800 bg-white dark:bg-card hover:border-primary/30",
                                     uploading && "opacity-50 pointer-events-none"
                                 )}
                             >
@@ -909,17 +910,17 @@ export default function PipelinePage() {
                                 <div className="flex items-start gap-4">
                                     <div className={cn(
                                         "p-3 rounded-2xl transition-colors",
-                                        isDragActive ? "bg-blue-600 text-white" : "bg-slate-50 dark:bg-slate-800 text-slate-400 dark:text-slate-500 group-hover:bg-blue-50 dark:group-hover:bg-indigo-900/30 group-hover:text-blue-500 dark:group-hover:text-indigo-400"
+                                        isDragActive ? "bg-primary text-primary-foreground" : "bg-slate-50 dark:bg-slate-800 text-slate-400 dark:text-slate-500 group-hover:bg-primary/10 group-hover:text-primary"
                                     )}>
                                         <FileJson className="w-6 h-6" />
                                     </div>
                                     <div className="space-y-1">
-                                        <h3 className="text-lg font-bold text-slate-900 dark:text-slate-100">1. Upload Floorsheet</h3>
-                                        <p className="text-[10px] text-indigo-600/70 dark:text-indigo-400/60 font-medium leading-relaxed">Drag and drop the latest floorsheet JSON to update accumulation data.</p>
+                                        <h3 className="text-sm font-semibold text-slate-900 dark:text-slate-100">1. Upload Floorsheet</h3>
+                                        <p className="text-[10px] text-primary/70 font-medium leading-relaxed">Drag and drop the latest floorsheet JSON to update accumulation data.</p>
                                         {uploading && (
                                             <div className="flex items-center gap-2 mb-2 p-2 rounded-lg bg-slate-100/50 dark:bg-muted border border-border dark:border-border">
-                                            <Terminal size={12} className="text-indigo-500" />
-                                            <span className="text-[10px] font-semibold tracking-wider text-indigo-600/70 dark:text-indigo-400/60 uppercase">Process output</span>
+                                            <Terminal size={12} className="text-primary" />
+                                            <span className="text-[10px] font-semibold tracking-wider text-primary/70 uppercase">Process output</span>
                                         </div>
                                         )}
                                     </div>
@@ -928,14 +929,14 @@ export default function PipelinePage() {
                         </Card>
 
                         {/* Step 2: Daily Prices */}
-                        <div className="group bg-white dark:bg-card rounded-2xl border border-border dark:border-slate-800 p-4 space-y-4 shadow-sm hover:border-blue-200 dark:hover:border-indigo-700 transition-colors">
+                        <div className="group bg-white dark:bg-card rounded-2xl border border-border dark:border-slate-800 p-4 space-y-4 shadow-sm hover:border-primary/30 transition-colors">
                             <div className="flex items-center gap-3">
-                                <div className="p-2 rounded-xl bg-slate-50 dark:bg-slate-800 text-slate-400 dark:text-slate-500 group-hover:bg-blue-50 dark:group-hover:bg-indigo-900/30 group-hover:text-blue-500 dark:group-hover:text-indigo-400 transition-colors">
+                                <div className="p-2 rounded-xl bg-slate-50 dark:bg-slate-800 text-slate-400 dark:text-slate-500 group-hover:bg-primary/10 group-hover:text-primary transition-colors">
                                     <Clock className="w-5 h-5" />
                                 </div>
                                 <div className="flex-1">
-                                    <h3 className="font-bold text-slate-900 dark:text-slate-100 text-sm">2. Sync Daily Prices</h3>
-                                    <p className="text-[10px] text-indigo-600/70 dark:text-indigo-400/60 font-medium leading-relaxed">Ingest previous day market close data from GitHub or manual upload.</p>
+                                    <h3 className="text-sm font-semibold text-slate-900 dark:text-slate-100">2. Sync Daily Prices</h3>
+                                    <p className="text-[10px] text-primary/70 font-medium leading-relaxed">Ingest previous day market close data from GitHub or manual upload.</p>
                                 </div>
                             </div>
                             <DailyPriceUpload onSuccess={fetchHistory} />
@@ -954,22 +955,22 @@ export default function PipelinePage() {
                             onToggleLogs={() => setShowBrokerLogs(!showBrokerLogs)}
                             extraControls={
                                 <div className="flex items-center gap-2">
-                                    <span className="text-[10px] font-bold text-gray-400 dark:text-slate-500 uppercase tracking-tighter">Mode:</span>
+                                    <span className="text-[10px] font-semibold text-slate-400 dark:text-slate-500 uppercase tracking-wider">Mode:</span>
                                     <Tabs
                                         value={brokerMode}
                                         onValueChange={(v) => setBrokerMode(v as 'full' | 'delta')}
                                         className="w-auto"
                                     >
-                                        <TabsList className="h-7 p-0.5 bg-gray-100 dark:bg-slate-800 rounded-lg">
+                                        <TabsList className="h-7 p-0.5 bg-slate-100 dark:bg-slate-800 rounded-lg">
                                             <TabsTrigger
                                                 value="delta"
-                                                className="h-6 px-3 text-[10px] font-bold rounded-md data-[state=active]:bg-white dark:data-[state=active]:bg-slate-900 data-[state=active]:text-orange-500"
+                                                className="h-6 px-3 text-[10px] font-bold rounded-md"
                                             >
                                                 Partial
                                             </TabsTrigger>
                                             <TabsTrigger
                                                 value="full"
-                                                className="h-6 px-3 text-[10px] font-bold rounded-md data-[state=active]:bg-white dark:data-[state=active]:bg-slate-900 data-[state=active]:text-orange-500"
+                                                className="h-6 px-3 text-[10px] font-bold rounded-md"
                                             >
                                                 Full
                                             </TabsTrigger>
@@ -1047,7 +1048,7 @@ export default function PipelinePage() {
                         {/* Fetch from NepseAPI */}
                         <div className="rounded-xl border border-border bg-card p-5 space-y-4">
                             <div>
-                                <h3 className="text-sm font-bold text-foreground">Fetch from NepseAPI</h3>
+                                <h3 className="text-sm font-semibold text-slate-900 dark:text-slate-100">Fetch from NepseAPI</h3>
                                 <p className="text-xs text-muted-foreground">Pull EOD data directly from the live API.</p>
                             </div>
                             <div className="flex items-center gap-3">
@@ -1058,8 +1059,8 @@ export default function PipelinePage() {
                             <div className="flex flex-wrap gap-3">
                                 {Object.keys(apiDatasets).map(ds => (
                                     <label key={ds} className="flex items-center gap-1.5 text-xs capitalize">
-                                        <input type="checkbox" checked={apiDatasets[ds]}
-                                               onChange={e => setApiDatasets(prev => ({ ...prev, [ds]: e.target.checked }))} />
+                                        <Checkbox checked={apiDatasets[ds]}
+                                               onCheckedChange={(checked) => setApiDatasets(prev => ({ ...prev, [ds]: !!checked }))} />
                                         {ds}
                                     </label>
                                 ))}
@@ -1084,8 +1085,8 @@ export default function PipelinePage() {
                     {/* Upload History */}
                     <div className="space-y-6">
                         <div className="flex items-center gap-3 mb-2 px-2">
-                            <History className="w-5 h-5 text-blue-600 dark:text-indigo-400" />
-                            <h2 className="font-bold text-gray-900 dark:text-slate-100 text-lg text-[11px]">Pipeline history</h2>
+                            <History className="w-5 h-5 text-primary" />
+                            <h2 className="text-sm font-semibold text-slate-900 dark:text-slate-100">Pipeline history</h2>
                         </div>
 
                         <UploadHistoryTable
@@ -1135,15 +1136,15 @@ function DailyPriceUpload({ onSuccess }: { onSuccess?: () => void }) {
 
     return (
         <div className="space-y-4">
-            <div className="flex flex-col gap-3 bg-gray-50/50 dark:bg-slate-800/50 p-4 rounded-xl border border-gray-100 dark:border-slate-800">
+            <div className="flex flex-col gap-3 bg-slate-50/50 dark:bg-slate-800/50 p-4 rounded-xl border border-slate-100 dark:border-slate-800">
                 <div className="flex items-center justify-between">
-                    <label className="text-xs font-bold text-gray-400 dark:text-slate-500 tracking-wider">Trading date</label>
+                    <label className="text-[10px] font-semibold text-slate-400 dark:text-slate-500 uppercase tracking-wider">Trading date</label>
                 </div>
                 <div className="flex gap-2">
                     <Popover>
                         <PopoverTrigger asChild>
-                            <Button variant="outline" className="flex-1 justify-start font-medium rounded-xl border-gray-200 dark:border-slate-800 dark:bg-card">
-                                <CalendarIcon className="mr-2 h-4 w-4 text-blue-500 dark:text-indigo-400" />
+                            <Button variant="outline" className="flex-1 justify-start font-medium rounded-xl border-slate-200 dark:border-slate-800 dark:bg-card">
+                                <CalendarIcon className="mr-2 h-4 w-4 text-primary" />
                                 {date ? format(date, "PPP") : "Select date..."}
                             </Button>
                         </PopoverTrigger>
@@ -1159,7 +1160,7 @@ function DailyPriceUpload({ onSuccess }: { onSuccess?: () => void }) {
                     <Button
                         onClick={handleGithubFetch}
                         disabled={fetchingGithub || !date}
-                        className="bg-blue-600 hover:bg-blue-700 dark:bg-indigo-600 dark:hover:bg-indigo-700 rounded-xl"
+                        className="rounded-xl"
                     >
                         {fetchingGithub ? <Loader2 className="w-4 h-4 animate-spin" /> : <UploadCloud className="w-4 h-4" />}
                     </Button>

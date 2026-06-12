@@ -9,6 +9,7 @@ import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';
 import { Play, Settings, Calendar, Activity, BrainCircuit, ArrowLeft, CheckCircle, ChevronDown, X } from 'lucide-react';
+import { Checkbox } from '@/components/ui/checkbox';
 import api, { mlApi } from '@/lib/api';
 import { toast } from 'sonner';
 import ForecastResultView from '@/components/forecasts/ForecastResultView';
@@ -354,7 +355,7 @@ export default function TrainModelPage() {
                         <Card className="border-gray-200 shadow-sm overflow-hidden sticky top-6">
                             <CardHeader className="py-3 px-5 bg-gray-50/50 border-b border-gray-100">
                                 <div className="flex items-center gap-2">
-                                    <div className="p-1.5 bg-blue-100 text-blue-600 rounded-lg">
+                                    <div className="p-1.5 bg-primary/10 text-primary rounded-lg">
                                         <Settings size={14} />
                                     </div>
                                     <div>
@@ -370,8 +371,8 @@ export default function TrainModelPage() {
                                         <Label className="text-[10px] font-bold uppercase text-gray-500">Training Scope</Label>
                                         <Tabs value={trainMode} onValueChange={(v) => setTrainMode(v as any)} className="w-full">
                                             <TabsList className="grid grid-cols-2 w-full h-8 bg-gray-100">
-                                                <TabsTrigger value="SYMBOL" className="text-[10px] uppercase font-bold data-[state=active]:bg-white data-[state=active]:text-orange-500 h-7">Single Symbol</TabsTrigger>
-                                                <TabsTrigger value="SECTOR" className="text-[10px] uppercase font-bold data-[state=active]:bg-white data-[state=active]:text-orange-500 h-7">By Sector</TabsTrigger>
+                                                <TabsTrigger value="SYMBOL" className="text-[10px] uppercase font-bold h-7">Single Symbol</TabsTrigger>
+                                                <TabsTrigger value="SECTOR" className="text-[10px] uppercase font-bold h-7">By Sector</TabsTrigger>
                                             </TabsList>
                                         </Tabs>
                                     </div>
@@ -391,7 +392,7 @@ export default function TrainModelPage() {
                                             </div>
                                         ) : (
                                             <Select value={selectedSector} onValueChange={setSelectedSector}>
-                                                <SelectTrigger className="w-full h-8 text-xs border-gray-300 focus:ring-blue-500">
+                                                <SelectTrigger className="w-full h-8 text-xs border-gray-300 focus-visible:ring-[3px] focus-visible:ring-ring/50 focus-visible:border-ring">
                                                     <SelectValue placeholder="Select a sector..." />
                                                 </SelectTrigger>
                                                 <SelectContent>
@@ -416,16 +417,16 @@ export default function TrainModelPage() {
                                                     key={model.id}
                                                     onClick={() => toggleModel(model.id)}
                                                     className={`p-2.5 rounded-md border cursor-pointer transition-all ${selectedModels.includes(model.id)
-                                                        ? 'border-blue-500 bg-blue-50/50 ring-1 ring-blue-500'
+                                                        ? 'border-primary bg-primary/5 ring-1 ring-primary'
                                                         : 'border-gray-200 hover:border-gray-300 bg-white'
                                                         }`}
                                                 >
                                                     <div className="flex items-center justify-between mb-0.5">
                                                         <div className="flex items-center gap-2">
-                                                            <BrainCircuit size={12} className={selectedModels.includes(model.id) ? 'text-blue-600' : 'text-gray-400'} />
-                                                            <span className={`text-[11px] font-bold ${selectedModels.includes(model.id) ? 'text-blue-900' : 'text-gray-700'}`}>{model.name}</span>
+                                                            <BrainCircuit size={12} className={selectedModels.includes(model.id) ? 'text-primary' : 'text-gray-400'} />
+                                                            <span className={`text-[11px] font-bold ${selectedModels.includes(model.id) ? 'text-primary' : 'text-gray-700'}`}>{model.name}</span>
                                                         </div>
-                                                        {selectedModels.includes(model.id) && <CheckCircle size={10} className="text-blue-600" />}
+                                                        {selectedModels.includes(model.id) && <CheckCircle size={10} className="text-primary" />}
                                                     </div>
                                                     <p className="text-[9px] text-gray-500 leading-tight">{model.desc}</p>
                                                 </div>
@@ -512,10 +513,10 @@ export default function TrainModelPage() {
                                             <button
                                                 type="button"
                                                 onClick={() => setShowAdvanced(!showAdvanced)}
-                                                className="flex items-center justify-between w-full text-[10px] font-bold text-gray-500 uppercase hover:text-blue-600 transition-colors"
+                                                className="flex items-center justify-between w-full text-[10px] font-bold text-gray-500 uppercase hover:text-primary transition-colors"
                                             >
                                                 <span>Advanced Settings</span>
-                                                <span className="text-blue-600 text-[9px]">{showAdvanced ? '▼ Hide' : '▶ Show'}</span>
+                                                <span className="text-primary text-[9px]">{showAdvanced ? '▼ Hide' : '▶ Show'}</span>
                                             </button>
 
                                             {showAdvanced && (
@@ -572,25 +573,23 @@ export default function TrainModelPage() {
                                     <div className="space-y-2 pt-3 border-t border-gray-100">
                                         <div className="flex items-center justify-between">
                                             <Label className="text-[10px] font-bold text-gray-500 uppercase">Hyperparameter Optimization</Label>
-                                            <input
-                                                type="checkbox"
+                                            <Checkbox
                                                 checked={optimize}
-                                                onChange={(e) => setOptimize(e.target.checked)}
-                                                className="h-3 w-3 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+                                                onCheckedChange={(checked) => setOptimize(checked === true)}
                                                 disabled={training}
                                             />
                                         </div>
 
                                         {optimize && (
-                                            <div className="space-y-1 bg-blue-50 p-2 rounded-md">
-                                                <Label className="text-[9px] text-blue-700 uppercase font-bold">Number of Trials</Label>
+                                            <div className="space-y-1 bg-primary/5 p-2 rounded-md">
+                                                <Label className="text-[9px] text-primary uppercase font-bold">Number of Trials</Label>
                                                 <Input
                                                     type="number"
                                                     value={nTrials}
                                                     onChange={(e) => setNTrials(parseInt(e.target.value))}
                                                     min="5"
                                                     max="500"
-                                                    className="h-7 text-[10px] border-blue-200"
+                                                    className="h-7 text-[10px] border-border"
                                                     disabled={training}
                                                 />
                                             </div>
@@ -604,8 +603,8 @@ export default function TrainModelPage() {
                                             disabled={training || (trainMode === 'SYMBOL' && !symbol) || (trainMode === 'SECTOR' && !selectedSector) || selectedModels.length === 0}
                                             className={`w-full h-9 font-bold uppercase tracking-wider text-[10px] shadow-md border-0 ${training || (trainMode === 'SYMBOL' && !symbol) || (trainMode === 'SECTOR' && !selectedSector) || selectedModels.length === 0
                                                 ? 'bg-gray-400 cursor-not-allowed'
-                                                : 'bg-blue-600 hover:bg-blue-700 shadow-blue-200'
-                                                } text-white transition-all`}
+                                                : 'bg-primary hover:bg-primary/90 shadow-primary/20'
+                                                } text-primary-foreground transition-all`}
                                         >
                                             {training ? (
                                                 <><div className="w-3 h-3 border-2 border-white/30 border-t-white rounded-full animate-spin mr-2" /> Training...</>
@@ -626,7 +625,7 @@ export default function TrainModelPage() {
                                 <div className="flex items-center justify-between mb-6">
                                     <div>
                                         <h3 className="text-lg font-bold text-gray-900 flex items-center gap-2">
-                                            <Activity className={`${training ? 'animate-pulse text-blue-500' : 'text-gray-400'}`} size={20} />
+                                            <Activity className={`${training ? 'animate-pulse text-primary' : 'text-gray-400'}`} size={20} />
                                             {training ? 'Training in Progress' : 'Training Sequence Results'}
                                         </h3>
                                         <p className="text-xs text-gray-500">
@@ -646,7 +645,7 @@ export default function TrainModelPage() {
                                             {/* Card Header */}
                                             <div className="px-5 py-4 bg-gray-50/50 border-b border-gray-100 flex items-center justify-between">
                                                 <div className="flex items-center gap-3">
-                                                    <div className="h-10 w-10 bg-blue-100 rounded-lg flex items-center justify-center text-blue-600 font-bold text-sm pointer-events-none select-none shadow-sm">
+                                                    <div className="h-10 w-10 bg-primary/10 rounded-lg flex items-center justify-center text-primary font-bold text-sm pointer-events-none select-none shadow-sm">
                                                         {job.symbol.substring(0, 2)}
                                                     </div>
                                                     <div>
@@ -677,7 +676,7 @@ export default function TrainModelPage() {
                                                         <div
                                                             className={`h-full transition-all duration-500 ${job.status === 'SUCCESS' ? 'bg-emerald-500 w-full' :
                                                                 job.status === 'FAILED' ? 'bg-rose-500 w-full' :
-                                                                    'bg-blue-500 w-1/2 animate-[progress_1s_ease-in-out_infinite]'
+                                                                    'bg-primary w-1/2 animate-[progress_1s_ease-in-out_infinite]'
                                                                 }`}
                                                         />
                                                     </div>
@@ -702,7 +701,7 @@ export default function TrainModelPage() {
                                                 {/* Latest Log Message */}
                                                 <div className="bg-slate-950 rounded-lg p-3 border border-slate-800 shadow-inner">
                                                     <div className="text-[9px] text-slate-500 uppercase font-bold mb-1.5 flex items-center gap-1.5">
-                                                        <Activity size={10} className="text-blue-500" /> Latest Log
+                                                        <Activity size={10} className="text-primary" /> Latest Log
                                                     </div>
                                                     <p className="text-xs text-green-400 font-mono line-clamp-2 leading-relaxed">
                                                         {job.progress_message ? `> ${job.progress_message}` : '> Initializing worker...'}
@@ -715,7 +714,7 @@ export default function TrainModelPage() {
                                                 <Button
                                                     variant="outline"
                                                     size="sm"
-                                                    className="flex-1 h-8 text-xs font-bold text-gray-700 hover:text-blue-600 hover:bg-blue-50 border-gray-200 bg-white"
+                                                    className="flex-1 h-8 text-xs font-bold text-gray-700 hover:text-primary hover:bg-primary/10 border-gray-200 bg-white"
                                                     onClick={() => {
                                                         setActiveJobId(job.id);
                                                         setLogs([]);
@@ -741,7 +740,7 @@ export default function TrainModelPage() {
                                     {/* Loading State for Groups */}
                                     {batchJobs.length === 0 && training && (
                                         <div className="col-span-full h-48 flex flex-col items-center justify-center text-gray-400 bg-gray-50/50 rounded-xl border-2 border-dashed border-gray-200">
-                                            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mb-3" />
+                                            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mb-3" />
                                             <p className="text-sm font-medium">Initializing batch training sequence...</p>
                                         </div>
                                     )}
@@ -784,7 +783,7 @@ export default function TrainModelPage() {
                     <DialogContent className="max-w-3xl h-[600px] flex flex-col p-0 bg-slate-950 border-slate-800">
                         <DialogHeader className="p-4 border-b border-slate-800 bg-slate-900 shrink-0">
                             <DialogTitle className="text-slate-200 flex items-center gap-2 text-sm font-bold uppercase">
-                                <Activity size={16} className="text-blue-500" />
+                                <Activity size={16} className="text-primary" />
                                 Training Logs
                             </DialogTitle>
                         </DialogHeader>

@@ -5,7 +5,7 @@ import Link from 'next/link';
 import Image from 'next/image';
 import { usePathname, useRouter, useSearchParams } from 'next/navigation';
 import { useTheme } from 'next-themes';
-import { TrendingUp, TrendingDown, LogOut, ArrowLeft, Settings, PanelLeftClose, PanelLeftOpen, ChevronDown } from 'lucide-react';
+import { TrendingUp, TrendingDown, LogOut, ArrowLeft, Settings, PanelLeftClose, PanelLeftOpen, ChevronDown, Sparkles } from 'lucide-react';
 import { FullPageLoader } from '@/components/ui/StockLoader';
 import { SearchBar } from './SearchBar';
 import { navItems } from './navItems';
@@ -94,6 +94,9 @@ function DashboardContent({
     const isChatPage = pathname === '/chat';
     const isNotebookPage = pathname === '/notebook';
     const isFullWidthPage = isChatPage || isNotebookPage;
+
+    const canChat = !!currentUser &&
+        (currentUser.permissions === 'all' || currentUser.permissions?.chat === true);
 
     useEffect(() => {
         // Fetch Market Status for Header
@@ -569,6 +572,21 @@ function DashboardContent({
                                 <div className="hidden md:block">
                                     {extraHeaderItems}
                                 </div>
+                            )}
+                            {canChat && (
+                                <Link
+                                    href="/chat"
+                                    className={cn(
+                                        "flex items-center gap-1.5 px-2.5 h-8 rounded-md border text-[12px] font-medium transition-colors",
+                                        isChatPage
+                                            ? "border-primary/30 bg-primary/10 text-primary"
+                                            : "border-border text-muted-foreground hover:text-primary hover:border-primary/30 hover:bg-primary/10"
+                                    )}
+                                    title="Ask Stockastic AI"
+                                >
+                                    <Sparkles size={13} />
+                                    <span className="hidden lg:inline">Ask AI</span>
+                                </Link>
                             )}
                             {marketMeta && (
                                 <div className="hidden md:flex items-center gap-2 leading-tight">

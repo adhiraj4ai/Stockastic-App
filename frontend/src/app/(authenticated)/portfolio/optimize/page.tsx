@@ -142,7 +142,7 @@ function OptimizeContent() {
                                     onClick={() => setSelectedStrategy(strat.id)}
                                     className={`relative p-2 rounded-lg border cursor-pointer transition-all duration-200 aspect-square flex flex-col justify-center items-center text-center
                                         ${isSelected
-                                            ? 'border-blue-600 bg-blue-50/50 shadow-sm ring-1 ring-blue-600'
+                                            ? 'border-primary bg-primary/5 shadow-sm ring-1 ring-primary'
                                             : 'border-transparent bg-white shadow-sm hover:border-gray-200 hover:shadow-md'
                                         }
                                     `}
@@ -154,7 +154,7 @@ function OptimizeContent() {
                                     <p className="text-xs text-gray-500 mt-1 leading-tight px-1 line-clamp-3">{strat.desc}</p>
 
                                     {isSelected && (
-                                        <div className="absolute top-2 right-2 h-1.5 w-1.5 rounded-full bg-blue-600 ring-1 ring-blue-100" />
+                                        <div className="absolute top-2 right-2 h-1.5 w-1.5 rounded-full bg-primary ring-1 ring-primary/20" />
                                     )}
                                 </div>
                             );
@@ -210,9 +210,9 @@ function OptimizeContent() {
                                             <span className="text-sm text-gray-500">Volatility (Risk)</span>
                                             <span className="font-mono font-semibold text-orange-600">{(result.metrics.volatility * 100).toFixed(2)}%</span>
                                         </div>
-                                        <div className="p-4 flex justify-between items-center bg-blue-50/50">
-                                            <span className="text-sm font-medium text-blue-900">Sharpe Ratio</span>
-                                            <span className="inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-semibold bg-blue-200 text-blue-800 hover:bg-blue-300">
+                                        <div className="p-4 flex justify-between items-center bg-primary/5">
+                                            <span className="text-sm font-medium text-primary">Sharpe Ratio</span>
+                                            <span className="inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-semibold bg-primary/20 text-primary hover:bg-primary/30">
                                                 {result.metrics.sharpe_ratio.toFixed(2)}
                                             </span>
                                         </div>
@@ -251,7 +251,7 @@ function OptimizeContent() {
                                                     </div>
                                                     <div className="h-2 w-full bg-gray-100 rounded-full overflow-hidden">
                                                         <div
-                                                            className="h-full bg-blue-600 rounded-full transition-all duration-1000 ease-out"
+                                                            className="h-full bg-primary rounded-full transition-all duration-1000 ease-out"
                                                             style={{ width: `${weight * 100}%` }}
                                                         />
                                                     </div>
@@ -287,7 +287,7 @@ function OptimizeContent() {
                                                         </td>
                                                     </tr>
                                                 ) : result.trades.map((trade, idx) => (
-                                                    <tr key={idx} className="group hover:bg-gray-50">
+                                                    <tr key={idx} className="group hover:bg-accent hover:text-accent-foreground">
                                                         <td className="px-4 py-3">
                                                             <span className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-semibold border ${trade.action === 'BUY'
                                                                 ? 'bg-green-50 text-green-700 border-green-200'

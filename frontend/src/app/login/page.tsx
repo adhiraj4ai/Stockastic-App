@@ -109,7 +109,7 @@ export default function LoginPage() {
                                             <Lock size={12} className="text-slate-400" />
                                             Password
                                         </label>
-                                        <Link href="/forgot-password" title="Forgot Password" className="text-[10px] font-bold text-blue-600 hover:underline">
+                                        <Link href="/forgot-password" title="Forgot Password" className="text-[10px] font-bold text-primary hover:underline">
                                             Forgot?
                                         </Link>
                                     </div>
@@ -163,7 +163,7 @@ export default function LoginPage() {
 
                         <Button
                             type="submit"
-                            className="w-full h-12 bg-slate-900 dark:bg-slate-100 hover:bg-black dark:hover:bg-white text-white dark:text-slate-900 font-bold text-xs transition-all shadow-lg active:scale-[0.98] rounded-xl flex items-center gap-2"
+                            className="w-full h-12 bg-primary hover:bg-primary/90 text-primary-foreground font-bold text-xs transition-all shadow-lg active:scale-[0.98] rounded-xl flex items-center gap-2"
                             disabled={loading}
                         >
                             {loading ? (
@@ -192,21 +192,21 @@ export default function LoginPage() {
                                 <Button
                                     variant="outline"
                                     onClick={() => handleSocialLogin('google')}
-                                    className="h-12 rounded-xl border-slate-100 dark:border-slate-800 hover:bg-slate-50 dark:hover:bg-slate-800"
+                                    className="h-12 rounded-xl border-slate-100 dark:border-slate-800 hover:bg-accent hover:text-accent-foreground"
                                 >
                                     <Chrome size={20} className="text-slate-600 dark:text-slate-400" />
                                 </Button>
                                 <Button
                                     variant="outline"
                                     onClick={() => handleSocialLogin('apple')}
-                                    className="h-12 rounded-xl border-slate-100 dark:border-slate-800 hover:bg-slate-50 dark:hover:bg-slate-800"
+                                    className="h-12 rounded-xl border-slate-100 dark:border-slate-800 hover:bg-accent hover:text-accent-foreground"
                                 >
                                     <Apple size={20} className="text-slate-600 dark:text-slate-400" />
                                 </Button>
                                 <Button
                                     variant="outline"
                                     onClick={() => handleSocialLogin('microsoft')}
-                                    className="h-12 rounded-xl border-slate-100 dark:border-slate-800 hover:bg-slate-50 dark:hover:bg-slate-800"
+                                    className="h-12 rounded-xl border-slate-100 dark:border-slate-800 hover:bg-accent hover:text-accent-foreground"
                                 >
                                     <Binary size={20} className="text-slate-600 dark:text-slate-400" />
                                 </Button>
@@ -214,7 +214,7 @@ export default function LoginPage() {
 
                             <p className="mt-8 text-center text-xs text-slate-500 dark:text-slate-400 font-medium tracking-wide">
                                 Don't have an account?{' '}
-                                <Link href="/signup" className="text-blue-600 dark:text-blue-400 font-bold hover:underline">
+                                <Link href="/signup" className="text-primary font-bold hover:underline">
                                     Sign up now
                                 </Link>
                             </p>

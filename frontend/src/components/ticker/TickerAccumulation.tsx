@@ -278,7 +278,7 @@ export default function TickerAccumulation({ symbol }: { symbol: string }) {
                         <button key={r} onClick={() => setRange(r)}
                             className={cn('px-3 py-1 text-[11px] rounded-lg border transition-all font-semibold',
                                 range === r
-                                    ? 'bg-slate-900 dark:bg-white border-slate-900 dark:border-white text-white dark:text-slate-900'
+                                    ? 'bg-primary border-primary text-primary-foreground'
                                     : 'border-slate-200 dark:border-slate-700 text-slate-500 dark:text-slate-400 hover:border-slate-400 dark:hover:border-slate-500'
                             )}>
                             {r}

@@ -61,8 +61,8 @@ function SortIcon({
 }) {
     if (sortConfig.key !== col) return <ChevronDown className="w-3 h-3 opacity-20" />;
     return sortConfig.direction === 'asc'
-        ? <ChevronUp className="w-3 h-3 text-indigo-400" />
-        : <ChevronDown className="w-3 h-3 text-indigo-400" />;
+        ? <ChevronUp className="w-3 h-3 text-primary" />
+        : <ChevronDown className="w-3 h-3 text-primary" />;
 }
 
 function AggressiveCard({
@@ -384,8 +384,8 @@ export default function AccumulationDashboard() {
                             className={cn(
                                 'px-3 py-1.5 rounded-lg text-xs font-semibold transition-all duration-200 tracking-tight whitespace-nowrap',
                                 range === t.value
-                                    ? 'bg-orange-500 text-white shadow'
-                                    : 'text-slate-400 hover:text-slate-700 dark:hover:text-slate-200',
+                                    ? 'bg-primary/10 text-primary border border-primary/30'
+                                    : 'text-slate-400 hover:bg-accent hover:text-accent-foreground',
                             )}>
                             {t.label}
                         </button>
@@ -403,12 +403,12 @@ export default function AccumulationDashboard() {
                 </div>
 
                 <div className="relative group flex-1 min-w-[200px] max-w-sm">
-                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-slate-400 group-focus-within:text-indigo-500 transition-colors" />
+                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-slate-400 group-focus-within:text-primary transition-colors" />
                     <Input
                         placeholder="Search symbol or name..."
                         value={search}
                         onChange={e => setSearch(e.target.value)}
-                        className="pl-9 h-9 rounded-xl bg-slate-50 dark:bg-card border-border dark:border-border text-xs font-bold focus:ring-2 focus:ring-indigo-500/20"
+                        className="pl-9 h-9 rounded-xl bg-slate-50 dark:bg-card border-border dark:border-border text-xs font-bold"
                     />
                 </div>
 
@@ -441,7 +441,7 @@ export default function AccumulationDashboard() {
                         label: 'Net Inst. Flow', value: `${kpi.totalNet >= 0 ? '+' : '-'}${formatNepaliNumber(Math.abs(kpi.totalNet))}`, unit: '',
                         sub: kpi.totalNet >= 0 ? 'Net buying pressure' : 'Net selling pressure',
                         icon: <Activity className="w-5 h-5" />,
-                        cls: { wrap: 'border-indigo-100 dark:border-indigo-900/20', icon: 'bg-indigo-100 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-400', val: 'text-indigo-700 dark:text-indigo-400' },
+                        cls: { wrap: 'border-primary/20', icon: 'bg-primary/10 text-primary', val: 'text-primary' },
                     },
                     {
                         label: 'Aggressive Movers', value: `${kpi.aggressiveCount}`, unit: 'signals',
@@ -473,7 +473,7 @@ export default function AccumulationDashboard() {
                 <div className="bg-white dark:bg-card rounded-2xl border border-slate-200 dark:border-border shadow-sm overflow-hidden">
                     <div className="px-5 py-3 border-b border-border dark:border-border bg-slate-50/50 dark:bg-muted flex items-center justify-between gap-3">
                         <div className="flex items-center gap-2">
-                            <Layers className="w-4 h-4 text-indigo-500 shrink-0" />
+                            <Layers className="w-4 h-4 text-primary shrink-0" />
                             <span className="text-sm font-semibold text-slate-700 dark:text-slate-200">Accumulation Overview</span>
                             <span className="text-[10px] font-semibold text-slate-400 px-2 py-0.5 bg-slate-100 dark:bg-muted rounded-full shrink-0">
                                 {filteredOverview.length}
@@ -498,7 +498,7 @@ export default function AccumulationDashboard() {
                                                     onClick={() => h.col && handleSort(h.col as keyof AccumulationData)}
                                                     className={cn(
                                                         'px-4 py-2 sticky top-0 z-10 bg-slate-50/90 dark:bg-card/90 border-b border-border dark:border-slate-800 text-[10px] font-semibold uppercase tracking-wider transition-colors',
-                                                        h.col ? 'cursor-pointer hover:text-indigo-500' : '',
+                                                        h.col ? 'cursor-pointer hover:text-primary' : '',
                                                         h.align === 'right' ? 'text-right' : h.align === 'center' ? 'text-center' : 'text-left',
                                                         h.accent === 'emerald' ? 'text-emerald-600 dark:text-emerald-400' : 'text-slate-500 dark:text-slate-400',
                                                         h.hide === 'lg' ? 'hidden lg:table-cell' : h.hide === 'md' ? 'hidden md:table-cell' : '',
@@ -528,16 +528,16 @@ export default function AccumulationDashboard() {
                                                 className={cn(
                                                     'group border-b border-slate-50 dark:border-slate-800/50 last:border-0 transition-colors duration-100 cursor-pointer border-l-[3px] animate-in fade-in duration-150',
                                                     selectedSymbol?.symbol === item.symbol
-                                                        ? 'bg-indigo-50/60 dark:bg-indigo-900/10 border-l-indigo-500'
+                                                        ? 'bg-primary/[0.06] border-l-primary'
                                                         : item.net_qty > 0
                                                         ? 'hover:bg-emerald-50/20 dark:hover:bg-emerald-900/5 border-l-emerald-300/40 hover:border-l-emerald-500'
                                                         : item.net_qty < 0
                                                         ? 'hover:bg-rose-50/20 dark:hover:bg-rose-900/5 border-l-rose-300/40 hover:border-l-rose-500'
-                                                        : 'hover:bg-slate-50/40 dark:hover:bg-slate-800/20 border-l-transparent',
+                                                        : 'hover:bg-accent hover:text-accent-foreground border-l-transparent',
                                                 )}
                                             >
                                                 <td className="px-4 py-3">
-                                                    <div className="font-bold text-sm text-slate-900 dark:text-indigo-300 leading-none">{item.symbol}</div>
+                                                    <div className="font-bold text-sm text-slate-900 dark:text-primary leading-none">{item.symbol}</div>
                                                     <div className="text-[9px] text-slate-400 font-medium truncate max-w-[88px] mt-0.5 hidden sm:block">{item.name}</div>
                                                 </td>
                                                 <td className="px-4 py-3 text-right font-mono text-sm font-bold text-slate-800 dark:text-slate-200 tabular-nums">
@@ -605,7 +605,7 @@ export default function AccumulationDashboard() {
                                                     <ChevronRight className={cn(
                                                         'w-4 h-4 transition-all duration-200 shrink-0',
                                                         selectedSymbol?.symbol === item.symbol
-                                                            ? 'text-indigo-500 rotate-90'
+                                                            ? 'text-primary rotate-90'
                                                             : 'text-slate-300 dark:text-slate-700 group-hover:text-slate-500',
                                                     )} />
                                                 </td>
@@ -654,7 +654,7 @@ export default function AccumulationDashboard() {
                                         </span>
                                     </div>
                                     <button onClick={() => setSelectedSymbol(null)}
-                                        className="p-1.5 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-400 hover:text-slate-600 transition-colors shrink-0">
+                                        className="p-1.5 rounded-lg hover:bg-accent hover:text-accent-foreground text-slate-400 transition-colors shrink-0">
                                         <X className="w-4 h-4" />
                                     </button>
                                 </div>
@@ -726,11 +726,11 @@ export default function AccumulationDashboard() {
                             <div className="px-5 pt-4 pb-2 border-b border-border dark:border-border">
                                 <div className="flex items-center justify-between mb-2">
                                     <span className="text-[10px] font-semibold text-slate-400 uppercase tracking-wider">Broker Flow Chart</span>
-                                    {loadingDetail && <span className="text-[9px] font-semibold text-indigo-500 animate-pulse">Loading...</span>}
+                                    {loadingDetail && <span className="text-[9px] font-semibold text-primary animate-pulse">Loading...</span>}
                                 </div>
                                 {loadingDetail ? (
                                     <div className="h-[170px] flex items-center justify-center">
-                                        <div className="w-6 h-6 border-2 border-indigo-500 border-t-transparent rounded-full animate-spin" />
+                                        <div className="w-6 h-6 border-2 border-primary border-t-transparent rounded-full animate-spin" />
                                     </div>
                                 ) : detailData && detailData.history.length > 0 ? (
                                     <ReactECharts option={getDetailChartOption()} style={{ height: '170px' }} opts={{ renderer: 'svg' }} />
@@ -779,17 +779,17 @@ export default function AccumulationDashboard() {
                             {/* Quick Actions */}
                             <div className="px-5 py-4 mt-auto flex gap-2 flex-wrap">
                                 <Link href={`/ticker/${selectedSymbol.symbol}`} className="flex-1 min-w-[100px]">
-                                    <Button className="w-full h-9 text-[11px] font-semibold bg-slate-900 dark:bg-indigo-600 hover:bg-black dark:hover:bg-indigo-700 text-white rounded-xl gap-1.5 shadow-md">
+                                    <Button className="w-full h-9 text-[11px] font-semibold bg-primary hover:bg-primary/90 text-primary-foreground rounded-xl gap-1.5 shadow-md">
                                         <ExternalLink className="w-3.5 h-3.5" /> Full Analysis
                                     </Button>
                                 </Link>
                                 <Link href={`/accumulation/navigator?symbol=${selectedSymbol.symbol}`}>
-                                    <Button variant="outline" className="h-9 px-3 text-[11px] font-semibold rounded-xl border-slate-200 dark:border-border gap-1.5 hover:bg-slate-50 dark:hover:bg-white/5">
+                                    <Button variant="outline" className="h-9 px-3 text-[11px] font-semibold rounded-xl border-slate-200 dark:border-border gap-1.5 hover:bg-accent hover:text-accent-foreground">
                                         <Activity className="w-3.5 h-3.5" />
                                     </Button>
                                 </Link>
                                 <Link href={`/accumulation/history?symbol=${selectedSymbol.symbol}`}>
-                                    <Button variant="outline" className="h-9 px-3 text-[11px] font-semibold rounded-xl border-slate-200 dark:border-border gap-1.5 hover:bg-slate-50 dark:hover:bg-white/5">
+                                    <Button variant="outline" className="h-9 px-3 text-[11px] font-semibold rounded-xl border-slate-200 dark:border-border gap-1.5 hover:bg-accent hover:text-accent-foreground">
                                         <BarChart3 className="w-3.5 h-3.5" />
                                     </Button>
                                 </Link>
@@ -810,7 +810,7 @@ export default function AccumulationDashboard() {
                             className={cn(
                                 'flex items-center gap-2 px-4 py-4 text-xs font-semibold tracking-tight border-b-2 transition-all whitespace-nowrap',
                                 activeTab === tab.key
-                                    ? 'border-indigo-500 text-indigo-600 dark:text-indigo-400'
+                                    ? 'border-primary text-primary'
                                     : 'border-transparent text-slate-400 hover:text-slate-600 dark:hover:text-slate-300',
                             )}>
                             {tab.icon}{tab.label}
@@ -871,8 +871,8 @@ export default function AccumulationDashboard() {
                                         className={cn(
                                             'px-3 py-1.5 text-[11px] font-semibold rounded-lg border transition-all',
                                             smartMoneyRange === r
-                                                ? 'bg-amber-500 border-amber-500 text-white shadow-sm'
-                                                : 'border-slate-200 dark:border-slate-700 text-slate-500 dark:text-slate-400 hover:border-amber-300 dark:hover:border-amber-700 hover:text-amber-600 dark:hover:text-amber-400',
+                                                ? 'bg-primary/10 text-primary border-primary/30'
+                                                : 'border-slate-200 dark:border-slate-700 text-slate-500 dark:text-slate-400 hover:bg-accent hover:text-accent-foreground',
                                         )}>{r}</button>
                                 ))}
                             </div>
@@ -908,11 +908,11 @@ export default function AccumulationDashboard() {
                                 </div>
 
                                 <div className="lg:col-span-2">
-                                    <h3 className="flex items-center gap-2 text-sm font-semibold text-indigo-700 dark:text-indigo-400 mb-4">
+                                    <h3 className="flex items-center gap-2 text-sm font-semibold text-primary mb-4">
                                         <Zap className="w-4 h-4 fill-current" />
                                         Active Whale Signals
                                         {smartMoneyData?.signals && smartMoneyData.signals.length > 0 && (
-                                            <span className="ml-auto text-[10px] px-2 py-0.5 bg-indigo-50 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-400 rounded-full border border-indigo-100 dark:border-indigo-800/30">
+                                            <span className="ml-auto text-[10px] px-2 py-0.5 bg-primary/10 text-primary rounded-full border border-primary/20">
                                                 {smartMoneyData.signals[0].date}
                                             </span>
                                         )}
@@ -940,7 +940,7 @@ export default function AccumulationDashboard() {
                                                         </td>
                                                         <td className="px-4 py-3">
                                                             <Link href={`/ticker/${signal.symbol}`}>
-                                                                <span className="font-semibold text-indigo-600 dark:text-indigo-400 hover:underline">{signal.symbol}</span>
+                                                                <span className="font-semibold text-primary hover:underline">{signal.symbol}</span>
                                                             </Link>
                                                         </td>
                                                         <td className="px-4 py-3 font-mono font-bold text-slate-700 dark:text-slate-300 tabular-nums">{signal.qty.toLocaleString()}</td>

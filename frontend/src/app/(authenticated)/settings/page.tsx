@@ -345,13 +345,13 @@ export default function SettingsPage() {
                         <TabsList className="bg-white dark:bg-card p-1 rounded-2xl border border-border dark:border-slate-800 shadow-sm mb-8 h-auto flex flex-wrap">
                             <TabsTrigger
                                 value="general"
-                                className="rounded-xl data-[state=active]:bg-slate-100 dark:data-[state=active]:bg-slate-800 data-[state=active]:text-slate-900 dark:data-[state=active]:text-slate-100 px-6 py-3 font-bold text-xs capitalize transition-all"
+                                className="rounded-xl px-6 py-3 font-bold text-xs capitalize transition-all"
                             >
                                 <User size={14} className="mr-2" /> General
                             </TabsTrigger>
                             <TabsTrigger
                                 value="security"
-                                className="rounded-xl data-[state=active]:bg-slate-100 dark:data-[state=active]:bg-slate-800 data-[state=active]:text-slate-900 dark:data-[state=active]:text-slate-100 px-6 py-3 font-bold text-xs capitalize transition-all"
+                                className="rounded-xl px-6 py-3 font-bold text-xs capitalize transition-all"
                             >
                                 <Lock size={14} className="mr-2" /> Security
                             </TabsTrigger>
@@ -444,7 +444,7 @@ export default function SettingsPage() {
                                             <Button
                                                 onClick={handleSaveProfile}
                                                 disabled={saving}
-                                                className="bg-slate-900 dark:bg-slate-100 text-white dark:text-slate-900 rounded-xl font-bold px-8 h-12 shadow-lg hover:shadow-xl active:scale-95 transition-all text-[11px]"
+                                                className="bg-primary text-primary-foreground hover:bg-primary/90 rounded-xl font-bold px-8 h-12 shadow-lg hover:shadow-xl active:scale-95 transition-all text-[11px]"
                                             >
                                                 {saving ? 'Saving...' : 'Save Changes'}
                                             </Button>
@@ -485,7 +485,7 @@ export default function SettingsPage() {
                                             <Button
                                                 onClick={handleSetup2FA}
                                                 disabled={setupLoading}
-                                                className="bg-slate-900 dark:bg-slate-100 text-white dark:text-slate-900 rounded-xl font-bold px-8 h-12 shadow-lg text-[11px]"
+                                                className="bg-primary text-primary-foreground hover:bg-primary/90 rounded-xl font-bold px-8 h-12 shadow-lg text-[11px]"
                                             >
                                                 {setupLoading ? 'Loading...' : 'Enable 2FA'}
                                             </Button>
@@ -521,7 +521,7 @@ export default function SettingsPage() {
                                                         </Button>
                                                         <Button
                                                             onClick={handleVerify2FA}
-                                                            className="flex-1 bg-slate-900 dark:bg-slate-100 text-white dark:text-slate-900 rounded-xl text-[10px] font-bold"
+                                                            className="flex-1 bg-primary text-primary-foreground hover:bg-primary/90 rounded-xl text-[10px] font-bold"
                                                         >
                                                             Verify & Enable
                                                         </Button>
@@ -585,7 +585,7 @@ export default function SettingsPage() {
                                                         </Button>
                                                         <Button
                                                             onClick={() => setShowRecoveryCodes(false)}
-                                                            className="flex-1 md:flex-none bg-slate-900 dark:bg-slate-100 text-white dark:text-slate-900 rounded-xl font-bold px-6 h-10 text-[11px]"
+                                                            className="flex-1 md:flex-none bg-primary text-primary-foreground hover:bg-primary/90 rounded-xl font-bold px-6 h-10 text-[11px]"
                                                         >
                                                             Hide Codes
                                                         </Button>
@@ -656,7 +656,7 @@ export default function SettingsPage() {
                                         <Button
                                             onClick={handleUpdatePassword}
                                             disabled={passLoading}
-                                            className="bg-slate-900 dark:bg-slate-100 text-white dark:text-slate-900 rounded-xl font-bold px-8 h-12 shadow-lg text-[11px]"
+                                            className="bg-primary text-primary-foreground hover:bg-primary/90 rounded-xl font-bold px-8 h-12 shadow-lg text-[11px]"
                                         >
                                             {passLoading ? 'Updating...' : 'Update Password'}
                                         </Button>
@@ -695,7 +695,7 @@ export default function SettingsPage() {
                                             {sessions.map((session) => (
                                                 <div
                                                     key={session.id}
-                                                    className={`flex items-center justify-between px-8 py-5 transition-colors hover:bg-slate-50/50 dark:hover:bg-slate-800/30 ${session.is_current ? 'bg-emerald-50/30 dark:bg-emerald-950/10' : ''
+                                                    className={`flex items-center justify-between px-8 py-5 transition-colors hover:bg-accent hover:text-accent-foreground ${session.is_current ? 'bg-emerald-50/30 dark:bg-emerald-950/10' : ''
                                                         }`}
                                                 >
                                                     <div className="flex items-center gap-4 flex-1 min-w-0">
@@ -752,7 +752,7 @@ export default function SettingsPage() {
                             <Card className="border-none shadow-xl bg-white dark:bg-card overflow-hidden">
                                 <CardHeader className="border-b border-slate-50 dark:border-slate-800 py-6">
                                     <div className="flex items-center gap-3">
-                                        <div className="p-2.5 bg-blue-100 dark:bg-blue-900/30 text-blue-600 rounded-xl">
+                                        <div className="p-2.5 bg-primary/10 text-primary rounded-xl">
                                             <History size={18} />
                                         </div>
                                         <div>
@@ -767,7 +767,7 @@ export default function SettingsPage() {
                                     ) : (
                                         <div className="divide-y divide-slate-50 dark:divide-slate-800">
                                             {loginActivities.map((activity, i) => (
-                                                <div key={i} className="flex flex-col sm:flex-row sm:items-center justify-between px-8 py-5 gap-4 transition-colors hover:bg-slate-50/50 dark:hover:bg-slate-800/30">
+                                                <div key={i} className="flex flex-col sm:flex-row sm:items-center justify-between px-8 py-5 gap-4 transition-colors hover:bg-accent hover:text-accent-foreground">
                                                     <div className="flex items-center gap-4">
                                                         {activity.status === 'SUCCESS' ? (
                                                             <CheckCircle size={18} className="text-emerald-500 flex-shrink-0" />

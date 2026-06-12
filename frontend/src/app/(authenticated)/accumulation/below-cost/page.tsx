@@ -115,9 +115,9 @@ export default function BelowCostPage() {
 
     const SortIcon = ({ column }: { column: keyof BelowCostPosition }) => {
         if (sortConfig.key !== column) return <ArrowUpDown className="w-3 h-3 ml-1 opacity-20 group-hover:opacity-100 transition-opacity" />;
-        return sortConfig.direction === 'asc' 
-            ? <ChevronUp className="w-3.5 h-3.5 ml-1 text-orange-500" /> 
-            : <ChevronDown className="w-3.5 h-3.5 ml-1 text-orange-500" />;
+        return sortConfig.direction === 'asc'
+            ? <ChevronUp className="w-3.5 h-3.5 ml-1 text-primary" />
+            : <ChevronDown className="w-3.5 h-3.5 ml-1 text-primary" />;
     };
 
     return (
@@ -128,23 +128,23 @@ export default function BelowCostPage() {
                 <div className="flex flex-col sm:flex-row items-center gap-4 w-full xl:w-auto">
                     {/* Search */}
                     <div className="relative w-full sm:w-80 group">
-                        <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 group-focus-within:text-orange-500 transition-colors" />
-                        <input 
-                            type="text" 
+                        <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 group-focus-within:text-primary transition-colors" />
+                        <input
+                            type="text"
                             placeholder="Search symbol or broker..."
                             value={searchQuery}
                             onChange={(e) => setSearchQuery(e.target.value)}
-                            className="w-full pl-11 pr-4 py-2.5 bg-slate-100/50 dark:bg-slate-800/50 border border-border dark:border-border rounded-2xl text-xs font-semibold tracking-tight focus:outline-none focus:ring-2 focus:ring-orange-500/20 focus:border-orange-500/50 transition-all placeholder:text-slate-400 font-mono"
+                            className="w-full pl-11 pr-4 py-2.5 bg-slate-100/50 dark:bg-slate-800/50 border border-border dark:border-border rounded-2xl text-xs font-semibold tracking-tight focus:outline-none focus-visible:ring-[3px] focus-visible:ring-ring/50 focus-visible:border-ring transition-all placeholder:text-slate-400 font-mono"
                         />
                     </div>
 
                     {/* Sector Filter */}
                     <div className="relative w-full sm:w-64 group">
-                        <Filter className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 group-hover:text-orange-500 transition-colors" />
-                        <select 
+                        <Filter className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 group-hover:text-primary transition-colors" />
+                        <select
                             value={selectedSector}
                             onChange={(e) => setSelectedSector(e.target.value)}
-                            className="w-full pl-11 pr-4 py-2.5 bg-slate-100/50 dark:bg-slate-800/50 border border-border dark:border-border rounded-2xl text-xs font-semibold tracking-tight focus:outline-none focus:ring-2 focus:ring-orange-500/20 transition-all appearance-none cursor-pointer"
+                            className="w-full pl-11 pr-4 py-2.5 bg-slate-100/50 dark:bg-slate-800/50 border border-border dark:border-border rounded-2xl text-xs font-semibold tracking-tight focus:outline-none focus-visible:ring-[3px] focus-visible:ring-ring/50 focus-visible:border-ring transition-all appearance-none cursor-pointer"
                         >
                             <option value="All">All Sectors</option>
                             {sectors.map(s => (
@@ -163,8 +163,8 @@ export default function BelowCostPage() {
                                 className={cn(
                                     'px-4 py-2 rounded-xl text-xs font-semibold transition-all duration-300 tracking-tight whitespace-nowrap',
                                     range === t.value
-                                        ? 'bg-orange-500 text-white shadow-lg shadow-orange-500/20 scale-105'
-                                        : 'text-slate-400 hover:text-slate-700 dark:hover:text-slate-200',
+                                        ? 'bg-primary/10 text-primary border border-primary/30 scale-105'
+                                        : 'text-slate-400 hover:bg-accent hover:text-accent-foreground',
                                 )}>
                                 {t.label}
                             </button>
@@ -185,7 +185,7 @@ export default function BelowCostPage() {
                                             { label: 'Symbol', key: 'symbol', align: 'left' },
                                             { label: 'Broker', key: 'broker', align: 'left' },
                                             { label: 'Total Pos.', key: 'cumulative_net', align: 'left' },
-                                            { label: 'WAC', key: 'wac', align: 'left', accent: 'bg-orange-50/50 dark:bg-orange-500/5' },
+                                            { label: 'WAC', key: 'wac', align: 'left', accent: 'bg-primary/5 dark:bg-primary/5' },
                                             { label: 'LTP', key: 'ltp', align: 'left' },
                                             { label: 'Capt. Alpha', key: 'roc', align: 'left', accent: 'bg-rose-50/50 dark:bg-rose-500/5' },
                                             { label: '5D', key: 'change_5d', align: 'left' },
@@ -197,13 +197,13 @@ export default function BelowCostPage() {
                                                 key={h.label} 
                                                 onClick={() => h.key && handleSort(h.key as any)}
                                                 className={cn(
-                                                    'px-6 py-5 text-left font-semibold uppercase tracking-wider text-[10px] border-b border-border dark:border-border cursor-pointer hover:bg-slate-50 dark:hover:bg-white/[0.02] transition-colors group/th',
+                                                    'px-6 py-5 text-left font-semibold uppercase tracking-wider text-[10px] border-b border-border dark:border-border cursor-pointer hover:bg-accent hover:text-accent-foreground transition-colors group/th',
                                                     h.accent
                                                 )}
                                             >
                                                 <div className="flex items-center">
                                                     <span className={cn(
-                                                        sortConfig.key === h.key ? 'text-orange-500 font-semibold' : 'text-slate-500 dark:text-slate-400 group-hover/th:text-slate-700 dark:group-hover/th:text-slate-200'
+                                                        sortConfig.key === h.key ? 'text-primary font-semibold' : 'text-slate-500 dark:text-slate-400 group-hover/th:text-slate-700 dark:group-hover/th:text-slate-200'
                                                     )}>{h.label}</span>
                                                     {h.key && <SortIcon column={h.key as any} />}
                                                 </div>
@@ -224,21 +224,21 @@ export default function BelowCostPage() {
                                                         <p className="text-slate-900 dark:text-slate-100 font-semibold uppercase tracking-wider text-sm">Clear Horizons</p>
                                                         <p className="text-slate-400 font-medium text-[10px] uppercase tracking-wider">No matching institutional entries found for this range</p>
                                                     </div>
-                                                    <Button variant="outline" size="sm" onClick={() => {setSearchQuery(''); setSelectedSector('All');}} className="rounded-2xl border-orange-500/20 text-orange-500 hover:bg-orange-50 dark:hover:bg-orange-500/10">Clear all filters</Button>
+                                                    <Button variant="outline" size="sm" onClick={() => {setSearchQuery(''); setSelectedSector('All');}} className="rounded-2xl border-primary/20 text-primary hover:bg-primary/10">Clear all filters</Button>
                                                 </div>
                                             </td>
                                         </tr>
                                     ) : pagedData.map((item, idx) => (
-                                        <tr key={idx} className="group hover:bg-orange-50/20 dark:hover:bg-white/[0.02] transition-all duration-300 border-l-[4px] border-l-transparent hover:border-l-orange-500 animate-in slide-in-from-left-2 fade-in" style={{ animationDelay: `${idx * 15}ms` }}>
+                                        <tr key={idx} className="group hover:bg-accent hover:text-accent-foreground transition-all duration-300 border-l-[4px] border-l-transparent hover:border-l-primary animate-in slide-in-from-left-2 fade-in" style={{ animationDelay: `${idx * 15}ms` }}>
                                             <td className="px-6 py-5">
                                                 <Link href={`/ticker/${item.symbol}`} className="block">
-                                                    <div className="font-semibold text-sm text-slate-900 dark:text-orange-50 group-hover:text-orange-600 dark:group-hover:text-orange-400 transition-colors tracking-tight">{item.symbol}</div>
+                                                    <div className="font-semibold text-sm text-slate-900 dark:text-slate-100 group-hover:text-primary transition-colors tracking-tight">{item.symbol}</div>
                                                     <div className="text-[10px] text-slate-400 font-bold uppercase tracking-tight mt-0.5 truncate max-w-[150px]">{item.name}</div>
                                                 </Link>
                                             </td>
                                             <td className="px-6 py-5">
                                                 <Link href={`/broker/${item.broker}`}>
-                                                    <span className="px-3 py-1.5 bg-slate-100 dark:bg-slate-800/80 text-slate-600 dark:text-slate-300 rounded-xl text-[10px] font-semibold border border-border dark:border-border hover:border-orange-500/50 hover:bg-white dark:hover:bg-slate-800 transition-all shadow-sm">
+                                                    <span className="px-3 py-1.5 bg-slate-100 dark:bg-slate-800/80 text-slate-600 dark:text-slate-300 rounded-xl text-[10px] font-semibold border border-border dark:border-border hover:border-primary/30 hover:bg-accent hover:text-accent-foreground transition-all shadow-sm">
                                                         #{item.broker}
                                                     </span>
                                                 </Link>
@@ -246,7 +246,7 @@ export default function BelowCostPage() {
                                             <td className="px-6 py-5 font-mono font-bold text-slate-600 dark:text-slate-400 tabular-nums tracking-tighter">
                                                 {formatNepaliNumber(item.cumulative_net)}
                                             </td>
-                                            <td className="px-6 py-5 font-mono font-semibold text-orange-600 dark:text-orange-400 tabular-nums bg-orange-50/20 dark:bg-orange-500/[0.01]">
+                                            <td className="px-6 py-5 font-mono font-semibold text-primary tabular-nums bg-primary/[0.02]">
                                                 {formatRupees(item.wac, 1)}
                                             </td>
                                             <td className="px-6 py-5 font-mono font-bold text-slate-800 dark:text-slate-200 tabular-nums tracking-tighter border-x border-slate-50 dark:border-white/[0.02]">
@@ -262,7 +262,7 @@ export default function BelowCostPage() {
                                             <td className="px-6 py-5 text-right">
                                                 <Link href={`/accumulation/history?symbol=${item.symbol}&broker=${item.broker}`}>
                                                     <Button variant="ghost" size="sm"
-                                                        className="h-10 w-10 p-0 rounded-2xl opacity-0 group-hover:opacity-100 transition-all hover:bg-orange-500 dark:hover:bg-orange-500 hover:text-white group/btn shadow-xl shadow-orange-500/0 hover:shadow-orange-500/20">
+                                                        className="h-10 w-10 p-0 rounded-2xl opacity-0 group-hover:opacity-100 transition-all hover:bg-primary hover:text-primary-foreground group/btn shadow-xl">
                                                         <ArrowRight className="w-5 h-5 group-hover/btn:translate-x-0.5 transition-transform" />
                                                     </Button>
                                                 </Link>
@@ -276,7 +276,7 @@ export default function BelowCostPage() {
                         {/* Pagination Footer */}
                         <div className="px-5 py-4 border-t border-border dark:border-border bg-slate-50/40 dark:bg-white/[0.01] flex flex-col sm:flex-row items-center justify-between gap-6 mt-auto">
                             <div className="flex items-center gap-3">
-                                <div className="h-2 w-2 rounded-full bg-orange-500 pulse-glow" />
+                                <div className="h-2 w-2 rounded-full bg-primary pulse-glow" />
                                 <span className="text-[10px] font-semibold text-slate-400 uppercase tracking-wider">{sortedAndFilteredData.length} strategic positions tracked</span>
                             </div>
                             
@@ -286,9 +286,9 @@ export default function BelowCostPage() {
                                 </span>
                                 <div className="flex gap-3">
                                     <Button variant="outline" size="sm" onClick={() => {setPage(p => Math.max(1, p - 1)); window.scrollTo({top: 0, behavior: 'smooth'});}} disabled={page === 1}
-                                        className="h-11 px-6 text-[10px] font-semibold rounded-2xl border-slate-200 dark:border-border hover:bg-slate-100 dark:hover:bg-slate-800 hover:border-orange-500/50 tracking-wider transition-all">PREV NODE</Button>
+                                        className="h-11 px-6 text-[10px] font-semibold rounded-2xl border-slate-200 dark:border-border hover:bg-accent hover:text-accent-foreground tracking-wider transition-all">PREV NODE</Button>
                                     <Button variant="outline" size="sm" onClick={() => {setPage(p => Math.min(totalPages, p + 1)); window.scrollTo({top: 0, behavior: 'smooth'});}} disabled={page >= totalPages}
-                                        className="h-11 px-6 text-[10px] font-semibold rounded-2xl border-slate-200 dark:border-border hover:bg-slate-100 dark:hover:bg-slate-800 hover:border-orange-500/50 tracking-wider transition-all">NEXT NODE</Button>
+                                        className="h-11 px-6 text-[10px] font-semibold rounded-2xl border-slate-200 dark:border-border hover:bg-accent hover:text-accent-foreground tracking-wider transition-all">NEXT NODE</Button>
                                 </div>
                             </div>
                         </div>
@@ -301,9 +301,9 @@ export default function BelowCostPage() {
                 .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
                 .pulse-glow { animation: pulse-glow 2s infinite; }
                 @keyframes pulse-glow {
-                    0% { transform: scale(1); box-shadow: 0 0 0 0 rgba(249, 115, 22, 0.4); }
-                    70% { transform: scale(1.1); box-shadow: 0 0 0 10px rgba(249, 115, 22, 0); }
-                    100% { transform: scale(1); box-shadow: 0 0 0 0 rgba(249, 115, 22, 0); }
+                    0% { transform: scale(1); box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.4); }
+                    70% { transform: scale(1.1); box-shadow: 0 0 0 10px rgba(16, 185, 129, 0); }
+                    100% { transform: scale(1); box-shadow: 0 0 0 0 rgba(16, 185, 129, 0); }
                 }
             `}</style>
         </div>

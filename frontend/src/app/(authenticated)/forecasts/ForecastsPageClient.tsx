@@ -195,7 +195,7 @@ export default function ForecastsPage() {
                         onPageSizeChange(Number(e.target.value));
                         onPageChange(1);
                     }}
-                    className="bg-white dark:bg-card border border-slate-200 dark:border-slate-700 rounded-md px-2 py-1 text-sm font-medium text-slate-700 dark:text-slate-300 focus:ring-2 focus:ring-blue-100 dark:focus:ring-blue-900 outline-none transition-all cursor-pointer shadow-sm"
+                    className="bg-white dark:bg-card border border-slate-200 dark:border-slate-700 rounded-md px-2 py-1 text-sm font-medium text-slate-700 dark:text-slate-300 focus-visible:ring-[3px] focus-visible:ring-ring/50 focus-visible:border-ring outline-none transition-all cursor-pointer shadow-sm"
                 >
                     {[10, 20, 50, 75, 100].map(size => (
                         <option key={size} value={size}>{size}</option>
@@ -215,7 +215,7 @@ export default function ForecastsPage() {
                         variant="outline"
                         onClick={() => onPageChange(page - 1)}
                         disabled={page === 1}
-                        className="h-9 px-3 hover:bg-white hover:border-slate-300 text-slate-600 disabled:opacity-40 transition-all shadow-sm"
+                        className="h-9 px-3 hover:bg-accent hover:text-accent-foreground text-slate-600 disabled:opacity-40 transition-all shadow-sm"
                     >
                         Previous
                     </Button>
@@ -224,7 +224,7 @@ export default function ForecastsPage() {
                         variant="outline"
                         onClick={() => onPageChange(page + 1)}
                         disabled={page >= totalPages}
-                        className="h-9 px-3 hover:bg-white hover:border-slate-300 text-slate-600 disabled:opacity-40 transition-all shadow-sm"
+                        className="h-9 px-3 hover:bg-accent hover:text-accent-foreground text-slate-600 disabled:opacity-40 transition-all shadow-sm"
                     >
                         Next
                     </Button>
@@ -237,7 +237,7 @@ export default function ForecastsPage() {
         <DashboardLayout
             title={
                 <div className="flex items-center gap-3">
-                    <BrainCircuit className="w-8 h-8 text-blue-600" />
+                    <BrainCircuit className="w-8 h-8 text-primary" />
                     <span>ML Forecasting</span>
                 </div>
             }
@@ -250,17 +250,17 @@ export default function ForecastsPage() {
                             <TabsList className="bg-gray-100 p-1 rounded-lg w-fit gap-1 border-none">
                                 <TabsTrigger
                                     value="models"
-                                    className="rounded-md px-6 py-2 data-[state=active]:bg-white data-[state=active]:shadow-sm transition-all font-medium text-sm text-gray-600 data-[state=active]:text-orange-500"
+                                    className="rounded-md px-6 py-2 transition-all font-medium text-sm"
                                 >
                                     Published Models
                                 </TabsTrigger>
                                 <TabsTrigger
                                     value="monitoring"
-                                    className="rounded-md px-6 py-2 data-[state=active]:bg-white data-[state=active]:shadow-sm transition-all font-medium text-sm text-gray-600 data-[state=active]:text-orange-500 flex items-center gap-2"
+                                    className="rounded-md px-6 py-2 transition-all font-medium text-sm flex items-center gap-2"
                                 >
                                     Monitoring
                                     {allJobs.filter(j => j.status === 'RUNNING' || j.status === 'PENDING').length > 0 && (
-                                        <Badge className="bg-blue-600 animate-pulse text-white border-none px-1.5 rounded-full text-[9px] h-4 min-w-[16px] flex items-center justify-center">
+                                        <Badge className="bg-primary animate-pulse text-primary-foreground border-none px-1.5 rounded-full text-[9px] h-4 min-w-[16px] flex items-center justify-center">
                                             {allJobs.filter(j => j.status === 'RUNNING' || j.status === 'PENDING').length}
                                         </Badge>
                                     )}
@@ -268,7 +268,7 @@ export default function ForecastsPage() {
                             </TabsList>
                             <Button
                                 onClick={() => router.push('/forecasts/train')}
-                                className="bg-blue-600 hover:bg-blue-700 text-white shadow-sm transition-colors px-4 py-2 text-sm font-semibold rounded-lg"
+                                className="shadow-sm transition-colors px-4 py-2 text-sm font-semibold rounded-lg"
                             >
                                 Train Model
                             </Button>
@@ -279,8 +279,8 @@ export default function ForecastsPage() {
                             {loading ? (
                                 <div className="text-center py-20 flex flex-col items-center justify-center gap-4">
                                     <div className="relative">
-                                        <div className="h-20 w-20 rounded-full border-4 border-slate-200 border-t-blue-600 animate-spin"></div>
-                                        <Brain className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-8 h-8 text-blue-600" />
+                                        <div className="h-20 w-20 rounded-full border-4 border-slate-200 border-t-primary animate-spin"></div>
+                                        <Brain className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-8 h-8 text-primary" />
                                     </div>
                                     <p className="text-slate-500 font-bold animate-pulse">Analyzing Models...</p>
                                 </div>
@@ -294,7 +294,7 @@ export default function ForecastsPage() {
                                         <p className="text-slate-500 mb-8 max-w-sm mx-auto font-medium">Published model appears here.</p> <Button
                                             onClick={() => router.push('/forecasts/train')}
                                             variant="outline"
-                                            className="rounded-xl px-8 border-slate-200 hover:bg-slate-50 text-slate-600"
+                                            className="rounded-xl px-8 border-slate-200 text-slate-600"
                                         >
                                             Initiate First Training
                                         </Button>
@@ -316,10 +316,10 @@ export default function ForecastsPage() {
                                         </thead>
                                         <tbody className="bg-white dark:bg-card divide-y divide-gray-200 dark:divide-slate-700 text-sm">
                                             {models.map((model) => (
-                                                <tr key={model.id} className="hover:bg-gray-50">
+                                                <tr key={model.id} className="hover:bg-accent hover:text-accent-foreground transition-colors">
                                                     <td className="px-6 py-4 whitespace-nowrap text-gray-500 font-mono text-xs">
                                                         {model.training_job_id ? (
-                                                            <a href={`/forecasts/train/${model.training_job_id}`} className="text-blue-600 hover:underline">
+                                                            <a href={`/forecasts/train/${model.training_job_id}`} className="text-primary hover:underline">
                                                                 #{model.id}
                                                             </a>
                                                         ) : (
@@ -328,7 +328,7 @@ export default function ForecastsPage() {
                                                     </td>
                                                     <td className="px-6 py-4 whitespace-nowrap font-bold text-gray-900">{model.symbol}</td>
                                                     <td className="px-6 py-4 whitespace-nowrap">
-                                                        <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-bold uppercase tracking-wide bg-blue-50 text-blue-700">
+                                                        <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-bold uppercase tracking-wide bg-primary/10 text-primary">
                                                             {model.model_type}
                                                         </span>
                                                     </td>
@@ -345,7 +345,7 @@ export default function ForecastsPage() {
                                                         <div className="flex items-center gap-1">
                                                             <button
                                                                 onClick={() => handleViewForecast(model.symbol)}
-                                                                className="text-gray-600 hover:text-blue-600 hover:bg-blue-50 p-1.5 rounded transition-colors"
+                                                                className="text-gray-600 hover:bg-accent hover:text-accent-foreground p-1.5 rounded transition-colors"
                                                                 title="View Forecast"
                                                             >
                                                                 <Eye className="w-4 h-4" />
@@ -379,7 +379,7 @@ export default function ForecastsPage() {
                             <section>
                                 <div className="flex justify-between items-center mb-4">
                                     <h3 className="text-lg font-bold text-gray-900 flex items-center gap-2">
-                                        <Beaker className="text-purple-500" size={20} />
+                                        <Beaker className="text-primary" size={20} />
                                         Training Session Log
                                     </h3>
                                     <span className="text-xs text-gray-500 bg-gray-100 px-2 py-1 rounded">
@@ -439,7 +439,7 @@ export default function ForecastsPage() {
                                                     return (
                                                         <Fragment key={sessionId}>
                                                             <tr
-                                                                className="hover:bg-gray-50 cursor-pointer transition-colors"
+                                                                className="hover:bg-accent hover:text-accent-foreground cursor-pointer transition-colors"
                                                                 onClick={() => setExpandedId(expandedId === sessionId ? null : sessionId)}
                                                             >
                                                                 <td className="px-6 py-4 whitespace-nowrap">
@@ -448,7 +448,7 @@ export default function ForecastsPage() {
                                                                     ) : overallStatus === 'FAILED' ? (
                                                                         <XCircle size={18} className="text-rose-500" />
                                                                     ) : (overallStatus === 'RUNNING' || overallStatus === 'PENDING') ? (
-                                                                        <Activity size={18} className="text-blue-500 animate-pulse" />
+                                                                        <Activity size={18} className="text-primary animate-pulse" />
                                                                     ) : (
                                                                         <AlertTriangle size={18} className="text-amber-500" />
                                                                     )}
@@ -463,7 +463,7 @@ export default function ForecastsPage() {
                                                                 </td>
                                                                 <td className="px-6 py-4 whitespace-nowrap">
                                                                     <span className={`inline-flex items-center px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider
-                                                                        ${isBatch ? 'bg-purple-50 text-purple-700 border border-purple-100' : 'bg-blue-50 text-blue-700 border border-blue-100'}`}>
+                                                                        ${isBatch ? 'bg-primary/10 text-primary border border-primary/20' : 'bg-primary/10 text-primary border border-primary/20'}`}>
                                                                         {isBatch ? 'BATCH' : 'SINGLE'}
                                                                     </span>
                                                                 </td>
@@ -481,7 +481,7 @@ export default function ForecastsPage() {
                                                                             <div
                                                                                 className={`h-full transition-all duration-500 ${overallStatus === 'SUCCESS' ? 'bg-emerald-500 w-full' :
                                                                                     overallStatus === 'FAILED' ? 'bg-rose-500 w-full' :
-                                                                                        'bg-blue-500 w-1/2'
+                                                                                        'bg-primary w-1/2'
                                                                                     }`}
                                                                                 style={{ width: `${progressPct}%` }}
                                                                             />
@@ -518,10 +518,10 @@ export default function ForecastsPage() {
                                                                                     </thead>
                                                                                     <tbody className="divide-y divide-gray-5 text-xs">
                                                                                         {sessionJobs.map(job => (
-                                                                                            <tr key={job.id} className="hover:bg-gray-50 transition-colors group">
+                                                                                            <tr key={job.id} className="hover:bg-accent hover:text-accent-foreground transition-colors group">
                                                                                                 <td className="px-4 py-2.5 font-bold text-gray-900">{job.symbol}</td>
                                                                                                 <td className="px-4 py-2.5">
-                                                                                                    <Badge variant="outline" className="text-[9px] bg-blue-50/50 border-blue-100 text-blue-600 font-bold uppercase">
+                                                                                                    <Badge variant="outline" className="text-[9px] bg-primary/5 border-primary/20 text-primary font-bold uppercase">
                                                                                                         {job.model_type}
                                                                                                     </Badge>
                                                                                                 </td>
@@ -541,7 +541,7 @@ export default function ForecastsPage() {
                                                                                                         {(job.status === 'RUNNING' || job.status === 'PENDING') && (
                                                                                                             <button
                                                                                                                 onClick={() => handleStopJob(job.id)}
-                                                                                                                className="text-gray-400 hover:text-red-600 hover:bg-red-50 p-1 rounded transition-colors"
+                                                                                                                className="text-gray-400 hover:text-destructive hover:bg-destructive/10 p-1 rounded transition-colors"
                                                                                                                 title="Stop Job"
                                                                                                             >
                                                                                                                 <StopCircle className="w-3.5 h-3.5" />
@@ -549,7 +549,7 @@ export default function ForecastsPage() {
                                                                                                         )}
                                                                                                         <button
                                                                                                             onClick={() => router.push(`/forecasts/train/${job.id}`)}
-                                                                                                            className="text-gray-400 hover:text-blue-600 hover:bg-blue-50 p-1 rounded transition-colors"
+                                                                                                            className="text-gray-400 hover:bg-accent hover:text-accent-foreground p-1 rounded transition-colors"
                                                                                                             title="View Output"
                                                                                                         >
                                                                                                             <Eye className="w-3.5 h-3.5" />

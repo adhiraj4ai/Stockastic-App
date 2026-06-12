@@ -336,7 +336,7 @@ export function SettingsDialog({ open, onOpenChange }: SettingsDialogProps) {
     };
     const passwordStrength = calculatePasswordStrength(newPassword);
     const strengthLabels = ['', 'Weak', 'Fair', 'Good', 'Strong', 'Excellent'];
-    const strengthColors = ['', 'bg-rose-500', 'bg-orange-500', 'bg-yellow-500', 'bg-emerald-400', 'bg-emerald-500'];
+    const strengthColors = ['', 'bg-rose-500', 'bg-amber-500', 'bg-yellow-500', 'bg-emerald-400', 'bg-emerald-500'];
 
 
     return (
@@ -359,28 +359,28 @@ export function SettingsDialog({ open, onOpenChange }: SettingsDialogProps) {
                             <TabsList className="flex flex-col h-auto bg-transparent gap-1 w-full justify-start items-stretch p-0">
                                 <TabsTrigger
                                     value="general"
-                                    className="w-full justify-start rounded-md px-3 py-2.5 text-sm font-medium transition-all data-[state=active]:bg-orange-50 dark:data-[state=active]:bg-orange-950/20 data-[state=active]:text-orange-500 dark:data-[state=active]:text-orange-500 data-[state=active]:shadow-none hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-600 dark:text-slate-400 group"
+                                    className="w-full justify-start rounded-md px-3 py-2.5 text-sm font-medium transition-all data-[state=active]:bg-primary/10 data-[state=active]:text-primary dark:data-[state=active]:text-primary data-[state=active]:shadow-none hover:bg-accent hover:text-accent-foreground text-slate-600 dark:text-slate-400 group"
                                 >
                                     <div className="flex items-center gap-3">
-                                        <User size={18} className="text-slate-400 dark:text-slate-500 group-hover:text-slate-600 dark:group-hover:text-slate-300 data-[state=active]:text-indigo-600 dark:data-[state=active]:text-indigo-400" />
+                                        <User size={18} className="text-slate-400 dark:text-slate-500 group-hover:text-slate-600 dark:group-hover:text-slate-300 data-[state=active]:text-primary" />
                                         <span>General</span>
                                     </div>
                                 </TabsTrigger>
                                 <TabsTrigger
                                     value="appearance"
-                                    className="w-full justify-start rounded-md px-3 py-2.5 text-sm font-medium transition-all data-[state=active]:bg-orange-50 dark:data-[state=active]:bg-orange-950/20 data-[state=active]:text-orange-500 dark:data-[state=active]:text-orange-500 data-[state=active]:shadow-none hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-600 dark:text-slate-400 group"
+                                    className="w-full justify-start rounded-md px-3 py-2.5 text-sm font-medium transition-all data-[state=active]:bg-primary/10 data-[state=active]:text-primary dark:data-[state=active]:text-primary data-[state=active]:shadow-none hover:bg-accent hover:text-accent-foreground text-slate-600 dark:text-slate-400 group"
                                 >
                                     <div className="flex items-center gap-3">
-                                        <Palette size={18} className="text-slate-400 dark:text-slate-500 group-hover:text-slate-600 dark:group-hover:text-slate-300 data-[state=active]:text-indigo-600 dark:data-[state=active]:text-indigo-400" />
+                                        <Palette size={18} className="text-slate-400 dark:text-slate-500 group-hover:text-slate-600 dark:group-hover:text-slate-300 data-[state=active]:text-primary" />
                                         <span>Appearance</span>
                                     </div>
                                 </TabsTrigger>
                                 <TabsTrigger
                                     value="security"
-                                    className="w-full justify-start rounded-md px-3 py-2.5 text-sm font-medium transition-all data-[state=active]:bg-orange-50 dark:data-[state=active]:bg-orange-950/20 data-[state=active]:text-orange-500 dark:data-[state=active]:text-orange-500 data-[state=active]:shadow-none hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-600 dark:text-slate-400 group"
+                                    className="w-full justify-start rounded-md px-3 py-2.5 text-sm font-medium transition-all data-[state=active]:bg-primary/10 data-[state=active]:text-primary dark:data-[state=active]:text-primary data-[state=active]:shadow-none hover:bg-accent hover:text-accent-foreground text-slate-600 dark:text-slate-400 group"
                                 >
                                     <div className="flex items-center gap-3">
-                                        <Lock size={18} className="text-slate-400 dark:text-slate-500 group-hover:text-slate-600 dark:group-hover:text-slate-300 data-[state=active]:text-indigo-600 dark:data-[state=active]:text-indigo-400" />
+                                        <Lock size={18} className="text-slate-400 dark:text-slate-500 group-hover:text-slate-600 dark:group-hover:text-slate-300 data-[state=active]:text-primary" />
                                         <span>Security</span>
                                     </div>
                                 </TabsTrigger>
@@ -412,7 +412,7 @@ export function SettingsDialog({ open, onOpenChange }: SettingsDialogProps) {
                             <TabsContent value="general" className="space-y-6 focus-visible:outline-none mt-0 max-w-4xl mx-auto animate-in fade-in-50 slide-in-from-bottom-2 duration-300">
                                 {loading ? (
                                     <div className="flex justify-center items-center h-full min-h-[400px]">
-                                        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-indigo-600"></div>
+                                        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
                                     </div>
                                 ) : (
                                     <>
@@ -424,14 +424,14 @@ export function SettingsDialog({ open, onOpenChange }: SettingsDialogProps) {
                                         {/* Profile Picture Section */}
                                         <div className="flex flex-col sm:flex-row items-center gap-8 p-8 bg-white dark:bg-card rounded-2xl shadow-sm border border-border/80 dark:border-slate-700">
                                             <div className="relative group cursor-pointer" onClick={triggerFileInput}>
-                                                <div className="h-24 w-24 rounded-full bg-indigo-50 flex items-center justify-center text-indigo-300 border-[3px] border-white shadow-lg overflow-hidden ring-4 ring-indigo-50/60 transition-all group-hover:scale-105 group-hover:ring-indigo-100 dark:border-slate-800">
+                                                <div className="h-24 w-24 rounded-full bg-primary/10 flex items-center justify-center text-primary/30 border-[3px] border-white shadow-lg overflow-hidden ring-4 ring-primary/10 transition-all group-hover:scale-105 group-hover:ring-primary/20 dark:border-slate-800">
                                                     {user?.profile_picture ? (
                                                         <img src={user.profile_picture} alt="Profile" className="h-full w-full object-cover" />
                                                     ) : (
                                                         <User size={40} />
                                                     )}
                                                 </div>
-                                                <button className="absolute bottom-0 right-0 p-2 bg-indigo-600 rounded-full text-white hover:bg-indigo-700 transition-colors shadow-md ring-2 ring-white">
+                                                <button className="absolute bottom-0 right-0 p-2 bg-primary rounded-full text-primary-foreground hover:bg-primary/90 transition-colors shadow-md ring-2 ring-white">
                                                     <Camera size={14} />
                                                 </button>
                                             </div>
@@ -448,7 +448,7 @@ export function SettingsDialog({ open, onOpenChange }: SettingsDialogProps) {
                                                     className="hidden"
                                                 />
                                                 <div className="pt-1">
-                                                    <Button variant="outline" size="sm" onClick={triggerFileInput} className="border-indigo-200 text-indigo-700 hover:bg-indigo-50 hover:text-indigo-800 font-semibold dark:border-indigo-900/50 dark:text-indigo-400 dark:hover:bg-indigo-950/30 dark:hover:text-indigo-300">
+                                                    <Button variant="outline" size="sm" onClick={triggerFileInput} className="border-primary/30 text-primary hover:bg-primary/10 hover:text-primary font-semibold">
                                                         Upload New Photo
                                                     </Button>
                                                 </div>
@@ -468,7 +468,7 @@ export function SettingsDialog({ open, onOpenChange }: SettingsDialogProps) {
                                                         value={user?.first_name || ''}
                                                         onChange={(e) => setUser(prev => prev ? { ...prev, first_name: e.target.value } : null)}
                                                         placeholder="e.g. John"
-                                                        className="bg-slate-50/50 dark:bg-card border-slate-200 dark:border-slate-800 focus:ring-indigo-500 focus:border-indigo-500 transition-shadow"
+                                                        className="bg-slate-50/50 dark:bg-card border-slate-200 dark:border-slate-800 focus-visible:ring-[3px] focus-visible:ring-ring/50 focus-visible:border-ring transition-shadow"
                                                     />
                                                 </div>
                                                 <div className="space-y-2">
@@ -479,7 +479,7 @@ export function SettingsDialog({ open, onOpenChange }: SettingsDialogProps) {
                                                         value={user?.last_name || ''}
                                                         onChange={(e) => setUser(prev => prev ? { ...prev, last_name: e.target.value } : null)}
                                                         placeholder="e.g. Doe"
-                                                        className="bg-slate-50/50 dark:bg-card border-slate-200 dark:border-slate-800 focus:ring-indigo-500 focus:border-indigo-500 transition-shadow"
+                                                        className="bg-slate-50/50 dark:bg-card border-slate-200 dark:border-slate-800 focus-visible:ring-[3px] focus-visible:ring-ring/50 focus-visible:border-ring transition-shadow"
                                                     />
                                                 </div>
                                                 <div className="space-y-2">
@@ -490,7 +490,7 @@ export function SettingsDialog({ open, onOpenChange }: SettingsDialogProps) {
                                                         value={user?.nickname || ''}
                                                         onChange={(e) => setUser(prev => prev ? { ...prev, nickname: e.target.value } : null)}
                                                         placeholder="e.g. Johnny"
-                                                        className="bg-slate-50/50 dark:bg-card border-slate-200 dark:border-slate-800 focus:ring-indigo-500 focus:border-indigo-500 transition-shadow"
+                                                        className="bg-slate-50/50 dark:bg-card border-slate-200 dark:border-slate-800 focus-visible:ring-[3px] focus-visible:ring-ring/50 focus-visible:border-ring transition-shadow"
                                                     />
                                                 </div>
                                                 <div className="space-y-2">
@@ -501,7 +501,7 @@ export function SettingsDialog({ open, onOpenChange }: SettingsDialogProps) {
                                                         value={user?.phone_number || ''}
                                                         onChange={(e) => setUser(prev => prev ? { ...prev, phone_number: e.target.value } : null)}
                                                         placeholder="+1 (555) 000-0000"
-                                                        className="bg-slate-50/50 dark:bg-card border-slate-200 dark:border-slate-800 focus:ring-indigo-500 focus:border-indigo-500 transition-shadow"
+                                                        className="bg-slate-50/50 dark:bg-card border-slate-200 dark:border-slate-800 focus-visible:ring-[3px] focus-visible:ring-ring/50 focus-visible:border-ring transition-shadow"
                                                     />
                                                 </div>
                                             </div>
@@ -512,7 +512,7 @@ export function SettingsDialog({ open, onOpenChange }: SettingsDialogProps) {
                                                     value={user?.email || ''}
                                                     onChange={(e) => setUser(prev => prev ? { ...prev, email: e.target.value } : null)}
                                                     placeholder="your@email.com"
-                                                    className="bg-slate-50/50 dark:bg-card border-slate-200 dark:border-slate-800 focus:ring-indigo-500 focus:border-indigo-500 transition-shadow"
+                                                    className="bg-slate-50/50 dark:bg-card border-slate-200 dark:border-slate-800 focus-visible:ring-[3px] focus-visible:ring-ring/50 focus-visible:border-ring transition-shadow"
                                                 />
                                             </div>
 
@@ -523,7 +523,7 @@ export function SettingsDialog({ open, onOpenChange }: SettingsDialogProps) {
                                             </div>
 
                                             <div className="pt-6 flex justify-end border-t border-border dark:border-slate-800 mt-2">
-                                                <Button onClick={handleSaveProfile} disabled={saving} className="bg-indigo-600 hover:bg-indigo-700 text-white shadow-lg shadow-indigo-200/50 dark:shadow-indigo-900/20 transition-all hover:scale-[1.02] active:scale-[0.98] px-6">
+                                                <Button onClick={handleSaveProfile} disabled={saving} className="bg-primary hover:bg-primary/90 text-primary-foreground shadow-lg transition-all hover:scale-[1.02] active:scale-[0.98] px-6">
                                                     <Save size={16} className="mr-2" /> {saving ? 'Saving Changes...' : 'Save Profile Changes'}
                                                 </Button>
                                             </div>
@@ -550,7 +550,7 @@ export function SettingsDialog({ open, onOpenChange }: SettingsDialogProps) {
                                                 variant="ghost"
                                                 size="sm"
                                                 onClick={() => setTheme("dark")}
-                                                className={`h-10 px-4 font-medium transition-all ${theme === 'dark' ? 'bg-white text-indigo-600 shadow-sm ring-1 ring-black/5 dark:bg-slate-700 dark:text-indigo-400 dark:ring-white/10' : 'text-slate-600 hover:text-slate-900 hover:bg-white dark:text-slate-400 dark:hover:text-slate-200 dark:hover:bg-slate-700'}`}
+                                                className={`h-10 px-4 font-medium transition-all ${theme === 'dark' ? 'bg-primary/10 text-primary shadow-sm ring-1 ring-primary/20 dark:bg-primary/20 dark:text-primary' : 'text-slate-600 hover:bg-accent hover:text-accent-foreground dark:text-slate-400'}`}
                                             >
                                                 Dark
                                             </Button>
@@ -558,7 +558,7 @@ export function SettingsDialog({ open, onOpenChange }: SettingsDialogProps) {
                                                 variant="ghost"
                                                 size="sm"
                                                 onClick={() => setTheme("light")}
-                                                className={`h-10 px-4 font-medium transition-all ${theme === 'light' ? 'bg-white text-indigo-600 shadow-sm ring-1 ring-black/5 dark:bg-slate-700 dark:text-indigo-400 dark:ring-white/10' : 'text-slate-600 hover:text-slate-900 hover:bg-white dark:text-slate-400 dark:hover:text-slate-200 dark:hover:bg-slate-700'}`}
+                                                className={`h-10 px-4 font-medium transition-all ${theme === 'light' ? 'bg-primary/10 text-primary shadow-sm ring-1 ring-primary/20 dark:bg-primary/20 dark:text-primary' : 'text-slate-600 hover:bg-accent hover:text-accent-foreground dark:text-slate-400'}`}
                                             >
                                                 Light
                                             </Button>
@@ -566,7 +566,7 @@ export function SettingsDialog({ open, onOpenChange }: SettingsDialogProps) {
                                                 variant="ghost"
                                                 size="sm"
                                                 onClick={() => setTheme("system")}
-                                                className={`h-10 px-4 font-medium transition-all ${theme === 'system' ? 'bg-white text-indigo-600 shadow-sm ring-1 ring-black/5 dark:bg-slate-700 dark:text-indigo-400 dark:ring-white/10' : 'text-slate-600 hover:text-slate-900 hover:bg-white dark:text-slate-400 dark:hover:text-slate-200 dark:hover:bg-slate-700'}`}
+                                                className={`h-10 px-4 font-medium transition-all ${theme === 'system' ? 'bg-primary/10 text-primary shadow-sm ring-1 ring-primary/20 dark:bg-primary/20 dark:text-primary' : 'text-slate-600 hover:bg-accent hover:text-accent-foreground dark:text-slate-400'}`}
                                             >
                                                 System
                                             </Button>
@@ -587,7 +587,7 @@ export function SettingsDialog({ open, onOpenChange }: SettingsDialogProps) {
                                     <div className="bg-white dark:bg-card overflow-hidden rounded-2xl shadow-sm border border-border/80 dark:border-slate-700">
                                         <div className="border-b border-slate-50 dark:border-slate-800 flex flex-row items-center justify-between p-6">
                                             <div className="flex items-center gap-3">
-                                                <div className="p-2 bg-indigo-50 dark:bg-indigo-900/30 rounded-lg text-indigo-600 dark:text-indigo-400">
+                                                <div className="p-2 bg-primary/10 dark:bg-primary/20 rounded-lg text-primary">
                                                     <Fingerprint size={20} />
                                                 </div>
                                                 <div>
@@ -617,7 +617,7 @@ export function SettingsDialog({ open, onOpenChange }: SettingsDialogProps) {
                                                     <Button
                                                         onClick={handleSetup2FA}
                                                         disabled={setupLoading}
-                                                        className="bg-indigo-600 hover:bg-indigo-700 text-white font-bold px-8 shadow-lg shadow-indigo-200/50 dark:shadow-indigo-900/20 transition-all"
+                                                        className="bg-primary hover:bg-primary/90 text-primary-foreground font-bold px-8 shadow-lg transition-all"
                                                     >
                                                         {setupLoading ? 'Loading...' : 'Enable 2FA'}
                                                     </Button>
@@ -638,7 +638,7 @@ export function SettingsDialog({ open, onOpenChange }: SettingsDialogProps) {
                                                         <div className="space-y-4">
                                                             <Input
                                                                 placeholder="Enter 6-digit code"
-                                                                className="h-12 text-center text-xl font-mono tracking-wider bg-white dark:bg-card border-slate-200 dark:border-slate-800 rounded-xl focus:ring-indigo-500 focus:border-indigo-500"
+                                                                className="h-12 text-center text-xl font-mono tracking-wider bg-white dark:bg-card border-slate-200 dark:border-slate-800 rounded-xl focus-visible:ring-[3px] focus-visible:ring-ring/50 focus-visible:border-ring"
                                                                 value={twoFactorToken}
                                                                 onChange={(e) => setTwoFactorToken(e.target.value)}
                                                                 maxLength={6}
@@ -653,7 +653,7 @@ export function SettingsDialog({ open, onOpenChange }: SettingsDialogProps) {
                                                                 </Button>
                                                                 <Button
                                                                     onClick={handleVerify2FA}
-                                                                    className="flex-1 bg-indigo-600 hover:bg-indigo-700 text-white font-bold shadow-md shadow-indigo-200/50 dark:shadow-none"
+                                                                    className="flex-1 bg-primary hover:bg-primary/90 text-primary-foreground font-bold shadow-md"
                                                                 >
                                                                     Verify & Enable
                                                                 </Button>
@@ -719,7 +719,7 @@ export function SettingsDialog({ open, onOpenChange }: SettingsDialogProps) {
                                                                 </Button>
                                                                 <Button
                                                                     onClick={() => setShowRecoveryCodes(false)}
-                                                                    className="flex-1 sm:flex-none bg-slate-100 hover:bg-slate-200 text-slate-700 dark:bg-slate-800 dark:hover:bg-slate-700 dark:text-slate-200 font-bold"
+                                                                    className="flex-1 sm:flex-none font-bold hover:bg-accent hover:text-accent-foreground"
                                                                 >
                                                                     Hide Codes
                                                                 </Button>
@@ -734,7 +734,7 @@ export function SettingsDialog({ open, onOpenChange }: SettingsDialogProps) {
                                     {/* Password Update Card */}
                                     <div className="bg-white dark:bg-card overflow-hidden rounded-2xl shadow-sm border border-border/80 dark:border-slate-700">
                                         <div className="border-b border-slate-50 dark:border-slate-800 flex flex-row items-center p-6 gap-3">
-                                            <div className="p-2 bg-indigo-50 dark:bg-indigo-900/30 rounded-lg text-indigo-600 dark:text-indigo-400">
+                                            <div className="p-2 bg-primary/10 dark:bg-primary/20 rounded-lg text-primary">
                                                 <Lock size={20} />
                                             </div>
                                             <div>
@@ -752,7 +752,7 @@ export function SettingsDialog({ open, onOpenChange }: SettingsDialogProps) {
                                                         value={currentPassword}
                                                         onChange={(e) => setCurrentPassword(e.target.value)}
                                                         placeholder="Enter your current password"
-                                                        className="bg-slate-50/50 dark:bg-card border-slate-200 dark:border-slate-800 focus:ring-indigo-500 focus:border-indigo-500 transition-shadow"
+                                                        className="bg-slate-50/50 dark:bg-card border-slate-200 dark:border-slate-800 focus-visible:ring-[3px] focus-visible:ring-ring/50 focus-visible:border-ring transition-shadow"
                                                     />
                                                 </div>
                                                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -764,7 +764,7 @@ export function SettingsDialog({ open, onOpenChange }: SettingsDialogProps) {
                                                                 value={newPassword}
                                                                 onChange={(e) => setNewPassword(e.target.value)}
                                                                 placeholder="Create a new password"
-                                                                className="bg-slate-50/50 dark:bg-card border-slate-200 dark:border-slate-800 focus:ring-indigo-500 focus:border-indigo-500 transition-shadow"
+                                                                className="bg-slate-50/50 dark:bg-card border-slate-200 dark:border-slate-800 focus-visible:ring-[3px] focus-visible:ring-ring/50 focus-visible:border-ring transition-shadow"
                                                             />
                                                         </div>
                                                         {newPassword && (
@@ -796,14 +796,14 @@ export function SettingsDialog({ open, onOpenChange }: SettingsDialogProps) {
                                                             value={confirmPassword}
                                                             onChange={(e) => setConfirmPassword(e.target.value)}
                                                             placeholder="Confirm your new password"
-                                                            className="bg-slate-50/50 dark:bg-card border-slate-200 dark:border-slate-800 focus:ring-indigo-500 focus:border-indigo-500 transition-shadow"
+                                                            className="bg-slate-50/50 dark:bg-card border-slate-200 dark:border-slate-800 focus-visible:ring-[3px] focus-visible:ring-ring/50 focus-visible:border-ring transition-shadow"
                                                         />
                                                     </div>
                                                 </div>
                                             </div>
 
                                             <div className="pt-6 flex justify-end border-t border-border dark:border-slate-800 mt-2">
-                                                <Button onClick={handleUpdatePassword} disabled={passLoading} className="bg-indigo-600 hover:bg-indigo-700 text-white shadow-lg shadow-indigo-200/50 dark:shadow-indigo-900/20 transition-all hover:scale-[1.02] active:scale-[0.98] px-6">
+                                                <Button onClick={handleUpdatePassword} disabled={passLoading} className="bg-primary hover:bg-primary/90 text-primary-foreground shadow-lg transition-all hover:scale-[1.02] active:scale-[0.98] px-6">
                                                     <Save size={16} className="mr-2" /> {passLoading ? 'Updating Password...' : 'Update Password'}
                                                 </Button>
                                             </div>
@@ -814,7 +814,7 @@ export function SettingsDialog({ open, onOpenChange }: SettingsDialogProps) {
                                     <div className="bg-white dark:bg-card overflow-hidden rounded-2xl shadow-sm border border-border/80 dark:border-slate-700">
                                         <div className="border-b border-slate-50 dark:border-slate-800 py-6 px-6 flex items-center justify-between w-full">
                                             <div className="flex items-center gap-3">
-                                                <div className="p-2 bg-indigo-50 dark:bg-indigo-900/30 rounded-lg text-indigo-600 dark:text-indigo-400">
+                                                <div className="p-2 bg-primary/10 dark:bg-primary/20 rounded-lg text-primary">
                                                     <Monitor size={20} />
                                                 </div>
                                                 <div>
@@ -844,7 +844,7 @@ export function SettingsDialog({ open, onOpenChange }: SettingsDialogProps) {
                                                     {sessions.map((session) => (
                                                         <div
                                                             key={session.id}
-                                                            className={`flex items-center justify-between px-6 md:px-8 py-5 transition-colors hover:bg-slate-50/50 dark:hover:bg-slate-800/30 ${session.is_current ? 'bg-emerald-50/20 dark:bg-emerald-950/10' : ''
+                                                            className={`flex items-center justify-between px-6 md:px-8 py-5 transition-colors hover:bg-accent hover:text-accent-foreground ${session.is_current ? 'bg-emerald-50/20 dark:bg-emerald-950/10' : ''
                                                                 }`}
                                                         >
                                                             <div className="flex items-center gap-4 flex-1 min-w-0">
@@ -902,7 +902,7 @@ export function SettingsDialog({ open, onOpenChange }: SettingsDialogProps) {
                                     <div className="bg-white dark:bg-card overflow-hidden rounded-2xl shadow-sm border border-border/80 dark:border-slate-700">
                                         <div className="border-b border-slate-50 dark:border-slate-800 py-6 px-6">
                                             <div className="flex items-center gap-3">
-                                                <div className="p-2 bg-indigo-50 dark:bg-indigo-900/30 rounded-lg text-indigo-600 dark:text-indigo-400">
+                                                <div className="p-2 bg-primary/10 dark:bg-primary/20 rounded-lg text-primary">
                                                     <History size={20} />
                                                 </div>
                                                 <div>
@@ -917,7 +917,7 @@ export function SettingsDialog({ open, onOpenChange }: SettingsDialogProps) {
                                             ) : (
                                                 <div className="divide-y divide-slate-50 dark:divide-slate-800/80 max-h-[400px] overflow-y-auto">
                                                     {loginActivities.map((activity, i) => (
-                                                        <div key={i} className="flex flex-col sm:flex-row sm:items-center justify-between px-6 md:px-8 py-4 gap-4 transition-colors hover:bg-slate-50/50 dark:hover:bg-slate-800/30">
+                                                        <div key={i} className="flex flex-col sm:flex-row sm:items-center justify-between px-6 md:px-8 py-4 gap-4 transition-colors hover:bg-accent hover:text-accent-foreground">
                                                             <div className="flex items-center gap-4 min-w-0">
                                                                 <div className={`p-2 rounded-full border shadow-sm ${activity.status === 'SUCCESS' ? 'bg-emerald-50 dark:bg-emerald-900/20 text-emerald-500 border-emerald-100 dark:border-emerald-900/30' : 'bg-rose-50 dark:bg-rose-900/20 text-rose-500 border-rose-100 dark:border-rose-900/30'}`}>
                                                                     {activity.status === 'SUCCESS' ? (

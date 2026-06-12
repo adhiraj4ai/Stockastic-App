@@ -6,6 +6,7 @@ import api from '@/lib/api';
 import DashboardLayout from '@/components/DashboardLayout';
 import { CompanySelect } from '@/components/CompanySelect';
 import { Button } from '@/components/ui/button';
+import { Checkbox } from '@/components/ui/checkbox';
 import { Card, CardContent } from '@/components/ui/card';
 import { PageLoader } from '@/components/ui/StockLoader';
 import { toast } from 'sonner';
@@ -19,7 +20,7 @@ const posColor = (v: any) => (v == null ? 'text-gray-400' : v >= 0 ? 'text-emera
 function KindBadge({ kind }: { kind?: string }) {
     const composed = kind === 'composed';
     return <span className={`text-[10px] uppercase font-bold px-1.5 py-0.5 rounded ${composed
-        ? 'bg-blue-100 text-blue-700 dark:bg-blue-900/40 dark:text-blue-300'
+        ? 'bg-primary/10 text-primary'
         : 'bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-300'}`}>{composed ? 'Composed' : 'Custom'}</span>;
 }
 
@@ -30,7 +31,7 @@ function Highlight({ title, icon: Icon, row, accent, router }: { title: string; 
             <CardContent className="p-4">
                 <div className={`text-xs font-bold uppercase tracking-wider flex items-center gap-1.5 ${accent}`}><Icon size={14} /> {title}</div>
                 <button onClick={() => router.push(`/strategies/${row.id}/${row.kind === 'custom' ? 'editor' : 'builder'}`)}
-                    className="text-lg font-bold hover:text-blue-600 mt-1 block text-left">{row.name}</button>
+                    className="text-lg font-bold hover:text-primary mt-1 block text-left">{row.name}</button>
                 <div className="flex items-center gap-3 mt-1 text-sm">
                     <span className={`font-mono ${posColor(row.return_pct)}`}>{fmtPct(row.return_pct)}</span>
                     <span className="text-gray-400">on {row.timeframe}</span>
@@ -78,7 +79,7 @@ export default function StrategyScanPage() {
     return (
         <DashboardLayout showBack title="Strategy Scan">
             <div className="w-full px-4 sm:px-6 py-4 space-y-4">
-                <div className="flex items-center gap-2 text-2xl font-bold"><Radar className="text-blue-600" /> Find the best strategy for a symbol</div>
+                <div className="flex items-center gap-2 text-2xl font-bold"><Radar className="text-primary" /> Find the best strategy for a symbol</div>
                 <p className="text-sm text-gray-500">Backtests every strategy on one stock across timeframes and ranks them.</p>
 
                 {/* Controls */}
@@ -90,12 +91,12 @@ export default function StrategyScanPage() {
                             <div className="flex gap-1">
                                 {ALL_TF.map((t) => (
                                     <button key={t} onClick={() => toggleTf(t)}
-                                        className={`px-2.5 py-1.5 text-xs rounded-lg uppercase ${tfs.includes(t) ? 'bg-blue-600 text-white' : 'bg-gray-100 dark:bg-slate-800 text-gray-600 dark:text-slate-300'}`}>{t}</button>
+                                        className={`px-2.5 py-1.5 text-xs rounded-lg uppercase ${tfs.includes(t) ? 'bg-primary/10 text-primary border-primary/30' : 'bg-gray-100 dark:bg-slate-800 text-gray-600 dark:text-slate-300'}`}>{t}</button>
                                 ))}
                             </div>
                         </div>
                         <label className="flex items-center gap-2 text-sm cursor-pointer select-none">
-                            <input type="checkbox" checked={optimize} onChange={(e) => setOptimize(e.target.checked)} className="rounded" />
+                            <Checkbox checked={optimize} onCheckedChange={(checked) => setOptimize(!!checked)} />
                             Optimize parameters <span className="text-xs text-amber-600">(slower)</span>
                         </label>
                         <Button onClick={run} disabled={loading} className="gap-1.5 ml-auto"><Play size={16} /> {loading ? 'Scanning…' : 'Run scan'}</Button>
@@ -129,9 +130,9 @@ export default function StrategyScanPage() {
                                 <tbody>
                                     {res.results.map((r: any, i: number) => (
                                         <tr key={r.id} onClick={() => router.push(`/strategies/${r.id}/${r.kind === 'custom' ? 'editor' : 'builder'}`)}
-                                            className={`border-t border-gray-100 dark:border-slate-800 hover:bg-gray-50 dark:hover:bg-slate-900/60 cursor-pointer ${r.beats_bh ? '' : 'opacity-70'}`}>
+                                            className={`border-t border-gray-100 dark:border-slate-800 hover:bg-accent hover:text-accent-foreground cursor-pointer ${r.beats_bh ? '' : 'opacity-70'}`}>
                                             <td className="px-3 py-2 text-gray-400">{i + 1}</td>
-                                            <td className="px-2"><div className="flex items-center gap-2"><span className="font-medium">{r.name}</span><KindBadge kind={r.kind} />{r.tuned && <span className="text-[10px] text-purple-600" title="parameters tuned">tuned</span>}</div></td>
+                                            <td className="px-2"><div className="flex items-center gap-2"><span className="font-medium">{r.name}</span><KindBadge kind={r.kind} />{r.tuned && <span className="text-[10px] text-primary" title="parameters tuned">tuned</span>}</div></td>
                                             <td className="text-center px-2 uppercase text-xs text-gray-500">{r.timeframe}</td>
                                             {COLS.map((c) => { const v = c.get(r); return <td key={c.label} className={`text-right px-3 font-mono ${c.color ? c.color(v) : 'text-gray-600 dark:text-slate-300'}`}>{c.fmt(v)}</td>; })}
                                             <td className="px-2 text-center" onClick={(e) => {
@@ -139,7 +140,7 @@ export default function StrategyScanPage() {
                                                 const tuned = r.tuned_spec ? `&spec=${encodeURIComponent(JSON.stringify(r.tuned_spec))}` : '';
                                                 router.push(`/strategies/${r.id}/backtest?symbol=${res.symbol}&period=${r.timeframe}${tuned}`);
                                             }}>
-                                                <Play size={14} className="text-blue-600 inline" />
+                                                <Play size={14} className="text-primary inline" />
                                             </td>
                                         </tr>
                                     ))}

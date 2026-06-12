@@ -77,7 +77,7 @@ export default function RecommendationsTab() {
                         </thead>
                         <tbody className="divide-y divide-gray-100 dark:divide-slate-800">
                             {recommendations.map((rec, i) => (
-                                <tr key={i} className="hover:bg-gray-50 dark:hover:bg-slate-800/50">
+                                <tr key={i} className="hover:bg-accent hover:text-accent-foreground">
                                     <td className="px-6 py-4 font-medium text-gray-900 dark:text-slate-100">{rec.strategy_name}</td>
                                     <td className="px-6 py-4">
                                         <div className="flex flex-col">
@@ -102,7 +102,7 @@ export default function RecommendationsTab() {
                                         <Button
                                             size="sm"
                                             variant="ghost"
-                                            className="h-8 text-blue-600 dark:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900/20"
+                                            className="h-8 text-primary hover:bg-primary/10"
                                             onClick={() => router.push(`/strategies/${rec.strategy_id}/run`)}
                                         >
                                             <Play size={14} className="mr-1" /> View Strategy

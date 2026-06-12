@@ -79,7 +79,7 @@ export default function PriceActionScreener() {
                             <p className="text-xs font-bold text-slate-400 uppercase">Active Scans</p>
                             <h3 className="text-2xl font-semibold text-slate-800 dark:text-slate-100">{setups.length} Setups</h3>
                         </div>
-                        <div className="h-12 w-12 rounded-full bg-blue-50 dark:bg-blue-900/20 flex items-center justify-center text-blue-500">
+                        <div className="h-12 w-12 rounded-full bg-primary/10 flex items-center justify-center text-primary">
                             <Activity size={24} />
                         </div>
                     </Card>
@@ -96,12 +96,12 @@ export default function PriceActionScreener() {
                     </Card>
                     <Card className="p-6 border-slate-200 dark:border-slate-800 bg-white dark:bg-card shadow-sm flex items-center justify-between">
                         <div>
-                            <p className="text-xs font-bold text-violet-500 uppercase">FVG Imbalances</p>
+                            <p className="text-xs font-bold text-primary uppercase">FVG Imbalances</p>
                             <h3 className="text-2xl font-semibold text-slate-800 dark:text-slate-100">
                                 {setups.filter(s => s.latest_event?.smc_events?.some((e: any) => e.type === 'FVG')).length}
                             </h3>
                         </div>
-                        <div className="h-12 w-12 rounded-full bg-violet-50 dark:bg-violet-900/20 flex items-center justify-center text-violet-500">
+                        <div className="h-12 w-12 rounded-full bg-primary/10 flex items-center justify-center text-primary">
                             <Zap size={24} />
                         </div>
                     </Card>
@@ -148,7 +148,7 @@ export default function PriceActionScreener() {
                                 {loading ? (
                                     <tr>
                                         <td colSpan={6} className="py-20 text-center">
-                                            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-indigo-500 mx-auto mb-4"></div>
+                                            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto mb-4"></div>
                                             <p className="text-slate-500 font-bold">Scanning Global Market...</p>
                                         </td>
                                     </tr>
@@ -161,7 +161,7 @@ export default function PriceActionScreener() {
                                         const signals = allSignals[setup.ticker] || [];
                                         return (
                                             <tr key={idx} 
-                                                className="hover:bg-slate-50 dark:hover:bg-slate-800/50 cursor-pointer transition-colors group"
+                                                className="hover:bg-accent hover:text-accent-foreground cursor-pointer transition-colors group"
                                                 onClick={() => router.push(`/ticker/${setup.ticker}?tab=priceaction`)}
                                             >
                                                 <td className="px-6 py-4">
@@ -221,7 +221,7 @@ export default function PriceActionScreener() {
                                                         <span className="font-bold text-slate-800 dark:text-slate-200 line-clamp-1 group-hover:line-clamp-none">{setup.latest_event?.shape_desc}</span>
                                                         <span className={cn(
                                                             "text-[10px] font-bold truncate",
-                                                            setup.latest_event?.volume_desc.includes('High') ? "text-indigo-600 dark:text-indigo-400" : "text-slate-500"
+                                                            setup.latest_event?.volume_desc.includes('High') ? "text-primary" : "text-slate-500"
                                                         )}>
                                                             {setup.latest_event?.volume_desc}
                                                         </span>

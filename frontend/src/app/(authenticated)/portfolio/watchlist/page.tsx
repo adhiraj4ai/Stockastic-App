@@ -226,7 +226,7 @@ export default function WatchlistPage() {
             subtitle="Monitor potential entries and track performance"
         >
             <TooltipProvider>
-                <Card className="shadow-lg border-blue-50/50 dark:border-slate-800 dark:bg-card">
+                <Card className="shadow-lg border-border dark:border-slate-800 dark:bg-card">
                     <CardHeader className="border-b border-gray-50 dark:border-slate-800 pb-2">
                         <CardTitle className="text-xl font-semibold text-slate-900 dark:text-slate-100 tracking-tight flex items-center justify-between">
                             <div className="flex items-center gap-3">
@@ -276,13 +276,13 @@ export default function WatchlistPage() {
                                         setWatchlistForm({ ticker: '', target_price: '', stop_loss_price: '', alert_enabled: false, notes: '' });
                                         setIsWatchlistModalOpen(true);
                                     }}
-                                    className="h-9 px-4 flex items-center gap-2 bg-gray-900 dark:bg-slate-800 text-white rounded-md text-[11px] font-semibold hover:bg-black dark:hover:bg-slate-700 transition-all uppercase tracking-wider shadow-md whitespace-nowrap"
+                                    className="h-9 px-4 flex items-center gap-2 bg-primary text-primary-foreground rounded-md text-[11px] font-semibold hover:bg-primary/90 transition-all uppercase tracking-wider shadow-md whitespace-nowrap"
                                 >
                                     <Plus size={14} /> Add
                                 </button>
                                 <button
                                     onClick={handleExportCsv}
-                                    className="h-9 px-3 flex items-center gap-2 border border-gray-200 dark:border-slate-700 text-gray-600 dark:text-slate-400 rounded-md text-[11px] font-semibold hover:bg-gray-50 dark:hover:bg-slate-800 transition-all uppercase tracking-wider"
+                                    className="h-9 px-3 flex items-center gap-2 border border-border text-gray-600 dark:text-slate-400 rounded-md text-[11px] font-semibold hover:bg-accent hover:text-accent-foreground transition-all uppercase tracking-wider"
                                     title="Export CSV"
                                 >
                                     <Download size={14} /> CSV
@@ -300,7 +300,7 @@ export default function WatchlistPage() {
                             <div className="overflow-x-auto">
                                 <Table>
                                     <TableHeader>
-                                        <TableRow className="bg-gray-50/50 dark:bg-slate-800/50 hover:bg-gray-50/50 dark:hover:bg-slate-800/50">
+                                        <TableRow className="bg-gray-50/50 dark:bg-slate-800/50 hover:bg-transparent">
                                             <TableHead className="font-bold text-gray-900 dark:text-slate-100 px-6">Ticker</TableHead>
                                             <TableHead className="text-right font-bold text-gray-900 dark:text-slate-100">LTP (रू)</TableHead>
                                             <TableHead className="text-right font-bold text-gray-900 dark:text-slate-100">Day Change</TableHead>
@@ -319,14 +319,14 @@ export default function WatchlistPage() {
                                             const isPos = dayChange >= 0;
 
                                             return (
-                                                <TableRow key={item.id} className="hover:bg-blue-50/30 dark:hover:bg-slate-800/30 border-b border-gray-50 dark:border-slate-800 last:border-0 group transition-all">
+                                                <TableRow key={item.id} className="hover:bg-accent hover:text-accent-foreground border-b border-gray-50 dark:border-slate-800 last:border-0 group transition-all">
                                                     <TableCell className="py-4 px-6 relative">
                                                         <div className="flex flex-col">
                                                             <div className="flex items-center gap-2">
                                                                 <StockLink ticker={item.ticker} className="font-semibold text-slate-900 dark:text-slate-100 text-sm" />
                                                                 <button
                                                                     onClick={() => toggleWatchlistAlert(item)}
-                                                                    className={`p-1 rounded-full transition-all ${item.alert_enabled ? 'text-blue-600 bg-blue-50 dark:bg-blue-900/30' : 'text-slate-300 dark:text-slate-700 hover:text-blue-400'}`}
+                                                                    className={`p-1 rounded-full transition-all ${item.alert_enabled ? 'text-primary bg-primary/10' : 'text-slate-300 dark:text-slate-700 hover:text-primary'}`}
                                                                     title={item.alert_enabled ? 'Disable Price Alerts' : 'Enable Price Alerts'}
                                                                 >
                                                                     <Bell size={12} className={item.alert_enabled ? 'fill-current' : ''} />
@@ -399,7 +399,7 @@ export default function WatchlistPage() {
                                                             {item.is_accumulating && (
                                                                 <Tooltip>
                                                                     <TooltipTrigger asChild>
-                                                                        <Badge className="bg-purple-100 text-purple-700 dark:bg-purple-900/40 dark:text-purple-400 text-[8px] font-semibold uppercase tracking-wider px-1.5 py-0 border-none cursor-help">
+                                                                        <Badge className="bg-primary/10 text-primary text-[8px] font-semibold uppercase tracking-wider px-1.5 py-0 border-none cursor-help">
                                                                             <Zap size={8} className="mr-1 inline" /> Institutional Interest
                                                                         </Badge>
                                                                     </TooltipTrigger>
@@ -413,7 +413,7 @@ export default function WatchlistPage() {
                                                             )}
                                                             {item.rvol !== undefined && item.rvol !== null ? (
                                                                 <div className="flex flex-col items-end">
-                                                                    <div className={`font-semibold text-sm ${item.rvol > 2 ? 'text-purple-600 dark:text-purple-400' : item.rvol > 1 ? 'text-blue-600 dark:text-blue-400' : 'text-slate-500 dark:text-slate-400'}`}>
+                                                                    <div className={`font-semibold text-sm ${item.rvol > 2 ? 'text-primary font-bold' : item.rvol > 1 ? 'text-primary' : 'text-slate-500 dark:text-slate-400'}`}>
                                                                         {item.rvol.toFixed(1)}x
                                                                     </div>
                                                                     <div className="text-[9px] font-bold text-slate-400 uppercase">VOL Intensity</div>
@@ -432,14 +432,14 @@ export default function WatchlistPage() {
                                                                 </div>
                                                                 <div className="relative w-full h-1.5 bg-slate-100 dark:bg-slate-800 rounded-full overflow-hidden border border-border dark:border-slate-700/50">
                                                                     <div
-                                                                        className="absolute top-0 h-full bg-blue-500/50 dark:bg-blue-400/50"
+                                                                        className="absolute top-0 h-full bg-primary/40"
                                                                         style={{
                                                                             left: '0',
                                                                             width: `${((Number(item.current_price) - item.fifty_two_week_low) / (item.fifty_two_week_high - item.fifty_two_week_low)) * 100}%`
                                                                         }}
                                                                     />
                                                                     <div
-                                                                        className="absolute top-0 h-full w-1 bg-blue-600 dark:bg-blue-300 shadow-[0_0_5px_rgba(37,99,235,0.5)]"
+                                                                        className="absolute top-0 h-full w-1 bg-primary shadow-sm"
                                                                         style={{
                                                                             left: `${((Number(item.current_price) - item.fifty_two_week_low) / (item.fifty_two_week_high - item.fifty_two_week_low)) * 100}%`,
                                                                             transform: 'translateX(-50%)'
@@ -455,7 +455,7 @@ export default function WatchlistPage() {
                                                         <div className="flex flex-col items-end gap-1">
                                                             <div className="flex items-center gap-1.5">
                                                                 {(item.buy_signal_count || 0) >= 2 && (item.rvol || 0) > 1.5 && (
-                                                                    <Badge className="bg-blue-600 text-white text-[8px] font-semibold uppercase px-1.5 py-0 animate-pulse border-none">
+                                                                    <Badge className="bg-primary text-primary-foreground text-[8px] font-semibold uppercase px-1.5 py-0 animate-pulse border-none">
                                                                         High Conviction
                                                                     </Badge>
                                                                 )}
@@ -543,7 +543,7 @@ export default function WatchlistPage() {
                                                             </button>
                                                             <button
                                                                 onClick={() => handleEditWatchlist(item)}
-                                                                className="p-2 text-slate-400 dark:text-slate-500 hover:text-blue-600 dark:hover:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900/20 rounded-lg transition-colors"
+                                                                className="p-2 text-slate-400 dark:text-slate-500 hover:text-primary hover:bg-primary/10 rounded-lg transition-colors"
                                                                 title="Edit Strategy"
                                                             >
                                                                 <Edit2 size={16} />
@@ -575,17 +575,17 @@ export default function WatchlistPage() {
                                     <button
                                         onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
                                         disabled={currentPage === 1}
-                                        className="p-2 rounded-lg border border-gray-100 dark:border-slate-800 hover:bg-gray-50 dark:hover:bg-slate-800 disabled:opacity-20 transition-all font-semibold text-gray-600 dark:text-slate-400"
+                                        className="p-2 rounded-lg border border-border hover:bg-accent hover:text-accent-foreground disabled:opacity-20 transition-all font-semibold text-gray-600 dark:text-slate-400"
                                     >
                                         <ChevronLeft size={16} />
                                     </button>
-                                    <span className="text-xs font-semibold px-4 py-2 bg-gray-900 dark:bg-slate-800 text-white rounded-lg shadow-lg">
+                                    <span className="text-xs font-semibold px-4 py-2 bg-primary text-primary-foreground rounded-lg shadow-lg">
                                         {currentPage} / {totalPages}
                                     </span>
                                     <button
                                         onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
                                         disabled={currentPage === totalPages}
-                                        className="p-2 rounded-lg border border-gray-100 dark:border-slate-800 hover:bg-gray-50 dark:hover:bg-slate-800 disabled:opacity-20 transition-all font-semibold text-gray-600 dark:text-slate-400"
+                                        className="p-2 rounded-lg border border-border hover:bg-accent hover:text-accent-foreground disabled:opacity-20 transition-all font-semibold text-gray-600 dark:text-slate-400"
                                     >
                                         <ChevronRight size={16} />
                                     </button>
@@ -600,8 +600,8 @@ export default function WatchlistPage() {
                     <DialogContent className="sm:max-w-[425px] overflow-hidden p-0 border-none shadow-sm dark:bg-slate-950">
                         <DialogHeader className="p-6 pb-0">
                             <DialogTitle className="text-2xl font-semibold text-slate-900 dark:text-slate-100 tracking-tight flex items-center gap-2">
-                                <div className="p-2 bg-blue-50 dark:bg-blue-900/30 rounded-lg">
-                                    <Eye className="h-5 w-5 text-blue-600 dark:text-blue-400" />
+                                <div className="p-2 bg-primary/10 rounded-lg">
+                                    <Eye className="h-5 w-5 text-primary" />
                                 </div>
                                 {selectedWatchlistItem ? 'Edit Watchlist Item' : 'Add to Watchlist'}
                             </DialogTitle>
@@ -618,7 +618,7 @@ export default function WatchlistPage() {
                                     <CompanySelect
                                         value={watchlistForm.ticker}
                                         onChange={(val) => setWatchlistForm({ ...watchlistForm, ticker: val })}
-                                        className="h-12 bg-white dark:bg-card border-blue-100 dark:border-slate-800 font-medium text-lg"
+                                        className="h-12 bg-white dark:bg-card border-border dark:border-slate-800 font-medium text-lg"
                                     />
                                 )}
                             </div>
@@ -627,13 +627,13 @@ export default function WatchlistPage() {
                                 <div className="space-y-2">
                                     <label className="text-[10px] font-semibold text-slate-400 dark:text-slate-500 tracking-wider ml-1">Target Price (रू)</label>
                                     <div className="relative">
-                                        <Target className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-blue-500 dark:text-blue-400" />
+                                        <Target className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-primary" />
                                         <Input
                                             placeholder="0.00"
                                             type="number"
                                             value={watchlistForm.target_price}
                                             onChange={(e) => setWatchlistForm({ ...watchlistForm, target_price: e.target.value })}
-                                            className="pl-10 h-12 bg-white dark:bg-card border-blue-50 dark:border-slate-800 font-semibold text-slate-900 dark:text-slate-100 text-lg focus:ring-2 focus:ring-blue-100 dark:focus:ring-blue-900/30 placeholder:text-slate-300 dark:placeholder:text-slate-700"
+                                            className="pl-10 h-12 bg-white dark:bg-card border-border font-semibold text-slate-900 dark:text-slate-100 text-lg focus-visible:ring-[3px] focus-visible:ring-ring/50 focus-visible:border-ring placeholder:text-slate-300 dark:placeholder:text-slate-700"
                                         />
                                     </div>
                                 </div>
@@ -646,23 +646,23 @@ export default function WatchlistPage() {
                                             type="number"
                                             value={watchlistForm.stop_loss_price}
                                             onChange={(e) => setWatchlistForm({ ...watchlistForm, stop_loss_price: e.target.value })}
-                                            className="pl-10 h-12 bg-white dark:bg-card border-blue-50 dark:border-slate-800 font-semibold text-slate-900 dark:text-slate-100 text-lg focus:ring-2 focus:ring-red-100 dark:focus:ring-red-900/30 placeholder:text-slate-300 dark:placeholder:text-slate-700"
+                                            className="pl-10 h-12 bg-white dark:bg-card border-slate-100 dark:border-slate-800 font-semibold text-slate-900 dark:text-slate-100 text-lg focus:ring-2 focus:ring-red-100 dark:focus:ring-red-900/30 placeholder:text-slate-300 dark:placeholder:text-slate-700"
                                         />
                                     </div>
                                 </div>
                             </div>
 
-                            <div className="flex items-center justify-between p-4 bg-blue-50/30 dark:bg-blue-900/10 rounded-xl border border-blue-100/50 dark:border-blue-900/30">
+                            <div className="flex items-center justify-between p-4 bg-primary/5 dark:bg-primary/10 rounded-xl border border-primary/20 dark:border-primary/30">
                                 <div className="flex flex-col">
                                     <span className="text-xs font-semibold text-slate-900 dark:text-slate-100 uppercase tracking-wide flex items-center gap-2">
-                                        <Bell className="h-3.5 w-3.5 text-blue-500" /> Price Alerts
+                                        <Bell className="h-3.5 w-3.5 text-primary" /> Price Alerts
                                     </span>
                                     <span className="text-[10px] font-bold text-slate-500">Notify when target/SL hits</span>
                                 </div>
                                 <button
                                     type="button"
                                     onClick={() => setWatchlistForm({ ...watchlistForm, alert_enabled: !watchlistForm.alert_enabled })}
-                                    className={`w-12 h-6 rounded-full transition-all relative ${watchlistForm.alert_enabled ? 'bg-blue-600' : 'bg-slate-300 dark:bg-slate-700'}`}
+                                    className={`w-12 h-6 rounded-full transition-all relative ${watchlistForm.alert_enabled ? 'bg-primary' : 'bg-slate-300 dark:bg-slate-700'}`}
                                 >
                                     <div className={`absolute top-1 w-4 h-4 bg-white rounded-full transition-all ${watchlistForm.alert_enabled ? 'left-7' : 'left-1'}`} />
                                 </button>
@@ -674,7 +674,7 @@ export default function WatchlistPage() {
                                     placeholder="Enter your investment thesis or entry notes..."
                                     value={watchlistForm.notes}
                                     onChange={(e) => setWatchlistForm({ ...watchlistForm, notes: e.target.value })}
-                                    className="w-full min-h-[100px] p-3 rounded-xl border border-blue-50 dark:border-slate-800 bg-white dark:bg-card font-bold text-sm text-slate-900 dark:text-slate-100 placeholder:text-slate-300 dark:placeholder:text-slate-700 focus:ring-2 focus:ring-blue-100 dark:focus:ring-blue-900/30 focus:outline-none transition-all"
+                                    className="w-full min-h-[100px] p-3 rounded-xl border border-border dark:border-slate-800 bg-white dark:bg-card font-bold text-sm text-slate-900 dark:text-slate-100 placeholder:text-slate-300 dark:placeholder:text-slate-700 focus-visible:ring-[3px] focus-visible:ring-ring/50 focus-visible:border-ring focus:outline-none transition-all"
                                 />
                             </div>
                         </div>
@@ -683,13 +683,13 @@ export default function WatchlistPage() {
                             <div className="flex w-full gap-3">
                                 <button
                                     onClick={() => setIsWatchlistModalOpen(false)}
-                                    className="flex-1 h-12 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-card text-[10px] font-semibold uppercase tracking-wider hover:bg-slate-50 dark:hover:bg-slate-800 transition-all text-slate-500 dark:text-slate-400"
+                                    className="flex-1 h-12 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-card text-[10px] font-semibold uppercase tracking-wider hover:bg-accent hover:text-accent-foreground transition-all text-slate-500 dark:text-slate-400"
                                 >
                                     Cancel
                                 </button>
                                 <button
                                     onClick={selectedWatchlistItem ? updateWatchlistItem : addWatchlistItem}
-                                    className="flex-[2] h-12 rounded-xl bg-slate-900 dark:bg-slate-800 text-white text-[11px] font-semibold uppercase tracking-wider hover:bg-black dark:hover:bg-slate-700 transition-all shadow-lg flex items-center justify-center gap-2 group"
+                                    className="flex-[2] h-12 rounded-xl bg-primary text-primary-foreground text-[11px] font-semibold uppercase tracking-wider hover:bg-primary/90 transition-all shadow-lg flex items-center justify-center gap-2 group"
                                 >
                                     {selectedWatchlistItem ? (
                                         <>Update <Target size={14} className="group-hover:scale-125 transition-transform" /></>

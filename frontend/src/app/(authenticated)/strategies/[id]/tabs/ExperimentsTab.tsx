@@ -185,7 +185,7 @@ export default function ExperimentsTab({ strategyId }: ExperimentsTabProps) {
         // Handle Optimization metrics
         if (exp.run_type === 'OPTIMIZATION') {
             return (
-                <span className="text-purple-600 font-bold">
+                <span className="text-primary font-bold">
                     Best: {m.best_return?.toFixed(2)}%
                 </span>
             );
@@ -317,7 +317,7 @@ export default function ExperimentsTab({ strategyId }: ExperimentsTabProps) {
             <section>
                 <div className="flex justify-between items-center mb-4">
                     <h3 className="text-lg font-bold text-gray-900 dark:text-slate-100 flex items-center gap-2">
-                        <Beaker className="text-purple-500" size={20} />
+                        <Beaker className="text-primary" size={20} />
                         {strategyId ? 'Experiment History' : 'Global Experiment Log'}
                     </h3>
                     {!strategyId && (
@@ -357,7 +357,7 @@ export default function ExperimentsTab({ strategyId }: ExperimentsTabProps) {
                                     .map((exp) => (
                                         <Fragment key={exp.id}>
                                             <tr
-                                                className="hover:bg-gray-50 dark:hover:bg-slate-800 cursor-pointer"
+                                                className="hover:bg-accent cursor-pointer"
                                                 onClick={() => toggleExpand(exp.id)}
                                             >
                                                 <td className="px-6 py-4 whitespace-nowrap">
@@ -370,7 +370,7 @@ export default function ExperimentsTab({ strategyId }: ExperimentsTabProps) {
                                                 <td className="px-6 py-4 whitespace-nowrap text-gray-500 dark:text-slate-400 font-mono text-xs">
                                                     <a
                                                         href={`/strategies/${exp.strategy}/experiments/${exp.id}`}
-                                                        className="text-blue-600 dark:text-blue-400 hover:underline flex items-center gap-1"
+                                                        className="text-primary hover:underline flex items-center gap-1"
                                                         onClick={(e) => e.stopPropagation()}
                                                     >
                                                         #{exp.id} <ExternalLink size={10} />
@@ -386,7 +386,7 @@ export default function ExperimentsTab({ strategyId }: ExperimentsTabProps) {
                                                 )}
                                                 <td className="px-6 py-4 whitespace-nowrap">
                                                     <span className={`inline-flex items-center px-2 py-0.5 rounded text-xs font-bold uppercase tracking-wide
-                                                        ${exp.run_type === 'BACKTEST' ? 'bg-blue-50 dark:bg-blue-900/30 text-blue-700 dark:text-blue-400' : 'bg-purple-50 dark:bg-purple-900/30 text-purple-700 dark:text-purple-400'}`}>
+                                                        ${exp.run_type === 'BACKTEST' ? 'bg-primary/10 text-primary' : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300'}`}>
                                                         {exp.run_type}
                                                     </span>
                                                 </td>
@@ -404,7 +404,7 @@ export default function ExperimentsTab({ strategyId }: ExperimentsTabProps) {
                                                     <div className="flex items-center gap-2">
                                                         <a
                                                             href={`/strategies/${strategyId || exp.strategy}/experiments/${exp.id}`}
-                                                            className="text-[10px] font-bold uppercase tracking-wider text-gray-600 dark:text-slate-300 bg-gray-50 dark:bg-slate-800 hover:bg-gray-100 dark:hover:bg-slate-700 border border-gray-200 dark:border-slate-700 px-2 py-1 rounded transition-colors flex items-center gap-1"
+                                                            className="text-[10px] font-bold uppercase tracking-wider text-slate-600 dark:text-slate-300 bg-slate-50 dark:bg-slate-800 hover:bg-accent hover:text-accent-foreground border border-slate-200 dark:border-slate-700 px-2 py-1 rounded transition-colors flex items-center gap-1"
                                                             onClick={(e) => e.stopPropagation()}
                                                         >
                                                             View
@@ -426,7 +426,7 @@ export default function ExperimentsTab({ strategyId }: ExperimentsTabProps) {
                                                                         e.stopPropagation();
                                                                         handlePublish(exp);
                                                                     }}
-                                                                    className="text-[10px] font-bold uppercase tracking-wider text-purple-600 bg-purple-50 hover:bg-purple-100 border border-purple-200 px-2 py-1 rounded transition-colors"
+                                                                    className="text-[10px] font-bold uppercase tracking-wider text-primary bg-primary/10 hover:bg-primary/20 border border-primary/30 px-2 py-1 rounded transition-colors"
                                                                 >
                                                                     Publish
                                                                 </button>
@@ -471,7 +471,7 @@ export default function ExperimentsTab({ strategyId }: ExperimentsTabProps) {
                                                                                     .map(child => (
                                                                                         <tr
                                                                                             key={child.id}
-                                                                                            className="hover:bg-gray-50 dark:hover:bg-slate-800 cursor-pointer group"
+                                                                                            className="hover:bg-accent cursor-pointer group"
                                                                                             onClick={(e) => {
                                                                                                 e.stopPropagation();
                                                                                                 window.open(`/strategies/${strategyId || child.strategy}/experiments/${child.id}`, '_blank');
@@ -486,7 +486,7 @@ export default function ExperimentsTab({ strategyId }: ExperimentsTabProps) {
                                                                                                     #{child.id}
                                                                                                 </a>
                                                                                             </td>
-                                                                                            <td className="px-4 py-2 font-bold group-hover:text-blue-600 dark:group-hover:text-blue-400 flex items-center gap-2">
+                                                                                            <td className="px-4 py-2 font-bold group-hover:text-primary flex items-center gap-2">
                                                                                                 {child.scope_value}
                                                                                                 <ExternalLink size={12} className="opacity-0 group-hover:opacity-100" />
                                                                                             </td>
@@ -498,7 +498,7 @@ export default function ExperimentsTab({ strategyId }: ExperimentsTabProps) {
                                                                                             <td className="px-4 py-2">
                                                                                                 <div className="flex items-center justify-between">
                                                                                                     {child.status === 'SUCCESS' ? <CheckCircle size={14} className="text-green-500" /> : <XCircle size={14} className="text-red-500" />}
-                                                                                                    <button className="text-[10px] text-blue-600 dark:text-blue-400 font-bold opacity-0 group-hover:opacity-100 uppercase">View Detail</button>
+                                                                                                    <button className="text-[10px] text-primary font-bold opacity-0 group-hover:opacity-100 uppercase">View Detail</button>
                                                                                                 </div>
                                                                                             </td>
                                                                                         </tr>
@@ -547,7 +547,7 @@ export default function ExperimentsTab({ strategyId }: ExperimentsTabProps) {
 
                                                                 <div>
                                                                     <h4 className="text-xs font-bold text-gray-500 dark:text-slate-400 uppercase mb-3 flex items-center gap-1">
-                                                                        <Activity size={14} className="text-blue-500" /> Outcome Analysis
+                                                                        <Activity size={14} className="text-primary" /> Outcome Analysis
                                                                     </h4>
                                                                     <div className="bg-white dark:bg-card border border-gray-200 dark:border-slate-800 rounded-lg p-4 shadow-sm">
                                                                         {exp.run_type === 'BACKTEST' ? (
@@ -625,11 +625,11 @@ export default function ExperimentsTab({ strategyId }: ExperimentsTabProps) {
                                                                             <div className="space-y-4">
                                                                                 <div className="flex justify-between items-center border-b pb-2">
                                                                                     <span className="text-xs text-gray-500 dark:text-slate-400 font-bold uppercase">Best Return</span>
-                                                                                    <span className="text-lg font-bold text-purple-600 dark:text-purple-400">{exp.metrics.best_return?.toFixed(2)}%</span>
+                                                                                    <span className="text-lg font-bold text-primary">{exp.metrics.best_return?.toFixed(2)}%</span>
                                                                                 </div>
                                                                                 <div>
                                                                                     <p className="text-[10px] text-gray-400 dark:text-slate-500 uppercase font-bold mb-2">Optimal Configuration</p>
-                                                                                    <div className="bg-purple-50 dark:bg-purple-900/20 p-2 rounded border border-purple-100 dark:border-purple-800 font-mono text-xs text-purple-900 dark:text-purple-300 overflow-x-auto">
+                                                                                    <div className="bg-primary/5 dark:bg-primary/10 p-2 rounded border border-primary/20 font-mono text-xs text-slate-900 dark:text-slate-300 overflow-x-auto">
                                                                                         {JSON.stringify(exp.metrics.best_params, null, 2)}
                                                                                     </div>
                                                                                 </div>
@@ -666,14 +666,14 @@ export default function ExperimentsTab({ strategyId }: ExperimentsTabProps) {
                             <button
                                 onClick={() => setPage(p => Math.max(1, p - 1))}
                                 disabled={!hasPrev || loading}
-                                className="px-3 py-1 text-xs font-bold uppercase tracking-wider text-gray-600 dark:text-slate-300 bg-white dark:bg-card border border-gray-200 dark:border-slate-700 rounded-lg hover:bg-gray-50 dark:hover:bg-slate-800 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                                className="px-3 py-1 text-xs font-bold uppercase tracking-wider text-gray-600 dark:text-slate-300 bg-white dark:bg-card border border-gray-200 dark:border-slate-700 rounded-lg hover:bg-accent hover:text-accent-foreground disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
                             >
                                 Previous
                             </button>
                             <button
                                 onClick={() => setPage(p => p + 1)}
                                 disabled={!hasNext || loading}
-                                className="px-3 py-1 text-xs font-bold uppercase tracking-wider text-blue-600 dark:text-blue-400 bg-white dark:bg-card border border-blue-200 dark:border-blue-800 rounded-lg hover:bg-blue-50 dark:hover:bg-blue-900/30 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                                className="px-3 py-1 text-xs font-bold uppercase tracking-wider text-primary bg-white dark:bg-card border border-primary/30 rounded-lg hover:bg-primary/10 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
                             >
                                 Next
                             </button>
@@ -696,7 +696,7 @@ export default function ExperimentsTab({ strategyId }: ExperimentsTabProps) {
                             {/* Scope Selection Section */}
                             <div>
                                 <h4 className="text-xs font-bold text-gray-500 uppercase mb-3 flex items-center gap-2">
-                                    <Filter size={14} className="text-blue-500" /> Recommendation Scope
+                                    <Filter size={14} className="text-primary" /> Recommendation Scope
                                 </h4>
                                 <div className="space-y-3">
                                     <div className="flex items-center gap-2">
@@ -707,7 +707,7 @@ export default function ExperimentsTab({ strategyId }: ExperimentsTabProps) {
                                             checked={publishScopeType === 'ALL'}
                                             onChange={() => { setPublishScopeType('ALL'); setPublishScopeValue('ALL'); }}
                                             disabled={experimentToPublish.scope_type !== 'ALL'} // Can only publish ALL if tested on ALL (safest assumption)
-                                            className="accent-purple-600"
+                                            className="accent-primary"
                                         />
                                         <label htmlFor="scope_all" className={`text-sm font-medium ${experimentToPublish.scope_type !== 'ALL' ? 'text-gray-400' : 'text-gray-900'}`}>
                                             All Market <span className="text-gray-400 font-normal text-xs ml-1">(Requires global backtest)</span>
@@ -722,7 +722,7 @@ export default function ExperimentsTab({ strategyId }: ExperimentsTabProps) {
                                             checked={publishScopeType === 'SECTOR'}
                                             onChange={() => { setPublishScopeType('SECTOR'); setPublishScopeValue(experimentToPublish.scope_type === 'SECTOR' ? experimentToPublish.scope_value : ''); }}
                                             disabled={experimentToPublish.scope_type === 'SYMBOL'} // Can't publish Sector if only tested on Symbol
-                                            className="accent-purple-600"
+                                            className="accent-primary"
                                         />
                                         <label htmlFor="scope_sector" className={`text-sm font-medium ${experimentToPublish.scope_type === 'SYMBOL' ? 'text-gray-400' : 'text-gray-900'}`}>
                                             Specific Sector
@@ -745,7 +745,7 @@ export default function ExperimentsTab({ strategyId }: ExperimentsTabProps) {
                                             name="scope"
                                             checked={publishScopeType === 'SYMBOL'}
                                             onChange={() => { setPublishScopeType('SYMBOL'); setPublishScopeValue(experimentToPublish.scope_type === 'SYMBOL' ? experimentToPublish.scope_value : ''); }}
-                                            className="accent-purple-600"
+                                            className="accent-primary"
                                         />
                                         <label htmlFor="scope_symbol" className="text-sm font-medium text-gray-900">
                                             Specific Symbol(s)
@@ -784,7 +784,7 @@ export default function ExperimentsTab({ strategyId }: ExperimentsTabProps) {
                             {/* Metrics Section */}
                             <div>
                                 <h4 className="text-xs font-bold text-gray-500 uppercase mb-3 flex items-center gap-2">
-                                    <Activity size={14} className="text-blue-500" /> Performance Metrics
+                                    <Activity size={14} className="text-primary" /> Performance Metrics
                                 </h4>
                                 <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
                                     <div className="bg-white p-3 rounded-lg border border-gray-200 shadow-sm">
@@ -818,7 +818,7 @@ export default function ExperimentsTab({ strategyId }: ExperimentsTabProps) {
 
                     <DialogFooter>
                         <Button variant="outline" onClick={() => setPublishModalOpen(false)}>Cancel</Button>
-                        <Button onClick={confirmPublish} className="bg-purple-600 hover:bg-purple-700">Confirm & Publish</Button>
+                        <Button onClick={confirmPublish} className="bg-primary hover:bg-primary/90 text-primary-foreground">Confirm & Publish</Button>
                     </DialogFooter>
                 </DialogContent>
             </Dialog>

@@ -105,7 +105,7 @@ function EmptyState({ onNew }: { onNew: () => void }) {
                 </p>
                 <button
                     onClick={onNew}
-                    className="px-4 py-2 rounded-md bg-foreground text-background text-sm font-medium hover:opacity-90 transition-opacity"
+                    className="px-4 py-2 rounded-md bg-foreground text-background text-sm font-medium hover:bg-accent hover:text-accent-foreground transition-colors"
                 >
                     Start a new chat
                 </button>

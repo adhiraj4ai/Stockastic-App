@@ -127,8 +127,8 @@ function GroupedSignalsTable({ signals, getSignalBadge }: { signals: StrategySig
 
     const SortIcon = ({ columnKey }: { columnKey: string }) => {
         if (sortConfig?.key !== columnKey) return <ArrowUpDown className="w-3 h-3 ml-1 text-slate-300 dark:text-slate-600" />;
-        if (sortConfig.direction === 'asc') return <ArrowUp className="w-3 h-3 ml-1 text-blue-500 dark:text-blue-400" />;
-        return <ArrowDown className="w-3 h-3 ml-1 text-blue-500 dark:text-blue-400" />;
+        if (sortConfig.direction === 'asc') return <ArrowUp className="w-3 h-3 ml-1 text-primary" />;
+        return <ArrowDown className="w-3 h-3 ml-1 text-primary" />;
     };
 
     // Group signals by Symbol + Signal Type
@@ -181,7 +181,7 @@ function GroupedSignalsTable({ signals, getSignalBadge }: { signals: StrategySig
                             <tr className="border-b border-slate-200 dark:border-slate-800">
                                 <th className="text-left p-3 font-bold text-slate-400 dark:text-slate-500 text-[10px] w-12"></th>
                                 <th
-                                    className="text-left p-3 font-bold text-slate-400 dark:text-slate-500 text-[10px] cursor-pointer hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors"
+                                    className="text-left p-3 font-bold text-slate-400 dark:text-slate-500 text-[10px] cursor-pointer hover:bg-accent hover:text-accent-foreground transition-colors"
                                     onClick={() => handleSort('symbol')}
                                 >
                                     <div className="flex items-center">
@@ -189,7 +189,7 @@ function GroupedSignalsTable({ signals, getSignalBadge }: { signals: StrategySig
                                     </div>
                                 </th>
                                 <th
-                                    className="text-left p-3 font-bold text-slate-400 dark:text-slate-500 text-[10px] cursor-pointer hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors"
+                                    className="text-left p-3 font-bold text-slate-400 dark:text-slate-500 text-[10px] cursor-pointer hover:bg-accent hover:text-accent-foreground transition-colors"
                                     onClick={() => handleSort('signalType')}
                                 >
                                     <div className="flex items-center">
@@ -197,7 +197,7 @@ function GroupedSignalsTable({ signals, getSignalBadge }: { signals: StrategySig
                                     </div>
                                 </th>
                                 <th
-                                    className="text-left p-3 font-bold text-slate-400 dark:text-slate-500 text-[10px] cursor-pointer hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors"
+                                    className="text-left p-3 font-bold text-slate-400 dark:text-slate-500 text-[10px] cursor-pointer hover:bg-accent hover:text-accent-foreground transition-colors"
                                     onClick={() => handleSort('count')}
                                 >
                                     <div className="flex items-center">
@@ -205,7 +205,7 @@ function GroupedSignalsTable({ signals, getSignalBadge }: { signals: StrategySig
                                     </div>
                                 </th>
                                 <th
-                                    className="text-left p-3 font-bold text-slate-400 dark:text-slate-500 text-[10px] cursor-pointer hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors"
+                                    className="text-left p-3 font-bold text-slate-400 dark:text-slate-500 text-[10px] cursor-pointer hover:bg-accent hover:text-accent-foreground transition-colors"
                                     onClick={() => handleSort('lastClose')}
                                 >
                                     <div className="flex items-center">
@@ -213,7 +213,7 @@ function GroupedSignalsTable({ signals, getSignalBadge }: { signals: StrategySig
                                     </div>
                                 </th>
                                 <th
-                                    className="text-left p-3 font-bold text-slate-400 dark:text-slate-500 text-[10px] cursor-pointer hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors"
+                                    className="text-left p-3 font-bold text-slate-400 dark:text-slate-500 text-[10px] cursor-pointer hover:bg-accent hover:text-accent-foreground transition-colors"
                                     onClick={() => handleSort('date')}
                                 >
                                     <div className="flex items-center">
@@ -228,12 +228,12 @@ function GroupedSignalsTable({ signals, getSignalBadge }: { signals: StrategySig
                                 <Fragment key={group.id}>
                                     <tr
                                         onClick={() => toggleGroup(group.id)}
-                                        className="hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors cursor-pointer group"
+                                        className="hover:bg-accent hover:text-accent-foreground transition-colors cursor-pointer group"
                                     >
                                         <td className="p-3 text-slate-400">
                                             {expandedGroups.has(group.id) ?
-                                                <ChevronDown className="w-4 h-4 text-blue-500" /> :
-                                                <ChevronRight className="w-4 h-4 group-hover:text-blue-500 transition-colors" />
+                                                <ChevronDown className="w-4 h-4 text-primary" /> :
+                                                <ChevronRight className="w-4 h-4 group-hover:text-primary transition-colors" />
                                             }
                                         </td>
                                         <td className="p-3 font-bold text-slate-800 dark:text-slate-100">{group.symbol}</td>
@@ -250,7 +250,7 @@ function GroupedSignalsTable({ signals, getSignalBadge }: { signals: StrategySig
                                                 <Button
                                                     size="sm"
                                                     variant="outline"
-                                                    className="h-8 text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-900/20 hover:bg-blue-100 dark:hover:bg-blue-900/40 border-blue-200 dark:border-blue-800 px-2 shadow-sm"
+                                                    className="h-8 text-primary bg-primary/10 hover:bg-primary/20 border-primary/30 px-2 shadow-sm"
                                                     onClick={(e) => handleAddToWatchlist(group.symbol, e)}
                                                     title="Add to Watchlist"
                                                 >
@@ -356,7 +356,7 @@ function StrategyCard({ signal }: { signal: StrategySignal }) {
                                 </div>
                                 <div className="bg-white dark:bg-card rounded-2xl p-3 border border-border dark:border-slate-700/50 text-center">
                                     <p className="text-[9px] font-bold text-slate-400 uppercase">Orders Fired</p>
-                                    <p className="text-lg font-semibold text-blue-500 tabular-nums">{meta.orders ?? 0}</p>
+                                    <p className="text-lg font-semibold text-primary tabular-nums">{meta.orders ?? 0}</p>
                                 </div>
                                 <div className="bg-white dark:bg-card rounded-2xl p-3 border border-border dark:border-slate-700/50 text-center">
                                     <p className="text-[9px] font-bold text-slate-400 uppercase">Position</p>
@@ -397,7 +397,7 @@ function StrategyCard({ signal }: { signal: StrategySignal }) {
 
                             {/* Optimization Context */}
                             <div className="flex items-center gap-3 text-[10px] text-slate-400 font-semibold bg-slate-50 dark:bg-slate-800/50 rounded-xl p-3 border border-border dark:border-slate-700/50">
-                                <Zap className="w-3.5 h-3.5 text-blue-400 shrink-0" />
+                                <Zap className="w-3.5 h-3.5 text-primary shrink-0" />
                                 <span>
                                     Optimization: <span className="text-slate-600 dark:text-slate-300 font-bold">{meta.optimization_scope === 'SYMBOL' ? `Symbol-level (${signal.symbol})` : meta.optimization_scope === 'SECTOR' ? 'Sector-level' : meta.optimization_scope === 'ALL' ? 'Market-wide' : 'Default parameters'}</span>
                                 </span>
@@ -567,13 +567,13 @@ export default function SignalsPage() {
                             <div className="flex flex-col sm:flex-row gap-3 items-center w-full lg:w-auto">
                                 {/* Search Bar */}
                                 <div className="relative w-full sm:w-64 group">
-                                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 dark:text-slate-500 group-focus-within:text-indigo-500 dark:group-focus-within:text-indigo-400 transition-colors" />
+                                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 dark:text-slate-500 group-focus-within:text-primary transition-colors" />
                                     <input
                                         type="text"
                                         placeholder="Search symbol or strategy..."
                                         value={searchTerm}
                                         onChange={(e) => setSearchTerm(e.target.value)}
-                                        className="w-full pl-10 pr-4 py-2 bg-slate-50 dark:bg-slate-800 border border-border dark:border-slate-700 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500/20 dark:focus:ring-indigo-400/20 focus:border-indigo-500 dark:focus:border-indigo-400 transition-all text-sm h-10 text-slate-900 dark:text-slate-100 placeholder:text-slate-400 dark:placeholder:text-slate-500"
+                                        className="w-full pl-10 pr-4 py-2 bg-slate-50 dark:bg-slate-800 border border-border dark:border-slate-700 rounded-xl focus-visible:ring-[3px] focus-visible:ring-ring/50 focus-visible:border-ring outline-none transition-all text-sm h-10 text-slate-900 dark:text-slate-100 placeholder:text-slate-400 dark:placeholder:text-slate-500"
                                     />
                                 </div>
 
@@ -587,7 +587,7 @@ export default function SignalsPage() {
                                         onClick={() => setViewMode('by-symbol')}
                                         className={cn(
                                             "h-8 rounded-lg px-3 text-xs font-bold transition-all",
-                                            viewMode === 'by-symbol' ? "bg-white dark:bg-slate-700 shadow-sm text-orange-500" : "text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200"
+                                            viewMode === 'by-symbol' ? "bg-white dark:bg-slate-700 shadow-sm text-primary" : "text-slate-500 dark:text-slate-400 hover:bg-accent hover:text-accent-foreground"
                                         )}
                                     >
                                         <Grid3x3 className="w-3.5 h-3.5 mr-1.5" />
@@ -599,7 +599,7 @@ export default function SignalsPage() {
                                         onClick={() => setViewMode('all')}
                                         className={cn(
                                             "h-8 rounded-lg px-3 text-xs font-bold transition-all",
-                                            viewMode === 'all' ? "bg-white dark:bg-slate-700 shadow-sm text-orange-500" : "text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200"
+                                            viewMode === 'all' ? "bg-white dark:bg-slate-700 shadow-sm text-primary" : "text-slate-500 dark:text-slate-400 hover:bg-accent hover:text-accent-foreground"
                                         )}
                                     >
                                         <List className="w-3.5 h-3.5 mr-1.5" />
@@ -612,16 +612,16 @@ export default function SignalsPage() {
                         {/* Navigation and Filters Row */}
                         <div className="px-6 py-3 flex flex-col md:flex-row gap-4 items-center justify-between bg-slate-50/30 dark:bg-card/30">
                             <Tabs value={tabMode} onValueChange={(v) => setTabMode(v as TabMode)} className="w-full md:w-auto">
-                                <TabsList className="bg-slate-200/50 dark:bg-slate-800/50 p-1 h-10 rounded-xl">
+                                <TabsList className="p-1 h-10 rounded-xl">
                                     <TabsTrigger
                                         value="signals"
-                                        className="rounded-lg data-[state=active]:bg-white dark:data-[state=active]:bg-slate-700 data-[state=active]:text-orange-500 dark:data-[state=active]:text-orange-500 px-6 font-bold text-xs text-slate-600 dark:text-slate-400"
+                                        className="rounded-lg px-6 font-bold text-xs"
                                     >
                                         All opportunities
                                     </TabsTrigger>
                                     <TabsTrigger
                                         value="tracking"
-                                        className="rounded-lg data-[state=active]:bg-white dark:data-[state=active]:bg-slate-700 data-[state=active]:text-orange-500 dark:data-[state=active]:text-orange-500 px-6 font-bold text-xs text-slate-600 dark:text-slate-400"
+                                        className="rounded-lg px-6 font-bold text-xs"
                                     >
                                         Active tracking
                                     </TabsTrigger>
@@ -645,8 +645,8 @@ export default function SignalsPage() {
                                                 signalFilter === type && type === 'BUY' && 'bg-emerald-500 hover:bg-emerald-600 border-emerald-500 shadow-lg shadow-emerald-100 dark:shadow-none text-white',
                                                 signalFilter === type && type === 'SELL' && 'bg-rose-500 hover:bg-rose-600 border-rose-500 shadow-lg shadow-rose-100 dark:shadow-none text-white',
                                                 signalFilter === type && type === 'HOLD' && 'bg-amber-500 hover:bg-amber-600 border-amber-500 shadow-lg shadow-amber-100 dark:shadow-none text-white',
-                                                signalFilter === type && type === 'ALL' && 'bg-orange-500 hover:bg-orange-600 border-orange-500 shadow text-white',
-                                                signalFilter !== type && 'bg-transparent text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800'
+                                                signalFilter === type && type === 'ALL' && 'bg-primary text-primary-foreground hover:bg-primary/90 border-primary shadow',
+                                                signalFilter !== type && 'bg-transparent text-slate-600 dark:text-slate-400 hover:bg-accent hover:text-accent-foreground'
                                             )}
                                         >
                                             {type === 'ALL' ? 'Everything' : type}
@@ -728,7 +728,7 @@ export default function SignalsPage() {
                         {loading ? (
                             <Card className="dark:bg-card dark:border-slate-800">
                                 <CardContent className="p-12 text-center">
-                                    <div className="animate-spin w-8 h-8 border-4 border-blue-600 border-t-transparent rounded-full mx-auto mb-4"></div>
+                                    <div className="animate-spin w-8 h-8 border-4 border-primary border-t-transparent rounded-full mx-auto mb-4"></div>
                                     <p className="text-slate-600 dark:text-slate-400">Loading signals...</p>
                                 </CardContent>
                             </Card>
@@ -856,7 +856,7 @@ export default function SignalsPage() {
                         {trackingLoading ? (
                             <Card className="dark:bg-card dark:border-slate-800">
                                 <CardContent className="p-12 text-center">
-                                    <div className="animate-spin w-8 h-8 border-4 border-blue-600 dark:border-blue-400 border-t-transparent rounded-full mx-auto mb-4"></div>
+                                    <div className="animate-spin w-8 h-8 border-4 border-primary border-t-transparent rounded-full mx-auto mb-4"></div>
                                     <p className="text-slate-600 dark:text-slate-400">Loading tracking data...</p>
                                 </CardContent>
                             </Card>
@@ -868,12 +868,12 @@ export default function SignalsPage() {
                                         <CardContent className="p-4">
                                             <div className="flex items-center justify-between">
                                                 <div>
-                                                    <p className="text-[10px] font-semibold uppercase tracking-wider text-blue-600 dark:text-blue-400 mb-1">Active Positions</p>
+                                                    <p className="text-[10px] font-semibold uppercase tracking-wider text-primary mb-1">Active Positions</p>
                                                     <p className="text-3xl font-semibold text-slate-800 dark:text-slate-100">{trackingData.summary?.total_active ?? 0}</p>
                                                     <p className="text-[10px] font-bold text-slate-400 dark:text-slate-500 mt-1 uppercase">Awaiting SELL signal</p>
                                                 </div>
-                                                <div className="p-3 bg-blue-50 dark:bg-blue-900/30 rounded-2xl border border-blue-100 dark:border-blue-800/30">
-                                                    <Zap className="w-5 h-5 text-blue-600 dark:text-blue-400" />
+                                                <div className="p-3 bg-primary/10 rounded-2xl border border-primary/20">
+                                                    <Zap className="w-5 h-5 text-primary" />
                                                 </div>
                                             </div>
                                         </CardContent>
@@ -882,12 +882,12 @@ export default function SignalsPage() {
                                         <CardContent className="p-4">
                                             <div className="flex items-center justify-between">
                                                 <div>
-                                                    <p className="text-[10px] font-semibold uppercase tracking-wider text-purple-600 dark:text-purple-400 mb-1">Closed Positions</p>
+                                                    <p className="text-[10px] font-semibold uppercase tracking-wider text-primary mb-1">Closed Positions</p>
                                                     <p className="text-3xl font-semibold text-slate-800 dark:text-slate-100">{trackingData.summary?.total_closed ?? 0}</p>
                                                     <p className="text-[10px] font-bold text-slate-400 dark:text-slate-500 mt-1 uppercase">Completed cycles</p>
                                                 </div>
-                                                <div className="p-3 bg-purple-50 dark:bg-purple-900/30 rounded-2xl border border-purple-100 dark:border-purple-800/30">
-                                                    <CheckCircle2 className="w-5 h-5 text-purple-600 dark:text-purple-400" />
+                                                <div className="p-3 bg-primary/10 rounded-2xl border border-primary/20">
+                                                    <CheckCircle2 className="w-5 h-5 text-primary" />
                                                 </div>
                                             </div>
                                         </CardContent>
@@ -956,7 +956,7 @@ export default function SignalsPage() {
                                                         const entryDate = pos.buy_date ?? pos.start_date;
                                                         const strategyLabel = pos.strategies ? pos.strategies.join(', ') : (pos.strategy_name ?? '—');
                                                         return (
-                                                        <tr key={idx} className="hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors">
+                                                        <tr key={idx} className="hover:bg-accent hover:text-accent-foreground transition-colors">
                                                             <td className="px-4 py-3 font-bold">{pos.symbol}</td>
                                                             <td className="px-4 py-3 font-mono">Rs. {entryPrice}</td>
                                                             <td className="px-4 py-3 font-mono">
@@ -1025,7 +1025,7 @@ export default function SignalsPage() {
                                                         const inStrategy = pos.buy_strategy ?? pos.strategy_name ?? '—';
                                                         const outStrategy = pos.sell_strategy ?? pos.exit_reason ?? '—';
                                                         return (
-                                                        <tr key={idx} className="hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors">
+                                                        <tr key={idx} className="hover:bg-accent hover:text-accent-foreground transition-colors">
                                                             <td className="px-4 py-3 font-bold">{pos.symbol}</td>
                                                             <td className="px-4 py-3 font-mono">Rs. {entryPrice}</td>
                                                             <td className="px-4 py-3 font-mono">Rs. {exitPrice}</td>

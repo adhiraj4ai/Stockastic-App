@@ -26,7 +26,7 @@ export const TechnicalDivergence: React.FC<TechnicalDivergenceProps> = ({ techni
                             <TabsTrigger
                                 key={cat}
                                 value={cat}
-                                className="rounded-lg data-[state=active]:bg-white dark:data-[state=active]:bg-slate-900 data-[state=active]:text-orange-500 dark:data-[state=active]:text-orange-500 data-[state=active]:shadow-sm transition-all duration-200 text-[10px] sm:text-xs"
+                                className="rounded-lg transition-all duration-200 text-[10px] sm:text-xs"
                             >
                                 {cat}
                             </TabsTrigger>
@@ -50,7 +50,7 @@ export const TechnicalDivergence: React.FC<TechnicalDivergenceProps> = ({ techni
                                         <tbody className="divide-y divide-slate-100 dark:divide-slate-800 bg-white/50 dark:bg-card">
                                             {indicators.length > 0 ? (
                                                 indicators.map((indicator: any, i: number) => (
-                                                    <tr key={i} className="hover:bg-slate-50/50 dark:hover:bg-slate-800/50 transition-colors group">
+                                                    <tr key={i} className="hover:bg-accent hover:text-accent-foreground transition-colors group">
                                                         <td className="px-6 py-4 font-semibold text-slate-700 dark:text-slate-300 whitespace-nowrap tracking-tight">{indicator.name}</td>
                                                         <td className="px-6 py-4 text-center">
                                                             <span className="px-2.5 py-1 rounded bg-slate-50 dark:bg-slate-800 text-slate-700 dark:text-slate-300 font-semibold text-xs ring-1 ring-slate-200 dark:ring-slate-700 group-hover:bg-white dark:group-hover:bg-slate-700 group-hover:shadow-sm transition-all tracking-tight">{indicator.value}</span>

@@ -72,7 +72,7 @@ export default function AdminTickerPage({ params }: { params: Promise<{ ticker: 
         return (
             <DashboardLayout title={`Manage ${ticker}`}>
                 <div className="flex h-[50vh] items-center justify-center">
-                    <Loader2 className="h-8 w-8 animate-spin text-blue-500" />
+                    <Loader2 className="h-8 w-8 animate-spin text-primary" />
                 </div>
             </DashboardLayout>
         );
@@ -86,7 +86,7 @@ export default function AdminTickerPage({ params }: { params: Promise<{ ticker: 
                         variant="ghost"
                         size="sm"
                         onClick={() => router.push('/admin/financials')}
-                        className="rounded-full hover:bg-gray-100 dark:hover:bg-slate-800 h-10 w-10 p-0 text-gray-400 dark:text-slate-500"
+                        className="rounded-full hover:bg-accent hover:text-accent-foreground h-10 w-10 p-0 text-gray-400 dark:text-slate-500"
                     >
                         <ArrowLeft className="w-5 h-5" />
                     </Button>
@@ -95,7 +95,7 @@ export default function AdminTickerPage({ params }: { params: Promise<{ ticker: 
                             <span className="text-2xl font-semibold text-slate-900 dark:text-slate-100 tracking-tight select-none">
                                 {ticker}
                             </span>
-                            <Badge variant="secondary" className="bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400 border-blue-100 dark:border-blue-900/30 font-bold px-2 py-0.5 text-[10px] uppercase">
+                            <Badge variant="secondary" className="bg-primary/10 text-primary border-primary/20 font-bold px-2 py-0.5 text-[10px] uppercase">
                                 {company?.sector || 'Unknown Sector'}
                             </Badge>
                         </div>

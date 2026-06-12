@@ -92,9 +92,9 @@ export function OptimizePortfolioDialog({ isOpen, onClose, currentHoldings, acco
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50 p-4">
             <div className="bg-white rounded-2xl shadow-sm w-full max-w-5xl max-h-[90vh] overflow-hidden flex flex-col">
                 {/* Header */}
-                <div className="flex justify-between items-center p-6 border-b border-gray-100 bg-gradient-to-r from-blue-50 to-indigo-50">
+                <div className="flex justify-between items-center p-6 border-b border-gray-100 bg-gradient-to-r from-primary/5 to-primary/10">
                     <div className="flex items-center gap-3">
-                        <div className="p-2 bg-blue-600 rounded-lg text-white">
+                        <div className="p-2 bg-primary rounded-lg text-primary-foreground">
                             <Sparkles className="h-6 w-6" />
                         </div>
                         <div>
@@ -105,12 +105,12 @@ export function OptimizePortfolioDialog({ isOpen, onClose, currentHoldings, acco
                     <div className="flex items-center gap-2">
                         <button
                             onClick={() => fetchOptimization(selectedMethod)}
-                            className="p-2 text-gray-500 hover:text-blue-600 hover:bg-white rounded-lg transition-all"
+                            className="p-2 text-gray-500 hover:bg-accent hover:text-accent-foreground rounded-lg transition-all"
                             title="Refresh Analysis"
                         >
                             <TrendingUp className={`h-5 w-5 ${loading ? 'animate-spin' : ''}`} />
                         </button>
-                        <button onClick={onClose} className="p-1 rounded-full hover:bg-gray-200 transition-colors">
+                        <button onClick={onClose} className="p-1 rounded-full hover:bg-accent hover:text-accent-foreground transition-colors">
                             <X className="h-6 w-6 text-gray-500" />
                         </button>
                     </div>
@@ -129,8 +129,8 @@ export function OptimizePortfolioDialog({ isOpen, onClose, currentHoldings, acco
                                 key={m.id}
                                 onClick={() => setSelectedMethod(m.id)}
                                 className={`flex items-center gap-2 px-4 py-2 rounded-full text-sm font-medium transition-all ${selectedMethod === m.id
-                                    ? 'bg-blue-600 text-white shadow-md shadow-blue-200 scale-105'
-                                    : 'bg-white text-gray-600 border border-gray-200 hover:border-blue-300 hover:text-blue-600'
+                                    ? 'bg-primary text-primary-foreground shadow-md shadow-primary/20 scale-105'
+                                    : 'bg-white text-gray-600 border border-gray-200 hover:border-primary/30 hover:text-primary'
                                     }`}
                             >
                                 {m.icon}
@@ -143,7 +143,7 @@ export function OptimizePortfolioDialog({ isOpen, onClose, currentHoldings, acco
                 <div className="flex-1 overflow-y-auto p-6">
                     {loading ? (
                         <div className="flex flex-col items-center justify-center py-20 space-y-4">
-                            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
+                            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
                             <p className="text-gray-500 font-medium">Analyzing historical data and optimizing...</p>
                         </div>
                     ) : error ? (
@@ -169,23 +169,23 @@ export function OptimizePortfolioDialog({ isOpen, onClose, currentHoldings, acco
 
                             {/* Stats Grid */}
                             <div className="grid grid-cols-4 gap-4">
-                                <div className="bg-blue-50 rounded-xl p-4 border border-blue-100 transition-all hover:bg-blue-100/50">
-                                    <div className="text-sm font-medium text-blue-600 mb-1 flex items-center gap-1">
+                                <div className="bg-primary/5 rounded-xl p-4 border border-primary/20 transition-all hover:bg-primary/10">
+                                    <div className="text-sm font-medium text-primary mb-1 flex items-center gap-1">
                                         <TrendingUp size={14} /> Expected Return
                                     </div>
                                     <div className="text-2xl font-bold text-gray-900">
                                         {(result.metrics.expected_return * 100).toFixed(2)}%
                                     </div>
-                                    <div className="text-[10px] text-blue-500 mt-1 font-semibold tracking-tight">Annualized estimate</div>
+                                    <div className="text-[10px] text-primary/70 mt-1 font-semibold tracking-tight">Annualized estimate</div>
                                 </div>
-                                <div className="bg-purple-50 rounded-xl p-4 border border-purple-100 transition-all hover:bg-purple-100/50">
-                                    <div className="text-sm font-medium text-purple-600 mb-1 flex items-center gap-1">
+                                <div className="bg-slate-50 rounded-xl p-4 border border-slate-100 transition-all hover:bg-slate-100/50">
+                                    <div className="text-sm font-medium text-slate-600 mb-1 flex items-center gap-1">
                                         <ShieldAlert size={14} /> Volatility (Risk)
                                     </div>
                                     <div className="text-2xl font-bold text-gray-900">
                                         {(result.metrics.volatility * 100).toFixed(2)}%
                                     </div>
-                                    <div className="text-[10px] text-purple-500 mt-1 font-semibold tracking-tight">Annualized standard dev</div>
+                                    <div className="text-[10px] text-slate-500 mt-1 font-semibold tracking-tight">Annualized standard dev</div>
                                 </div>
                                 <div className="bg-red-50 rounded-xl p-4 border border-red-100 transition-all hover:bg-red-100/50">
                                     <div className="text-sm font-medium text-red-600 mb-1 flex items-center gap-1">
@@ -196,14 +196,14 @@ export function OptimizePortfolioDialog({ isOpen, onClose, currentHoldings, acco
                                     </div>
                                     <div className="text-[10px] text-red-500 mt-1 font-semibold tracking-tight">Max draw-down loss</div>
                                 </div>
-                                <div className="bg-orange-50 rounded-xl p-4 border border-orange-100 transition-all hover:bg-orange-100/50">
-                                    <div className="text-sm font-medium text-orange-600 mb-1 flex items-center gap-1">
+                                <div className="bg-primary/5 rounded-xl p-4 border border-primary/20 transition-all hover:bg-primary/10">
+                                    <div className="text-sm font-medium text-primary mb-1 flex items-center gap-1">
                                         <BarChart3 size={14} /> Sharpe Ratio
                                     </div>
                                     <div className="text-2xl font-bold text-gray-900">
                                         {(result.metrics.sharpe_ratio || 0).toFixed(2)}
                                     </div>
-                                    <div className="text-[10px] text-orange-500 mt-1 font-semibold tracking-tight">Risk-adjusted return</div>
+                                    <div className="text-[10px] text-primary/70 mt-1 font-semibold tracking-tight">Risk-adjusted return</div>
                                 </div>
                             </div>
 
@@ -257,7 +257,7 @@ export function OptimizePortfolioDialog({ isOpen, onClose, currentHoldings, acco
                                                 </thead>
                                                 <tbody className="divide-y divide-gray-100">
                                                     {result.trades.map((trade, idx) => (
-                                                        <tr key={idx} className="hover:bg-gray-50 transition-colors">
+                                                        <tr key={idx} className="hover:bg-accent transition-colors">
                                                             <td className="py-4 px-4 font-bold text-gray-900">{trade.ticker}</td>
                                                             <td className="py-4 px-4">
                                                                 <span className={`px-3 py-1 rounded-full text-[11px] font-bold ${trade.action === 'BUY'
@@ -287,10 +287,10 @@ export function OptimizePortfolioDialog({ isOpen, onClose, currentHoldings, acco
                             </div>
 
                             {/* Recommendation Info */}
-                            <div className="flex gap-4 p-4 bg-blue-50/50 border border-blue-100 rounded-xl text-sm text-gray-600 mt-4 shadow-sm">
-                                <Info className="h-5 w-5 text-blue-600 flex-shrink-0" />
+                            <div className="flex gap-4 p-4 bg-primary/5 border border-primary/20 rounded-xl text-sm text-gray-600 mt-4 shadow-sm">
+                                <Info className="h-5 w-5 text-primary flex-shrink-0" />
                                 <div className="space-y-1">
-                                    <p className="font-bold text-blue-900">How to read this analysis:</p>
+                                    <p className="font-bold text-slate-900 dark:text-slate-100">How to read this analysis:</p>
                                     <p className="text-gray-700 leading-relaxed">
                                         These suggestions are based on historical data from the past 2 years.
                                         {selectedMethod === 'max_sharpe' && " It targets the highest return for every unit of risk taken."}
@@ -299,9 +299,9 @@ export function OptimizePortfolioDialog({ isOpen, onClose, currentHoldings, acco
                                         {selectedMethod === 'risk_parity' && " It ensures no single stock dominates the risk profile of your portfolio."}
                                     </p>
                                     <div className="flex gap-4 mt-2 text-xs font-semibold tracking-tight">
-                                        <span className="text-blue-600">Max Weight: 50%</span>
-                                        <span className="text-blue-600">Sample: 2 Years</span>
-                                        <span className="text-blue-600">Solver: Clarabel</span>
+                                        <span className="text-primary">Max Weight: 50%</span>
+                                        <span className="text-primary">Sample: 2 Years</span>
+                                        <span className="text-primary">Solver: Clarabel</span>
                                     </div>
                                 </div>
                             </div>
@@ -312,7 +312,7 @@ export function OptimizePortfolioDialog({ isOpen, onClose, currentHoldings, acco
                 <div className="p-6 border-t border-gray-100 flex justify-end gap-3 bg-gray-50/50">
                     <button
                         onClick={onClose}
-                        className="px-8 py-3 bg-gray-900 text-white rounded-xl font-bold hover:bg-black transition-all shadow-lg hover:shadow-gray-300"
+                        className="px-8 py-3 bg-primary text-primary-foreground rounded-xl font-bold hover:bg-primary/90 transition-all shadow-lg"
                     >
                         Close Analysis
                     </button>

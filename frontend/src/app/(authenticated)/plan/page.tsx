@@ -70,8 +70,8 @@ const fmtPct = (v: number) => `${v >= 0 ? '+' : ''}${v.toFixed(1)}%`;
 function SortIcon({ col, sortConfig }: { col: SortKey; sortConfig: { key: SortKey; direction: 'asc' | 'desc' } }) {
     if (sortConfig.key !== col) return <ChevronDown className="w-3 h-3 opacity-20" />;
     return sortConfig.direction === 'asc'
-        ? <ChevronUp className="w-3 h-3 text-indigo-400" />
-        : <ChevronDown className="w-3 h-3 text-indigo-400" />;
+        ? <ChevronUp className="w-3 h-3 text-primary" />
+        : <ChevronDown className="w-3 h-3 text-primary" />;
 }
 
 
@@ -108,7 +108,7 @@ function WatchCard({ pick, onSelect }: { pick: PlanPick; onSelect: () => void })
                 </div>
             </div>
             <div className="flex flex-wrap gap-1 mt-3">
-                <span className="px-1.5 py-0.5 bg-white dark:bg-slate-800 rounded text-[10px] font-semibold border border-indigo-100 dark:border-indigo-800/30 text-indigo-600 dark:text-indigo-400">
+                <span className="px-1.5 py-0.5 bg-white dark:bg-slate-800 rounded text-[10px] font-semibold border border-primary/20 text-primary">
                     {components.engine_agreement.active_buy_sources.length} engines
                 </span>
                 {components.opportunity.trust && (
@@ -117,7 +117,7 @@ function WatchCard({ pick, onSelect }: { pick: PlanPick; onSelect: () => void })
                     </span>
                 )}
                 {pick.catalyst && (
-                    <span className="px-1.5 py-0.5 bg-white dark:bg-slate-800 rounded text-[10px] font-semibold border border-orange-100 dark:border-orange-800/30 text-orange-600 dark:text-orange-400">
+                    <span className="px-1.5 py-0.5 bg-white dark:bg-slate-800 rounded text-[10px] font-semibold border border-amber-200 dark:border-amber-800/30 text-amber-600 dark:text-amber-400">
                         {pick.catalyst.type.replace(/_/g, ' ').toLowerCase()} in {pick.catalyst.days_away}d
                     </span>
                 )}
@@ -265,7 +265,7 @@ export default function PlanPage() {
 
                     <div className="flex items-center gap-2 ml-auto flex-wrap">
                         {historyPlan && (
-                            <span className="px-2.5 py-1 bg-indigo-50 dark:bg-indigo-900/20 text-indigo-700 dark:text-indigo-400 text-[11px] font-semibold rounded-lg border border-indigo-100 dark:border-indigo-800/30">
+                            <span className="px-2.5 py-1 bg-primary/10 text-primary text-[11px] font-semibold rounded-lg border border-primary/20">
                                 Viewing past plan
                             </span>
                         )}
@@ -295,7 +295,7 @@ export default function PlanPage() {
                             label: 'Top Setups', value: `${picks.length}`, unit: 'picks',
                             sub: `${inZoneCount} in entry zone`,
                             icon: <TrendingUp className="w-5 h-5" />,
-                            cls: { wrap: 'border-indigo-100 dark:border-indigo-900/20', icon: 'bg-indigo-100 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-400', val: 'text-indigo-700 dark:text-indigo-400' },
+                            cls: { wrap: 'border-primary/20', icon: 'bg-primary/10 text-primary', val: 'text-primary' },
                         },
                         {
                             label: 'Watch List', value: `${watch.length}`, unit: 'stocks',
@@ -335,7 +335,7 @@ export default function PlanPage() {
                     <div className="bg-white dark:bg-card rounded-2xl border border-slate-200 dark:border-border shadow-sm overflow-hidden">
                         <div className="px-5 py-3 border-b border-border dark:border-border bg-slate-50/50 dark:bg-muted flex items-center justify-between gap-3">
                             <div className="flex items-center gap-2">
-                                <Layers className="w-4 h-4 text-indigo-500 shrink-0" />
+                                <Layers className="w-4 h-4 text-primary shrink-0" />
                                 <span className="text-sm font-semibold text-slate-700 dark:text-slate-200">Top Setups for Tomorrow</span>
                                 <span className="text-[10px] font-semibold text-slate-400 px-2 py-0.5 bg-slate-100 dark:bg-muted rounded-full shrink-0">
                                     {picks.length}
@@ -343,7 +343,7 @@ export default function PlanPage() {
                             </div>
                             {selectedPick && (
                                 <button onClick={() => setSelectedPick(null)}
-                                    className="text-[10px] font-semibold text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 flex items-center gap-1 shrink-0 transition-colors">
+                                    className="text-[10px] font-semibold text-slate-400 hover:text-accent-foreground flex items-center gap-1 shrink-0 transition-colors">
                                     <X className="w-3.5 h-3.5" /> Clear
                                 </button>
                             )}
@@ -372,7 +372,7 @@ export default function PlanPage() {
                                                     onClick={() => h.col && handleSort(h.col)}
                                                     className={cn(
                                                         'px-4 py-2 sticky top-0 z-10 bg-slate-50/90 dark:bg-card/90 border-b border-border dark:border-slate-800 text-[10px] font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400 transition-colors',
-                                                        h.col ? 'cursor-pointer hover:text-indigo-500' : '',
+                                                        h.col ? 'cursor-pointer hover:text-primary' : '',
                                                         h.align === 'right' ? 'text-right' : h.align === 'center' ? 'text-center' : 'text-left',
                                                         h.hide === 'lg' ? 'hidden lg:table-cell' : h.hide === 'md' ? 'hidden md:table-cell' : '',
                                                     )}>
@@ -395,14 +395,14 @@ export default function PlanPage() {
                                                 className={cn(
                                                     'group border-b border-slate-50 dark:border-slate-800/50 last:border-0 transition-colors duration-100 cursor-pointer border-l-[3px] animate-in fade-in duration-150',
                                                     selectedPick?.symbol === p.symbol
-                                                        ? 'bg-indigo-50/60 dark:bg-indigo-900/10 border-l-indigo-500'
+                                                        ? 'bg-primary/5 border-l-primary'
                                                         : p.entry.status === 'IN_ZONE'
                                                         ? 'hover:bg-emerald-50/20 dark:hover:bg-emerald-900/5 border-l-emerald-300/40 hover:border-l-emerald-500'
-                                                        : 'hover:bg-slate-50/40 dark:hover:bg-slate-800/20 border-l-transparent',
+                                                        : 'hover:bg-accent hover:text-accent-foreground border-l-transparent',
                                                 )}
                                             >
                                                 <td className="px-4 py-3">
-                                                    <div className="font-bold text-sm text-slate-900 dark:text-indigo-300 leading-none">{p.symbol}</div>
+                                                    <div className="font-bold text-sm text-slate-900 dark:text-slate-100 leading-none">{p.symbol}</div>
                                                     <div className="text-[9px] text-slate-400 font-medium mt-0.5 hidden sm:block uppercase">{p.direction}</div>
                                                 </td>
                                                 <td className="px-4 py-3 text-right">
@@ -429,13 +429,13 @@ export default function PlanPage() {
                                                     </span>
                                                 </td>
                                                 <td className="px-4 py-3 text-center hidden lg:table-cell">
-                                                    <span className="text-[10px] font-semibold px-1.5 py-0.5 rounded bg-indigo-50 dark:bg-indigo-900/20 text-indigo-600 dark:text-indigo-400 border border-indigo-100 dark:border-indigo-800/30">
+                                                    <span className="text-[10px] font-semibold px-1.5 py-0.5 rounded bg-primary/10 text-primary border border-primary/20">
                                                         {p.components.engine_agreement.active_buy_sources.length}
                                                     </span>
                                                 </td>
                                                 <td className="px-4 py-3 hidden lg:table-cell">
                                                     {p.catalyst ? (
-                                                        <span className="text-[10px] font-semibold text-orange-600 dark:text-orange-400 whitespace-nowrap">
+                                                        <span className="text-[10px] font-semibold text-amber-600 dark:text-amber-400 whitespace-nowrap">
                                                             {p.catalyst.type.replace(/_/g, ' ').toLowerCase()} in {p.catalyst.days_away}d
                                                         </span>
                                                     ) : <span className="text-slate-300 dark:text-slate-600">—</span>}
@@ -444,7 +444,7 @@ export default function PlanPage() {
                                                     <ChevronRight className={cn(
                                                         'w-4 h-4 transition-all duration-200 shrink-0',
                                                         selectedPick?.symbol === p.symbol
-                                                            ? 'text-indigo-500 rotate-90'
+                                                            ? 'text-primary rotate-90'
                                                             : 'text-slate-300 dark:text-slate-700 group-hover:text-slate-500',
                                                     )} />
                                                 </td>
@@ -481,10 +481,10 @@ export default function PlanPage() {
                                         <div className="flex items-start gap-2">
                                             <div className="text-right">
                                                 <div className="text-[9px] font-semibold text-slate-400 uppercase tracking-wider">Score</div>
-                                                <div className="text-2xl font-semibold tabular-nums text-indigo-600 dark:text-indigo-400">{selectedPick.confluence_score}</div>
+                                                <div className="text-2xl font-semibold tabular-nums text-primary">{selectedPick.confluence_score}</div>
                                             </div>
                                             <button onClick={() => setSelectedPick(null)}
-                                                className="p-1.5 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-400 hover:text-slate-600 transition-colors shrink-0">
+                                                className="p-1.5 rounded-lg hover:bg-accent hover:text-accent-foreground text-slate-400 transition-colors shrink-0">
                                                 <X className="w-4 h-4" />
                                             </button>
                                         </div>
@@ -504,7 +504,7 @@ export default function PlanPage() {
                                     </div>
 
                                     {selectedPick.catalyst && (
-                                        <div className="mt-3 flex items-center gap-2 px-3 py-2 rounded-xl border text-xs font-semibold bg-orange-50 dark:bg-orange-900/20 border-orange-200 dark:border-orange-800/30 text-orange-700 dark:text-orange-400">
+                                        <div className="mt-3 flex items-center gap-2 px-3 py-2 rounded-xl border text-xs font-semibold bg-amber-50 dark:bg-amber-900/20 border-amber-200 dark:border-amber-800/30 text-amber-700 dark:text-amber-400">
                                             <CalendarClock className="w-3.5 h-3.5 shrink-0" />
                                             {selectedPick.catalyst.type.replace(/_/g, ' ')} in {selectedPick.catalyst.days_away}d — {selectedPick.catalyst.detail}
                                         </div>
@@ -539,7 +539,7 @@ export default function PlanPage() {
                                             </span>
                                         ))}
                                         {selectedPick.components.opportunity.trust && (
-                                            <span className="px-1.5 py-0.5 bg-indigo-50 dark:bg-indigo-900/20 rounded text-[10px] font-semibold border border-indigo-100 dark:border-indigo-800/30 text-indigo-600 dark:text-indigo-400">
+                                            <span className="px-1.5 py-0.5 bg-primary/10 rounded text-[10px] font-semibold border border-primary/20 text-primary">
                                                 {selectedPick.components.opportunity.trust}
                                             </span>
                                         )}
@@ -591,12 +591,12 @@ export default function PlanPage() {
                                 {/* Quick Actions */}
                                 <div className="px-5 py-4 mt-auto flex gap-2 flex-wrap">
                                     <Link href={`/ticker/${selectedPick.symbol}`} className="flex-1 min-w-[100px]">
-                                        <Button className="w-full h-9 text-[11px] font-semibold bg-slate-900 dark:bg-indigo-600 hover:bg-black dark:hover:bg-indigo-700 text-white rounded-xl gap-1.5 shadow-md">
+                                        <Button className="w-full h-9 text-[11px] font-semibold bg-primary hover:bg-primary/90 text-primary-foreground rounded-xl gap-1.5 shadow-md">
                                             <ExternalLink className="w-3.5 h-3.5" /> Full Analysis
                                         </Button>
                                     </Link>
                                     <Link href={`/accumulation/navigator?symbol=${selectedPick.symbol}`}>
-                                        <Button variant="outline" className="h-9 px-3 text-[11px] font-semibold rounded-xl border-slate-200 dark:border-border gap-1.5 hover:bg-slate-50 dark:hover:bg-white/5">
+                                        <Button variant="outline" className="h-9 px-3 text-[11px] font-semibold rounded-xl border-slate-200 dark:border-border gap-1.5 hover:bg-accent hover:text-accent-foreground">
                                             <Activity className="w-3.5 h-3.5" />
                                         </Button>
                                     </Link>
@@ -618,7 +618,7 @@ export default function PlanPage() {
                                 className={cn(
                                     'flex items-center gap-2 px-4 py-4 text-xs font-semibold tracking-tight border-b-2 transition-all whitespace-nowrap',
                                     activeTab === tab.key
-                                        ? 'border-indigo-500 text-indigo-600 dark:text-indigo-400'
+                                        ? 'border-primary text-primary'
                                         : 'border-transparent text-slate-400 hover:text-slate-600 dark:hover:text-slate-300',
                                 )}>
                                 {tab.icon}{tab.label}
@@ -673,7 +673,7 @@ export default function PlanPage() {
                                         {
                                             title: 'Watchlist Triggers',
                                             icon: <Zap className="w-4 h-4" />,
-                                            color: 'text-indigo-700 dark:text-indigo-400',
+                                            color: 'text-primary',
                                             rows: overlay.watchlist_triggers.map(w => ({
                                                 key: w.ticker, left: w.ticker,
                                                 right: w.close.toFixed(1),
@@ -720,7 +720,7 @@ export default function PlanPage() {
                                                 <Link href={`/ticker/${c.symbol}`} className="font-semibold text-sm text-slate-900 dark:text-slate-100 hover:underline">
                                                     {c.symbol}
                                                 </Link>
-                                                <span className="px-2 py-0.5 rounded-lg text-[10px] font-semibold border bg-orange-50 dark:bg-orange-900/20 text-orange-600 dark:text-orange-400 border-orange-100 dark:border-orange-800/30">
+                                                <span className="px-2 py-0.5 rounded-lg text-[10px] font-semibold border bg-amber-50 dark:bg-amber-900/20 text-amber-600 dark:text-amber-400 border-amber-100 dark:border-amber-800/30">
                                                     in {c.days_away}d
                                                 </span>
                                             </div>
