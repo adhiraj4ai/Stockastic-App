@@ -116,3 +116,33 @@ class UserMemory(models.Model):
     def __str__(self):
         return f"{self.user_id}: {self.content[:40]}"
 
+
+class SavedAnalysis(models.Model):
+    """A frozen, tagged snapshot of a chat analysis the agent can recall later."""
+
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name="saved_analyses")
+    # Link to the originating transcript; SET_NULL so deleting the chat keeps the snapshot.
+    session = models.ForeignKey(
+        ChatSession, on_delete=models.SET_NULL, null=True, blank=True,
+        related_name="saved_analyses",
+    )
+    title = models.CharField(max_length=255)
+    summary = models.TextField()                       # frozen synthesis (markdown)
+    one_liner = models.CharField(max_length=280, blank=True, default="")
+    category = models.CharField(max_length=64, blank=True, default="")
+    tags = models.JSONField(default=list, blank=True)
+    tickers = models.JSONField(default=list, blank=True)
+    series_key = models.CharField(max_length=128, blank=True, default="", db_index=True)
+    verdict = models.CharField(max_length=16, blank=True, default="")
+    structured = models.JSONField(default=dict, blank=True)  # captured verdict/signal card data
+    created_at = models.DateTimeField(auto_now_add=True, db_index=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ["-created_at"]
+        indexes = [models.Index(fields=["user", "series_key", "created_at"])]
+
+    def __str__(self) -> str:
+        return f"{self.user.username} · {self.title}"
+
