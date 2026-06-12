@@ -1,7 +1,10 @@
+from unittest.mock import patch
+
 from django.contrib.auth import get_user_model
 from django.test import TestCase
 
-from chat.models import ChatSession, SavedAnalysis
+from chat.models import ChatMessage, ChatSession, SavedAnalysis
+from chat.services import analysis_capture
 from chat.services.saved_match import match_saved_analyses
 
 User = get_user_model()
@@ -73,3 +76,73 @@ class SavedMatchTests(TestCase):
     def test_scopes_to_user(self):
         other = User.objects.create_user(username="carol", password="x")
         self.assertEqual(match_saved_analyses(other, "GBIME fundamentals"), [])
+
+
+class BuildDraftTests(TestCase):
+    def setUp(self):
+        self.user = User.objects.create_user(username="dave", password="x")
+        self.session = ChatSession.objects.create(user=self.user, title="GBIME deep dive")
+        ChatMessage.objects.create(
+            session=self.session, role=ChatMessage.ROLE_USER,
+            text="Give me a fundamental analysis of GBIME for Q2.",
+        )
+        ChatMessage.objects.create(
+            session=self.session, role=ChatMessage.ROLE_ASSISTANT,
+            text="GBIME shows EPS growth and stable NPL.",
+            blocks=[
+                {"kind": "text", "text": "GBIME shows EPS growth and stable NPL."},
+                {"kind": "card", "type": "ticker_verdict",
+                 "data": {"symbol": "GBIME", "verdict": "BUY", "confluence_score": 72}},
+            ],
+        )
+
+    def test_captures_structured_verdict(self):
+        with patch.object(analysis_capture, "_summarize_llm", return_value=None):
+            draft = analysis_capture.build_draft(self.session)
+        self.assertEqual(draft["verdict"], "BUY")
+        self.assertEqual(draft["structured"].get("symbol"), "GBIME")
+        self.assertIn("GBIME", draft["tickers"])
+        self.assertTrue(draft["degraded"])  # LLM returned nothing -> naive fallback
+
+    def test_verdict_truncated_to_field_limit(self):
+        # A verdict longer than SavedAnalysis.verdict's max_length (16) must be capped.
+        self.session.messages.filter(role="assistant").update(
+            blocks=[{"kind": "card", "type": "signal",
+                     "data": {"symbol": "GBIME", "verdict": "STRONG_BUY_CONVICTION"}}]
+        )
+        with patch.object(analysis_capture, "_summarize_llm", return_value=None):
+            draft = analysis_capture.build_draft(self.session)
+        self.assertLessEqual(len(draft["verdict"]), 16)
+
+    def test_later_card_without_verdict_does_not_wipe(self):
+        ChatMessage.objects.create(
+            session=self.session, role=ChatMessage.ROLE_ASSISTANT,
+            text="follow-up",
+            blocks=[{"kind": "card", "type": "signal", "data": {"symbol": "GBIME"}}],
+        )
+        with patch.object(analysis_capture, "_summarize_llm", return_value=None):
+            draft = analysis_capture.build_draft(self.session)
+        self.assertEqual(draft["verdict"], "BUY")
+
+    def test_naive_tickers_skip_stopwords(self):
+        self.assertEqual(
+            analysis_capture._extract_tickers("BUY NABIL for the long term, EPS strong"),
+            ["NABIL"],
+        )
+
+    def test_uses_llm_draft_when_available(self):
+        fake = {
+            "title": "GBIME Q2 Fundamentals",
+            "summary": "Detailed synthesis.",
+            "one_liner": "GBIME Q2 — strong",
+            "category": "Quarterly Fundamentals",
+            "tags": ["fundamentals", "q2"],
+            "tickers": ["GBIME"],
+        }
+        with patch.object(analysis_capture, "_summarize_llm", return_value=fake):
+            draft = analysis_capture.build_draft(self.session)
+        self.assertEqual(draft["title"], "GBIME Q2 Fundamentals")
+        self.assertEqual(draft["category"], "Quarterly Fundamentals")
+        self.assertFalse(draft["degraded"])
+        self.assertEqual(draft["series_key"], "GBIME · Quarterly Fundamentals")
+        self.assertEqual(draft["verdict"], "BUY")  # still captured from blocks
