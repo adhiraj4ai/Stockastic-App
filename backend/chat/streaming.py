@@ -260,7 +260,7 @@ async def stream_chat(
 
     @sync_to_async
     def _persist():
-        ChatMessage.objects.create(
+        msg = ChatMessage.objects.create(
             session=session,
             role=ChatMessage.ROLE_ASSISTANT,
             text=joined_text,
@@ -276,10 +276,16 @@ async def stream_chat(
         else:
             # Touch updated_at so the session moves to the top of the sidebar.
             session.save(update_fields=["updated_at"])
+        return str(msg.id)
 
+    persisted_message_id = None
     try:
-        await _persist()
+        persisted_message_id = await _persist()
     except Exception:  # pylint: disable=broad-except
         log.exception("failed to persist assistant turn")
 
-    yield _sse("done", {"session_id": str(session.id), "sdk_session_id": final_session_id})
+    yield _sse("done", {
+        "session_id": str(session.id),
+        "sdk_session_id": final_session_id,
+        "message_id": persisted_message_id,
+    })

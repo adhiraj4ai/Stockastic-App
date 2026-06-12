@@ -40,9 +40,9 @@ _SUMMARY_SYSTEM = (
 )
 
 
-def _transcript(session) -> str:
+def _transcript(messages) -> str:
     parts: list[str] = []
-    for msg in session.messages.all().order_by("created_at"):
+    for msg in messages:
         role = "User" if msg.role == "user" else "Assistant"
         if msg.text:
             parts.append(f"{role}: {msg.text}")
@@ -50,15 +50,12 @@ def _transcript(session) -> str:
     return text[:_MAX_TRANSCRIPT_CHARS]
 
 
-def _capture_verdict(session) -> tuple[str, dict]:
-    """Return (verdict_label, structured_data) from the latest verdict/signal card.
-
-    Prefer the latest card that actually carries a verdict — a later card without
-    a verdict key must not erase an earlier verdict. If no card has a verdict, fall
-    back to the latest matching card's data.
+def _capture_verdict(messages) -> tuple[str, dict]:
+    """Return (verdict_label, structured_data) from the latest verdict/signal card
+    among the given messages. A later card without a verdict doesn't wipe an earlier one.
     """
     verdict, structured, last_structured = "", {}, {}
-    for msg in session.messages.all().order_by("created_at"):
+    for msg in messages:
         for block in (msg.blocks or []):
             if block.get("kind") == "card" and block.get("type") in _VERDICT_CARD_TYPES:
                 data = block.get("data") or {}
@@ -69,6 +66,15 @@ def _capture_verdict(session) -> tuple[str, dict]:
     if not verdict:
         structured = last_structured
     return verdict, structured
+
+
+def _preceding_question(session, message):
+    """The most recent user message before `message` in the same session, or None."""
+    return (
+        session.messages.filter(role="user", created_at__lt=message.created_at)
+        .order_by("created_at")
+        .last()
+    )
 
 
 def _extract_tickers(text: str) -> list[str]:
@@ -142,14 +148,15 @@ async def _summarize_async(transcript: str) -> dict | None:
     return _parse_json("".join(chunks))
 
 
-def _naive_draft(session) -> dict:
-    first_user = session.messages.filter(role="user").order_by("created_at").first()
-    last_assistant = session.messages.filter(role="assistant").order_by("-created_at").first()
+def _naive_draft(session, messages) -> dict:
+    msgs = list(messages)
+    first_user = next((m for m in msgs if m.role == "user"), None)
+    last_assistant = next((m for m in reversed(msgs) if m.role == "assistant"), None)
     question = (first_user.text if first_user else "") or session.title
     answer = last_assistant.text if last_assistant else ""
     summary = f"**Question**\n\n{question}\n\n**Latest answer**\n\n{answer}".strip()
     return {
-        "title": (session.title or question)[:80] or "Saved analysis",
+        "title": (question or session.title)[:80] or "Saved analysis",
         "summary": summary or "(no content)",
         "one_liner": (question or session.title)[:280],
         "category": "",
@@ -159,14 +166,24 @@ def _naive_draft(session) -> dict:
     }
 
 
-def build_draft(session) -> dict:
-    """Build an editable draft dict for a SavedAnalysis from `session`.
+def build_draft(session, message=None) -> dict:
+    """Build an editable SavedAnalysis draft.
+
+    If `message` (an assistant ChatMessage) is given, capture just that Q&A pair
+    (the message plus the user question that preceded it). Otherwise summarize the
+    whole session.
 
     Keys: title, summary, one_liner, category, tags, tickers, series_key,
     verdict, structured, degraded.
     """
-    verdict, structured = _capture_verdict(session)
-    transcript = _transcript(session)
+    if message is not None:
+        question = _preceding_question(session, message)
+        messages = [m for m in (question, message) if m is not None]
+    else:
+        messages = list(session.messages.all().order_by("created_at"))
+
+    verdict, structured = _capture_verdict(messages)
+    transcript = _transcript(messages)
     llm = _summarize_llm(transcript)
 
     if llm:
@@ -180,7 +197,7 @@ def build_draft(session) -> dict:
             "degraded": False,
         }
     else:
-        draft = _naive_draft(session)
+        draft = _naive_draft(session, messages)
 
     # Merge tickers captured from the structured verdict (authoritative symbol).
     symbol = structured.get("symbol") if isinstance(structured, dict) else None

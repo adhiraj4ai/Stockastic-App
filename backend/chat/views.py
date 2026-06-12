@@ -175,9 +175,18 @@ class ChatSessionViewSet(viewsets.ModelViewSet):
 
     @action(detail=True, methods=["post"], url_path="bookmark_draft")
     def bookmark_draft(self, request, pk=None):
-        """Build an editable SavedAnalysis draft from this session (no persistence)."""
+        """Build an editable SavedAnalysis draft from a single message (or the session)."""
         session = self.get_object()  # 404 if not owned by request.user
-        draft = build_draft(session)
+        message = None
+        message_id = request.data.get("message_id")
+        if message_id:
+            message = session.messages.filter(id=message_id).first()
+            if message is None:
+                return Response(
+                    {"detail": "Message not found in this session."},
+                    status=status.HTTP_404_NOT_FOUND,
+                )
+        draft = build_draft(session, message=message)
         draft["session"] = str(session.id)
         return Response(draft)
 

@@ -148,6 +148,34 @@ class BuildDraftTests(TestCase):
         self.assertEqual(draft["series_key"], "GBIME · Quarterly Fundamentals")
         self.assertEqual(draft["verdict"], "BUY")  # still captured from blocks
 
+    def test_build_draft_for_single_message_pair(self):
+        # Add a SECOND, unrelated Q&A pair to the same session.
+        q2 = ChatMessage.objects.create(
+            session=self.session, role=ChatMessage.ROLE_USER,
+            text="What about NABIL technicals?",
+        )
+        a2 = ChatMessage.objects.create(
+            session=self.session, role=ChatMessage.ROLE_ASSISTANT,
+            text="NABIL RSI is 65.",
+            blocks=[{"kind": "card", "type": "signal",
+                     "data": {"symbol": "NABIL", "verdict": "SELL"}}],
+        )
+        with patch.object(analysis_capture, "_summarize_llm", return_value=None):
+            draft = analysis_capture.build_draft(self.session, message=a2)
+        # Verdict + tickers come from the SECOND pair only, not the GBIME first pair.
+        self.assertEqual(draft["verdict"], "SELL")
+        self.assertIn("NABIL", draft["tickers"])
+        self.assertNotIn("GBIME", draft["tickers"])
+        # Transcript/summary is scoped to the NABIL question + answer.
+        self.assertIn("NABIL", draft["summary"])
+        self.assertNotIn("GBIME", draft["summary"])
+
+    def test_build_draft_session_mode_still_whole_thread(self):
+        # Sanity: without a message, it still summarizes the whole session.
+        with patch.object(analysis_capture, "_summarize_llm", return_value=None):
+            draft = analysis_capture.build_draft(self.session)
+        self.assertEqual(draft["verdict"], "BUY")  # from the GBIME card in setUp
+
 
 class SavedAnalysisSerializerTests(TestCase):
     def setUp(self):
@@ -229,6 +257,33 @@ class SavedAnalysisAPITests(APITestCase):
     def test_bookmark_draft_rejects_foreign_session(self):
         foreign = ChatSession.objects.create(user=self.other, title="x")
         resp = self.client.post(f"/api/chat/sessions/{foreign.id}/bookmark_draft/")
+        self.assertEqual(resp.status_code, 404)
+
+    def test_bookmark_draft_with_message_id(self):
+        msg = ChatMessage.objects.create(
+            session=self.session, role=ChatMessage.ROLE_ASSISTANT, text="ans",
+        )
+        fake = {"title": "t", "summary": "s", "one_liner": "o", "category": "",
+                "tags": [], "tickers": [], "series_key": "", "verdict": "",
+                "structured": {}, "degraded": True}
+        with patch("chat.views.build_draft", return_value=fake) as m:
+            resp = self.client.post(
+                f"/api/chat/sessions/{self.session.id}/bookmark_draft/",
+                {"message_id": str(msg.id)}, format="json",
+            )
+        self.assertEqual(resp.status_code, 200, resp.content)
+        # build_draft was called with that message instance.
+        called_message = m.call_args.kwargs.get("message")
+        if called_message is None and len(m.call_args.args) > 1:
+            called_message = m.call_args.args[1]
+        self.assertEqual(called_message, msg)
+
+    def test_bookmark_draft_unknown_message_404(self):
+        import uuid as _uuid
+        resp = self.client.post(
+            f"/api/chat/sessions/{self.session.id}/bookmark_draft/",
+            {"message_id": str(_uuid.uuid4())}, format="json",
+        )
         self.assertEqual(resp.status_code, 404)
 
 
