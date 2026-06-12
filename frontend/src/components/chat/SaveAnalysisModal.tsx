@@ -17,12 +17,13 @@ import type { SavedAnalysisDraft } from './types';
 
 interface Props {
     sessionId: string;
+    messageId?: string;
     onClose: () => void;
     onSaved: () => void;
 }
 
 /** Loads an AI-suggested draft for the session, lets the user edit, then saves. */
-export function SaveAnalysisModal({ sessionId, onClose, onSaved }: Props) {
+export function SaveAnalysisModal({ sessionId, messageId, onClose, onSaved }: Props) {
     const [draft, setDraft] = useState<SavedAnalysisDraft | null>(null);
     const [tagsText, setTagsText] = useState('');
     const [loading, setLoading] = useState(true);
@@ -32,7 +33,7 @@ export function SaveAnalysisModal({ sessionId, onClose, onSaved }: Props) {
     useEffect(() => {
         let cancelled = false;
         savedApi
-            .draft(sessionId)
+            .draft(sessionId, messageId)
             .then((res) => {
                 if (cancelled) return;
                 const d = res.data;
@@ -44,7 +45,7 @@ export function SaveAnalysisModal({ sessionId, onClose, onSaved }: Props) {
         return () => {
             cancelled = true;
         };
-    }, [sessionId]);
+    }, [sessionId, messageId]);
 
     const set = <K extends keyof SavedAnalysisDraft>(k: K, v: SavedAnalysisDraft[K]) =>
         setDraft((d) => (d ? { ...d, [k]: v } : d));

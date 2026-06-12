@@ -200,8 +200,11 @@ export const savedApi = {
     remove: (id: string) => api.delete(`/api/chat/saved/${id}/`),
     suggest: (q: string) =>
         api.get<SavedAnalysis[]>(`/api/chat/saved/suggest/?q=${encodeURIComponent(q)}`),
-    draft: (sessionId: string) =>
-        api.post<SavedAnalysisDraft>(`/api/chat/sessions/${sessionId}/bookmark_draft/`, {}),
+    draft: (sessionId: string, messageId?: string) =>
+        api.post<SavedAnalysisDraft>(
+            `/api/chat/sessions/${sessionId}/bookmark_draft/`,
+            messageId ? { message_id: messageId } : {},
+        ),
 };
 
 export default api;
