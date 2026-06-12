@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useLayoutEffect, useRef, useState, useCallback } from 'react';
-import { Send, StopCircle, Loader2 } from 'lucide-react';
+import { Send, StopCircle, Loader2, Bookmark } from 'lucide-react';
 import api from '@/lib/api';
 import { openChatStream } from '@/lib/chat-sse';
 import { cn } from '@/lib/utils';
@@ -11,6 +11,7 @@ import { WorkbenchPanel } from './WorkbenchPanel';
 import type { ChatBlock, ChatMessage } from './types';
 import { filterCommands } from '@/lib/chat-commands';
 import { CommandHintMenu } from './CommandHintMenu';
+import { SaveAnalysisModal } from './SaveAnalysisModal';
 
 interface ChatInterfaceProps {
     sessionId: string;
@@ -32,6 +33,7 @@ export function ChatInterface({ sessionId, onTitleChange, initialPrompt }: ChatI
     const [selectedTool, setSelectedTool] = useState<WorkbenchTool | null>(null);
     const [activeMessageId, setActiveMessageId] = useState<string | null>(null);
     const [visibleFrom, setVisibleFrom] = useState(0);
+    const [showSaveModal, setShowSaveModal] = useState(false);
     const abortRef = useRef<AbortController | null>(null);
     const scrollerRef = useRef<HTMLDivElement | null>(null);
     const messageRefs = useRef<Map<string, HTMLDivElement>>(new Map());
@@ -341,6 +343,19 @@ export function ChatInterface({ sessionId, onTitleChange, initialPrompt }: ChatI
 
                 {/* Main chat column */}
                 <div className="flex flex-col flex-1 min-w-0">
+                    {sessionId && (
+                        <div className="flex items-center justify-end border-b border-border px-4 py-2">
+                            <button
+                                type="button"
+                                onClick={() => setShowSaveModal(true)}
+                                className="inline-flex items-center gap-1.5 px-2 py-1 rounded-md text-[12px] font-medium text-emerald-500 hover:bg-accent transition-colors"
+                                title="Save this analysis"
+                            >
+                                <Bookmark size={13} />
+                                Save analysis
+                            </button>
+                        </div>
+                    )}
                     <div ref={scrollerRef} data-testid="chat-scroller" className="flex-1 overflow-y-auto px-4 py-6 custom-scrollbar">
                         <div className="max-w-5xl mx-auto space-y-4">
                             {loadingHistory ? (
@@ -389,6 +404,14 @@ export function ChatInterface({ sessionId, onTitleChange, initialPrompt }: ChatI
                     <WorkbenchPanel tool={selectedTool} onClose={() => setSelectedTool(null)} />
                 )}
             </div>
+
+            {showSaveModal && sessionId && (
+                <SaveAnalysisModal
+                    sessionId={sessionId}
+                    onClose={() => setShowSaveModal(false)}
+                    onSaved={() => setShowSaveModal(false)}
+                />
+            )}
         </WorkbenchContext.Provider>
     );
 }
