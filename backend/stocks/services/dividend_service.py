@@ -25,6 +25,59 @@ def _face_value(ticker: str) -> Decimal:
 
 
 # ---------------------------------------------------------------------------
+# FinancialReport → Dividend sync
+# ---------------------------------------------------------------------------
+
+def _normalize_fiscal_year(fy: str) -> str:
+    """Normalize '080-081' / '080/081' to the canonical '2080/2081' used by
+    fetch_dividends, so syncing from financial reports updates the scraper's
+    rows instead of duplicating them under a second format."""
+    parts = fy.replace('-', '/').split('/')
+    if len(parts) != 2:
+        return fy
+    parts = [p if len(p) == 4 else f'2{p.zfill(3)}' for p in parts]
+    return f'{parts[0]}/{parts[1]}'
+
+
+def sync_dividends_from_financials(ticker=None):
+    """Upsert Dividend rows from the dividend fields on ANNUAL FinancialReports.
+
+    Zero-dividend years are skipped and an existing book_close_date is never
+    wiped by a report that lacks one (both match the fetch_dividends
+    conventions). Returns (created, updated).
+    """
+    from ..models import FinancialReport
+
+    qs = FinancialReport.objects.filter(report_type='ANNUAL').exclude(
+        bonus_share__isnull=True, cash_dividend__isnull=True,
+    )
+    if ticker:
+        qs = qs.filter(ticker=ticker)
+
+    created = updated = 0
+    for report in qs:
+        bonus = report.bonus_share or Decimal('0')
+        cash = report.cash_dividend or Decimal('0')
+        if bonus == 0 and cash == 0:
+            continue
+        defaults = {
+            'bonus_percent': bonus,
+            'cash_percent': cash,
+            'total_percent': bonus + cash,
+        }
+        if report.dividend_book_close_date:
+            defaults['book_close_date'] = report.dividend_book_close_date
+        _, was_created = Dividend.objects.update_or_create(
+            ticker=report.ticker,
+            fiscal_year=_normalize_fiscal_year(report.fiscal_year),
+            defaults=defaults,
+        )
+        created += was_created
+        updated += not was_created
+    return created, updated
+
+
+# ---------------------------------------------------------------------------
 # WACC-replay helper (mirrors the P&L replay in DividendService but is
 # scoped to a single ticker and stops at *cutoff_date*)
 # ---------------------------------------------------------------------------
