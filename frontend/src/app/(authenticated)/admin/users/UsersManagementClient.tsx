@@ -486,9 +486,8 @@ export default function UsersManagementClient() {
         <DashboardLayout 
             title="User Management" 
             subtitle={`${greeting} • Subscription Tier Oversight`}
-            hideHeader={true}
         >
-            <Tabs defaultValue="directory" className="space-y-6 animate-in fade-in duration-500">
+            <Tabs defaultValue="directory" className="space-y-6 animate-in fade-in duration-500 pt-6 pb-10">
                 <div className="flex items-center justify-between">
                     <TabsList className="bg-slate-100/50 dark:bg-muted border border-border dark:border-border p-1 rounded-xl h-11">
                         <TabsTrigger

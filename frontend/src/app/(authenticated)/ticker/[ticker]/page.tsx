@@ -657,7 +657,7 @@ export default function StockDetailPage() {
 
     return (
         <DashboardLayout noPadding tickerPrice={data.price.close} priceChange={data.price.percent_change}>
-            <div className="bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-slate-100 terminal-grid-light selection:bg-blue-500/10 font-sans relative">
+            <div className="bg-background text-foreground terminal-grid-light selection:bg-blue-500/10 font-sans relative">
 
 
                 <div className="px-8 py-10 space-y-10 relative z-10 animate-in fade-in slide-in-from-bottom-6 duration-1000">

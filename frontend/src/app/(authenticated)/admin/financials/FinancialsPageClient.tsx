@@ -134,8 +134,8 @@ export default function AdminPage() {
     }, [groupedCompanies]);
 
     return (
-        <DashboardLayout title="Financials" hideHeader={true}>
-            <div className="w-full mx-auto space-y-6 animate-in fade-in duration-500 px-2 lg:px-4">
+        <DashboardLayout title="Financials" subtitle="Company report management">
+            <div className="w-full space-y-6 animate-in fade-in duration-500 pt-6 pb-10">
 
                 {/* Filters & Controls */}
                 <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 bg-white dark:bg-card p-4 rounded-xl border dark:border-slate-800 shadow-sm transition-colors duration-500">

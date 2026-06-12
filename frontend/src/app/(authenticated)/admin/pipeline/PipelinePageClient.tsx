@@ -884,8 +884,8 @@ export default function PipelinePage() {
     });
 
     return (
-        <DashboardLayout title="Market Pipeline" hideHeader={true}>
-            <div className="w-full px-8 space-y-8 pb-12 animate-in fade-in slide-in-from-bottom-4 duration-700">
+        <DashboardLayout title="Market Pipeline" subtitle="Data ingestion & processing status">
+            <div className="w-full space-y-6 animate-in fade-in duration-500 pt-6 pb-10">
 
                 <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
                     {/* Main Pipeline Steps */}
