@@ -86,3 +86,33 @@ export interface ChatMessage {
     cache_read_tokens?: number;
     cache_creation_tokens?: number;
 }
+
+export interface SavedAnalysis {
+    id: string;
+    session: string | null;
+    title: string;
+    summary?: string;        // present on detail, omitted from list/suggest
+    one_liner: string;
+    category: string;
+    tags: string[];
+    tickers: string[];
+    series_key: string;
+    verdict: string;
+    structured?: Record<string, unknown>;
+    created_at: string;
+    updated_at?: string;
+}
+
+export interface SavedAnalysisDraft {
+    session: string;
+    title: string;
+    summary: string;
+    one_liner: string;
+    category: string;
+    tags: string[];
+    tickers: string[];
+    series_key: string;
+    verdict: string;
+    structured: Record<string, unknown>;
+    degraded: boolean;
+}
