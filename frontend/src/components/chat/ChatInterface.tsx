@@ -15,6 +15,8 @@ import { CommandHintMenu } from './CommandHintMenu';
 interface ChatInterfaceProps {
     sessionId: string;
     onTitleChange?: () => void;
+    /** Sent automatically once after history loads (home-page omnibox handoff). */
+    initialPrompt?: string;
 }
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
@@ -22,7 +24,7 @@ const TIMELINE_WINDOW = 10;
 const RENDER_WINDOW = 20; // ~10 Q&A pairs rendered at a time
 const PAGE_SIZE = 20;     // messages to prepend per scroll-to-top
 
-export function ChatInterface({ sessionId, onTitleChange }: ChatInterfaceProps) {
+export function ChatInterface({ sessionId, onTitleChange, initialPrompt }: ChatInterfaceProps) {
     const [messages, setMessages] = useState<ChatMessage[]>([]);
     const [prompt, setPrompt] = useState('');
     const [streaming, setStreaming] = useState(false);
@@ -150,8 +152,8 @@ export function ChatInterface({ sessionId, onTitleChange }: ChatInterfaceProps) 
         setStreaming(false);
     };
 
-    const handleSend = async () => {
-        const text = prompt.trim();
+    const sendPrompt = async (raw: string) => {
+        const text = raw.trim();
         if (!text || streaming) return;
 
         const userMsg: ChatMessage = {
@@ -204,6 +206,18 @@ export function ChatInterface({ sessionId, onTitleChange }: ChatInterfaceProps) 
             onTitleChange?.();
         }
     };
+
+    const handleSend = () => sendPrompt(prompt);
+
+    // Auto-send a handed-off prompt (e.g. /chat?q=… from the home omnibox)
+    // exactly once, after history has loaded.
+    const initialSentRef = useRef(false);
+    useEffect(() => {
+        if (!initialPrompt || initialSentRef.current || loadingHistory) return;
+        initialSentRef.current = true;
+        sendPrompt(initialPrompt);
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [initialPrompt, loadingHistory]);
 
     const appendBlock = (msgId: string, block: ChatBlock) => {
         setMessages((prev) =>

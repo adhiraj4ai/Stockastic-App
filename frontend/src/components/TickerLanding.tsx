@@ -3,29 +3,27 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import DashboardLayout from '@/components/DashboardLayout';
-import { Search, TrendingUp } from 'lucide-react';
+import { Search, TrendingUp, Sparkles } from 'lucide-react';
 import api from '@/lib/api';
 import { cn } from '@/lib/utils';
-
-interface Company {
-    symbol: string;
-    name: string;
-}
+import { traderPrompt, resolveOmniboxIntent, type OmniboxCompany } from '@/lib/homeHero';
 
 export function TickerLanding() {
     const router = useRouter();
     const [search, setSearch] = useState('');
-    const [companies, setCompanies] = useState<Company[]>([]);
+    const [companies, setCompanies] = useState<OmniboxCompany[]>([]);
     const [portfolioSymbols, setPortfolioSymbols] = useState<string[]>([]);
     const [randomSymbols, setRandomSymbols] = useState<string[]>([]);
     const [loading, setLoading] = useState(false);
     const [focused, setFocused] = useState(false);
+    const [highlighted, setHighlighted] = useState(-1);
     const [user, setUser] = useState<{
         username: string,
         nickname?: string,
         first_name?: string,
         last_name?: string,
-        profile_picture?: string
+        profile_picture?: string,
+        permissions?: any
     } | null>(null);
     const inputRef = useRef<HTMLInputElement>(null);
 
@@ -78,10 +76,12 @@ export function TickerLanding() {
 
     const getGreeting = () => {
         const hour = new Date().getHours();
-        if (hour < 12) return "Good Morning";
-        if (hour < 17) return "Good Afternoon";
-        return "Good Evening";
+        if (hour < 12) return "Good morning";
+        if (hour < 17) return "Good afternoon";
+        return "Good evening";
     };
+
+    const canChat = !!user && (user.permissions === 'all' || user.permissions?.chat === true);
 
     useEffect(() => {
         const id = setTimeout(async () => {
@@ -99,22 +99,66 @@ export function TickerLanding() {
         return () => clearTimeout(id);
     }, [search, focused]);
 
-    const go = (symbol: string) => router.push(`/ticker/${symbol}`);
+    // Reset keyboard highlight whenever the result set changes
+    useEffect(() => {
+        setHighlighted(-1);
+    }, [search, companies.length]);
 
-    const showDropdown = focused && (search.length > 0 || companies.length > 0);
+    const go = (symbol: string) => router.push(`/ticker/${symbol}`);
+    const ask = (q: string) => router.push(`/chat?q=${encodeURIComponent(q)}`);
+
+    const showAiRow = canChat && search.trim().length > 0;
+    const rowCount = companies.length + (showAiRow ? 1 : 0);
+    const showDropdown = focused && rowCount > 0 && search.length > 0;
+
+    const submit = () => {
+        // A highlighted row wins over the heuristic
+        if (highlighted >= 0 && highlighted < companies.length) {
+            go(companies[highlighted].symbol);
+            return;
+        }
+        if (showAiRow && highlighted === companies.length) {
+            ask(search.trim());
+            return;
+        }
+        const intent = resolveOmniboxIntent(search, companies, canChat);
+        if (!intent) return;
+        if (intent.type === 'chat') ask(intent.q);
+        else go(intent.symbol);
+    };
+
+    const onKeyDown = (e: React.KeyboardEvent) => {
+        if (e.key === 'ArrowDown' && rowCount > 0) {
+            e.preventDefault();
+            setHighlighted(h => (h + 1) % rowCount);
+        } else if (e.key === 'ArrowUp' && rowCount > 0) {
+            e.preventDefault();
+            setHighlighted(h => (h - 1 + rowCount) % rowCount);
+        } else if (e.key === 'Enter') {
+            submit();
+        } else if (e.key === 'Escape') {
+            inputRef.current?.blur();
+        }
+    };
 
     const displaySymbols = portfolioSymbols.length > 0 ? portfolioSymbols : randomSymbols;
     const displayLabel = portfolioSymbols.length > 0 ? 'Your Portfolio' : 'Discover';
 
     return (
-        <DashboardLayout hideHeader subtitle="Ticker Intelligence">
-            <div className="min-h-screen flex flex-col items-center justify-center px-4">
-                {/* Wordmark & Greeting */}
-                <div className="mb-14 text-center">
+        <DashboardLayout title="Home" subtitle="Ticker Intelligence">
+            <div className="min-h-[calc(100vh-130px)] flex flex-col items-center justify-center px-4">
+                {/* Greeting */}
+                <div className="mb-10 text-center animate-in fade-in slide-in-from-bottom-2 duration-500">
+                    <h1 className="text-2xl font-semibold tracking-tight text-foreground">
+                        {getGreeting()}{getDisplayName() ? `, ${getDisplayName()}` : ''}.
+                    </h1>
+                    <p className="mt-2 text-sm text-muted-foreground">
+                        {traderPrompt(new Date())}
+                    </p>
                 </div>
 
-                {/* Search */}
-                <div className="w-full max-w-md relative">
+                {/* Omnibox */}
+                <div className="w-full max-w-xl relative">
                     <div className={cn(
                         "flex items-center gap-3 bg-white dark:bg-card border rounded-2xl px-5 py-3.5 transition-all duration-200",
                         focused
@@ -129,14 +173,8 @@ export function TickerLanding() {
                             onChange={e => setSearch(e.target.value)}
                             onFocus={() => setFocused(true)}
                             onBlur={() => setTimeout(() => setFocused(false), 150)}
-                            onKeyDown={e => {
-                                if (e.key === 'Enter' && search.trim()) {
-                                    // If there's an exact match or first result, navigate there
-                                    const match = companies.find(c => c.symbol.toLowerCase() === search.toLowerCase());
-                                    go(match?.symbol || companies[0]?.symbol || search.toUpperCase());
-                                }
-                            }}
-                            placeholder="Search symbol or company…"
+                            onKeyDown={onKeyDown}
+                            placeholder={canChat ? "Ask anything or type a symbol…" : "Search symbol or company…"}
                             className="flex-1 bg-transparent outline-none text-sm font-semibold text-slate-900 dark:text-slate-100 placeholder:text-slate-300 dark:placeholder:text-slate-700"
                         />
                         {loading && (
@@ -144,16 +182,27 @@ export function TickerLanding() {
                         )}
                     </div>
 
+                    {/* Hint */}
+                    {canChat && !showDropdown && (
+                        <p className="mt-2 text-center text-[11px] text-slate-400 dark:text-slate-600">
+                            “ADBL” opens the ticker · “should I buy ADBL?” asks the AI
+                        </p>
+                    )}
+
                     {/* Dropdown */}
-                    {showDropdown && companies.length > 0 && (
+                    {showDropdown && (
                         <div className="absolute top-[calc(100%+8px)] left-0 right-0 bg-white dark:bg-card border border-slate-200 dark:border-slate-800 rounded-2xl shadow-xl overflow-hidden z-50 animate-in fade-in slide-in-from-top-1 duration-150">
                             {companies.map((c, i) => (
                                 <button
                                     key={c.symbol}
                                     onMouseDown={() => go(c.symbol)}
+                                    onMouseEnter={() => setHighlighted(i)}
                                     className={cn(
-                                        "w-full flex items-center gap-3.5 px-4 py-3 text-left hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors",
-                                        i !== 0 && "border-t border-border dark:border-slate-800/60"
+                                        "w-full flex items-center gap-3.5 px-4 py-3 text-left transition-colors",
+                                        i !== 0 && "border-t border-border dark:border-slate-800/60",
+                                        highlighted === i
+                                            ? "bg-slate-50 dark:bg-slate-800"
+                                            : "hover:bg-slate-50 dark:hover:bg-slate-800"
                                     )}
                                 >
                                     <div className="w-8 h-8 rounded-xl bg-emerald-50 dark:bg-emerald-900/30 flex items-center justify-center shrink-0">
@@ -165,6 +214,27 @@ export function TickerLanding() {
                                     </div>
                                 </button>
                             ))}
+                            {showAiRow && (
+                                <button
+                                    onMouseDown={() => ask(search.trim())}
+                                    onMouseEnter={() => setHighlighted(companies.length)}
+                                    className={cn(
+                                        "w-full flex items-center gap-3.5 px-4 py-3 text-left transition-colors",
+                                        companies.length > 0 && "border-t border-border dark:border-slate-800/60",
+                                        highlighted === companies.length
+                                            ? "bg-violet-50 dark:bg-violet-900/20"
+                                            : "hover:bg-violet-50 dark:hover:bg-violet-900/20"
+                                    )}
+                                >
+                                    <div className="w-8 h-8 rounded-xl bg-violet-50 dark:bg-violet-900/30 flex items-center justify-center shrink-0">
+                                        <Sparkles size={14} className="text-violet-600 dark:text-violet-400" />
+                                    </div>
+                                    <div className="min-w-0">
+                                        <p className="text-sm font-bold text-slate-900 dark:text-slate-100 leading-none mb-0.5">Ask Stockastic AI</p>
+                                        <p className="text-xs text-slate-400 truncate">“{search.trim()}”</p>
+                                    </div>
+                                </button>
+                            )}
                         </div>
                     )}
                 </div>

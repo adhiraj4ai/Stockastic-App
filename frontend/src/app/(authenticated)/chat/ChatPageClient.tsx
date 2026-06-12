@@ -15,6 +15,8 @@ export default function ChatPageClient() {
 
     const [sessions, setSessions] = useState<ChatSession[]>([]);
     const [loading, setLoading] = useState(true);
+    // Captured once from ?q= (home omnibox handoff); the URL is then cleaned.
+    const [pendingPrompt, setPendingPrompt] = useState<string | null>(null);
 
     const refresh = async () => {
         try {
@@ -33,6 +35,22 @@ export default function ChatPageClient() {
         refresh();
     }, []);
 
+    // ?q= handoff: stash the prompt, ensure a session exists, drop q from the URL.
+    useEffect(() => {
+        const q = searchParams.get('q');
+        if (!q) return;
+        setPendingPrompt(q);
+        if (activeId) {
+            router.replace(`/chat?session=${activeId}`);
+            return;
+        }
+        api.post('/api/chat/sessions/', { title: 'New chat' }).then(async res => {
+            await refresh();
+            router.replace(`/chat?session=${res.data.id}`);
+        });
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, []);
+
     const handleNew = async () => {
         const res = await api.post('/api/chat/sessions/', { title: 'New chat' });
         const created = res.data;
@@ -49,8 +67,8 @@ export default function ChatPageClient() {
     };
 
     return (
-        <DashboardLayout title="Chat" noPadding hideHeader>
-            <div className="flex h-screen overflow-hidden">
+        <DashboardLayout title="Chat" subtitle="Orchestrated AI analysts for NEPSE" noPadding>
+            <div className="flex h-[calc(100vh-72px)] overflow-hidden">
                 <SessionList
                     sessions={sessions}
                     activeId={activeId}
@@ -63,6 +81,7 @@ export default function ChatPageClient() {
                         <ChatInterface
                             sessionId={activeId}
                             onTitleChange={refresh}
+                            initialPrompt={pendingPrompt ?? undefined}
                         />
                     ) : (
                         <EmptyState onNew={handleNew} />
