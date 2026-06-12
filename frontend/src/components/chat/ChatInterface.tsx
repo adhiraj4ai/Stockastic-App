@@ -190,16 +190,14 @@ export function ChatInterface({ sessionId, onTitleChange, initialPrompt }: ChatI
                 signal: ac.signal,
             })) {
                 applyFrame(assistantMsg.id, frame.event, frame.data);
-                // Reconcile the temp assistant id with the persisted server id so the
-                // just-streamed answer becomes bookmarkable (hidden while temp-*).
-                if (
-                    (frame.event === 'done' || frame.event === 'assistant_end') &&
-                    frame.data?.message_id
-                ) {
+                // Record the persisted server id (from the `done` frame) so the
+                // just-streamed answer becomes bookmarkable. We keep the React key on
+                // the temp id to avoid remounting the bubble; bookmarking uses serverId.
+                if (frame.event === 'done' && frame.data?.message_id) {
                     const serverId = frame.data.message_id;
                     setMessages((prev) =>
                         prev.map((mm) =>
-                            mm.id === assistantMsg.id ? { ...mm, id: serverId } : mm,
+                            mm.id === assistantMsg.id ? { ...mm, serverId } : mm,
                         ),
                     );
                 }
@@ -408,6 +406,7 @@ export function ChatInterface({ sessionId, onTitleChange, initialPrompt }: ChatI
 
             {bookmarkMessageId && sessionId && (
                 <SaveAnalysisModal
+                    key={bookmarkMessageId}
                     sessionId={sessionId}
                     messageId={bookmarkMessageId}
                     onClose={() => setBookmarkMessageId(null)}

@@ -97,16 +97,19 @@ export function MessageBubble({
         );
     }
 
-    const canBookmark = !!onBookmark && !message.id.startsWith('temp-');
+    // Use the persisted server id once known; a still-streaming message keeps its
+    // temp id and stays non-bookmarkable until the `done` frame supplies serverId.
+    const bookmarkId = message.serverId ?? message.id;
+    const canBookmark = !!onBookmark && !bookmarkId.startsWith('temp-');
 
     return (
         <div className="group">
             <AssistantBubble blocks={message.blocks || []} />
             {canBookmark && (
-                <div className="mt-1 opacity-0 group-hover:opacity-100 focus-within:opacity-100 transition-opacity">
+                <div className="mt-1 opacity-60 group-hover:opacity-100 focus-within:opacity-100 transition-opacity">
                     <button
                         type="button"
-                        onClick={() => onBookmark!(message.id)}
+                        onClick={() => onBookmark!(bookmarkId)}
                         title="Bookmark this answer"
                         className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[11px] font-medium text-muted-foreground hover:text-emerald-500 hover:bg-accent transition-colors"
                     >

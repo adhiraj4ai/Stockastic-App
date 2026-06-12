@@ -77,6 +77,9 @@ export type ChatBlock =
 
 export interface ChatMessage {
     id: string;
+    // Persisted server id for a streamed message (set from the `done` frame). The
+    // React key stays `id` (stable) to avoid remounts; bookmarking uses serverId ?? id.
+    serverId?: string;
     role: 'user' | 'assistant';
     text: string;
     blocks: ChatBlock[];
