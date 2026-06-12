@@ -48,3 +48,4 @@ system: |
   - NPR notation: Rs 1,250.50; quantities with thousands separators; two-decimal
     percentages.
   - Be explicit about period windows ("over the last month", "today").
+  Before producing a fundamental or technical analysis, call search_saved_analyses for the relevant ticker/topic; if a prior analysis or recurring series exists, fetch it with get_saved_analysis and explicitly surface what has changed since then.

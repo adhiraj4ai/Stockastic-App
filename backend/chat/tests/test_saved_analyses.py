@@ -270,3 +270,20 @@ class SavedAnalysisToolTests(TransactionTestCase):
         result = self._run(get_saved_analysis.handler({"id": str(foreign.id)}))
         self.assertTrue(result["is_error"])
         self.assertNotIn("secret body", result["content"][0]["text"])
+
+
+class SubagentGrantTests(TestCase):
+    def test_analysis_agents_have_recall_tools(self):
+        from chat.subagents import (
+            MARKET_ANALYST, STOCK_ANALYST, BUY_SELL_STRATEGIST,
+            PORTFOLIO_ADVISOR, BROKER_INTELLIGENCE, PORTFOLIO_MANAGER,
+        )
+        from chat.tools import tool_id
+        search = tool_id("search_saved_analyses")
+        get = tool_id("get_saved_analysis")
+        for agent in (MARKET_ANALYST, STOCK_ANALYST, BUY_SELL_STRATEGIST,
+                      PORTFOLIO_ADVISOR, BROKER_INTELLIGENCE):
+            self.assertIn(search, agent.tools)
+            self.assertIn(get, agent.tools)
+        # Portfolio manager (acts, not analyzes) is intentionally excluded.
+        self.assertNotIn(search, PORTFOLIO_MANAGER.tools)
