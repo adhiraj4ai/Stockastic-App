@@ -287,3 +287,42 @@ class SubagentGrantTests(TestCase):
             self.assertIn(get, agent.tools)
         # Portfolio manager (acts, not analyzes) is intentionally excluded.
         self.assertNotIn(search, PORTFOLIO_MANAGER.tools)
+
+
+from chat import agent as chat_agent
+
+
+class PromptSeedingTests(TestCase):
+    def setUp(self):
+        self.user = User.objects.create_user(username="jane", password="x")
+
+    def test_format_prompt_includes_saved_hint(self):
+        SavedAnalysis.objects.create(
+            user=self.user, title="GBIME Quarterly Fundamentals",
+            summary="s", one_liner="Q2 strong", tags=["fundamentals"], tickers=["GBIME"],
+            series_key="GBIME · Quarterly Fundamentals",
+        )
+        hint = chat_agent._build_saved_hint(self.user, "how are GBIME fundamentals")
+        self.assertIn("GBIME Quarterly Fundamentals", hint)
+        prompt = chat_agent._format_prompt(
+            self.user, "how are GBIME fundamentals", memory=[], saved_hint=hint,
+        )
+        self.assertIn("GBIME Quarterly Fundamentals", prompt)
+
+    def test_no_match_yields_empty_hint(self):
+        self.assertEqual(chat_agent._build_saved_hint(self.user, "unrelated question"), "")
+
+    def test_hint_strips_braces_and_renders_safely(self):
+        # A saved analysis whose fields contain format-style braces must not break
+        # the str.format template or inject placeholders.
+        SavedAnalysis.objects.create(
+            user=self.user, title="GBIME {message} {date}",
+            summary="s", one_liner="ev{il}", tickers=["GBIME"],
+        )
+        hint = chat_agent._build_saved_hint(self.user, "GBIME analysis")
+        self.assertNotIn("{", hint)
+        self.assertNotIn("}", hint)
+        prompt = chat_agent._format_prompt(
+            self.user, "GBIME analysis", memory=[], saved_hint=hint,
+        )
+        self.assertIn("GBIME", prompt)

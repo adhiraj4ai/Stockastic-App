@@ -124,4 +124,7 @@ user: |
   [User memory]
   {memory}
 
+  [Saved analyses]
+  {saved_hint}
+
   {message}

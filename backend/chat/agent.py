@@ -36,17 +36,41 @@ def _safe_prompt_value(value, max_len: int = 64) -> str:
     return re.sub(r"[^A-Za-z0-9_ .\-@]", "", str(value or ""))[:max_len]
 
 
-def _format_prompt(user, message: str, memory: list[str] | None = None) -> str:
+def _build_saved_hint(user, message: str, limit: int = 3) -> str:
+    """Render a short, sanitized hint listing saved analyses related to `message`.
+
+    Reuses the same lexical matcher as the live composer hint. Empty string when
+    nothing matches.
+    """
+    from chat.services.saved_match import match_saved_analyses
+
+    matches = match_saved_analyses(user, message, limit=limit)
+    if not matches:
+        return ""
+    lines = []
+    for sa in matches:
+        label = _safe_prompt_value(sa.title, max_len=80)
+        one = _safe_prompt_value(sa.one_liner, max_len=120)
+        date_str = sa.created_at.date().isoformat()
+        series = f" [series: {_safe_prompt_value(sa.series_key, max_len=60)}]" if sa.series_key else ""
+        lines.append(f"- {label} ({date_str}): {one}{series}")
+    return "Saved analyses you may build on (use search_saved_analyses / get_saved_analysis):\n" + "\n".join(lines)
+
+
+def _format_prompt(user, message: str, memory: list[str] | None = None,
+                   saved_hint: str = "") -> str:
     """Render the orchestrator user-turn template with live context."""
     safe_username = _safe_prompt_value(getattr(user, "username", ""))
     memory_block = (
         "Known about this user:\n" + "\n".join(f"- {f}" for f in memory)
         if memory else "(nothing recorded about this user yet)"
     )
+    saved_block = saved_hint or "(no related saved analyses)"
     return _ORCHESTRATOR_USER_TEMPLATE.format(
         date=date.today().isoformat(),
         username=safe_username,
         memory=memory_block,
+        saved_hint=saved_block,
         message=message,
     )
 
@@ -116,7 +140,13 @@ async def run_chat_session(user, sdk_session_id: str, prompt: str) -> AsyncItera
         )
 
     memory = await _fetch_memory()
-    formatted_prompt = _format_prompt(user, prompt, memory=memory)
+
+    @sync_to_async
+    def _fetch_saved_hint():
+        return _build_saved_hint(user, prompt)
+
+    saved_hint = await _fetch_saved_hint()
+    formatted_prompt = _format_prompt(user, prompt, memory=memory, saved_hint=saved_hint)
 
     # Try with resumption first; fall back to a brand-new session if stale.
     session_ids = [sdk_session_id, ""] if sdk_session_id else [""]
