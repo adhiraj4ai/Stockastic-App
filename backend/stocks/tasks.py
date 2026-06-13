@@ -3,6 +3,8 @@ import logging
 from celery import shared_task
 from django.contrib.auth.models import User
 from django.db import models
+from stocks.services.signals import default_orchestrator
+from stocks.services.signal_episode.service import evaluate_active_episodes
 
 logger = logging.getLogger(__name__)
 
@@ -88,9 +90,7 @@ def capture_portfolio_snapshots(self):
 @shared_task
 def generate_all_signals_task():
     """Daily: run every signal engine, then resolve ACTIVE episodes on TP/SL."""
-    from stocks.services.signal_generation_service import SignalGenerationService
-    from stocks.services.signal_episode.service import evaluate_active_episodes
-    saved = SignalGenerationService.generate_all(None)
+    saved = default_orchestrator.generate_all(None)
     closed = evaluate_active_episodes()
     return {"signals_saved": saved, "episodes_closed": closed}
 
@@ -98,7 +98,6 @@ def generate_all_signals_task():
 @shared_task
 def evaluate_episodes_task():
     """Resolve ACTIVE SignalEpisodes against latest prices (TP/SL hits)."""
-    from stocks.services.signal_episode.service import evaluate_active_episodes
     return {"episodes_closed": evaluate_active_episodes()}
 
 

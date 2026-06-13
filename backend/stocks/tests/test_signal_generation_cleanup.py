@@ -99,3 +99,22 @@ class TestGenerateAllDelegates:
             mock_orch.generate_all.return_value = 5
             SignalGenerationService.generate_all(cb)
         mock_orch.generate_all.assert_called_once_with(cb)
+
+
+class TestGenerateAllSignalsTask:
+    def test_task_delegates_to_orchestrator(self):
+        from stocks.tasks import generate_all_signals_task
+        with patch('stocks.tasks.default_orchestrator') as mock_orch, \
+             patch('stocks.tasks.evaluate_active_episodes', return_value=3):
+            mock_orch.generate_all.return_value = 7
+            result = generate_all_signals_task()
+        mock_orch.generate_all.assert_called_once_with(None)
+        assert result['signals_saved'] == 7
+
+    def test_task_returns_episodes_closed(self):
+        from stocks.tasks import generate_all_signals_task
+        with patch('stocks.tasks.default_orchestrator') as mock_orch, \
+             patch('stocks.tasks.evaluate_active_episodes', return_value=5):
+            mock_orch.generate_all.return_value = 10
+            result = generate_all_signals_task()
+        assert result['episodes_closed'] == 5
