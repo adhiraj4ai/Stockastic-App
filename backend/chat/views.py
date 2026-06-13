@@ -55,6 +55,59 @@ from .streaming import stream_chat
 log = logging.getLogger(__name__)
 
 
+def _sse_response(gen) -> StreamingHttpResponse:
+    """Wrap an SSE frame generator in a properly configured StreamingHttpResponse."""
+    response = StreamingHttpResponse(gen, content_type="text/event-stream")
+    response["Cache-Control"] = "no-cache"
+    response["X-Accel-Buffering"] = "no"
+    return response
+
+
+def _command_frames(session, reply: str):
+    """Yield SSE frames for a deterministic slash-command reply."""
+    from chat.streaming import _sse
+    yield _sse("assistant_start", {"session_id": str(session.id)})
+    yield _sse("text", {"kind": "text", "subagent": None, "text": reply})
+    yield _sse("assistant_end", {})
+    yield _sse("done", {"session_id": str(session.id), "sdk_session_id": session.sdk_session_id or None})
+
+
+def _persist_command_exchange(session, prompt: str, reply: str) -> None:
+    """Persist both sides of a slash-command exchange and bump session.updated_at."""
+    ChatMessage.objects.create(session=session, role=ChatMessage.ROLE_USER, text=prompt)
+    ChatMessage.objects.create(
+        session=session, role=ChatMessage.ROLE_ASSISTANT, text=reply,
+        blocks=[{"kind": "text", "subagent": None, "text": reply}],
+    )
+    session.save(update_fields=["updated_at"])
+
+
+def _auto_title(session, prompt: str) -> None:
+    """Set session title from the first message if it is still the default."""
+    if not session.title or session.title == "New chat":
+        session.title = prompt[:60]
+        session.save(update_fields=["title"])
+
+
+def _byte_iter(user, session, prompt: str):
+    """Bridge the async SSE generator into a synchronous byte iterator."""
+    agen = stream_chat(user=user, session=session, prompt=prompt)
+    loop = asyncio.new_event_loop()
+    try:
+        while True:
+            try:
+                chunk = loop.run_until_complete(agen.__anext__())
+            except StopAsyncIteration:
+                break
+            yield chunk
+    finally:
+        try:
+            loop.run_until_complete(agen.aclose())
+        except Exception:  # pylint: disable=broad-except
+            pass
+        loop.close()
+
+
 class ChatSessionViewSet(viewsets.ModelViewSet):
     serializer_class = ChatSessionSerializer
     permission_classes = [permissions.IsAuthenticated]
@@ -78,11 +131,7 @@ class ChatSessionViewSet(viewsets.ModelViewSet):
         session = self.get_object()
         role = request.data.get("role", ChatMessage.ROLE_USER)
         text = request.data.get("text") or request.data.get("content") or ""
-        msg = ChatMessage.objects.create(
-            session=session,
-            role=role,
-            text=text,
-        )
+        msg = ChatMessage.objects.create(session=session, role=role, text=text)
         return Response(ChatMessageSerializer(msg).data, status=status.HTTP_201_CREATED)
 
     @action(detail=True, methods=["post"], url_path="send", renderer_classes=[ServerSentEventRenderer])
@@ -97,81 +146,26 @@ class ChatSessionViewSet(viewsets.ModelViewSet):
         if not prompt:
             return Response({"detail": "prompt is required"}, status=status.HTTP_400_BAD_REQUEST)
 
-        # Deterministic slash commands (/memory, /help) are handled server-side
-        # without the LLM: persist the pair and stream the reply directly. This
-        # runs BEFORE the rate limiter (commands are cheap) and the SDK path, and
-        # persists its OWN user message (so the normal user-persist below is skipped).
+        # Deterministic slash commands run before the rate limiter — they are cheap.
         from chat.commands import handle_command, parse_command
-
         command = parse_command(prompt)
         if command is not None:
             reply = handle_command(request.user, command)
-            ChatMessage.objects.create(session=session, role=ChatMessage.ROLE_USER, text=prompt)
-            ChatMessage.objects.create(
-                session=session, role=ChatMessage.ROLE_ASSISTANT, text=reply,
-                blocks=[{"kind": "text", "subagent": None, "text": reply}],
-            )
-            session.save(update_fields=["updated_at"])
+            _persist_command_exchange(session, prompt, reply)
+            return _sse_response(_command_frames(session, reply))
 
-            from chat.streaming import _sse
-
-            def command_frames():
-                yield _sse("assistant_start", {"session_id": str(session.id)})
-                yield _sse("text", {"kind": "text", "subagent": None, "text": reply})
-                yield _sse("assistant_end", {})
-                yield _sse("done", {"session_id": str(session.id),
-                                    "sdk_session_id": session.sdk_session_id or None})
-
-            response = StreamingHttpResponse(command_frames(), content_type="text/event-stream")
-            response["Cache-Control"] = "no-cache"
-            response["X-Accel-Buffering"] = "no"
-            return response
-
-        # Rate limit: 10 messages per minute per user.
         if _rate_limited(request.user.id):
-            return JsonResponse(
-                {"error": "Rate limit exceeded. Try again in a minute."},
-                status=429,
-            )
+            return JsonResponse({"error": "Rate limit exceeded. Try again in a minute."}, status=429)
 
-        # Persist the user turn before streaming so it survives client disconnects.
-        ChatMessage.objects.create(
-            session=session, role=ChatMessage.ROLE_USER, text=prompt
-        )
-        # Auto-title from the first message.
-        if not session.title or session.title == "New chat":
-            session.title = prompt[:60]
-            session.save(update_fields=["title"])
+        # Persist user turn before streaming so it survives client disconnects.
+        ChatMessage.objects.create(session=session, role=ChatMessage.ROLE_USER, text=prompt)
+        _auto_title(session, prompt)
 
-        # Bridge the async SSE generator into Django's sync streaming response.
-        user = request.user
-
-        # Notebook cells are independent queries — never resume an SDK session.
-        # Each cell run starts fresh so stale/expired sessions can't cause failures.
+        # Notebook cells never resume an SDK session — start fresh each time.
         if session.title.startswith("Notebook Session:"):
             session.sdk_session_id = ""
 
-        def byte_iter():
-            agen = stream_chat(user=user, session=session, prompt=prompt)
-            loop = asyncio.new_event_loop()
-            try:
-                while True:
-                    try:
-                        chunk = loop.run_until_complete(agen.__anext__())
-                    except StopAsyncIteration:
-                        break
-                    yield chunk
-            finally:
-                try:
-                    loop.run_until_complete(agen.aclose())
-                except Exception:  # pylint: disable=broad-except
-                    pass
-                loop.close()
-
-        response = StreamingHttpResponse(byte_iter(), content_type="text/event-stream")
-        response["Cache-Control"] = "no-cache"
-        response["X-Accel-Buffering"] = "no"
-        return response
+        return _sse_response(_byte_iter(request.user, session, prompt))
 
     @action(detail=True, methods=["post"], url_path="bookmark_draft")
     def bookmark_draft(self, request, pk=None):
@@ -227,46 +221,44 @@ class NotebookCellViewSet(viewsets.ModelViewSet):
         notebook_id = request.query_params.get("notebook")
         if not notebook_id:
             return Response({"detail": "notebook query parameter is required"}, status=status.HTTP_400_BAD_REQUEST)
-
         try:
             notebook = Notebook.objects.get(id=notebook_id, user=self.request.user)
         except (Notebook.DoesNotExist, ValueError):
             return Response({"detail": "Notebook not found"}, status=status.HTTP_404_NOT_FOUND)
-
-        cell_ids = []
-        for index, data in enumerate(request.data):
-            cell_id = data.get("id")
-            prompt = data.get("prompt", "")
-            execution_count = data.get("execution_count")
-            outputs = data.get("outputs", [])
-
-            cell = None
-            if cell_id:
-                try:
-                    cell = NotebookCell.objects.get(id=cell_id, notebook=notebook)
-                    cell.prompt = prompt
-                    cell.order = index
-                    cell.execution_count = execution_count
-                    cell.outputs = outputs
-                    cell.save()
-                except (NotebookCell.DoesNotExist, ValueError):
-                    pass
-
-            if not cell:
-                cell = NotebookCell.objects.create(
-                    notebook=notebook,
-                    prompt=prompt,
-                    order=index,
-                    execution_count=execution_count,
-                    outputs=outputs,
-                )
-            cell_ids.append(cell.id)
-
-        # Clean up any deleted cells for this specific notebook
+        cell_ids = [self._upsert_cell(notebook, index, data) for index, data in enumerate(request.data)]
         NotebookCell.objects.filter(notebook=notebook).exclude(id__in=cell_ids).delete()
-
         queryset = self.get_queryset().filter(notebook=notebook)
         return Response(NotebookCellSerializer(queryset, many=True).data)
+
+    def _upsert_cell(self, notebook, index: int, data: dict):
+        """Upsert a single cell by ID or create it; return the cell pk."""
+        cell_id = data.get("id")
+        prompt = data.get("prompt", "")
+        execution_count = data.get("execution_count")
+        outputs = data.get("outputs", [])
+        cell = self._update_existing_cell(cell_id, notebook, prompt, index, execution_count, outputs)
+        if not cell:
+            cell = NotebookCell.objects.create(
+                notebook=notebook, prompt=prompt, order=index,
+                execution_count=execution_count, outputs=outputs,
+            )
+        return cell.id
+
+    @staticmethod
+    def _update_existing_cell(cell_id, notebook, prompt, index, execution_count, outputs):
+        """Update an existing cell if it exists; return it or None."""
+        if not cell_id:
+            return None
+        try:
+            cell = NotebookCell.objects.get(id=cell_id, notebook=notebook)
+            cell.prompt = prompt
+            cell.order = index
+            cell.execution_count = execution_count
+            cell.outputs = outputs
+            cell.save()
+            return cell
+        except (NotebookCell.DoesNotExist, ValueError):
+            return None
 
 
 class SavedAnalysisViewSet(viewsets.ModelViewSet):

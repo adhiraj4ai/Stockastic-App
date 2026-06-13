@@ -166,6 +166,40 @@ def _naive_draft(session, messages) -> dict:
     }
 
 
+def _resolve_messages(session, message) -> list:
+    """Return the message list for a single Q&A pair or the full session transcript."""
+    if message is not None:
+        question = _preceding_question(session, message)
+        return [m for m in (question, message) if m is not None]
+    return list(session.messages.all().order_by("created_at"))
+
+
+def _llm_draft(session, llm: dict) -> dict:
+    """Build a draft dict from a successful LLM summarization result."""
+    return {
+        "title": str(llm.get("title") or session.title or "Saved analysis")[:255],
+        "summary": str(llm.get("summary") or ""),
+        "one_liner": str(llm.get("one_liner") or "")[:280],
+        "category": str(llm.get("category") or "")[:64],
+        "tags": [str(t)[:40] for t in (llm.get("tags") or []) if t][:8],
+        "tickers": [str(t).upper()[:10] for t in (llm.get("tickers") or []) if t],
+        "degraded": False,
+    }
+
+
+def _merge_verdict_ticker(draft: dict, structured: dict) -> None:
+    """Prepend the structured-verdict ticker to the draft tickers list if not present."""
+    symbol = structured.get("symbol") if isinstance(structured, dict) else None
+    if symbol and symbol not in draft["tickers"]:
+        draft["tickers"].insert(0, str(symbol).upper())
+
+
+def _derive_series_key(draft: dict) -> str:
+    primary = draft["tickers"][0] if draft["tickers"] else ""
+    cat = draft["category"]
+    return f"{primary} · {cat}" if primary and cat else ""
+
+
 def build_draft(session, message=None) -> dict:
     """Build an editable SavedAnalysis draft.
 
@@ -176,39 +210,15 @@ def build_draft(session, message=None) -> dict:
     Keys: title, summary, one_liner, category, tags, tickers, series_key,
     verdict, structured, degraded.
     """
-    if message is not None:
-        question = _preceding_question(session, message)
-        messages = [m for m in (question, message) if m is not None]
-    else:
-        messages = list(session.messages.all().order_by("created_at"))
-
+    messages = _resolve_messages(session, message)
     verdict, structured = _capture_verdict(messages)
     transcript = _transcript(messages)
     llm = _summarize_llm(transcript)
 
-    if llm:
-        draft = {
-            "title": str(llm.get("title") or session.title or "Saved analysis")[:255],
-            "summary": str(llm.get("summary") or ""),
-            "one_liner": str(llm.get("one_liner") or "")[:280],
-            "category": str(llm.get("category") or "")[:64],
-            "tags": [str(t)[:40] for t in (llm.get("tags") or []) if t][:8],
-            "tickers": [str(t).upper()[:10] for t in (llm.get("tickers") or []) if t],
-            "degraded": False,
-        }
-    else:
-        draft = _naive_draft(session, messages)
-
-    # Merge tickers captured from the structured verdict (authoritative symbol).
-    symbol = structured.get("symbol") if isinstance(structured, dict) else None
-    if symbol and symbol not in draft["tickers"]:
-        draft["tickers"].insert(0, str(symbol).upper())
+    draft = _llm_draft(session, llm) if llm else _naive_draft(session, messages)
+    _merge_verdict_ticker(draft, structured)
 
     draft["verdict"] = verdict[:_VERDICT_MAX_LEN]
     draft["structured"] = structured if isinstance(structured, dict) else {}
-
-    # Derive a series key from the primary ticker + category (user-editable later).
-    primary = draft["tickers"][0] if draft["tickers"] else ""
-    cat = draft["category"]
-    draft["series_key"] = f"{primary} · {cat}" if primary and cat else ""
+    draft["series_key"] = _derive_series_key(draft)
     return draft

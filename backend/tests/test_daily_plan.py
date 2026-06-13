@@ -62,6 +62,62 @@ class TestNextTradingDate:
         assert next_trading_date(date_cls(2026, 6, 14)) == date_cls(2026, 6, 15)  # Sun -> Mon
 
 
+def _seed_plan_episodes(latest: date_cls) -> None:
+    """Create SignalEpisode rows for NABIL (3 engines), WEAK (1), and BADCO (1)."""
+    from stocks.models import SignalEpisode
+
+    for src in ("SMART_MONEY", "ICHIMOKU", "VOLUME_BREAKOUT"):
+        SignalEpisode.objects.create(
+            source=src, producer_key=src, symbol="NABIL", direction="BUY",
+            start_date=latest, last_signal_date=latest,
+            entry_price=Decimal("100"), target_price=Decimal("120"),
+            stop_loss_price=Decimal("90"), entry_strength=80,
+            metadata={"inst_net_5d": 150000, "markup_percent": -2.0},
+        )
+    SignalEpisode.objects.create(
+        source="ICHIMOKU", producer_key="ICHIMOKU", symbol="WEAK", direction="BUY",
+        start_date=latest, last_signal_date=latest,
+        entry_price=Decimal("100"), entry_strength=40, metadata={},
+    )
+    SignalEpisode.objects.create(
+        source="ICHIMOKU", producer_key="ICHIMOKU", symbol="BADCO", direction="BUY",
+        start_date=latest, last_signal_date=latest,
+        entry_price=Decimal("50"), entry_strength=40, metadata={},
+    )
+
+
+def _assert_plan_picks(plan) -> None:
+    """Assert confluence ordering, entry status, SL, and BADCO DIVERGENT filtering."""
+    from stocks.models import DailyTradingPlan
+
+    assert isinstance(plan, DailyTradingPlan)
+    assert plan.date == date_cls(2026, 6, 11)
+    assert plan.regime == "RISK_ON"
+
+    picks_and_watch = plan.payload["picks"] + plan.payload["watch"]
+    symbols = [p["symbol"] for p in plan.payload["picks"]]
+    assert symbols[0] == "NABIL"
+
+    nabil = plan.payload["picks"][0]
+    assert nabil["entry"]["status"] == "IN_ZONE"
+    assert nabil["targets"]["sl"] == 90.0
+
+    second = (
+        plan.payload["picks"][1]
+        if len(plan.payload["picks"]) > 1
+        else plan.payload["watch"][0]
+    )
+    assert nabil["confluence_score"] > second["confluence_score"]
+
+    badco = next((p for p in picks_and_watch if p["symbol"] == "BADCO"), None)
+    assert badco is not None
+    assert badco["components"]["opportunity"]["trust"] is None
+
+    statuses = plan.payload["entry_statuses"]
+    assert statuses["NABIL"] == "IN_ZONE"
+    assert set(statuses.keys()) == {"NABIL", "WEAK", "BADCO"}
+
+
 @pytest.mark.django_db
 class TestBuildDailyPlan:
     @patch("stocks.services.daily_plan.analog_stats", return_value=None)
@@ -70,7 +126,6 @@ class TestBuildDailyPlan:
     @patch("stocks.services.daily_plan.rank_opportunities")
     @patch("stocks.services.daily_plan.current_regime")
     def test_builds_picks_sorted_by_confluence(self, mock_regime, mock_opps, *_):
-        from stocks.models import SignalEpisode, DailyTradingPlan
         from stocks.services.daily_plan import build_daily_plan
 
         mock_regime.return_value = {"regime": "RISK_ON", "breadth": 0.65, "as_of": "2026-06-10"}
@@ -84,64 +139,21 @@ class TestBuildDailyPlan:
             "exits": [], "skipped": 0,
         }
         latest = date_cls(2026, 6, 10)
-        # Build synthetic DataFrames; last date in df must be >= as_of (2026-06-10)
         nabil_df = _make_price_df([100.0] * 30)
         weak_df = _make_price_df([100.0] * 30)
         badco_df = _make_price_df([50.0] * 30)
 
         def fake_load_price_df(symbol):
-            if symbol == "NABIL":
-                return nabil_df
-            if symbol == "WEAK":
-                return weak_df
-            if symbol == "BADCO":
-                return badco_df
-            return pd.DataFrame()
-
-        for src in ("SMART_MONEY", "ICHIMOKU", "VOLUME_BREAKOUT"):
-            SignalEpisode.objects.create(
-                source=src, producer_key=src, symbol="NABIL", direction="BUY",
-                start_date=latest, last_signal_date=latest,
-                entry_price=Decimal("100"), target_price=Decimal("120"),
-                stop_loss_price=Decimal("90"), entry_strength=80,
-                metadata={"inst_net_5d": 150000, "markup_percent": -2.0},
+            return {"NABIL": nabil_df, "WEAK": weak_df, "BADCO": badco_df}.get(
+                symbol, pd.DataFrame()
             )
-        SignalEpisode.objects.create(
-            source="ICHIMOKU", producer_key="ICHIMOKU", symbol="WEAK", direction="BUY",
-            start_date=latest, last_signal_date=latest,
-            entry_price=Decimal("100"), entry_strength=40, metadata={},
-        )
-        # BADCO has a real BUY episode (same engine as WEAK) but its opportunity row is
-        # DIVERGENT — that row must be filtered before scoring.
-        SignalEpisode.objects.create(
-            source="ICHIMOKU", producer_key="ICHIMOKU", symbol="BADCO", direction="BUY",
-            start_date=latest, last_signal_date=latest,
-            entry_price=Decimal("50"), entry_strength=40, metadata={},
-        )
+
+        _seed_plan_episodes(latest)
 
         with patch("stocks.services.daily_plan._load_price_df", side_effect=fake_load_price_df):
             plan = build_daily_plan(as_of=latest)
 
-        assert isinstance(plan, DailyTradingPlan)
-        assert plan.date == date_cls(2026, 6, 11)  # Wed -> Thu
-        assert plan.regime == "RISK_ON"
-        picks_and_watch = plan.payload["picks"] + plan.payload["watch"]
-        symbols = [p["symbol"] for p in plan.payload["picks"]]
-        assert symbols[0] == "NABIL"          # higher confluence first
-        nabil = plan.payload["picks"][0]
-        assert nabil["entry"]["status"] == "IN_ZONE"
-        second = plan.payload["picks"][1] if len(plan.payload["picks"]) > 1 else plan.payload["watch"][0]
-        assert nabil["confluence_score"] > second["confluence_score"]
-        assert nabil["targets"]["sl"] == 90.0
-        # BADCO has a real episode so it appears as a candidate, but its DIVERGENT
-        # opportunity row must have been filtered out before scoring.
-        badco = next((p for p in picks_and_watch if p["symbol"] == "BADCO"), None)
-        assert badco is not None
-        assert badco["components"]["opportunity"]["trust"] is None  # DIVERGENT row filtered out
-
-        statuses = plan.payload["entry_statuses"]
-        assert statuses["NABIL"] == "IN_ZONE"
-        assert set(statuses.keys()) == {"NABIL", "WEAK", "BADCO"}
+        _assert_plan_picks(plan)
 
     @patch("stocks.services.daily_plan.analog_stats", return_value=None)
     @patch("stocks.services.daily_plan.upcoming_catalysts", return_value=[])

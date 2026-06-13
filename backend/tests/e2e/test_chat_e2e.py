@@ -45,40 +45,53 @@ def _parse_sse_frames(content: bytes) -> list[dict]:
     return frames
 
 
-async def _mock_stream(*, user, session, prompt):
-    """Deterministic stream: assistant_start → text → usage → done."""
-    from asgiref.sync import sync_to_async
-    from chat.models import ChatMessage
+_MOCK_TEXT = "NABIL RSI is 42, MACD is bullish"
+_MOCK_SDK_ID = "e2e-sdk-session-001"
 
-    sid = str(session.id)
-    sdk_id = "e2e-sdk-session-001"
-    yield f"event: assistant_start\ndata: {{\"session_id\": \"{sid}\"}}\n\n".encode()
-    yield (
-        b"event: text\n"
-        b"data: {\"kind\": \"text\", \"text\": \"NABIL RSI is 42, MACD is bullish\"}\n\n"
-    )
-    yield (
+
+def _mock_stream_usage_frame() -> bytes:
+    return (
         b"event: usage\n"
         b"data: {\"input_tokens\": 100, \"output_tokens\": 80, "
         b"\"cache_read_input_tokens\": 0, \"cache_creation_input_tokens\": 0, "
         b"\"cost_usd\": 0.001, \"duration_ms\": 500}\n\n"
     )
 
+
+async def _persist_mock_assistant_message(session) -> None:
+    from asgiref.sync import sync_to_async
+    from chat.models import ChatMessage
+
     @sync_to_async
-    def _persist():
+    def _save():
         ChatMessage.objects.create(
             session=session,
             role=ChatMessage.ROLE_ASSISTANT,
-            text="NABIL RSI is 42, MACD is bullish",
-            blocks=[{"kind": "text", "text": "NABIL RSI is 42, MACD is bullish"}],
+            text=_MOCK_TEXT,
+            blocks=[{"kind": "text", "text": _MOCK_TEXT}],
             input_tokens=100,
             output_tokens=80,
             cache_read_tokens=0,
             cache_creation_tokens=0,
         )
-    await _persist()
 
-    yield f"event: done\ndata: {{\"session_id\": \"{sid}\", \"sdk_session_id\": \"{sdk_id}\"}}\n\n".encode()
+    await _save()
+
+
+async def _mock_stream(*, user, session, prompt):
+    """Deterministic stream: assistant_start → text → usage → done."""
+    sid = str(session.id)
+    yield f"event: assistant_start\ndata: {{\"session_id\": \"{sid}\"}}\n\n".encode()
+    yield (
+        b"event: text\n"
+        b"data: {\"kind\": \"text\", \"text\": \"NABIL RSI is 42, MACD is bullish\"}\n\n"
+    )
+    yield _mock_stream_usage_frame()
+    await _persist_mock_assistant_message(session)
+    yield (
+        f"event: done\ndata: {{\"session_id\": \"{sid}\", "
+        f"\"sdk_session_id\": \"{_MOCK_SDK_ID}\"}}\n\n"
+    ).encode()
 
 
 def _send(client, session_id, prompt):

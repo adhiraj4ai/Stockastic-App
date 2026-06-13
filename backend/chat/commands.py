@@ -56,9 +56,75 @@ def _render_list(memories) -> str:
     return "\n".join(lines)
 
 
-def _handle_memory(user, args: str) -> str:
+def _memory_add(user, rest: str) -> str:
     from chat.models import UserMemory
+    fact = _clean_fact(rest)
+    if not fact:
+        return "Usage: /memory add <fact>"
+    if UserMemory.objects.filter(user=user, content=fact).exists():
+        return f"Already remembered: {fact}"
+    if UserMemory.objects.filter(user=user).count() >= UserMemory.MAX_FACTS_PER_USER:
+        return (f"Memory is full ({UserMemory.MAX_FACTS_PER_USER} facts). "
+                "Remove one first with /memory forget <n>.")
+    UserMemory.objects.create(user=user, content=fact)
+    return f"Remembered: {fact}"
 
+
+def _memory_forget(user, rest: str) -> str:
+    if not rest:
+        return "Usage: /memory forget <n or text>"
+    memories = _facts(user)
+    if rest.isdigit():
+        idx = int(rest)
+        if not 1 <= idx <= len(memories):
+            return f"No fact #{idx} — there are {len(memories)} (see /memory)."
+        target = memories[idx - 1]
+        target.delete()
+        return f"Forgot: {target.content}"
+    hits = [m for m in memories if rest.lower() in m.content.lower()]
+    if not hits:
+        return f"No remembered facts match '{rest}'."
+    for m in hits:
+        m.delete()
+    return "Forgot:\n" + "\n".join(f"- {m.content}" for m in hits)
+
+
+def _memory_edit(user, rest: str) -> str:
+    idx_str, _, new_text = rest.partition(" ")
+    new_fact = _clean_fact(new_text)
+    if not idx_str.isdigit() or not new_fact:
+        return "Usage: /memory edit <n> <new text> (numbers from /memory)"
+    memories = _facts(user)
+    idx = int(idx_str)
+    if not 1 <= idx <= len(memories):
+        return f"No fact #{idx} — there are {len(memories)} (see /memory)."
+    target = memories[idx - 1]
+    old = target.content
+    target.content = new_fact
+    target.save(update_fields=["content", "updated_at"])
+    return f"Updated fact {idx}:\n- was: {old}\n- now: {new_fact}"
+
+
+def _memory_clear(user, rest: str) -> str:
+    from chat.models import UserMemory
+    memories = _facts(user)
+    if rest.lower() != "confirm":
+        return (f"This deletes all {len(memories)} remembered fact(s). "
+                "Send `/memory clear confirm` to proceed.")
+    count = len(memories)
+    UserMemory.objects.filter(user=user).delete()
+    return f"Cleared {count} fact(s). I no longer remember anything about you."
+
+
+_MEMORY_SUBCOMMANDS = {
+    "add": _memory_add,
+    "forget": _memory_forget,
+    "edit": _memory_edit,
+    "clear": _memory_clear,
+}
+
+
+def _handle_memory(user, args: str) -> str:
     sub, _, rest = args.partition(" ")
     sub = sub.lower()
     rest = rest.strip()
@@ -66,60 +132,9 @@ def _handle_memory(user, args: str) -> str:
     if sub in ("", "list"):
         return _render_list(_facts(user))
 
-    if sub == "add":
-        fact = _clean_fact(rest)
-        if not fact:
-            return "Usage: /memory add <fact>"
-        if UserMemory.objects.filter(user=user, content=fact).exists():
-            return f"Already remembered: {fact}"
-        if UserMemory.objects.filter(user=user).count() >= UserMemory.MAX_FACTS_PER_USER:
-            return (f"Memory is full ({UserMemory.MAX_FACTS_PER_USER} facts). "
-                    "Remove one first with /memory forget <n>.")
-        UserMemory.objects.create(user=user, content=fact)
-        return f"Remembered: {fact}"
-
-    if sub == "forget":
-        if not rest:
-            return "Usage: /memory forget <n or text>"
-        memories = _facts(user)
-        if rest.isdigit():
-            idx = int(rest)
-            if not 1 <= idx <= len(memories):
-                return f"No fact #{idx} — there are {len(memories)} (see /memory)."
-            target = memories[idx - 1]
-            target.delete()
-            return f"Forgot: {target.content}"
-        hits = [m for m in memories if rest.lower() in m.content.lower()]
-        if not hits:
-            return f"No remembered facts match '{rest}'."
-        for m in hits:
-            m.delete()
-        return "Forgot:\n" + "\n".join(f"- {m.content}" for m in hits)
-
-    if sub == "edit":
-        idx_str, _, new_text = rest.partition(" ")
-        new_fact = _clean_fact(new_text)
-        if not idx_str.isdigit() or not new_fact:
-            return "Usage: /memory edit <n> <new text> (numbers from /memory)"
-        memories = _facts(user)
-        idx = int(idx_str)
-        if not 1 <= idx <= len(memories):
-            return f"No fact #{idx} — there are {len(memories)} (see /memory)."
-        target = memories[idx - 1]
-        old = target.content
-        target.content = new_fact
-        target.save(update_fields=["content", "updated_at"])
-        return f"Updated fact {idx}:\n- was: {old}\n- now: {new_fact}"
-
-    if sub == "clear":
-        memories = _facts(user)
-        if rest.lower() != "confirm":
-            return (f"This deletes all {len(memories)} remembered fact(s). "
-                    "Send `/memory clear confirm` to proceed.")
-        count = len(memories)
-        UserMemory.objects.filter(user=user).delete()
-        return f"Cleared {count} fact(s). I no longer remember anything about you."
-
+    handler = _MEMORY_SUBCOMMANDS.get(sub)
+    if handler:
+        return handler(user, rest)
     return f"Unknown /memory subcommand '{sub}'. {HELP_TEXT}"
 
 

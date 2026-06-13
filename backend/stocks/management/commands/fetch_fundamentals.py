@@ -241,6 +241,151 @@ class Command(BaseCommand):
                 data_dict[key] = val
         return data_dict
 
+    @staticmethod
+    def _scale_currency(val):
+        if val is None:
+            return None
+        return Decimal(str(val)) * 1000
+
+    @staticmethod
+    def _to_dec(val):
+        return Decimal(str(val)) if val else None
+
+    @staticmethod
+    def _clean_fiscal_year(fiscal_year):
+        m = re.search(r'20(\d{2})/20(\d{2})', fiscal_year)
+        return f"0{m.group(1)}-0{m.group(2)}" if m else fiscal_year
+
+    def _fetch_company_page(self, session, ticker):
+        url = f"https://www.sharesansar.com/company/{ticker.lower()}"
+        headers = {"User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"}
+        resp = session.get(url, headers=headers, impersonate="chrome", timeout=15)
+        if resp.status_code != 200:
+            return None, None
+        return url, resp.text
+
+    def _parse_company_html(self, html, company):
+        name_m = re.search(r'<h1[^>]*>([^<]+)\(', html)
+        cid_m = re.search(r'id="companyid"[^>]*>(\d+)</div>', html)
+        sec_m = re.search(r'id="sector"[^>]*>([^<]+)</div>', html)
+        hl_m = re.search(r'52 Week High-Low\s*:\s*</span>\s*([\d\.,]+)\s*-\s*([\d\.,]+)', html)
+        profile_kv = re.findall(r'<td class="text-bold">([^<]+)</td>\s*<td class="text-bold">([^<]+)</td>', html)
+        profile = {k.strip(): v.strip() for k, v in profile_kv}
+        op_date = profile.get("Operation Date", "").strip()
+        if op_date and not re.match(r'^\d{4}-\d{2}-\d{2}$', op_date):
+            op_date = None
+        csrf_m = (re.search(r'name="_token"\s+value="([^"]+)"', html)
+                  or re.search(r'name="csrf-token"\s+content="([^"]+)"', html)
+                  or re.search(r'content="([^"]+)"\s+name="_token"', html))
+        return {
+            "company_name": name_m.group(1).strip() if name_m else company.name,
+            "comp_id": cid_m.group(1) if cid_m else None,
+            "scraped_sector": sec_m.group(1).strip() if sec_m else company.sector,
+            "fifty_two_high": self.clean_val(hl_m.group(1)) if hl_m else None,
+            "fifty_two_low": self.clean_val(hl_m.group(2)) if hl_m else None,
+            "listed_shares": self.clean_val(profile.get("Listed Shares")),
+            "total_paid_up": self.clean_val(profile.get("Total Paid Up Value")),
+            "operation_date": op_date or None,
+            "csrf_token": csrf_m.group(1) if csrf_m else "",
+        }
+
+    def _fetch_quarterly_html(self, session, url, page_info, ticker):
+        post_headers = {
+            "X-CSRF-Token": page_info["csrf_token"],
+            "X-Requested-With": "XMLHttpRequest",
+            "Referer": url, "Origin": "https://www.sharesansar.com",
+        }
+        post_resp = session.post(
+            "https://www.sharesansar.com/company-quarterly-report",
+            headers=post_headers,
+            data={"company": page_info["comp_id"], "symbol": ticker, "sector": page_info["scraped_sector"]},
+            impersonate="chrome", timeout=15,
+        )
+        if post_resp.status_code != 200 or not post_resp.text.strip():
+            return None
+        return post_resp.text
+
+    def _parse_quarter_header(self, qtr_html):
+        header_m = re.search(r'<th>Particulars.*?</th>\s*<th>([^<]+)</th>', qtr_html)
+        header_text = header_m.group(1).strip() if header_m else ""
+        quarter_num = None
+        for q, markers in [(1, ("1st", "Q1")), (2, ("2nd", "Q2")), (3, ("3rd", "Q3")), (4, ("4th", "Q4"))]:
+            if any(m in header_text for m in markers):
+                quarter_num = q
+                break
+        fy_m = re.search(r'(\d{4}/\d{4}|\d{3}-\d{3})', header_text)
+        return quarter_num, (fy_m.group(1) if fy_m else "Unknown")
+
+    def _build_mapped_data(self, qtr_html):
+        flat = {}
+        flat.update(self.parse_table_rows("balance", qtr_html))
+        flat.update(self.parse_table_rows("profitloss", qtr_html))
+        flat.update(self.parse_table_rows("keymetrics", qtr_html))
+        return {LABEL_MAPPING[k]: v for k, v in flat.items() if k in LABEL_MAPPING}
+
+    def _save_financial_report(self, ticker, quarter_num, fiscal_year, template_id, page_info, mapped, bs, pl):
+        fy = self._clean_fiscal_year(fiscal_year)
+        FinancialReport.objects.update_or_create(
+            ticker=ticker, fiscal_year=fy,
+            report_type=FinancialReport.ReportType.QUARTERLY, quarter=quarter_num,
+            defaults={
+                "report_template": template_id, "is_audited": False,
+                "paid_up_capital": self._to_dec(page_info["total_paid_up"]),
+                "eps": self._to_dec(mapped.get("eps_annualized") or mapped.get("eps_reported")),
+                "pe_ratio": self._to_dec(mapped.get("pe_ratio")),
+                "book_value": self._to_dec(mapped.get("book_value") or mapped.get("book_value_reported")),
+                "return_on_equity": self._to_dec(mapped.get("roe_reported")),
+                "net_profit": self._scale_currency(mapped.get("net_profit")),
+                "revenue": self._scale_currency(mapped.get("revenue")),
+                "operating_profit": self._scale_currency(mapped.get("operating_profit")),
+                "balance_sheet": bs, "profit_loss": pl,
+            },
+        )
+        self.stdout.write(f"  Saved FinancialReport: {fy} Q{quarter_num} Template={template_id}")
+
+    def _save_stock_fundamental(self, ticker, page_info, mapped, company):
+        scraped_eps = mapped.get("eps_annualized") or mapped.get("eps_reported")
+        StockFundamental.objects.update_or_create(
+            ticker=ticker,
+            defaults={
+                "company_name": page_info["company_name"],
+                "sector": company.sector or page_info["scraped_sector"],
+                "paid_up_capital": self._to_dec(page_info["total_paid_up"]),
+                "shares_outstanding": self._to_dec(page_info["listed_shares"]),
+                "listed_date": page_info["operation_date"],
+                "pe_ratio_unaudited": self._to_dec(mapped.get("pe_ratio")),
+                "eps_unaudited": self._to_dec(scraped_eps),
+                "book_value_unaudited": self._to_dec(mapped.get("book_value") or mapped.get("book_value_reported")),
+                "fifty_two_week_high": self._to_dec(page_info["fifty_two_high"]),
+                "fifty_two_week_low": self._to_dec(page_info["fifty_two_low"]),
+            },
+        )
+        self.stdout.write("  Saved StockFundamental")
+
+    def _process_company(self, session, company):
+        ticker = company.symbol
+        url, html = self._fetch_company_page(session, ticker)
+        if not html:
+            self.stdout.write(self.style.WARNING(f"  Failed to fetch page for {ticker}."))
+            return False
+        page_info = self._parse_company_html(html, company)
+        if not page_info["comp_id"]:
+            self.stdout.write(self.style.WARNING(f"  No companyid for {ticker}, skipping."))
+            return False
+        qtr_html = self._fetch_quarterly_html(session, url, page_info, ticker)
+        if not qtr_html:
+            self.stdout.write(self.style.WARNING(f"  Failed to fetch quarterly report for {ticker}"))
+            return False
+        quarter_num, fiscal_year = self._parse_quarter_header(qtr_html)
+        mapped = self._build_mapped_data(qtr_html)
+        base_temp = SECTOR_TO_TEMPLATE.get(company.sector or page_info["scraped_sector"], "GENERAL")
+        template_id = f"{base_temp}_QUARTERLY"
+        nested_bs, nested_pl = self.map_to_nested_json(template_id, mapped)
+        if quarter_num and fiscal_year != "Unknown":
+            self._save_financial_report(ticker, quarter_num, fiscal_year, template_id, page_info, mapped, nested_bs, nested_pl)
+        self._save_stock_fundamental(ticker, page_info, mapped, company)
+        return True
+
     def handle(self, *args, **options):
         companies = Company.objects.all()
         if options['ticker']:
@@ -249,204 +394,16 @@ class Command(BaseCommand):
             companies = companies.filter(sector=options['sector'])
         if options['limit']:
             companies = companies[:options['limit']]
-            
         total = companies.count()
         self.stdout.write(f"Starting fetch for {total} companies...")
-        
         session = requests.Session()
         success_count = 0
-        
         for idx, company in enumerate(companies):
-            ticker = company.symbol
-            self.stdout.write(f"[{idx+1}/{total}] Fetching {ticker}...")
-            
+            self.stdout.write(f"[{idx+1}/{total}] Fetching {company.symbol}...")
             try:
-                # 1. Fetch Company Page
-                url = f"https://www.sharesansar.com/company/{ticker.lower()}"
-                headers = {
-                    "User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
-                }
-                
-                resp = session.get(url, headers=headers, impersonate="chrome", timeout=15)
-                if resp.status_code != 200:
-                    self.stdout.write(self.style.WARNING(f"  Failed to fetch page for {ticker}. Status: {resp.status_code}"))
-                    continue
-                    
-                html = resp.text
-                
-                # Parse basic info
-                name_match = re.search(r'<h1[^>]*>([^<]+)\(', html)
-                company_name = name_match.group(1).strip() if name_match else company.name
-                
-                comp_id_match = re.search(r'id="companyid"[^>]*>(\d+)</div>', html)
-                comp_id = comp_id_match.group(1) if comp_id_match else None
-                
-                sector_match = re.search(r'id="sector"[^>]*>([^<]+)</div>', html)
-                scraped_sector = sector_match.group(1).strip() if sector_match else company.sector
-                
-                # 52 week high low
-                high_low_match = re.search(r'52 Week High-Low\s*:\s*</span>\s*([\d\.,]+)\s*-\s*([\d\.,]+)', html)
-                fifty_two_high = self.clean_val(high_low_match.group(1)) if high_low_match else None
-                fifty_two_low = self.clean_val(high_low_match.group(2)) if high_low_match else None
-                
-                # Listed Shares, Paid Up Value, Total Paid Up Value
-                profile_table_matches = re.findall(r'<td class="text-bold">([^<]+)</td>\s*<td class="text-bold">([^<]+)</td>', html)
-                profile_data = {k.strip(): v.strip() for k, v in profile_table_matches}
-                
-                listed_shares = self.clean_val(profile_data.get("Listed Shares"))
-                paid_up_value = self.clean_val(profile_data.get("Paid Up"))
-                total_paid_up = self.clean_val(profile_data.get("Total Paid Up Value"))
-                
-                operation_date = profile_data.get("Operation Date")
-                if operation_date:
-                    operation_date = operation_date.strip()
-                    if not re.match(r'^\d{4}-\d{2}-\d{2}$', operation_date):
-                        operation_date = None
-                else:
-                    operation_date = None
-                
-                # Extract CSRF token
-                csrf_match = re.search(r'name="_token"\s+value="([^"]+)"', html)
-                if not csrf_match:
-                    csrf_match = re.search(r'name="csrf-token"\s+content="([^"]+)"', html)
-                if not csrf_match:
-                    csrf_match = re.search(r'content="([^"]+)"\s+name="_token"', html)
-                if not csrf_match:
-                    csrf_match = re.search(r'name="_token"\s+content="([^"]+)"', html)
-                csrf_token = csrf_match.group(1) if csrf_match else ""
-                
-                if not comp_id:
-                    self.stdout.write(self.style.WARNING(f"  No companyid found for {ticker}, skipping quarterly report fetch."))
-                    continue
-                
-                # 2. Fetch Quarterly Report
-                post_url = "https://www.sharesansar.com/company-quarterly-report"
-                post_headers = {
-                    "X-CSRF-Token": csrf_token,
-                    "X-Requested-With": "XMLHttpRequest",
-                    "Referer": url,
-                    "Origin": "https://www.sharesansar.com"
-                }
-                post_data = {
-                    "company": comp_id,
-                    "symbol": ticker,
-                    "sector": scraped_sector
-                }
-                
-                post_resp = session.post(post_url, headers=post_headers, data=post_data, impersonate="chrome", timeout=15)
-                if post_resp.status_code != 200 or not post_resp.text.strip():
-                    self.stdout.write(self.style.WARNING(f"  Failed to fetch quarterly report for {ticker}"))
-                    continue
-                    
-                qtr_html = post_resp.text
-                
-                # Parse fiscal year and quarter
-                header_match = re.search(r'<th>Particulars.*?</th>\s*<th>([^<]+)</th>', qtr_html)
-                header_text = header_match.group(1).strip() if header_match else ""
-                
-                quarter_num = None
-                if "1st" in header_text or "Q1" in header_text: quarter_num = 1
-                elif "2nd" in header_text or "Q2" in header_text: quarter_num = 2
-                elif "3rd" in header_text or "Q3" in header_text: quarter_num = 3
-                elif "4th" in header_text or "Q4" in header_text: quarter_num = 4
-                
-                fy_match = re.search(r'(\d{4}/\d{4}|\d{3}-\d{3})', header_text)
-                fiscal_year = fy_match.group(1) if fy_match else "Unknown"
-                
-                # Parse quarterly tables
-                raw_balance = self.parse_table_rows("balance", qtr_html)
-                raw_profitloss = self.parse_table_rows("profitloss", qtr_html)
-                raw_keymetrics = self.parse_table_rows("keymetrics", qtr_html)
-                
-                # Merge into flat dictionary
-                flat_scraped_data = {}
-                flat_scraped_data.update(raw_balance)
-                flat_scraped_data.update(raw_profitloss)
-                flat_scraped_data.update(raw_keymetrics)
-                
-                # Map flat labels to particulars keys
-                mapped_scraped_data = {}
-                for raw_lbl, val in flat_scraped_data.items():
-                    std_key = LABEL_MAPPING.get(raw_lbl)
-                    if std_key:
-                        mapped_scraped_data[std_key] = val
-                
-                # Map to target nested template structures
-                base_temp = SECTOR_TO_TEMPLATE.get(company.sector or scraped_sector, "GENERAL")
-                template_id = f"{base_temp}_QUARTERLY"
-                
-                nested_bs, nested_pl = self.map_to_nested_json(template_id, mapped_scraped_data)
-                
-                # Top-level metric extracts
-                scraped_eps = mapped_scraped_data.get("eps_annualized") or mapped_scraped_data.get("eps_reported")
-                scraped_pe = mapped_scraped_data.get("pe_ratio")
-                scraped_bv = mapped_scraped_data.get("book_value") or mapped_scraped_data.get("book_value_reported")
-                scraped_roe = mapped_scraped_data.get("roe_reported")
-                
-                scraped_net_profit = mapped_scraped_data.get("net_profit")
-                scraped_revenue = mapped_scraped_data.get("revenue")
-                scraped_operating_profit = mapped_scraped_data.get("operating_profit")
-                
-                # Handle factors from Rs. in '000 in quarterly report if needed
-                # (For top level metrics, EPS/BV/PE are already ratios, but profit/revenue are in '000 on page)
-                def scale_currency(val):
-                    if val is None:
-                        return None
-                    return Decimal(str(val)) * 1000  # Scale by 1000
-                
-                # Save FinancialReport
-                if quarter_num and fiscal_year != "Unknown":
-                    # Clean fiscal year to match DB pattern if needed (e.g. 2082/2083 -> 082-083)
-                    fy_cleaned = fiscal_year
-                    fy_match_clean = re.search(r'20(\d{2})/20(\d{2})', fiscal_year)
-                    if fy_match_clean:
-                        fy_cleaned = f"0{fy_match_clean.group(1)}-0{fy_match_clean.group(2)}"
-                    
-                    report, created = FinancialReport.objects.update_or_create(
-                        ticker=ticker,
-                        fiscal_year=fy_cleaned,
-                        report_type=FinancialReport.ReportType.QUARTERLY,
-                        quarter=quarter_num,
-                        defaults={
-                            "report_template": template_id,
-                            "is_audited": False,
-                            "paid_up_capital": Decimal(str(total_paid_up)) if total_paid_up else None,
-                            "eps": Decimal(str(scraped_eps)) if scraped_eps else None,
-                            "pe_ratio": Decimal(str(scraped_pe)) if scraped_pe else None,
-                            "book_value": Decimal(str(scraped_bv)) if scraped_bv else None,
-                            "return_on_equity": Decimal(str(scraped_roe)) if scraped_roe else None,
-                            "net_profit": scale_currency(scraped_net_profit),
-                            "revenue": scale_currency(scraped_revenue),
-                            "operating_profit": scale_currency(scraped_operating_profit),
-                            "balance_sheet": nested_bs,
-                            "profit_loss": nested_pl
-                        }
-                    )
-                    self.stdout.write(f"  Saved FinancialReport: {fy_cleaned} Q{quarter_num} Template={template_id}")
-                
-                # Save StockFundamental
-                fundamental, _ = StockFundamental.objects.update_or_create(
-                    ticker=ticker,
-                    defaults={
-                        "company_name": company_name,
-                        "sector": company.sector or scraped_sector,
-                        "paid_up_capital": Decimal(str(total_paid_up)) if total_paid_up else None,
-                        "shares_outstanding": Decimal(str(listed_shares)) if listed_shares else None,
-                        "listed_date": operation_date,
-                        "pe_ratio_unaudited": Decimal(str(scraped_pe)) if scraped_pe else None,
-                        "eps_unaudited": Decimal(str(scraped_eps)) if scraped_eps else None,
-                        "book_value_unaudited": Decimal(str(scraped_bv)) if scraped_bv else None,
-                        "fifty_two_week_high": Decimal(str(fifty_two_high)) if fifty_two_high else None,
-                        "fifty_two_week_low": Decimal(str(fifty_two_low)) if fifty_two_low else None,
-                    }
-                )
-                self.stdout.write(f"  Saved StockFundamental")
-                success_count += 1
-                
+                if self._process_company(session, company):
+                    success_count += 1
             except Exception as e:
-                self.stdout.write(self.style.ERROR(f"  Error processing {ticker}: {e}"))
-                
-            # Random delay to be polite to the server
+                self.stdout.write(self.style.ERROR(f"  Error processing {company.symbol}: {e}"))
             time.sleep(random.uniform(1.0, 2.5))
-            
         self.stdout.write(self.style.SUCCESS(f"Successfully populated fundamental info for {success_count}/{total} symbols."))

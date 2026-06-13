@@ -76,7 +76,7 @@ class TestProposeRebalance:
             "current_weights": {"NABIL": 0.7, "SHL": 0.3},
             "latest_prices": {"NABIL": 520.0, "SHL": 410.0},
         }
-        with patch("chat.tools.perform_portfolio_optimization", return_value=fake_opt):
+        with patch("chat.tools.trading.perform_portfolio_optimization", return_value=fake_opt):
             res = _call(propose_rebalance, {"account_id": acct.id, "method": "max_sharpe"}, user)
         assert res["is_error"] is False
         draft = PortfolioActionDraft.objects.get(user=user, kind=PortfolioActionDraft.Kind.REBALANCE)
@@ -95,7 +95,7 @@ class TestProposeRebalance:
             "optimal_weights": {"NABIL": 0.5, "SHL": 0.5},
             "latest_prices": {"NABIL": 520.0, "SHL": 410.0},
         }
-        with patch("chat.tools.perform_portfolio_optimization", return_value=fake_opt):
+        with patch("chat.tools.trading.perform_portfolio_optimization", return_value=fake_opt):
             res = _call(propose_rebalance, {"account_id": acct.id, "method": "max_sharpe"}, user)
         assert res["is_error"] is False
         draft = PortfolioActionDraft.objects.get(user=user, kind=PortfolioActionDraft.Kind.REBALANCE)

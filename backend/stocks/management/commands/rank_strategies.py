@@ -26,20 +26,13 @@ class Command(BaseCommand):
         parser.add_argument("--alpha", type=float, default=0.05)
         parser.add_argument("--out", type=str, default=None)
 
-    def handle(self, *args, **opts):
-        basket, dropped = load_basket()
-        if dropped:
-            self.stdout.write(self.style.WARNING(
-                f"Dropped {len(dropped)} thin tickers: " + ", ".join(t for t, _ in dropped)
-            ))
-        strategies = list(Strategy.objects.all().order_by("id"))
+    def _evaluate_all(self, basket):
         rows = []
-        for s in strategies:
+        for s in Strategy.objects.all().order_by("id"):
             card = evaluate_over_basket(s, basket, strategy_name=s.name)
             c = card.confidence or {}
             rows.append({
-                "name": s.name,
-                "passed": card.passed,
+                "name": s.name, "passed": card.passed,
                 "median_excess_return_pct": card.aggregates.get("median_excess_return_pct"),
                 "pooled_win_rate": c.get("pooled_win_rate"),
                 "win_rate_ci": c.get("win_rate_ci"),
@@ -47,17 +40,19 @@ class Command(BaseCommand):
                 "pvalue": c.get("excess_pvalue", 1.0),
                 "total_trades": c.get("total_trades", 0),
             })
+        return rows
 
-        rejected, qvals = benjamini_hochberg([r["pvalue"] for r in rows], alpha=opts["alpha"])
+    def _apply_fdr(self, rows, alpha):
+        rejected, qvals = benjamini_hochberg([r["pvalue"] for r in rows], alpha=alpha)
         for r, rej, q in zip(rows, rejected, qvals):
             r["survives_fdr"] = bool(rej)
             r["qvalue"] = round(q, 4)
-
         rows.sort(key=lambda r: (
             not r["survives_fdr"], not r["passed"],
             -(r["median_excess_return_pct"] or -1e9),
         ))
 
+    def _print_table(self, rows, alpha):
         self.stdout.write(f"\n{'Strategy':<34} pass fdr  medExc%   winRate(CI)         q")
         for r in rows:
             wr = (f"{r['pooled_win_rate']:.0f}% "
@@ -71,10 +66,19 @@ class Command(BaseCommand):
             )
         survivors = sum(1 for r in rows if r["survives_fdr"])
         self.stdout.write(self.style.SUCCESS(
-            f"\n{survivors}/{len(rows)} survive FDR@{opts['alpha']}; "
+            f"\n{survivors}/{len(rows)} survive FDR@{alpha}; "
             f"{sum(1 for r in rows if r['passed'])}/{len(rows)} pass the economic bar."
         ))
 
+    def handle(self, *args, **opts):
+        basket, dropped = load_basket()
+        if dropped:
+            self.stdout.write(self.style.WARNING(
+                f"Dropped {len(dropped)} thin tickers: " + ", ".join(t for t, _ in dropped)
+            ))
+        rows = self._evaluate_all(basket)
+        self._apply_fdr(rows, opts["alpha"])
+        self._print_table(rows, opts["alpha"])
         if opts["out"]:
             os.makedirs(opts["out"], exist_ok=True)
             with open(os.path.join(opts["out"], "ranking.json"), "w") as f:
