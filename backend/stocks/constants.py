@@ -36,3 +36,7 @@ PERIOD_DAYS: dict[str, int] = {
 
 # Minimum observations for risk calculations
 MIN_RISK_OBSERVATIONS: int = 2
+
+# Metrics rounding precision
+METRICS_PRECISION_HIGH: int = 4
+METRICS_PRECISION_STD: int = 2

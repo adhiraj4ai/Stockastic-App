@@ -82,6 +82,14 @@ def _fetch_nepse_from_daily_prices(start: date, end: date) -> tuple[pd.DataFrame
     return df.set_index("date"), True
 
 
+def join_with_benchmark(df_port: pd.DataFrame, df_bench: pd.DataFrame) -> pd.DataFrame | None:
+    df_bench = df_bench.copy()
+    df_bench['close'] = df_bench['close'].astype(float)
+    df_bench['benchmark_return'] = df_bench['close'].pct_change().fillna(0)
+    df_combined = df_port.join(df_bench, how='inner')
+    return df_combined if not df_combined.empty else None
+
+
 def compute_risk_metrics(df_combined: pd.DataFrame) -> dict:
     rf_daily = RISK_FREE_RATE_ANNUAL / ANNUAL_TRADING_DAYS
     beta = alpha = sharpe = 0.0
@@ -124,6 +132,38 @@ def build_chart_data_with_benchmark(df_combined: pd.DataFrame) -> tuple[list[dic
         "benchmark_return": float(df["bench_cum_return"].iloc[-1]),
     }
     return chart, returns
+
+
+def build_chart_data_without_benchmark(df_port: pd.DataFrame) -> tuple[list[dict], dict]:
+    iv = float(df_port["total_value"].iloc[0])
+    df = df_port.copy()
+    df["port_cum_return"] = 0.0 if iv == 0 else ((df["total_value"] - iv) / iv) * 100
+    chart = [
+        {
+            "date": idx.strftime("%Y-%m-%d"),
+            "portfolio_value": row["total_value"],
+            "benchmark_value": None,
+            "portfolio_pct": row["port_cum_return"],
+            "benchmark_pct": None,
+        }
+        for idx, row in df.iterrows()
+    ]
+    metrics = {
+        "max_drawdown": round(compute_drawdown(df_port), 2),
+        "total_return": round(float(df["port_cum_return"].iloc[-1]), 2),
+    }
+    return chart, metrics
+
+
+_HIGH_PRECISION_KEYS = frozenset({"alpha", "beta", "sharpe_ratio"})
+
+
+def round_metrics(metrics: dict) -> dict:
+    from stocks.constants import METRICS_PRECISION_HIGH, METRICS_PRECISION_STD
+    return {
+        k: round(v, METRICS_PRECISION_HIGH if k in _HIGH_PRECISION_KEYS else METRICS_PRECISION_STD)
+        for k, v in metrics.items()
+    }
 
 
 def scrub_nan(metrics: dict, chart_data: list[dict]) -> tuple[dict, list[dict]]:

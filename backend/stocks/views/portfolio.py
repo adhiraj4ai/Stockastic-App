@@ -22,13 +22,24 @@ from ..serializers import (
     PortfolioActionDraftSerializer,
 )
 from ..services.portfolio_drafts import confirm_draft, DraftError
+from ..services.portfolio_metrics_service import (
+    build_chart_data_with_benchmark,
+    build_chart_data_without_benchmark,
+    compute_drawdown,
+    compute_risk_metrics,
+    fetch_benchmark_df,
+    fetch_portfolio_df,
+    join_with_benchmark,
+    resolve_date_range,
+    round_metrics,
+    scrub_nan,
+)
 from ..utils import (
     calculate_broker_commission, calculate_sebon_fee, 
     calculate_dp_charge, calculate_cgt
 )
 from ..services.portfolio_service import PortfolioService
 from ..optimization import perform_portfolio_optimization
-from ..constants import ANNUAL_TRADING_DAYS, RISK_FREE_RATE_ANNUAL
 
 class PortfolioAccountViewSet(viewsets.ModelViewSet):
     permission_classes = [IsAuthenticated]
@@ -832,242 +843,33 @@ class PortfolioPerformanceView(viewsets.ViewSet):
 
     @action(detail=False, methods=['get'])
     def metrics(self, request):
-        """
-        Get performance metrics (Alpha, Beta, Sharpe) & Comparison Chart Data.
-        Query Params:
-        - period: 1M, 3M, 6M, 1Y, YTD, ALL (default: 1Y)
-        - account: account_id or 'all' (default: 'all')
-        """
-        user = request.user
         period = request.query_params.get('period', '1Y')
         account_id = request.query_params.get('account', 'all')
-        
-        # 1. Determine Date Range
-        end_date = timezone.now().date()
-        if period == '1M':
-            start_date = end_date - timedelta(days=30)
-        elif period == '3M':
-            start_date = end_date - timedelta(days=90)
-        elif period == '6M':
-            start_date = end_date - timedelta(days=180)
-        elif period == 'YTD':
-            start_date = date(end_date.year, 1, 1)
-        elif period == 'ALL':
-            # Find earliest transaction date
-            first_txn = PortfolioTransaction.objects.filter(user=user).order_by('transaction_date').first()
-            start_date = first_txn.transaction_date.date() if first_txn else end_date - timedelta(days=365)
-        else: # Default 1Y
-            start_date = end_date - timedelta(days=365)
-            
-        # 2. Fetch Portfolio Snapshots
-        from ..models import PortfolioSnapshot
-        snapshots = PortfolioSnapshot.objects.filter(
-            user=user, 
-            date__gte=start_date, 
-            date__lte=end_date
-        ).order_by('date')
-        
-        if account_id != 'all':
-            # Select dict rows (not model objects) so the DataFrame has 'date'/
-            # 'total_value' columns. We intentionally omit 'nepse_index' (like the
-            # 'all' branch) because per-snapshot nepse_index is sparsely populated;
-            # the benchmark is sourced consistently from the DailyStockPrice NEPSE
-            # fallback below instead.
-            snapshots = snapshots.filter(account_id=account_id).values(
-                'date', 'total_value', 'invested_value', 'cash_balance'
-            ).order_by('date')
-        else:
-            # If 'all', we might need to aggregate snapshots by date if we stored them per account
-            # Currently model has account, so we need to sum up total_value per date
-            snapshots = snapshots.values('date').annotate(
-                total_value=Sum('total_value'),
-                invested_value=Sum('invested_value'),
-                cash_balance=Sum('cash_balance')
-            ).order_by('date')
-            
-        if not snapshots:
+        start_date, end_date = resolve_date_range(request.user, period)
+
+        df_port = fetch_portfolio_df(request.user, start_date, end_date, account_id)
+        if df_port is None:
             return Response({"error": "No portfolio history found for this period"}, status=200)
 
-        # Convert to DataFrame for easier calculation
-        df_port = pd.DataFrame(list(snapshots))
-        df_port['date'] = pd.to_datetime(df_port['date'])
-        df_port.set_index('date', inplace=True)
+        df_bench, has_benchmark = fetch_benchmark_df(df_port, start_date, end_date)
+        metrics_dict = {"alpha": 0, "beta": 0, "sharpe_ratio": 0, "total_return": 0,
+                        "max_drawdown": 0, "benchmark_return": 0}
 
-        # total_value comes from a Decimal Sum() (DecimalField), so the column is
-        # object-dtype Python Decimals. Cast to float once here, otherwise the
-        # downstream numpy stats (np.cov / .std()) raise
-        # "'float' object has no attribute 'shape'" on object-dtype input.
-        df_port['total_value'] = df_port['total_value'].astype(float)
-
-        # Calculate daily returns
-        df_port['return'] = df_port['total_value'].pct_change().fillna(0)
-        
-        # 3. Fetch Benchmark Data
-        # We prefer using the nepse_index stored directly in snapshots for consistency
-        # If snapshots have nepse_index, we use that.
-        if df_port.empty:
-            return Response({"error": "No portfolio history found for this period"}, status=200)
-            
-        # Check if we have nepse_index in any of the snapshots
-        has_snapshot_bench = 'nepse_index' in df_port.columns and df_port['nepse_index'].notnull().any()
-        
-        if has_snapshot_bench:
-            df_bench = df_port[['nepse_index']].copy().rename(columns={'nepse_index': 'close'})
-            has_benchmark = True
-        else:
-            # Fallback: Look for 'NEPSE' ticker in DailyStockPrice if snapshot index is missing
-            nepse_data = DailyStockPrice.objects.filter(
-                ticker='NEPSE', 
-                date__gte=start_date, 
-                date__lte=end_date
-            ).values('date', 'close').order_by('date')
-            df_bench = pd.DataFrame(list(nepse_data))
-            if not df_bench.empty:
-                df_bench['date'] = pd.to_datetime(df_bench['date'])
-                df_bench.set_index('date', inplace=True)
-                has_benchmark = True
-            else:
-                has_benchmark = False
-        
-        metrics = {
-            "alpha": 0,
-            "beta": 0,
-            "sharpe_ratio": 0,
-            "total_return": 0,
-            "max_drawdown": 0,
-            "benchmark_return": 0
-        }
-        
-        chart_data = []
-        
         if has_benchmark:
-            # df_bench is already indexed by 'date' in BOTH branches above: the
-            # snapshot path inherits df_port's date index, and the fallback path
-            # calls set_index('date') itself. Re-indexing here raised
-            # KeyError: 'date' (no 'date' column exists at this point).
-            df_bench['close'] = df_bench['close'].astype(float)
-            df_bench['benchmark_return'] = df_bench['close'].pct_change().fillna(0)
-            
-            # Align dataframes
-            df_combined = df_port.join(df_bench, how='inner')
-            
-            if not df_combined.empty:
-                # Cumulative Returns for Chart
-                # Normalize to start at 0%
-                initial_port_val = float(df_combined['total_value'].iloc[0])
-                initial_bench_val = float(df_combined['close'].iloc[0])
-                
-                if initial_port_val == 0:
-                     df_combined['port_cum_return'] = 0.0
-                else:
-                    df_combined['port_cum_return'] = ((df_combined['total_value'].astype(float) - initial_port_val) / initial_port_val) * 100
-                
-                if initial_bench_val == 0:
-                    df_combined['bench_cum_return'] = 0.0
-                else:
-                    df_combined['bench_cum_return'] = ((df_combined['close'] - initial_bench_val) / initial_bench_val) * 100
-                
-                # Metrics Calculation
-                # Total Return & Max Drawdown are well-defined with a single data point.
-                total_return = df_combined['port_cum_return'].iloc[-1]
-                benchmark_total_return = df_combined['bench_cum_return'].iloc[-1]
-
-                roll_max = df_port['total_value'].cummax()
-                drawdown = (df_port['total_value'] - roll_max) / roll_max
-                max_drawdown = drawdown.min() * 100
-
-                # Risk metrics (Beta/Alpha/Sharpe) need >= 2 aligned observations:
-                # np.cov / .std() on a single point raise or produce NaN. Leave them
-                # at 0 when there isn't enough history rather than 500 / emit NaN JSON.
-                beta = alpha = sharpe = 0.0
-                rf_daily = RISK_FREE_RATE_ANNUAL / ANNUAL_TRADING_DAYS
-                if len(df_combined) >= 2:
-                    covariance = np.cov(df_combined['return'], df_combined['benchmark_return'])[0][1]
-                    benchmark_variance = np.var(df_combined['benchmark_return'])
-                    beta = covariance / benchmark_variance if benchmark_variance != 0 else 0.0
-
-                    avg_port_ret = df_combined['return'].mean()
-                    avg_bench_ret = df_combined['benchmark_return'].mean()
-                    alpha = ((avg_port_ret - rf_daily) - (beta * (avg_bench_ret - rf_daily))) * ANNUAL_TRADING_DAYS
-
-                    std = df_combined['return'].std()
-                    if std and not pd.isna(std) and std != 0:
-                        sharpe = ((df_combined['return'].mean() - rf_daily) / std) * (ANNUAL_TRADING_DAYS ** 0.5)
-
-                metrics = {
-                    "alpha": round(float(alpha), 4),
-                    "beta": round(float(beta), 4),
-                    "sharpe_ratio": round(float(sharpe), 4),
-                    "total_return": round(float(total_return), 2),
-                    "max_drawdown": round(float(max_drawdown), 2),
-                    "benchmark_return": round(float(benchmark_total_return), 2)
-                }
-                
-                # Prepare Chart Data
-                # [{date, portfolio_value, benchmark_value, portfolio_pct, benchmark_pct}]
-                for index, row in df_combined.iterrows():
-                    chart_data.append({
-                        "date": index.strftime('%Y-%m-%d'),
-                        "portfolio_value": row['total_value'],
-                        "benchmark_value": row['close'],
-                        "portfolio_pct": row['port_cum_return'],
-                        "benchmark_pct": row['bench_cum_return']
-                    })
-            else:
-                # No overlapping dates
-                 return Response({"error": "Insufficient overlapping data with benchmark"}, status=200)
-
+            df_combined = join_with_benchmark(df_port, df_bench)
+            if df_combined is None:
+                return Response({"error": "Insufficient overlapping data with benchmark"}, status=200)
+            chart_data, returns = build_chart_data_with_benchmark(df_combined)
+            risk = compute_risk_metrics(df_combined)
+            metrics_dict = {**risk, **returns, "max_drawdown": compute_drawdown(df_port)}
+            metrics_dict = round_metrics(metrics_dict)
         else:
-             # Fallback if no NEPSE data (just show portfolio growth)
-             initial_val = float(df_port['total_value'].iloc[0])
-             
-             if initial_val == 0:
-                 df_port['port_cum_return'] = 0.0
-             else:
-                 df_port['port_cum_return'] = ((df_port['total_value'].astype(float) - initial_val) / initial_val) * 100
-             
-             # Max Drawdown
-             roll_max = df_port['total_value'].cummax()
-             drawdown = (df_port['total_value'] - roll_max) / roll_max
-             max_drawdown = drawdown.min() * 100
-             
-             metrics["max_drawdown"] = round(max_drawdown, 2)
-             metrics["total_return"] = round(df_port['port_cum_return'].iloc[-1], 2)
-             
-             for index, row in df_port.iterrows():
-                chart_data.append({
-                    "date": index.strftime('%Y-%m-%d'),
-                    "portfolio_value": row['total_value'],
-                    "benchmark_value": None,
-                    "portfolio_pct": row['port_cum_return'],
-                    "benchmark_pct": None
-                })
-        
-        # Defense-in-depth: NaN/inf are not JSON-compliant — they make DRF fail to
-        # render (500) and break the client parser. Sparse/zero-laden snapshot data
-        # can produce them upstream, so scrub before returning: non-finite metric
-        # values -> 0.0, non-finite chart values -> None.
-        import math
+            chart_data, no_bench_metrics = build_chart_data_without_benchmark(df_port)
+            metrics_dict.update(no_bench_metrics)
 
-        def _finite(v, default=0.0):
-            try:
-                f = float(v)
-            except (TypeError, ValueError):
-                return default
-            return f if math.isfinite(f) else default
-
-        metrics = {k: _finite(v) for k, v in metrics.items()}
-        for _row in chart_data:
-            for _k, _v in list(_row.items()):
-                if isinstance(_v, float) and not math.isfinite(_v):
-                    _row[_k] = None
-
-        return Response({
-            "metrics": metrics,
-            "chart_data": chart_data,
-            "period": period,
-            "has_benchmark": has_benchmark
-        })
+        metrics_dict, chart_data = scrub_nan(metrics_dict, chart_data)
+        return Response({"metrics": metrics_dict, "chart_data": chart_data,
+                         "period": period, "has_benchmark": has_benchmark})
 
     @action(detail=False, methods=['get'])
     def twr_xirr(self, request):
