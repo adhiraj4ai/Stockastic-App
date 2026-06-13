@@ -3,9 +3,6 @@ from django.contrib.auth.models import User
 from django.utils import timezone
 from django.db import connections
 from django.db.models import Sum, F, Q, Avg
-import pandas as pd
-import talib
-import numpy as np
 from ..models import (
     Notification, PortfolioItem, WatchlistItem,
     DailyStockPrice, Company, DailyCumulativeAccumulation,
@@ -888,6 +885,9 @@ def check_technical_alerts(user):
     """
     Check for Volume Spikes, RSI extremes, and MA crossovers for portfolio/watchlist.
     """
+    import pandas as pd
+    import talib
+    import numpy as np
     from datetime import date, timedelta
     notifications_created = 0
     try:
@@ -895,14 +895,14 @@ def check_technical_alerts(user):
         portfolio_symbols = list(PortfolioItem.objects.filter(user=user).values_list('ticker', flat=True))
         watchlist_symbols = list(WatchlistItem.objects.filter(user=user).values_list('ticker', flat=True))
         all_symbols = list(set(portfolio_symbols + watchlist_symbols))
-        
+
         if not all_symbols:
             return 0
-            
+
         today = date.today()
         one_day_ago = timezone.now() - timedelta(hours=24)
         lookback = today - timedelta(days=300) # For 200d SMA
-        
+
         # 2. Fetch price data
         price_data = list(DailyStockPrice.objects.filter(
             ticker__in=all_symbols,

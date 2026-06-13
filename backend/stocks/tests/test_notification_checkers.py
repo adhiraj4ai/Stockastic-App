@@ -112,3 +112,24 @@ def test_watchlist_checker_target_hit_produces_alert():
     assert len(target_alerts) == 1
     assert target_alerts[0].ticker == 'NABIL'
     assert target_alerts[0].severity is not None
+
+
+import pytest
+
+
+@pytest.mark.parametrize("checker_path,cls_name", [
+    ("stocks.services.notifications.checkers.zone_entry", "ZoneEntryChecker"),
+    ("stocks.services.notifications.checkers.active_signal", "ActiveSignalChecker"),
+    ("stocks.services.notifications.checkers.signals", "SignalsChecker"),
+    ("stocks.services.notifications.checkers.whale_watch", "WhaleWatchChecker"),
+    ("stocks.services.notifications.checkers.accumulation_trend", "AccumulationTrendChecker"),
+    ("stocks.services.notifications.checkers.technical", "TechnicalChecker"),
+    ("stocks.services.notifications.checkers.broker_discovery", "BrokerDiscoveryChecker"),
+    ("stocks.services.notifications.checkers.portfolio_management", "PortfolioManagementChecker"),
+])
+def test_checker_implements_protocol(checker_path, cls_name):
+    import importlib
+    from stocks.services.notifications.base import IAlertChecker
+    mod = importlib.import_module(checker_path)
+    cls = getattr(mod, cls_name)
+    assert isinstance(cls(), IAlertChecker)
