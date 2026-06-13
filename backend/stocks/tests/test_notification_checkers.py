@@ -48,7 +48,8 @@ def test_portfolio_checker_returns_list():
     user = MagicMock()
     checker = PortfolioChecker()
 
-    with patch('stocks.services.notifications.checkers.portfolio.PortfolioItem') as MockItem:
+    with patch('stocks.services.notifications.checkers.portfolio.PortfolioItem') as MockItem, \
+         patch.object(checker, '_fetch_price', return_value=None):
         MockItem.objects.filter.return_value = []
         result = checker.check(user)
 
@@ -73,10 +74,11 @@ def test_portfolio_checker_stop_loss_produces_alert():
     checker = PortfolioChecker()
 
     with patch('stocks.services.notifications.checkers.portfolio.PortfolioItem') as MockItem, \
-         patch('stocks.services.notifications.checkers.portfolio.get_latest_price', return_value=235.0):
+         patch.object(checker, '_fetch_price', return_value=235.0):
         MockItem.objects.filter.return_value = [item]
         alerts = checker.check(user)
 
     stop_loss_alerts = [a for a in alerts if a.notification_type == 'STOP_LOSS_HIT']
     assert len(stop_loss_alerts) == 1
     assert stop_loss_alerts[0].ticker == 'ADBL'
+    assert stop_loss_alerts[0].severity is not None  # severity must now be set
