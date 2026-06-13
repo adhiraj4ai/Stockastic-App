@@ -207,16 +207,8 @@ class SafeTa:
     #  Column order matches pandas_ta: ISA, ISB, ITS, IKS, ICS           #
     # ------------------------------------------------------------------ #
 
-    def ichimoku(self, high, low, close, tenkan=9, kijun=26, senkou=52, **_):
-        """Returns (df, span_df) matching pandas_ta ichimoku output shape.
-
-        df columns (iloc order): ISA_9, ISB_26, ITS_9, IKS_26, ICS
-        span_df: forward-shifted cloud (Span A and B projected kijun bars ahead).
-        """
-        h, l = _to_arr(high), _to_arr(low)
-        idx = _idx(high)
-        n = len(h)
-
+    def _ichimoku_lines(self, h, l, n, tenkan, kijun, senkou):
+        """Compute tenkan, kijun, senkou_a, senkou_b, chikou arrays."""
         def _donchian_mid(highs, lows, period):
             out = np.full(n, np.nan)
             for i in range(period - 1, n):
@@ -227,26 +219,40 @@ class SafeTa:
         kijun_sen = _donchian_mid(h, l, int(kijun))
         senkou_a = (tenkan_sen + kijun_sen) / 2.0
         senkou_b = _donchian_mid(h, l, int(senkou))
+        return tenkan_sen, kijun_sen, senkou_a, senkou_b
 
-        close_arr = _to_arr(close)
-        # Chikou: lagging span — close shifted back kijun bars
+    def _ichimoku_chikou(self, close_arr, n, kijun):
+        """Compute chikou (lagging span) array."""
         chikou = np.full(n, np.nan)
         chikou[:n - int(kijun)] = close_arr[int(kijun):]
+        return chikou
 
-        df = pd.DataFrame(
-            {'ISA_9': senkou_a, 'ISB_26': senkou_b, 'ITS_9': tenkan_sen, 'IKS_26': kijun_sen, 'ICS': chikou},
-            index=idx,
-        )
-
-        # span_df: cloud projected kijun bars forward
+    def _ichimoku_span_df(self, senkou_a, senkou_b, n, kijun, idx):
+        """Build the forward-projected cloud span DataFrame."""
         span_a_fwd = np.full(n, np.nan)
         span_b_fwd = np.full(n, np.nan)
         kijun_int = int(kijun)
         if n > kijun_int:
             span_a_fwd[kijun_int:] = senkou_a[:n - kijun_int]
             span_b_fwd[kijun_int:] = senkou_b[:n - kijun_int]
-        span_df = pd.DataFrame({'ISA_9': span_a_fwd, 'ISB_26': span_b_fwd}, index=idx)
+        return pd.DataFrame({'ISA_9': span_a_fwd, 'ISB_26': span_b_fwd}, index=idx)
 
+    def ichimoku(self, high, low, close, tenkan=9, kijun=26, senkou=52, **_):
+        """Returns (df, span_df) matching pandas_ta ichimoku output shape.
+
+        df columns (iloc order): ISA_9, ISB_26, ITS_9, IKS_26, ICS
+        span_df: forward-shifted cloud (Span A and B projected kijun bars ahead).
+        """
+        h, l = _to_arr(high), _to_arr(low)
+        idx = _idx(high)
+        n = len(h)
+        tenkan_sen, kijun_sen, senkou_a, senkou_b = self._ichimoku_lines(h, l, n, tenkan, kijun, senkou)
+        chikou = self._ichimoku_chikou(_to_arr(close), n, kijun)
+        df = pd.DataFrame(
+            {'ISA_9': senkou_a, 'ISB_26': senkou_b, 'ITS_9': tenkan_sen, 'IKS_26': kijun_sen, 'ICS': chikou},
+            index=idx,
+        )
+        span_df = self._ichimoku_span_df(senkou_a, senkou_b, n, kijun, idx)
         return df, span_df
 
     # ------------------------------------------------------------------ #
@@ -254,23 +260,19 @@ class SafeTa:
     #  (column order mirrors pandas_ta so .iloc[:, n] access is correct)  #
     # ------------------------------------------------------------------ #
 
-    def supertrend(self, high, low, close, length=10, multiplier=3.0, **_):
-        """Supertrend. Columns [SUPERT, SUPERTd, SUPERTl, SUPERTs] (iloc 0/1/2/3).
-
-        SUPERTd is direction: 1 = uptrend, -1 = downtrend (matches pandas_ta).
-        """
-        h, l, c = _to_arr(high), _to_arr(low), _to_arr(close)
-        n = len(c)
-        period, mult = int(length), float(multiplier)
-        atr = talib.ATR(h, l, c, timeperiod=period)
+    def _supertrend_bands(self, h, l, c, period, mult, atr):
+        """Compute initial upper/lower band arrays from ATR."""
         hl2 = (h + l) / 2.0
         upper = hl2 + mult * atr
         lower = hl2 - mult * atr
+        return upper, lower
 
+    def _supertrend_loop(self, c, n, atr, upper, lower):
+        """Iterate through bars to finalise bands and determine trend direction."""
         final_upper = np.full(n, np.nan)
         final_lower = np.full(n, np.nan)
-        trend = np.full(n, np.nan)        # the supertrend line
-        direction = np.full(n, np.nan)    # 1 up, -1 down
+        trend = np.full(n, np.nan)
+        direction = np.full(n, np.nan)
 
         for i in range(n):
             if np.isnan(atr[i]):
@@ -285,7 +287,6 @@ class SafeTa:
                               else final_upper[i - 1])
             final_lower[i] = (lower[i] if (lower[i] > final_lower[i - 1] or c[i - 1] < final_lower[i - 1])
                               else final_lower[i - 1])
-            # Determine direction from previous trend line
             if c[i] > final_upper[i - 1]:
                 direction[i] = 1
             elif c[i] < final_lower[i - 1]:
@@ -294,6 +295,19 @@ class SafeTa:
                 direction[i] = direction[i - 1]
             trend[i] = final_lower[i] if direction[i] == 1 else final_upper[i]
 
+        return trend, direction
+
+    def supertrend(self, high, low, close, length=10, multiplier=3.0, **_):
+        """Supertrend. Columns [SUPERT, SUPERTd, SUPERTl, SUPERTs] (iloc 0/1/2/3).
+
+        SUPERTd is direction: 1 = uptrend, -1 = downtrend (matches pandas_ta).
+        """
+        h, l, c = _to_arr(high), _to_arr(low), _to_arr(close)
+        n = len(c)
+        period, mult = int(length), float(multiplier)
+        atr = talib.ATR(h, l, c, timeperiod=period)
+        upper, lower = self._supertrend_bands(h, l, c, period, mult, atr)
+        trend, direction = self._supertrend_loop(c, n, atr, upper, lower)
         long_line = np.where(direction == 1, trend, np.nan)
         short_line = np.where(direction == -1, trend, np.nan)
         idx = _idx(close)
@@ -388,6 +402,230 @@ class SafeTa:
 
 # --- Service Implementation ---
 
+# Named strategy code aliases -----------------------------------------------
+
+_BROKER_ACCUMULATION_V1_CODE = """
+from backtesting import Strategy
+import numpy as np
+import pandas as pd
+from stocks.models import DailyCumulativeAccumulation
+
+class BrokerAccumulationStrategy(Strategy):
+    def init(self):
+        ticker = symbol
+        qs = DailyCumulativeAccumulation.objects.filter(symbol=ticker).values('transaction_date', 'cumulative_net')
+        if not qs:
+            self.acc = self.I(lambda x: np.zeros(len(x)), self.data.Close)
+            return
+        df = pd.DataFrame(list(qs))
+        df['transaction_date'] = pd.to_datetime(df['transaction_date'])
+        daily = df.groupby('transaction_date')['cumulative_net'].sum()
+        self.acc = self.I(lambda x: daily.reindex(pd.Series(x).index).ffill().fillna(0).values, self.data.Close)
+
+    def next(self):
+        if len(self.acc) < 2: return
+        if self.acc[-1] > 0 and self.acc[-2] <= 0:
+            if not self.position: self.buy()
+        elif self.acc[-1] < 0 and self.acc[-2] >= 0:
+            if self.position: self.position.close()
+"""
+
+_ICHIMOKU_ACCUMULATION_V1_CODE = """
+from backtesting import Strategy
+import pandas as pd
+import numpy as np
+import pandas_ta as ta
+from stocks.models import DailyCumulativeAccumulation
+
+class IchimokuAccumulation(Strategy):
+    def init(self):
+        close = pd.Series(self.data.Close)
+        high = pd.Series(self.data.High)
+        low = pd.Series(self.data.Low)
+        # Ichimoku
+        ichimoku_df = ta.ichimoku(high, low, close)[0]
+        self.span_a = self.I(lambda: ichimoku_df.iloc[:, 2].values)
+        self.span_b = self.I(lambda: ichimoku_df.iloc[:, 3].values)
+
+        # Accumulation
+        qs = DailyCumulativeAccumulation.objects.filter(symbol=symbol).values('transaction_date', 'cumulative_net')
+        if not qs:
+            self.acc = self.I(lambda x: np.zeros(len(x)), self.data.Close)
+            return
+        df = pd.DataFrame(list(qs))
+        df['transaction_date'] = pd.to_datetime(df['transaction_date'])
+        daily = df.groupby('transaction_date')['cumulative_net'].sum()
+        self.acc = self.I(lambda x: daily.reindex(pd.Series(x).index).ffill().fillna(0).values, self.data.Close)
+
+    def next(self):
+        price = self.data.Close[-1]
+        above_cloud = price > self.span_a[-1] and price > self.span_b[-1]
+        accumulating = self.acc[-1] > 0
+        if above_cloud and accumulating:
+            if not self.position: self.buy()
+        elif price < self.span_a[-1] or price < self.span_b[-1]:
+            if self.position: self.position.close()
+"""
+
+_SMART_ACCUMULATED_CROSSOVER_V1_CODE = """
+from backtesting import Strategy
+from backtesting.lib import crossover
+import pandas as pd
+import numpy as np
+import pandas_ta as ta
+from stocks.models import DailyCumulativeAccumulation
+
+class SmartAccumulatedCrossover(Strategy):
+    fast = 10
+    slow = 50
+
+    def init(self):
+        qs = DailyCumulativeAccumulation.objects.filter(symbol=symbol).values('transaction_date', 'entity_id', 'cumulative_net')
+        if not qs:
+            self.fast_ma = self.I(lambda x: np.zeros(len(x)), self.data.Close)
+            self.slow_ma = self.I(lambda x: np.zeros(len(x)), self.data.Close)
+            return
+        df = pd.DataFrame(list(qs))
+        df['transaction_date'] = pd.to_datetime(df['transaction_date'])
+        pivot = df.pivot_table(index='transaction_date', columns='entity_id', values='cumulative_net', aggfunc='last').ffill().fillna(0)
+        top = pivot.iloc[-1].sort_values(ascending=False).head(5).index
+        flow = pivot[top].sum(axis=1)
+        line = self.I(lambda x: flow.reindex(pd.Series(x).index).ffill().fillna(0).values, self.data.Close)
+        self.fast_ma = self.I(lambda x: pd.Series(x).rolling(self.fast).mean().values, line)
+        self.slow_ma = self.I(lambda x: pd.Series(x).rolling(self.slow).mean().values, line)
+
+    def next(self):
+        if crossover(self.fast_ma, self.slow_ma):
+            if not self.position: self.buy()
+        elif crossover(self.slow_ma, self.fast_ma):
+            if self.position: self.position.close()
+"""
+
+_NAMED_STRATEGY_CODES = {
+    'broker_accumulation_v1': _BROKER_ACCUMULATION_V1_CODE,
+    'ichimoku_accumulation_v1': _ICHIMOKU_ACCUMULATION_V1_CODE,
+    'smart_accumulated_crossover_v1': _SMART_ACCUMULATED_CROSSOVER_V1_CODE,
+}
+
+
+def _resolve_code(raw_code):
+    """Return the executable strategy code string, resolving named aliases."""
+    if raw_code in _NAMED_STRATEGY_CODES:
+        return _NAMED_STRATEGY_CODES[raw_code]
+    if isinstance(raw_code, str) and raw_code.startswith('ichimoku_accumulation_v1'):
+        return _NAMED_STRATEGY_CODES['ichimoku_accumulation_v1']
+    return raw_code
+
+
+def _build_local_scope():
+    """Return the exec namespace for strategy code evaluation."""
+    ta_adapter = SafeTa(talib)
+    import sys as _sys
+    _sys.modules['pandas_ta'] = ta_adapter  # type: ignore[assignment]
+    return {
+        'Backtest': Backtest, 'Strategy': Strategy, 'crossover': crossover,
+        'SMA': SMA, 'pd': pd, 'np': np, 'ta': ta_adapter, 'talib': talib,
+    }
+
+
+def _extract_strategy_class(code, local_scope):
+    """Execute code and return the Strategy subclass, or None on failure."""
+    try:
+        exec(code, local_scope)
+        return next(
+            (obj for obj in local_scope.values()
+             if inspect.isclass(obj) and issubclass(obj, Strategy) and obj is not Strategy),
+            None,
+        )
+    except Exception:
+        return None
+
+
+def _inject_params(base_code, params):
+    """Return base_code with param values substituted in-place."""
+    code = base_code
+    for name, val in params.items():
+        code = re.sub(rf"({name}\s*=\s*)[\d\.]+", rf"\g<1>{val}", code)
+    return code
+
+
+def _score_ticker(strat_class, df, objective_type):
+    """Run a single backtest and return the objective score, or None on failure."""
+    if len(df) < 20:
+        return None
+    try:
+        bt = Backtest(
+            df, strat_class,
+            cash=100_000,
+            commission=OptimizationService.DEFAULT_COMMISSION,
+            exclusive_orders=True,
+            finalize_trades=True,
+        )
+        stats = bt.run()
+        metric_key = 'Win Rate [%]' if objective_type == 'win_rate' else 'Return [%]'
+        return stats.get(metric_key, 0) or 0
+    except Exception:
+        return None
+
+
+def _eval_params(strategy_model, params, eval_map, objective_type):
+    """Run a strategy with given params over eval_map; return average score or None."""
+    base_code = _resolve_code(strategy_model.code)
+    code = _inject_params(base_code, params)
+    local_scope = _build_local_scope()
+    strat_class = _extract_strategy_class(code, local_scope)
+    if not strat_class:
+        return None
+    scores = [
+        s for s in (_score_ticker(strat_class, df, objective_type) for df in eval_map.values())
+        if s is not None
+    ]
+    return sum(scores) / len(scores) if scores else None
+
+
+def _build_optuna_objective(strategy_model, param_ranges, is_map, objective_type):
+    """Return the Optuna objective closure over in-sample data."""
+    def objective(trial):
+        params = {
+            name: (trial.suggest_int(name, r[0], r[1])
+                   if isinstance(r[0], int) and isinstance(r[1], int)
+                   else trial.suggest_float(name, r[0], r[1]))
+            for name, r in param_ranges.items()
+        }
+        result = _eval_params(strategy_model, params, is_map, objective_type)
+        return result if result is not None else -9999
+    return objective
+
+
+def _persist_experiment(strategy_model, scope_type, scope_val, start_date, end_date, study, oos_value):
+    """Write an Optuna study result to StrategyExperiment."""
+    batch_id = uuid.uuid4()
+    oos_accepted = bool(
+        oos_value is not None
+        and study.best_value > 0
+        and oos_value >= 0.5 * study.best_value
+    )
+    StrategyExperiment.objects.create(
+        strategy=strategy_model,
+        user=strategy_model.user,
+        run_type=StrategyExperiment.RunType.OPTIMIZATION,
+        scope_type=scope_type,
+        scope_value=scope_val,
+        start_date=start_date,
+        end_date=end_date,
+        parameters=study.best_params,
+        metrics={
+            "best_value": study.best_value,
+            "oos_value": oos_value,
+            "oos_fraction": OOS_FRACTION,
+            "oos_accepted": oos_accepted,
+            "n_trials": len(study.trials),
+        },
+        batch_id=batch_id,
+        status=StrategyExperiment.Status.SUCCESS,
+    )
+
+
 class OptimizationService:
     DEFAULT_COMMISSION = 0.0036
 
@@ -454,209 +692,15 @@ class OptimizationService:
         if not data_map:
             raise ValueError(f"No valid data for scope {scope_type}:{scope_val}")
 
-        # Split full data into in-sample (for tuning) and out-of-sample (for validation)
         is_map = {t: OptimizationService.anchored_split(df)[0] for t, df in data_map.items()}
         oos_map = {t: OptimizationService.anchored_split(df)[1] for t, df in data_map.items()}
 
-        def _resolve_code(raw_code):
-            """Return the executable strategy code string, resolving named aliases."""
-            if raw_code == 'broker_accumulation_v1':
-                return """
-from backtesting import Strategy
-import numpy as np
-import pandas as pd
-from stocks.models import DailyCumulativeAccumulation
-
-class BrokerAccumulationStrategy(Strategy):
-    def init(self):
-        ticker = symbol
-        qs = DailyCumulativeAccumulation.objects.filter(symbol=ticker).values('transaction_date', 'cumulative_net')
-        if not qs:
-            self.acc = self.I(lambda x: np.zeros(len(x)), self.data.Close)
-            return
-        df = pd.DataFrame(list(qs))
-        df['transaction_date'] = pd.to_datetime(df['transaction_date'])
-        daily = df.groupby('transaction_date')['cumulative_net'].sum()
-        self.acc = self.I(lambda x: daily.reindex(pd.Series(x).index).ffill().fillna(0).values, self.data.Close)
-
-    def next(self):
-        if len(self.acc) < 2: return
-        if self.acc[-1] > 0 and self.acc[-2] <= 0:
-            if not self.position: self.buy()
-        elif self.acc[-1] < 0 and self.acc[-2] >= 0:
-            if self.position: self.position.close()
-"""
-            elif raw_code == 'ichimoku_accumulation_v1' or (isinstance(raw_code, str) and raw_code.startswith('ichimoku_accumulation_v1')):
-                return """
-from backtesting import Strategy
-import pandas as pd
-import numpy as np
-import pandas_ta as ta
-from stocks.models import DailyCumulativeAccumulation
-
-class IchimokuAccumulation(Strategy):
-    def init(self):
-        close = pd.Series(self.data.Close)
-        high = pd.Series(self.data.High)
-        low = pd.Series(self.data.Low)
-        # Ichimoku
-        ichimoku_df = ta.ichimoku(high, low, close)[0]
-        self.span_a = self.I(lambda: ichimoku_df.iloc[:, 2].values)
-        self.span_b = self.I(lambda: ichimoku_df.iloc[:, 3].values)
-
-        # Accumulation
-        qs = DailyCumulativeAccumulation.objects.filter(symbol=symbol).values('transaction_date', 'cumulative_net')
-        if not qs:
-            self.acc = self.I(lambda x: np.zeros(len(x)), self.data.Close)
-            return
-        df = pd.DataFrame(list(qs))
-        df['transaction_date'] = pd.to_datetime(df['transaction_date'])
-        daily = df.groupby('transaction_date')['cumulative_net'].sum()
-        self.acc = self.I(lambda x: daily.reindex(pd.Series(x).index).ffill().fillna(0).values, self.data.Close)
-
-    def next(self):
-        price = self.data.Close[-1]
-        above_cloud = price > self.span_a[-1] and price > self.span_b[-1]
-        accumulating = self.acc[-1] > 0
-        if above_cloud and accumulating:
-            if not self.position: self.buy()
-        elif price < self.span_a[-1] or price < self.span_b[-1]:
-            if self.position: self.position.close()
-"""
-            elif raw_code == 'smart_accumulated_crossover_v1':
-                return """
-from backtesting import Strategy
-from backtesting.lib import crossover
-import pandas as pd
-import numpy as np
-import pandas_ta as ta
-from stocks.models import DailyCumulativeAccumulation
-
-class SmartAccumulatedCrossover(Strategy):
-    fast = 10
-    slow = 50
-
-    def init(self):
-        qs = DailyCumulativeAccumulation.objects.filter(symbol=symbol).values('transaction_date', 'entity_id', 'cumulative_net')
-        if not qs:
-            self.fast_ma = self.I(lambda x: np.zeros(len(x)), self.data.Close)
-            self.slow_ma = self.I(lambda x: np.zeros(len(x)), self.data.Close)
-            return
-        df = pd.DataFrame(list(qs))
-        df['transaction_date'] = pd.to_datetime(df['transaction_date'])
-        pivot = df.pivot_table(index='transaction_date', columns='entity_id', values='cumulative_net', aggfunc='last').ffill().fillna(0)
-        top = pivot.iloc[-1].sort_values(ascending=False).head(5).index
-        flow = pivot[top].sum(axis=1)
-        line = self.I(lambda x: flow.reindex(pd.Series(x).index).ffill().fillna(0).values, self.data.Close)
-        self.fast_ma = self.I(lambda x: pd.Series(x).rolling(self.fast).mean().values, line)
-        self.slow_ma = self.I(lambda x: pd.Series(x).rolling(self.slow).mean().values, line)
-
-    def next(self):
-        if crossover(self.fast_ma, self.slow_ma):
-            if not self.position: self.buy()
-        elif crossover(self.slow_ma, self.fast_ma):
-            if self.position: self.position.close()
-"""
-            return raw_code
-
-        def _eval_params(params, eval_map):
-            """Run a strategy with the given params over eval_map and return the average score.
-
-            This is the single evaluation mechanism shared by both the Optuna objective
-            (in-sample) and the OOS validation pass, ensuring the two numbers are comparable.
-            Returns None if no symbol yields a valid score (all skipped or all errored).
-            """
-            base_code = _resolve_code(strategy_model.code)
-            # Inject param values into the code
-            code = base_code
-            for name, val in params.items():
-                code = re.sub(rf"({name}\s*=\s*)[\d\.]+", rf"\g<1>{val}", code)
-
-            import sys as _sys
-            ta_adapter = SafeTa(talib)
-            _sys.modules['pandas_ta'] = ta_adapter  # type: ignore[assignment]
-            local_scope = {
-                'Backtest': Backtest, 'Strategy': Strategy, 'crossover': crossover,
-                'SMA': SMA, 'pd': pd, 'np': np, 'ta': ta_adapter, 'talib': talib,
-            }
-            try:
-                exec(code, local_scope)
-                strat_class = next(
-                    (obj for obj in local_scope.values()
-                     if inspect.isclass(obj) and issubclass(obj, Strategy) and obj is not Strategy),
-                    None,
-                )
-                if not strat_class:
-                    return None
-            except Exception:
-                return None
-
-            scores = []
-            for ticker, df in eval_map.items():
-                if len(df) < 20:
-                    continue
-                try:
-                    bt = Backtest(
-                        df, strat_class,
-                        cash=100_000,
-                        commission=OptimizationService.DEFAULT_COMMISSION,
-                        exclusive_orders=True,
-                        finalize_trades=True,
-                    )
-                    stats = bt.run()
-                    val = stats.get('Win Rate [%]' if objective_type == 'win_rate' else 'Return [%]', 0)
-                    scores.append(val or 0)
-                except Exception:
-                    continue
-
-            return sum(scores) / len(scores) if scores else None
-
-        def objective(trial):
-            params = {}
-            for name, r in param_ranges.items():
-                if isinstance(r[0], int) and isinstance(r[1], int):
-                    params[name] = trial.suggest_int(name, r[0], r[1])
-                else:
-                    params[name] = trial.suggest_float(name, r[0], r[1])
-
-            # Tune ONLY on in-sample slice
-            result = _eval_params(params, is_map)
-            return result if result is not None else -9999
-
         study = optuna.create_study(direction='maximize')
+        objective = _build_optuna_objective(strategy_model, param_ranges, is_map, objective_type)
         study.optimize(objective, n_trials=n_trials)
 
-        # Evaluate best params on the held-out OOS tail using the SAME mechanism
-        oos_value = _eval_params(study.best_params, oos_map)
-
-        batch_id = uuid.uuid4()
-        StrategyExperiment.objects.create(
-            strategy=strategy_model,
-            user=strategy_model.user,
-            run_type=StrategyExperiment.RunType.OPTIMIZATION,
-            scope_type=scope_type,
-            scope_value=scope_val,
-            start_date=start_date,
-            end_date=end_date,
-            parameters=study.best_params,
-            metrics={
-                "best_value": study.best_value,
-                "oos_value": oos_value,
-                "oos_fraction": OOS_FRACTION,
-                # Accept only when there was a positive in-sample edge AND the OOS
-                # run retained >= 50% of it. Guarding on best_value > 0 keeps the
-                # flag coherent for the 'return' objective, whose best_value can be
-                # negative (where a 0.5x multiplier would invert the threshold).
-                "oos_accepted": bool(
-                    oos_value is not None
-                    and study.best_value > 0
-                    and oos_value >= 0.5 * study.best_value
-                ),
-                "n_trials": len(study.trials),
-            },
-            batch_id=batch_id,
-            status=StrategyExperiment.Status.SUCCESS
-        )
+        oos_value = _eval_params(strategy_model, study.best_params, oos_map, objective_type)
+        _persist_experiment(strategy_model, scope_type, scope_val, start_date, end_date, study, oos_value)
         return study.best_params, study.best_value
 
     @staticmethod
@@ -664,7 +708,7 @@ class SmartAccumulatedCrossover(Strategy):
         res = DailyStockPrice.objects.filter(ticker=symbol).aggregate(min_date=Min('date'))
         start_date = res['min_date'] or (datetime.now().date() - timedelta(days=365*3))
         end_date = datetime.now().date()
-        
+
         periods = []
         curr_start = start_date
         while curr_start < end_date:
