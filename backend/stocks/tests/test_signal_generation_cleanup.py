@@ -83,3 +83,19 @@ class TestPersistOne:
                 result = SignalGenerationService._persist_one('engine', sig, today)
         mock_engine.assert_called_once()
         assert result is True
+
+
+class TestGenerateAllDelegates:
+    def test_generate_all_delegates_to_orchestrator(self):
+        with patch('stocks.services.signal_generation_service.default_orchestrator') as mock_orch:
+            mock_orch.generate_all.return_value = 42
+            result = SignalGenerationService.generate_all(None)
+        mock_orch.generate_all.assert_called_once_with(None)
+        assert result == 42
+
+    def test_generate_all_passes_progress_callback(self):
+        cb = lambda x: x
+        with patch('stocks.services.signal_generation_service.default_orchestrator') as mock_orch:
+            mock_orch.generate_all.return_value = 5
+            SignalGenerationService.generate_all(cb)
+        mock_orch.generate_all.assert_called_once_with(cb)

@@ -10,6 +10,7 @@ from datetime import date
 from django.db import connections
 from .signal_episode.service import ingest_reading
 from .signal_episode.adapters import engine_reading
+from stocks.services.signals import default_orchestrator
 
 logger = logging.getLogger(__name__)
 
@@ -28,46 +29,9 @@ class SignalGenerationService:
     """Generates and stores signals from all sources."""
 
     @staticmethod
-    def generate_all(progress_callback=None):
-        """Run all signal generators and persist results."""
-        total_saved = 0
-        sources = [
-            ('SMART_MONEY', SignalGenerationService._generate_smart_money_signals),
-            ('BROKER_ACCUMULATION', SignalGenerationService._generate_broker_accumulation_signals),
-            ('SMART_CROSSOVER', SignalGenerationService._generate_smart_crossover_signals),
-            ('ICHIMOKU', SignalGenerationService._generate_ichimoku_signals),
-            ('DISTRIBUTION_ALERT', SignalGenerationService._generate_distribution_alert_signals),
-            ('BELOW_COST_REVERSAL', SignalGenerationService._generate_below_cost_reversal_signals),
-            ('VOLUME_BREAKOUT', SignalGenerationService._generate_volume_breakout_signals),
-            ('CONCENTRATION_SHIFT', SignalGenerationService._generate_concentration_shift_signals),
-            ('ACC_MOMENTUM', SignalGenerationService._generate_accumulation_momentum_signals),
-            ('INSTITUTIONAL_ALERTS', SignalGenerationService._generate_institutional_alerts),
-        ]
-
-        for i, (source_key, generator_fn) in enumerate(sources):
-            if progress_callback:
-                progress_callback(i + 1, len(sources), source_key)
-            try:
-                signals = generator_fn()
-                total_saved += SignalGenerationService._dispatch_source(source_key, signals)
-            except Exception as e:
-                logger.error(f"[{source_key}] Failed to generate signals: {e}")
-
-        return total_saved
-
-    @staticmethod
-    def _dispatch_source(source_key: str, signals) -> int:
-        """Persist signals for a source; handles the INSTITUTIONAL_ALERTS multi-source case."""
-        if source_key == 'INSTITUTIONAL_ALERTS':
-            total = 0
-            for sub_source, sub_signals in signals.items():
-                saved = SignalGenerationService._persist_signals(sub_source, sub_signals)
-                total += saved
-                logger.info(f"[{sub_source}] Generated and saved {saved} signals via institutional scanner")
-            return total
-        saved = SignalGenerationService._persist_signals(source_key, signals)
-        logger.info(f"[{source_key}] Generated and saved {saved} signals")
-        return saved
+    def generate_all(progress_callback=None) -> int:
+        """Delegate all signal generation to the registered orchestrator."""
+        return default_orchestrator.generate_all(progress_callback)
 
     @staticmethod
     def _build_price_levels(sig: dict, ltp: float) -> dict:
