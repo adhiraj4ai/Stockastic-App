@@ -46,6 +46,27 @@ def _normalize_fiscal_year(fy: str) -> str:
     return f'{parts[0]}/{parts[1]}'
 
 
+def _upsert_dividend_from_report(report) -> "tuple[int, int]":
+    """Upsert one Dividend row from a FinancialReport. Returns (created, updated)."""
+    bonus = report.bonus_share or Decimal('0')
+    cash = report.cash_dividend or Decimal('0')
+    if bonus == 0 and cash == 0:
+        return 0, 0
+    defaults = {
+        'bonus_percent': bonus,
+        'cash_percent': cash,
+        'total_percent': bonus + cash,
+    }
+    if report.dividend_book_close_date:
+        defaults['book_close_date'] = report.dividend_book_close_date
+    _, was_created = Dividend.objects.update_or_create(
+        ticker=report.ticker,
+        fiscal_year=_normalize_fiscal_year(report.fiscal_year),
+        defaults=defaults,
+    )
+    return int(was_created), int(not was_created)
+
+
 def sync_dividends_from_financials(ticker=None):
     """Upsert Dividend rows from the dividend fields on ANNUAL FinancialReports.
 
@@ -63,24 +84,9 @@ def sync_dividends_from_financials(ticker=None):
 
     created = updated = 0
     for report in qs:
-        bonus = report.bonus_share or Decimal('0')
-        cash = report.cash_dividend or Decimal('0')
-        if bonus == 0 and cash == 0:
-            continue
-        defaults = {
-            'bonus_percent': bonus,
-            'cash_percent': cash,
-            'total_percent': bonus + cash,
-        }
-        if report.dividend_book_close_date:
-            defaults['book_close_date'] = report.dividend_book_close_date
-        _, was_created = Dividend.objects.update_or_create(
-            ticker=report.ticker,
-            fiscal_year=_normalize_fiscal_year(report.fiscal_year),
-            defaults=defaults,
-        )
-        created += was_created
-        updated += not was_created
+        c, u = _upsert_dividend_from_report(report)
+        created += c
+        updated += u
     return created, updated
 
 
@@ -89,49 +95,47 @@ def sync_dividends_from_financials(ticker=None):
 # scoped to a single ticker and stops at *cutoff_date*)
 # ---------------------------------------------------------------------------
 
-def _wacc_at_date(user_txns, ticker: str, cutoff_date) -> Decimal:
-    """Return the WACC for *ticker* built from *user_txns* up to (but not
-    including) *cutoff_date* (a date object, compared against
-    transaction_date.date()).
+def _apply_txn_to_wacc(t, qty: Decimal, wacc: Decimal) -> "tuple[Decimal, Decimal]":
+    """Return updated (qty, wacc) after applying transaction *t*.
 
-    Uses the same WACC-update rules as the realized P&L replay:
-      BUY  → weighted-average in new shares
-      BONUS → dilute WACC (no cost added for bonus shares)
-      SELL  → reduce qty, WACC unchanged
+    BUY  → weighted-average in new shares (cost includes fees).
+    BONUS → dilute WACC (no extra cost for bonus shares).
+    SELL  → reduce qty; WACC unchanged.
+    """
+    if t.transaction_type == TransactionType.BUY:
+        cost = (
+            Decimal(t.quantity) * Decimal(t.rate)
+            + Decimal(t.commission)
+            + Decimal(t.sebon_fee)
+            + Decimal(t.dp_charge)
+        )
+        old_val = qty * wacc
+        qty += Decimal(t.quantity)
+        if qty > 0:
+            wacc = (old_val + cost) / qty
+    elif t.transaction_type == TransactionType.BONUS:
+        old_val = qty * wacc
+        qty += Decimal(t.quantity)
+        if qty > 0:
+            wacc = old_val / qty
+    elif t.transaction_type == TransactionType.SELL:
+        qty = max(Decimal('0'), qty - Decimal(t.quantity))
+    return qty, wacc
+
+
+def _wacc_at_date(user_txns, ticker: str, cutoff_date) -> Decimal:
+    """Return the WACC for *ticker* from *user_txns* up to (not including) *cutoff_date*.
 
     Returns Decimal('0') if no shares were ever bought before the cutoff.
     """
     qty = Decimal('0')
     wacc = Decimal('0')
-
     for t in user_txns:
         if t.ticker != ticker:
             continue
         if t.transaction_date.date() >= cutoff_date:
             continue
-
-        if t.transaction_type == TransactionType.BUY:
-            cost = (
-                Decimal(t.quantity) * Decimal(t.rate)
-                + Decimal(t.commission)
-                + Decimal(t.sebon_fee)
-                + Decimal(t.dp_charge)
-            )
-            old_val = qty * wacc
-            qty += Decimal(t.quantity)
-            if qty > 0:
-                wacc = (old_val + cost) / qty
-
-        elif t.transaction_type == TransactionType.BONUS:
-            old_val = qty * wacc
-            qty += Decimal(t.quantity)
-            if qty > 0:
-                wacc = old_val / qty  # bonus dilutes WACC
-
-        elif t.transaction_type == TransactionType.SELL:
-            qty = max(Decimal('0'), qty - Decimal(t.quantity))
-            # WACC stays the same after a sell
-
+        qty, wacc = _apply_txn_to_wacc(t, qty, wacc)
     return wacc
 
 
