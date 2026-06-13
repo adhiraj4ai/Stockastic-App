@@ -8,8 +8,8 @@ export const navItems = [
         color: 'text-orange-500',
         subItems: [
             { name: "Tomorrow's plan", href: '/plan', icon: CalendarClock, permission: 'daily_plan' },
-            { name: 'Trade plans', href: '/portfolio/plans', icon: Layers, permission: 'portfolio_trade_plans' },
-            { name: 'Watchlist', href: '/portfolio/watchlist', icon: Eye, permission: 'portfolio_watchlist' },
+            { name: 'Trade plans', href: '/plan/trade-plans', icon: Layers, permission: 'portfolio_trade_plans' },
+            { name: 'Watchlist', href: '/plan/watchlist', icon: Eye, permission: 'portfolio_watchlist' },
         ]
     },
     {
