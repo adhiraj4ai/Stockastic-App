@@ -1,5 +1,5 @@
-from . import market
-from . import portfolio
+from . import market_views as market
+from . import portfolio_views as portfolio
 from . import strategy
 from . import broker
 from . import pipeline
