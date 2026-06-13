@@ -15,7 +15,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import {
     ShieldAlert, Eye, CalendarClock, TrendingDown, TrendingUp, Activity,
     Layers, ChevronUp, ChevronDown, ChevronRight, X, ExternalLink,
-    CalendarDays, Zap, Wallet,
+    CalendarDays, Zap, Wallet, RefreshCw,
 } from 'lucide-react';
 
 interface Overlay {
@@ -137,6 +137,7 @@ export default function PlanPage() {
     const [activeTab, setActiveTab] = useState<BottomTab>('watch');
     const [sortConfig, setSortConfig] = useState<{ key: SortKey; direction: 'asc' | 'desc' }>({ key: 'score', direction: 'desc' });
     const [drafting, setDrafting] = useState(false);
+    const [generating, setGenerating] = useState(false);
 
     const onDraft = async (pick: PlanPick, s: PickSizing) => {
         if (pick.targets.sl == null) return;
@@ -152,6 +153,23 @@ export default function PlanPage() {
             toast.error('Could not draft the trade plan.');
         } finally {
             setDrafting(false);
+        }
+    };
+
+    const handleGenerate = async () => {
+        setGenerating(true);
+        try {
+            const res = await api.post('/api/stocks/plan/generate/');
+            setPlan(res.data);
+            setHistoryDate('');
+            setHistoryPlan(null);
+            setSelectedPick(null);
+            toast.success('Plan generated.');
+        } catch (err: any) {
+            const detail = err?.response?.data?.detail ?? 'Could not generate the plan.';
+            toast.error(detail);
+        } finally {
+            setGenerating(false);
         }
     };
 
@@ -219,8 +237,20 @@ export default function PlanPage() {
     if (error || !displayed) {
         return (
             <DashboardLayout title="Tomorrow's Plan" subtitle="Your next-session brief">
-                <div className="flex items-center justify-center min-h-[50vh] text-sm text-muted-foreground">
-                    {error ?? 'Could not load the plan.'}
+                <div className="flex flex-col items-center justify-center min-h-[50vh] gap-4">
+                    <p className="text-sm text-muted-foreground text-center max-w-sm">
+                        {error ?? 'Could not load the plan.'}
+                    </p>
+                    <Button
+                        variant="outline"
+                        size="sm"
+                        disabled={generating}
+                        onClick={handleGenerate}
+                        className="h-8 px-3 text-[11px] font-semibold rounded-xl gap-1.5"
+                    >
+                        <RefreshCw className={cn('w-3.5 h-3.5', generating && 'animate-spin')} />
+                        {generating ? 'Generating…' : 'Generate plan'}
+                    </Button>
                 </div>
             </DashboardLayout>
         );
@@ -280,6 +310,16 @@ export default function PlanPage() {
                         <span className="px-2.5 py-1 bg-slate-50 dark:bg-slate-800/50 text-slate-400 text-[11px] font-semibold rounded-lg border border-slate-200 dark:border-slate-700">
                             Generated {format(parseISO(displayed.generated_at), 'MMM dd, HH:mm')}
                         </span>
+                        <Button
+                            variant="outline"
+                            size="sm"
+                            disabled={generating}
+                            onClick={handleGenerate}
+                            className="h-8 px-3 text-[11px] font-semibold rounded-xl border-slate-200 dark:border-border gap-1.5 shrink-0"
+                        >
+                            <RefreshCw className={cn('w-3.5 h-3.5', generating && 'animate-spin')} />
+                            {generating ? 'Generating…' : 'Generate plan'}
+                        </Button>
                     </div>
                 </div>
 
