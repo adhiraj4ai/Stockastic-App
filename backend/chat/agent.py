@@ -169,6 +169,9 @@ async def run_chat_session(user, session, prompt: str) -> AsyncIterator:
     _user_context.set_user(user)
     memory = await _fetch_memory(user)
     saved_hint = await _fetch_saved_hint_async(user, prompt)
+    # The rolling summary is refreshed asynchronously AFTER each turn, so it
+    # reflects up to the previous turn; the verbatim window covers the most
+    # recent turns. This one-turn lag is intentional — do not make it synchronous.
     summary, history = await _fetch_history_context(session, prompt)
     formatted_prompt = _format_prompt(
         user, prompt, memory=memory, saved_hint=saved_hint, summary=summary, history=history,

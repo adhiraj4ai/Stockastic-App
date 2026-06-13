@@ -28,12 +28,14 @@ def update_session_summary(session_id: str) -> str | None:
     if completed <= SUMMARIZE_AFTER_EXCHANGES:
         return None
 
-    exchanges = recent_exchanges(session, hops=1)
+    seeding = not (session.summary or "").strip()
+    hops = completed if seeding else 1
+    exchanges = recent_exchanges(session, hops=hops)
     if not exchanges:
         return None
 
     try:
-        new_summary = summary_service.build_summary(session.summary or "", exchanges[-1])
+        new_summary = summary_service.build_summary(session.summary or "", exchanges)
     except Exception:  # pylint: disable=broad-except
         log.exception("rolling-summary build failed for session %s", session_id)
         return None

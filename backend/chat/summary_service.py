@@ -6,6 +6,8 @@ from __future__ import annotations
 import asyncio
 import logging
 
+from chat.history import format_exchanges
+
 log = logging.getLogger(__name__)
 
 SUMMARY_MODEL = "claude-haiku-4-5"
@@ -20,14 +22,13 @@ SUMMARY_SYSTEM = (
 )
 
 
-def _summary_prompt(prior_summary: str, exchange) -> str:
+def _summary_prompt(prior_summary: str, exchanges) -> str:
     prior = prior_summary.strip() or "(no prior summary)"
     return (
         "Current running summary:\n"
         f"{prior}\n\n"
-        "Newest exchange:\n"
-        f"User: {exchange.user_text}\n"
-        f"Assistant: {exchange.assistant_text}\n\n"
+        "Newest exchange(s):\n"
+        f"{format_exchanges(exchanges)}\n\n"
         "Return the updated running summary."
     )
 
@@ -59,9 +60,9 @@ async def _run_summary(prompt: str) -> str:
     return "".join(chunks)
 
 
-def build_summary(prior_summary: str, exchange) -> str:
+def build_summary(prior_summary: str, exchanges) -> str:
     """Return an updated rolling summary. Falls back to the prior summary on empty output."""
-    prompt = _summary_prompt(prior_summary, exchange)
+    prompt = _summary_prompt(prior_summary, exchanges)
     text = asyncio.run(_run_summary(prompt))
     updated = text.strip() or (prior_summary or "").strip()
     return updated[:MAX_SUMMARY_CHARS]

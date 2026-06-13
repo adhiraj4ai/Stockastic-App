@@ -57,3 +57,29 @@ def test_swallows_build_errors(session, monkeypatch):
 def test_missing_session_is_noop(db):
     import uuid
     assert update_session_summary(str(uuid.uuid4())) is None
+
+
+def test_seed_build_folds_full_backlog(session, monkeypatch):
+    captured = {}
+    monkeypatch.setattr(
+        summary_service, "build_summary",
+        lambda prior, exchanges: captured.__setitem__("n", len(exchanges)) or "S",
+    )
+    for i in range(SUMMARIZE_AFTER_EXCHANGES + 1):  # 4 exchanges, empty prior summary
+        _exchange(session, f"q{i}", f"a{i}")
+    update_session_summary(str(session.id))
+    assert captured["n"] == SUMMARIZE_AFTER_EXCHANGES + 1  # all folded on seed
+
+
+def test_incremental_build_folds_only_newest(session, monkeypatch):
+    session.summary = "existing summary"
+    session.save(update_fields=["summary"])
+    captured = {}
+    monkeypatch.setattr(
+        summary_service, "build_summary",
+        lambda prior, exchanges: captured.__setitem__("n", len(exchanges)) or "S",
+    )
+    for i in range(SUMMARIZE_AFTER_EXCHANGES + 2):  # 5 exchanges
+        _exchange(session, f"q{i}", f"a{i}")
+    update_session_summary(str(session.id))
+    assert captured["n"] == 1  # only newest folded once a summary exists

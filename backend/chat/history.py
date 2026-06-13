@@ -73,6 +73,19 @@ _ELABORATION = re.compile(
 # A 3–7 letter uppercase token, i.e. a likely NEPSE ticker → a fresh subject.
 _TICKER = re.compile(r"\b[A-Z]{3,7}\b")
 
+# Common 3–7 letter uppercase tokens that are NOT tickers — keeps the elaboration
+# gate from misreading a metric/acronym as a fresh subject.
+_TICKER_STOPWORDS = frozenset({
+    "RSI", "MACD", "ROE", "ROA", "EPS", "NPL", "ATR", "NAV", "IPO", "CEO",
+    "CFO", "GDP", "NEPSE", "USD", "NPR", "YOY", "QOQ", "EBITDA", "PEG", "ROIC",
+})
+
+
+def _names_fresh_ticker(text: str) -> bool:
+    """True if `text` contains an uppercase token that looks like a real ticker
+    (not a common metric/acronym)."""
+    return any(tok not in _TICKER_STOPWORDS for tok in _TICKER.findall(text))
+
 
 def references_prior_context(message: str) -> bool:
     """True when the message reaches back to earlier turns rather than standing alone.
@@ -84,6 +97,6 @@ def references_prior_context(message: str) -> bool:
     text = message or ""
     if _BACK_REFERENCE.search(text):
         return True
-    if _ELABORATION.search(text) and not _TICKER.search(text):
+    if _ELABORATION.search(text) and not _names_fresh_ticker(text):
         return True
     return False

@@ -7,6 +7,7 @@ from chat.history import (
     _truncate_reply,
     recent_exchanges,
     format_exchanges,
+    references_prior_context,
     HISTORY_HOPS,
     MAX_REPLY_CHARS_IN_HISTORY,
 )
@@ -84,9 +85,6 @@ def test_truncate_reply_appends_ellipsis_and_strips():
     assert result == "a" * 500 + "…"
 
 
-from chat.history import references_prior_context
-
-
 @pytest.mark.parametrize("message", [
     "Explain that",
     "Why?",
@@ -94,6 +92,8 @@ from chat.history import references_prior_context
     "What about those?",
     "You said it was a buy — why?",
     "Compare it to the previous one",
+    "Explain the RSI more",
+    "Tell me more about the ROE",
 ])
 def test_detects_back_reference(message):
     assert references_prior_context(message) is True
