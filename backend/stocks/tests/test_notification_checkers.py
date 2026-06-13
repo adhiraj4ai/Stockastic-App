@@ -82,3 +82,33 @@ def test_portfolio_checker_stop_loss_produces_alert():
     assert len(stop_loss_alerts) == 1
     assert stop_loss_alerts[0].ticker == 'ADBL'
     assert stop_loss_alerts[0].severity is not None  # severity must now be set
+
+
+def test_watchlist_checker_implements_ialertchecker():
+    from stocks.services.notifications.base import IAlertChecker
+    from stocks.services.notifications.checkers.watchlist import WatchlistChecker
+    assert isinstance(WatchlistChecker(), IAlertChecker)
+
+
+def test_watchlist_checker_target_hit_produces_alert():
+    from stocks.services.notifications.checkers.watchlist import WatchlistChecker
+    from unittest.mock import patch, MagicMock
+
+    item = MagicMock()
+    item.ticker = 'NABIL'
+    item.target_price = 1000.0
+    item.stop_loss_price = None
+    item.id = 5
+
+    user = MagicMock()
+    checker = WatchlistChecker()
+
+    with patch('stocks.services.notifications.checkers.watchlist.WatchlistItem') as MockWL, \
+         patch.object(checker, '_fetch_price', return_value=1050.0):
+        MockWL.objects.filter.return_value = [item]
+        alerts = checker.check(user)
+
+    target_alerts = [a for a in alerts if a.notification_type == 'TARGET_REACHED']
+    assert len(target_alerts) == 1
+    assert target_alerts[0].ticker == 'NABIL'
+    assert target_alerts[0].severity is not None
