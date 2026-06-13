@@ -13,6 +13,9 @@ class ChatSession(models.Model):
     title = models.CharField(max_length=255, default="New chat")
     # Claude Agent SDK session ID — set after the first turn so subsequent turns can resume.
     sdk_session_id = models.CharField(max_length=64, blank=True, default="")
+    # Rolling natural-language summary of the conversation, refreshed asynchronously
+    # after each turn and injected into every prompt so the agent keeps the thread.
+    summary = models.TextField(blank=True, default="")
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
