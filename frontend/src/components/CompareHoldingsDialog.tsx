@@ -51,11 +51,11 @@ function MetricRow({
             </div>
             {values.map((val, idx) => (
                 <div key={idx} className="flex-1 text-center py-3">
-                    <span className={`text-sm font-bold tracking-tight ${bestIdx === idx ? 'text-blue-600 dark:text-blue-400' : 'text-slate-700 dark:text-slate-300'}`}>
+                    <span className={`text-sm font-bold tracking-tight ${bestIdx === idx ? 'text-primary' : 'text-slate-700 dark:text-slate-300'}`}>
                         {formatValue(val)}
                     </span>
                     {bestIdx === idx && (
-                        <span className="ml-1 text-[8px] font-bold text-blue-500 dark:text-blue-400">★</span>
+                        <span className="ml-1 text-[8px] font-bold text-primary">★</span>
                     )}
                 </div>
             ))}
@@ -99,8 +99,8 @@ export function CompareHoldingsDialog({ open, onOpenChange, items }: CompareHold
             <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto bg-white dark:bg-slate-950 border-slate-200 dark:border-slate-800">
                 <DialogHeader className="pb-4 border-b border-border dark:border-slate-800">
                     <DialogTitle className="flex items-center gap-3 text-xl font-bold text-slate-900 dark:text-slate-100 tracking-tight">
-                        <div className="p-2 bg-blue-50 dark:bg-blue-900/30 rounded-lg">
-                            <Scale className="h-5 w-5 text-blue-600 dark:text-blue-400" />
+                        <div className="p-2 bg-primary/10 rounded-lg">
+                            <Scale className="h-5 w-5 text-primary" />
                         </div>
                         Holdings comparison
                         <Badge variant="secondary" className="text-[9px] font-bold ml-2 px-2 bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400 tracking-tight">

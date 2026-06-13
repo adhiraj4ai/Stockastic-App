@@ -204,8 +204,8 @@ export default function AdminFinancials({ ticker, onHasReports }: AdminFinancial
                             <TooltipTrigger asChild>
                                 <Button
                                     variant="ghost"
-                                    className={`h-12 w-full flex flex-col gap-1 hover:bg-blue-50 dark:hover:bg-blue-900/10 border border-transparent hover:border-blue-200 dark:hover:border-blue-900/30
-                                        ${report.is_audited ? 'text-green-600 dark:text-emerald-400' : 'text-blue-600 dark:text-blue-400'}`}
+                                    className={`h-12 w-full flex flex-col gap-1 hover:bg-accent border border-transparent hover:border-border
+                                        ${report.is_audited ? 'text-green-600 dark:text-emerald-400' : 'text-primary'}`}
                                     onClick={() => handleEdit(report!.id)}
                                 >
                                     {report.is_audited ? <CheckCircle2 className="w-5 h-5" /> : <Clock className="w-5 h-5" />}
@@ -229,7 +229,7 @@ export default function AdminFinancials({ ticker, onHasReports }: AdminFinancial
                 <Button
                     variant="ghost"
                     size="sm"
-                    className="h-8 w-8 text-gray-300 dark:text-slate-700 hover:text-blue-500 dark:hover:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900/20 rounded-full"
+                    className="h-8 w-8 text-gray-300 dark:text-slate-700 hover:text-primary hover:bg-primary/10 rounded-full"
                     onClick={() => handleAdd(year, type, quarter)}
                 >
                     <Plus className="w-5 h-5" />
@@ -256,7 +256,7 @@ export default function AdminFinancials({ ticker, onHasReports }: AdminFinancial
     return (
         <div className="space-y-6 animate-in fade-in duration-500">
             <div className="flex justify-end">
-                <Button onClick={handleAddNextYear} className="bg-blue-600 hover:bg-blue-700 font-bold gap-2 px-6 shadow-md transition-all hover:scale-105 active:scale-95">
+                <Button onClick={handleAddNextYear} className="bg-primary hover:bg-primary/90 font-bold gap-2 px-6 shadow-md transition-all hover:scale-105 active:scale-95">
                     <Plus className="w-4 h-4" /> Add Next Fiscal Year
                 </Button>
             </div>
@@ -271,7 +271,7 @@ export default function AdminFinancials({ ticker, onHasReports }: AdminFinancial
                                 <TableHead className="text-center font-bold text-sm uppercase tracking-wider text-gray-500 dark:text-slate-500 py-4 w-[100px]">Q2</TableHead>
                                 <TableHead className="text-center font-bold text-sm uppercase tracking-wider text-gray-500 dark:text-slate-500 py-4 w-[100px]">Q3</TableHead>
                                 <TableHead className="text-center font-bold text-sm uppercase tracking-wider text-gray-500 dark:text-slate-500 py-4 w-[100px]">Q4</TableHead>
-                                <TableHead className="text-center font-bold text-sm uppercase tracking-wider text-gray-500 dark:text-slate-500 py-4 w-[120px] bg-blue-50/50 dark:bg-blue-900/10 text-blue-600 dark:text-blue-400">Annual</TableHead>
+                                <TableHead className="text-center font-bold text-sm uppercase tracking-wider py-4 w-[120px] bg-primary/5 text-primary">Annual</TableHead>
                             </TableRow>
                         </TableHeader>
                         <TableBody>
@@ -279,7 +279,7 @@ export default function AdminFinancials({ ticker, onHasReports }: AdminFinancial
                                 <TableRow>
                                     <TableCell colSpan={6} className="text-center py-20">
                                         <div className="flex flex-col items-center gap-3">
-                                            <Loader2 className="w-8 h-8 text-blue-600 animate-spin" />
+                                            <Loader2 className="w-8 h-8 text-primary animate-spin" />
                                             <p className="text-xs font-bold text-gray-400 uppercase tracking-wider">Gathering records...</p>
                                         </div>
                                     </TableCell>
@@ -298,7 +298,7 @@ export default function AdminFinancials({ ticker, onHasReports }: AdminFinancial
                                 </TableRow>
                             ) : (
                                 sortedYears.map(year => (
-                                    <TableRow key={year} className="hover:bg-gray-50/30 dark:hover:bg-slate-800/20 group border-b dark:border-slate-800/50">
+                                    <TableRow key={year} className="hover:bg-accent group border-b dark:border-slate-800/50">
                                         <TableCell className="font-bold text-gray-700 dark:text-slate-300 px-6 py-4">
                                             {year}
                                         </TableCell>
@@ -314,7 +314,7 @@ export default function AdminFinancials({ ticker, onHasReports }: AdminFinancial
                                         <TableCell className="p-0 border-l dark:border-slate-800 border-gray-100">
                                             {renderCell(year, 'QUARTERLY', 4)}
                                         </TableCell>
-                                        <TableCell className="p-0 border-l dark:border-slate-800 border-gray-100 bg-blue-50/20 dark:bg-blue-900/5">
+                                        <TableCell className="p-0 border-l dark:border-slate-800 border-gray-100 bg-primary/[0.03]">
                                             {renderCell(year, 'ANNUAL')}
                                         </TableCell>
                                     </TableRow>
@@ -349,7 +349,7 @@ export default function AdminFinancials({ ticker, onHasReports }: AdminFinancial
                     </div>
                     <DialogFooter>
                         <Button type="button" variant="secondary" onClick={() => setIsAddYearDialogOpen(false)} className="dark:bg-slate-800 dark:text-slate-300 dark:hover:bg-slate-700 border-none">Cancel</Button>
-                        <Button type="submit" onClick={handleConfirmAddYear} className="bg-blue-600 dark:bg-blue-500 hover:bg-blue-700 dark:hover:bg-blue-600">Add Row</Button>
+                        <Button type="submit" onClick={handleConfirmAddYear} className="bg-primary hover:bg-primary/90">Add Row</Button>
                     </DialogFooter>
                 </DialogContent>
             </Dialog>

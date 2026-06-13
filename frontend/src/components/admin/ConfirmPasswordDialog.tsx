@@ -86,7 +86,7 @@ export function ConfirmPasswordDialog({
                         </Button>
                         <Button 
                             type="submit" 
-                            className="flex-1 bg-slate-900 dark:bg-white text-white dark:text-black hover:bg-slate-800 dark:hover:bg-slate-200"
+                            className="flex-1 bg-primary text-primary-foreground hover:bg-primary/90"
                             disabled={isLoading || !password}
                         >
                             {isLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : "Verify & Continue"}

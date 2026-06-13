@@ -30,7 +30,7 @@ export function StockLoader({ size = 'md', text, className }: StockLoaderProps) 
         {BARS.map((bar, i) => (
           <div
             key={i}
-            className="stock-bar rounded-sm bg-indigo-500 dark:bg-indigo-400"
+            className="stock-bar rounded-sm bg-primary"
             style={{ width: s.w, height: bar.h, animationDelay: bar.delay }}
           />
         ))}

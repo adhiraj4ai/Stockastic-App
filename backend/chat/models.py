@@ -98,3 +98,65 @@ class NotebookCell(models.Model):
         notebook_title = self.notebook.title if self.notebook else "Orphaned"
         return f"{notebook_title} · [{self.order}] · {preview}"
 
+
+class UserMemory(models.Model):
+    """A short durable fact about the user, written by chat tools and injected
+    into every turn's prompt. Hard-capped per user (MAX_FACTS_PER_USER)."""
+
+    MAX_FACTS_PER_USER = 30
+
+    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name="chat_memories")
+    content = models.CharField(max_length=220)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ["created_at"]
+
+    def __str__(self):
+        return f"{self.user_id}: {self.content[:40]}"
+
+
+class SavedAnalysis(models.Model):
+    """A frozen, tagged snapshot of a chat analysis the agent can recall later."""
+
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name="saved_analyses")
+    # Link to the originating transcript; SET_NULL so deleting the chat keeps the snapshot.
+    session = models.ForeignKey(
+        ChatSession, on_delete=models.SET_NULL, null=True, blank=True,
+        related_name="saved_analyses",
+    )
+    # The specific assistant turn this snapshot was captured from. SET_NULL keeps the
+    # snapshot if the message is deleted; a partial unique constraint (below) blocks
+    # bookmarking the same message twice.
+    source_message = models.ForeignKey(
+        ChatMessage, on_delete=models.SET_NULL, null=True, blank=True,
+        related_name="+",
+    )
+    title = models.CharField(max_length=255)
+    summary = models.TextField()                       # frozen synthesis (markdown)
+    one_liner = models.CharField(max_length=280, blank=True, default="")
+    category = models.CharField(max_length=64, blank=True, default="")
+    tags = models.JSONField(default=list, blank=True)
+    tickers = models.JSONField(default=list, blank=True)
+    series_key = models.CharField(max_length=128, blank=True, default="", db_index=True)
+    verdict = models.CharField(max_length=16, blank=True, default="")
+    structured = models.JSONField(default=dict, blank=True)  # captured verdict/signal card data
+    created_at = models.DateTimeField(auto_now_add=True, db_index=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ["-created_at"]
+        indexes = [models.Index(fields=["user", "series_key", "created_at"])]
+        constraints = [
+            models.UniqueConstraint(
+                fields=["user", "source_message"],
+                condition=models.Q(source_message__isnull=False),
+                name="uniq_saved_analysis_per_message",
+            ),
+        ]
+
+    def __str__(self) -> str:
+        return f"{self.user.username} · {self.title}"
+

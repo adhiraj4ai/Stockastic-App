@@ -10,7 +10,7 @@ export default function StockLink({ ticker, children, className }: StockLinkProp
     return (
         <Link
             href={`/ticker/${ticker}`}
-            className={`hover:text-blue-600 hover:underline cursor-pointer ${className || ''}`}
+            className={`hover:text-primary hover:underline cursor-pointer ${className || ''}`}
             onClick={(e) => e.stopPropagation()} // Prevent row click events if nested
         >
             {children || ticker}

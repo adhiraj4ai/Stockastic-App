@@ -1,11 +1,12 @@
 import { cookies } from 'next/headers';
 import { MarketSummary } from '@/components/MarketSummary';
 import PublicLayout from '@/components/PublicLayout';
-import { MarketPulse } from '@/components/MarketPulse';
+import { TickerLanding } from '@/components/TickerLanding';
+import { NotificationProvider } from '@/components/notifications/NotificationProvider';
 
 /**
  * Root Home Page - Server Component
- * Detects authentication state via HttpOnly cookies and renders 
+ * Detects authentication state via HttpOnly cookies and renders
  * the appropriate dashboard view.
  */
 export default async function Home() {
@@ -14,9 +15,14 @@ export default async function Home() {
   const isAuthenticated = !!token;
 
   if (isAuthenticated) {
-    // MarketPulse includes its own DashboardLayout internally
+    // Home is now Ticker Intelligence. The live-market dashboard moved to /market/live.
+    // TickerLanding includes its own DashboardLayout internally.
+    // This route sits outside the (authenticated) group, so it must mount
+    // NotificationProvider itself — DashboardLayout's AlertsDropdown consumes it.
     return (
-      <MarketPulse />
+      <NotificationProvider>
+        <TickerLanding />
+      </NotificationProvider>
     );
   }
 

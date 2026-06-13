@@ -438,7 +438,7 @@ export function DailySignalStatus({
                         className={cn(
                             'flex items-center gap-2 px-4 py-2.5 text-xs font-bold tracking-tight border-b-2 transition-all whitespace-nowrap',
                             activeTab === tab.key
-                                ? 'border-indigo-500 text-indigo-600 dark:text-indigo-400'
+                                ? 'border-primary text-primary'
                                 : 'border-transparent text-slate-400 hover:text-slate-600 dark:hover:text-slate-300'
                         )}>
                         {tab.icon}{tab.label}
@@ -533,7 +533,7 @@ export function DailySignalStatus({
                                 <span className={cn('text-xs font-semibold tabular-nums', num(rsi) > 70 ? 'text-rose-500' : num(rsi) < 30 ? 'text-emerald-500' : 'text-slate-700 dark:text-slate-300')}>{fixed(rsi, 0)}</span>
                             </div>
                             <div className="h-1 bg-slate-100 dark:bg-slate-800 rounded-full relative">
-                                <div className={cn('absolute h-full rounded-full', num(rsi) > 70 ? 'bg-rose-400' : num(rsi) < 30 ? 'bg-emerald-400' : 'bg-indigo-400')} style={{ width: `${num(rsi)}%` }} />
+                                <div className={cn('absolute h-full rounded-full', num(rsi) > 70 ? 'bg-rose-400' : num(rsi) < 30 ? 'bg-emerald-400' : 'bg-primary')} style={{ width: `${num(rsi)}%` }} />
                             </div>
                         </div>
                         <div className="p-3 bg-slate-50/50 dark:bg-card rounded-2xl border border-border dark:border-slate-800/50">
@@ -551,14 +551,14 @@ export function DailySignalStatus({
 
                     {/* Broker / Smart Money Insight */}
                     {brokers.length > 0 && (
-                        <div className="p-4 bg-indigo-50/30 dark:bg-indigo-950/10 rounded-2xl border border-indigo-100 dark:border-indigo-900/40">
+                        <div className="p-4 bg-primary/5 dark:bg-primary/5 rounded-2xl border border-primary/20 dark:border-primary/20">
                             <div className="flex items-center gap-1.5 mb-2.5">
-                                <Briefcase size={10} className="text-indigo-500" />
-                                <span className="text-[10px] font-bold text-indigo-500 uppercase tracking-wider">Broker Context</span>
+                                <Briefcase size={10} className="text-primary" />
+                                <span className="text-[10px] font-bold text-primary uppercase tracking-wider">Broker Context</span>
                             </div>
                             <div className="flex items-center justify-between">
                                 <div className="flex items-center gap-2.5">
-                                    <div className="w-8 h-8 rounded-xl bg-indigo-100 dark:bg-indigo-900/40 flex items-center justify-center text-[10px] font-semibold text-indigo-600 dark:text-indigo-400 border border-indigo-200 dark:border-indigo-800/50">
+                                    <div className="w-8 h-8 rounded-xl bg-primary/10 dark:bg-primary/10 flex items-center justify-center text-[10px] font-semibold text-primary dark:text-primary border border-primary/20 dark:border-primary/20">
                                         #{brokers[0].broker}
                                     </div>
                                     <div>
@@ -597,7 +597,7 @@ export function DailySignalStatus({
                         <div className="p-4 rounded-2xl border border-border dark:border-slate-800 bg-white dark:bg-card">
                             <div className="flex items-center justify-between mb-3">
                                 <div className="flex items-center gap-2">
-                                    <Target size={14} className="text-indigo-500" />
+                                    <Target size={14} className="text-primary" />
                                     <span className="flex items-center text-[11px] font-bold text-slate-400 tracking-wider uppercase">Signal Confluence<InfoTooltip content="Shows all signal engines that have a signal for this stock and whether they agree with the current direction. More agreement = higher conviction." /></span>
                                 </div>
                                 <span className={cn(
@@ -651,11 +651,11 @@ export function DailySignalStatus({
                     )}
 
                     {/* Signal Logic: Confluence + AI Justification */}
-                    <div className="p-4 rounded-2xl bg-indigo-50/30 dark:bg-indigo-950/20 border border-indigo-100 dark:border-indigo-900/40">
+                    <div className="p-4 rounded-2xl bg-primary/5 dark:bg-primary/5 border border-primary/20 dark:border-primary/20">
                         <div className="flex items-center justify-between mb-4">
                             <div className="flex items-center gap-2">
-                                <Brain size={14} className="text-indigo-500" />
-                                <span className="text-[10px] font-bold text-indigo-500 uppercase tracking-wider">Logic Engine</span>
+                                <Brain size={14} className="text-primary" />
+                                <span className="text-[10px] font-bold text-primary uppercase tracking-wider">Logic Engine</span>
                             </div>
                             <div className="flex -space-x-1.5 overflow-hidden">
                                 {generatedSignals.slice(0, 4).map((sig, i) => (
@@ -673,7 +673,7 @@ export function DailySignalStatus({
                             {/* Key Intelligence Tags */}
                             <div className="flex flex-wrap gap-1.5">
                                 {num(strength) > 75 && (
-                                    <span className="text-[9px] font-semibold px-1.5 py-0.5 rounded bg-indigo-500 text-white">HI-CONVICTION</span>
+                                    <span className="text-[9px] font-semibold px-1.5 py-0.5 rounded bg-primary text-primary-foreground">HI-CONVICTION</span>
                                 )}
                                 {num(accumData?.accumulation_ratio) > 60 && (
                                     <span className="text-[9px] font-semibold px-1.5 py-0.5 rounded bg-emerald-500 text-white">INSTITUTIONAL-BUY</span>
@@ -845,7 +845,7 @@ export function DailySignalStatus({
                         </div>
                         <div className="flex-1 overflow-y-auto no-scrollbar space-y-2 pr-1">
                             {history.filter(h => h.signal === 'BUY' || h.signal === 'SELL').slice(0, 5).map((h, i) => (
-                                <div key={i} className="p-3 bg-white dark:bg-card rounded-2xl border border-border dark:border-slate-800/50 flex items-center justify-between transition-colors hover:bg-slate-50/50">
+                                <div key={i} className="p-3 bg-white dark:bg-card rounded-2xl border border-border dark:border-slate-800/50 flex items-center justify-between transition-colors hover:bg-accent">
                                     <div className="flex items-center gap-2.5">
                                         <div className={cn('w-6 h-6 rounded-lg flex items-center justify-center shrink-0', h.signal === 'BUY' ? 'bg-emerald-50 dark:bg-emerald-900/20 text-emerald-500' : 'bg-rose-50 dark:bg-rose-900/20 text-rose-500')}>
                                             {h.signal === 'BUY' ? <ArrowUpRight size={12} /> : <ArrowDownRight size={12} />}
@@ -1105,12 +1105,12 @@ export function DailySignalStatus({
                                         <div className="p-3 bg-slate-50/50 dark:bg-slate-800/40 rounded-2xl border border-border dark:border-slate-800/50">
                                             <div className="text-[9px] font-semibold text-slate-400 uppercase mb-2">Bollinger Position (%B)</div>
                                             <div className="relative h-2 bg-gradient-to-r from-rose-200 via-slate-100 to-emerald-200 dark:from-rose-900/40 dark:via-slate-700 dark:to-rose-900/40 rounded-full overflow-visible">
-                                                <div className="absolute top-1/2 -translate-y-1/2 w-4 h-4 bg-white dark:bg-slate-200 rounded-full border-2 border-indigo-500 shadow-lg"
+                                                <div className="absolute top-1/2 -translate-y-1/2 w-4 h-4 bg-white dark:bg-slate-200 rounded-full border-2 border-primary shadow-lg"
                                                     style={{ left: `calc(${Math.min(Math.max(num(bbp) * 100, 2), 97)}% - 8px)` }} />
                                             </div>
                                             <div className="flex justify-between mt-2 text-[10px] font-semibold tabular-nums text-slate-500">
                                                 <span>LB</span>
-                                                <span className="text-indigo-500">{fixed(num(bbp) * 100, 1)}%</span>
+                                                <span className="text-primary">{fixed(num(bbp) * 100, 1)}%</span>
                                                 <span>UB</span>
                                             </div>
                                         </div>
@@ -1124,11 +1124,11 @@ export function DailySignalStatus({
 
             {activeTab === 'fundamentals' && (
                 <div className="flex-1 min-h-0 overflow-y-auto p-4 md:p-6 bg-slate-50/10 dark:bg-slate-950/20 no-scrollbar">
-                    <div className="max-w-6xl mx-auto space-y-6 pb-12">
+                    <div className="space-y-6 pb-12">
                         
                         {/* ── Intelligence Hero: Health Diagnosis ── */}
                         <div className="grid grid-cols-1 md:grid-cols-12 gap-5">
-                            <div className="md:col-span-8 p-6 rounded-[2rem] bg-indigo-600 dark:bg-indigo-500 text-white relative overflow-hidden shadow-sm shadow-indigo-200/50 dark:shadow-none">
+                            <div className="md:col-span-8 p-6 rounded-2xl bg-primary text-primary-foreground relative overflow-hidden shadow-sm shadow-primary/20 dark:shadow-none">
                                 <div className="relative z-10">
                                     <div className="flex items-center gap-2 mb-6 opacity-80">
                                         <Sparkles size={14} fill="currentColor" />
@@ -1156,7 +1156,7 @@ export function DailySignalStatus({
                                             </p>
                                         </div>
                                         <div className="flex gap-4">
-                                            <div className="px-5 py-3 rounded-[1.5rem] bg-white text-indigo-600 shadow-xl shadow-indigo-700/20">
+                                            <div className="px-5 py-3 rounded-[1.5rem] bg-white text-primary shadow-xl shadow-primary/20">
                                                 <div className="text-[9px] font-semibold uppercase opacity-60 mb-0.5 whitespace-nowrap tracking-wide">Strategic Verdict</div>
                                                 <div className="text-xl font-semibold">{peRatio > 0 && roe > 12 ? 'ACCUMULATE' : 'MONITOR'}</div>
                                             </div>
@@ -1166,7 +1166,7 @@ export function DailySignalStatus({
                                 <div className="absolute top-0 right-0 -translate-y-1/2 translate-x-1/2 w-64 h-64 bg-white/10 rounded-full blur-3xl" />
                             </div>
 
-                            <div className="md:col-span-4 p-6 rounded-[2rem] bg-white dark:bg-card border border-border dark:border-slate-800 flex flex-col justify-between">
+                            <div className="md:col-span-4 p-6 rounded-2xl bg-white dark:bg-card border border-border dark:border-slate-800 flex flex-col justify-between">
                                 <div className="flex items-center justify-between mb-4">
                                     <span className="text-[10px] font-semibold text-slate-400 uppercase tracking-wider">Financial Health</span>
                                     <Shield size={14} className="text-emerald-500" />
@@ -1191,10 +1191,10 @@ export function DailySignalStatus({
                         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
                             
                             {/* Card 1: Valuation Intelligence */}
-                            <div className="bg-white dark:bg-card rounded-[2rem] border border-border dark:border-slate-800/60 overflow-hidden">
+                            <div className="bg-white dark:bg-card rounded-2xl border border-border dark:border-slate-800/60 overflow-hidden">
                                 <div className="p-6 border-b border-border dark:border-slate-800">
                                     <div className="flex items-center gap-2 mb-1">
-                                        <Building2 size={14} className="text-indigo-500" />
+                                        <Building2 size={14} className="text-primary" />
                                         <h3 className="text-xs font-semibold uppercase tracking-wider text-slate-800 dark:text-slate-100">Valuation Matrix</h3>
                                     </div>
                                     <p className="text-[10px] font-bold text-slate-400 uppercase tracking-tighter">Market pricing intelligence</p>
@@ -1218,7 +1218,7 @@ export function DailySignalStatus({
                             </div>
 
                             {/* Card 2: Strategic Efficiency */}
-                            <div className="bg-white dark:bg-card rounded-[2rem] border border-border dark:border-slate-800/60 overflow-hidden">
+                            <div className="bg-white dark:bg-card rounded-2xl border border-border dark:border-slate-800/60 overflow-hidden">
                                 <div className="p-6 border-b border-border dark:border-slate-800">
                                     <div className="flex items-center gap-2 mb-1">
                                         <Zap size={14} className="text-amber-500" />
@@ -1247,9 +1247,9 @@ export function DailySignalStatus({
                             {/* Card 3: Sector & Health Diagnostic */}
                             <div className="flex flex-col gap-6">
                                 {/* Sector Progress */}
-                                <div className="flex-1 bg-white dark:bg-card rounded-[2rem] border border-border dark:border-slate-800/60 p-6">
+                                <div className="flex-1 bg-white dark:bg-card rounded-2xl border border-border dark:border-slate-800/60 p-6">
                                     <div className="flex items-center gap-2 mb-4">
-                                        <BarChart3 size={14} className="text-indigo-500" />
+                                        <BarChart3 size={14} className="text-primary" />
                                         <h3 className="text-xs font-semibold uppercase tracking-wider text-slate-800 dark:text-slate-100">Market Benchmarking</h3>
                                     </div>
                                     <div className="space-y-4">
@@ -1263,11 +1263,11 @@ export function DailySignalStatus({
                                                 <div key={i}>
                                                     <div className="flex items-center justify-between mb-1.5 px-0.5">
                                                         <span className="text-[9px] font-semibold text-slate-400 uppercase">{ind.name}</span>
-                                                        <span className="text-[10px] font-semibold tabular-nums text-indigo-500">{ind.value}</span>
+                                                        <span className="text-[10px] font-semibold tabular-nums text-primary">{ind.value}</span>
                                                     </div>
                                                     <div className="relative h-1 bg-slate-100 dark:bg-slate-800 rounded-full overflow-hidden">
-                                                        <div className="absolute top-0 bottom-0 left-0 bg-indigo-500/20" style={{ width: `${pct}%` }} />
-                                                        <div className="absolute top-0 bottom-0 w-1 bg-indigo-500" style={{ left: `${pct}%` }} />
+                                                        <div className="absolute top-0 bottom-0 left-0 bg-primary/20" style={{ width: `${pct}%` }} />
+                                                        <div className="absolute top-0 bottom-0 w-1 bg-primary" style={{ left: `${pct}%` }} />
                                                     </div>
                                                 </div>
                                             );
@@ -1280,7 +1280,7 @@ export function DailySignalStatus({
                                 </div>
 
                                 {/* Health Checks */}
-                                <div className="bg-slate-900 rounded-[2rem] p-6 text-white overflow-hidden relative">
+                                <div className="bg-slate-900 rounded-2xl p-6 text-white overflow-hidden relative">
                                     <div className="flex items-center gap-2 mb-4 relative z-10">
                                         <Shield size={14} className="text-emerald-400" />
                                         <h3 className="text-xs font-semibold uppercase tracking-wider text-white/60">Risk Audit</h3>

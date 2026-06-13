@@ -185,7 +185,7 @@ export const TickerLiquidity: React.FC<TickerLiquidityProps> = ({ symbol, histor
             <div className="flex items-center gap-4">
                 <div className="h-px flex-1 bg-gradient-to-r from-transparent via-slate-300 dark:via-slate-700 to-transparent" />
                 <div className="flex items-center gap-2">
-                    <Droplets size={14} className="text-blue-500" />
+                    <Droplets size={14} className="text-primary" />
                     <span className="text-xs font-semibold text-slate-400 dark:text-slate-500 uppercase tracking-wider">Liquidity Intelligence</span>
                 </div>
                 <div className="h-px flex-1 bg-gradient-to-r from-transparent via-slate-300 dark:via-slate-700 to-transparent" />
@@ -205,7 +205,7 @@ export const TickerLiquidity: React.FC<TickerLiquidityProps> = ({ symbol, histor
                                     {liquidityMetrics ? formatNepaliNumber(liquidityMetrics.adv) : '-'}
                                 </div>
                             </div>
-                            <div className="p-2 bg-blue-50 dark:bg-blue-900/20 rounded-lg text-blue-600 dark:text-blue-400">
+                            <div className="p-2 bg-primary/10 rounded-lg text-primary">
                                 <Layers size={16} />
                             </div>
                         </div>
@@ -243,7 +243,7 @@ export const TickerLiquidity: React.FC<TickerLiquidityProps> = ({ symbol, histor
                                     {liquidityMetrics && liquidityMetrics.avgTradeSize > 0 ? formatNepaliNumber(Math.round(liquidityMetrics.avgTradeSize)) : 'N/A'}
                                 </div>
                             </div>
-                            <div className="p-2 bg-indigo-50 dark:bg-indigo-900/20 rounded-lg text-indigo-600 dark:text-indigo-400">
+                            <div className="p-2 bg-primary/10 rounded-lg text-primary">
                                 <ArrowRightLeft size={16} />
                             </div>
                         </div>
@@ -271,8 +271,8 @@ export const TickerLiquidity: React.FC<TickerLiquidityProps> = ({ symbol, histor
             </div>
 
             {/* Volume Profile Chart */}
-            <div className="bg-white/80 dark:bg-card/80 border border-slate-200 dark:border-slate-800 rounded-2xl overflow-hidden shadow-sm">
-                <div className="px-6 py-5 border-b border-slate-200 dark:border-slate-800">
+            <div className="bg-white dark:bg-card border border-slate-200 dark:border-border rounded-2xl overflow-hidden shadow-sm">
+                <div className="px-5 py-4 border-b border-slate-200 dark:border-border">
                     <h3 className="text-lg font-bold text-slate-900 dark:text-white flex items-center gap-2">
                         Institutional Volume Profile
                         <InfoTooltip content="Visualizes the total volume traded at specific price levels over the timeframe." />
@@ -283,7 +283,7 @@ export const TickerLiquidity: React.FC<TickerLiquidityProps> = ({ symbol, histor
                 <div className="p-6 relative min-h-[400px]">
                     {loading && (
                         <div className="absolute inset-0 z-10 flex items-center justify-center bg-white/50 dark:bg-card backdrop-blur-sm">
-                            <div className="w-8 h-8 border-4 border-blue-500 border-t-transparent rounded-full animate-spin" />
+                            <div className="w-8 h-8 border-4 border-primary border-t-transparent rounded-full animate-spin" />
                         </div>
                     )}
                     

@@ -176,8 +176,8 @@ export default function ShareTransferPage() {
                                     className={cn(
                                         "px-4 py-1.5 rounded-lg text-xs font-semibold transition-all duration-300 tracking-tighter whitespace-nowrap",
                                         (!useCustomRange && range === t.value)
-                                            ? "bg-slate-900 dark:bg-indigo-600 text-white shadow-lg"
-                                            : "text-slate-400 hover:text-slate-600 dark:hover:text-slate-200"
+                                            ? "bg-primary/10 text-primary border border-primary/30 shadow"
+                                            : "text-slate-400 hover:bg-accent hover:text-accent-foreground"
                                     )}
                                 >
                                     {t.label}
@@ -190,7 +190,7 @@ export default function ShareTransferPage() {
                                 <select 
                                     value={transferBroker1} 
                                     onChange={(e) => setTransferBroker1(e.target.value)} 
-                                    className="bg-transparent border-none text-[10px] font-semibold text-blue-700 dark:text-indigo-400 outline-none pr-4 w-full"
+                                    className="bg-transparent border-none text-[10px] font-semibold text-primary outline-none pr-4 w-full"
                                 >
                                     <option value="">BR. 1</option>
                                     {allBrokers.map(b => <option key={b} value={b}>{b}</option>)}
@@ -200,7 +200,7 @@ export default function ShareTransferPage() {
                                 <select 
                                     value={transferBroker2} 
                                     onChange={(e) => setTransferBroker2(e.target.value)} 
-                                    className="bg-transparent border-none text-[10px] font-semibold text-blue-700 dark:text-indigo-400 outline-none pr-4 w-full"
+                                    className="bg-transparent border-none text-[10px] font-semibold text-primary outline-none pr-4 w-full"
                                 >
                                     <option value="">BR. 2</option>
                                     {allBrokers.map(b => <option key={b} value={b}>{b}</option>)}
@@ -212,7 +212,7 @@ export default function ShareTransferPage() {
                             <CompanySelect 
                                 value={selectedSymbol} 
                                 onChange={setSelectedSymbol} 
-                                className="h-10 w-full rounded-xl bg-white dark:bg-card border-slate-200 dark:border-border shadow-none focus:ring-2 focus:ring-blue-500/20 dark:focus:ring-indigo-500/20 transition-all font-bold text-sm" 
+                                className="h-10 w-full rounded-xl bg-white dark:bg-card border-slate-200 dark:border-border shadow-none focus-visible:ring-[3px] focus-visible:ring-ring/50 focus-visible:border-ring transition-all font-bold text-sm"
                             />
                         </div>
                     </div>
@@ -224,11 +224,11 @@ export default function ShareTransferPage() {
                                         variant="outline" 
                                         onClick={() => setUseCustomRange(true)}
                                         className={cn(
-                                            "h-10 justify-start font-bold rounded-xl border-slate-200 dark:border-border bg-white dark:bg-card transition-all text-xs", 
-                                            useCustomRange ? "ring-2 ring-blue-500/20 border-blue-500/50" : "text-slate-400"
+                                            "h-10 justify-start font-bold rounded-xl border-slate-200 dark:border-border bg-white dark:bg-card transition-all text-xs",
+                                            useCustomRange ? "ring-2 ring-ring/20 border-primary/50" : "text-slate-400"
                                         )}
                                     >
-                                        <CalendarIcon className="mr-2 h-4 w-4 text-blue-500" />
+                                        <CalendarIcon className="mr-2 h-4 w-4 text-primary" />
                                         {transferStartDate ? format(transferStartDate, "MMM dd") : "Start"} - {transferEndDate ? format(transferEndDate, "MMM dd") : "End"}
                                     </Button>
                                 </PopoverTrigger>
@@ -244,7 +244,7 @@ export default function ShareTransferPage() {
                                         </div>
                                     </div>
                                     <div className="p-3 border-t dark:border-border bg-white dark:bg-slate-950 flex justify-end">
-                                        <Button size="sm" onClick={fetchTransferData} className="bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-lg px-6">Apply Custom</Button>
+                                        <Button size="sm" onClick={fetchTransferData} className="bg-primary hover:bg-primary/90 text-primary-foreground font-bold rounded-lg px-6">Apply Custom</Button>
                                     </div>
                                 </PopoverContent>
                             </Popover>
@@ -253,7 +253,7 @@ export default function ShareTransferPage() {
 
             {!transferData && !transferLoading && (
                 <div className="p-20 text-center flex flex-col items-center gap-4 bg-white dark:bg-card">
-                    <div className="p-4 bg-blue-50 dark:bg-indigo-900/20 rounded-full"><Layers className="w-8 h-8 text-blue-500" /></div>
+                    <div className="p-4 bg-primary/10 rounded-full"><Layers className="w-8 h-8 text-primary" /></div>
                     <h3 className="text-lg font-bold text-gray-800 dark:text-slate-200 uppercase tracking-wider">Configure Transfer Query</h3>
                     <p className="text-gray-500 dark:text-slate-400 text-sm max-w-md mx-auto font-medium">Select a ticker and two brokers to analyze their mutual share movements and institutional flows.</p>
                 </div>
@@ -261,7 +261,7 @@ export default function ShareTransferPage() {
 
             {transferLoading && (
                 <div className="p-40 flex flex-col items-center justify-center gap-4">
-                    <Loader2 className="w-12 h-12 text-blue-500 animate-spin" /><p className="text-gray-500 dark:text-slate-400 font-bold uppercase tracking-wider text-xs">Processing movement patterns...</p>
+                    <Loader2 className="w-12 h-12 text-primary animate-spin" /><p className="text-gray-500 dark:text-slate-400 font-bold uppercase tracking-wider text-xs">Processing movement patterns...</p>
                 </div>
             )}
 
@@ -315,7 +315,7 @@ export default function ShareTransferPage() {
                     <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
                         <div className="bg-white dark:bg-slate-950/50 rounded-2xl border border-slate-200 dark:border-border shadow-sm h-[380px] p-6 relative group/chart">
                             <div className="absolute top-4 left-6 flex items-center gap-2">
-                                <div className="w-1.5 h-1.5 rounded-full bg-blue-500 animate-pulse" />
+                                <div className="w-1.5 h-1.5 rounded-full bg-primary animate-pulse" />
                                 <span className="text-[10px] font-semibold text-slate-400 uppercase tracking-wider">Movement Volume Matrix</span>
                             </div>
                             <ReactECharts option={getTransferChartOption()} style={{ height: '100%', width: '100%' }} notMerge={true} />
@@ -338,10 +338,10 @@ export default function ShareTransferPage() {
                         <div className="overflow-x-auto">
                             <table className="w-full">
                                 <thead>
-                                    <tr className="bg-gray-50/50 dark:bg-slate-800/30 hover:bg-gray-50/50 dark:hover:bg-slate-800/30 border-b border-gray-100 dark:border-slate-800 h-14 transition-all">
+                                    <tr className="bg-gray-50/50 dark:bg-slate-800/30 hover:bg-accent border-b border-gray-100 dark:border-slate-800 h-14 transition-all">
                                         <th className="px-6 text-left text-[10px] font-semibold text-slate-400 dark:text-slate-500 uppercase tracking-wider">Date</th>
                                         <th className="px-6 text-right text-[10px] font-semibold text-slate-400 dark:text-slate-500 uppercase tracking-wider">Price</th>
-                                        <th className="px-6 text-right text-[10px] font-semibold text-blue-600 dark:text-indigo-400 uppercase tracking-wider">Mutual Vol</th>
+                                        <th className="px-6 text-right text-[10px] font-semibold text-primary uppercase tracking-wider">Mutual Vol</th>
                                         <th className="px-6 text-right text-[10px] font-semibold text-slate-400 dark:text-slate-500 uppercase tracking-wider">B{transferBroker1} Net</th>
                                         <th className="px-6 text-right text-[10px] font-semibold text-slate-400 dark:text-slate-500 uppercase tracking-wider">B{transferBroker2} Net</th>
                                         <th className="px-6 text-right text-[10px] font-semibold text-emerald-600 dark:text-emerald-400 uppercase tracking-wider">Smart Net</th>
@@ -352,14 +352,14 @@ export default function ShareTransferPage() {
                                         <tr 
                                             key={i} 
                                             className={cn(
-                                                "group border-b border-gray-50 dark:border-slate-800 hover:bg-blue-50/30 dark:hover:bg-slate-800/30 last:border-0 transition-all duration-200 cursor-pointer border-l-4 hover:shadow-lg hover:scale-[1.01] hover:-translate-y-0.5",
-                                                day.net_accumulation > 0 ? "border-l-emerald-500/50 hover:border-l-emerald-500" : day.net_accumulation < 0 ? "border-l-rose-500/50 hover:border-l-rose-500" : "border-l-transparent hover:border-l-blue-400/50"
+                                                "group border-b border-gray-50 dark:border-slate-800 hover:bg-accent hover:text-accent-foreground last:border-0 transition-all duration-200 cursor-pointer border-l-4 hover:shadow-lg hover:scale-[1.01] hover:-translate-y-0.5",
+                                                day.net_accumulation > 0 ? "border-l-emerald-500/50 hover:border-l-emerald-500" : day.net_accumulation < 0 ? "border-l-rose-500/50 hover:border-l-rose-500" : "border-l-transparent hover:border-l-primary/50"
                                             )}
                                         >
                                             <td className="px-6 py-4 font-bold text-slate-600 dark:text-slate-400 text-xs">{day.transaction_date}</td>
                                             <td className="px-6 py-4 text-right font-semibold text-slate-900 dark:text-white text-xs">{formatRupees(day.close_price, 0)}</td>
                                             <td className="px-6 py-4 text-right">
-                                                <span className="inline-flex h-7 items-center px-3 bg-blue-500/10 text-blue-600 dark:text-blue-400 rounded-lg text-xs font-semibold ring-1 ring-blue-500/20">
+                                                <span className="inline-flex h-7 items-center px-3 bg-primary/10 text-primary rounded-lg text-xs font-semibold ring-1 ring-primary/20">
                                                     {formatNepaliNumber((day.volume_1_to_2 || 0) + (day.volume_2_to_1 || 0))}
                                                 </span>
                                             </td>
@@ -369,7 +369,7 @@ export default function ShareTransferPage() {
                                             <td className={cn("px-6 py-4 text-right font-semibold text-xs", day.b2_net >= 0 ? 'text-emerald-500' : 'text-rose-500')}>
                                                 {day.b2_net > 0 ? '+' : ''}{formatNepaliNumber(day.b2_net)}
                                             </td>
-                                            <td className={cn("px-6 py-4 text-right font-semibold text-xs", day.net_accumulation >= 0 ? 'text-blue-500 dark:text-indigo-400' : 'text-rose-400')}>
+                                            <td className={cn("px-6 py-4 text-right font-semibold text-xs", day.net_accumulation >= 0 ? 'text-primary' : 'text-rose-400')}>
                                                 {day.net_accumulation > 0 ? '+' : ''}{formatNepaliNumber(day.net_accumulation)}
                                             </td>
                                         </tr>

@@ -1,0 +1,18 @@
+[
+  {
+    "symbol": "NABIL",
+    "securityName": "Nabil Bank Limited",
+    "openPrice": 500.0,
+    "highPrice": 512.0,
+    "lowPrice": 498.0,
+    "closePrice": 510.0,
+    "previousClose": 505.0,
+    "totalTradedQuantity": 12345,
+    "totalTradedValue": 6300000.0,
+    "totalTrades": 210,
+    "averageTradedPrice": 506.5,
+    "fiftyTwoWeekHigh": 640.0,
+    "fiftyTwoWeekLow": 410.0,
+    "businessDate": "2026-06-10"
+  }
+]

@@ -60,7 +60,7 @@ export function RealizedPnL({ selectedAccount }: RealizedPnLProps) {
     if (loading) {
         return (
             <div className="flex justify-center items-center h-32">
-                <Loader2 className="h-6 w-6 animate-spin text-blue-500" />
+                <Loader2 className="h-6 w-6 animate-spin text-primary" />
             </div>
         );
     }
@@ -104,12 +104,12 @@ export function RealizedPnL({ selectedAccount }: RealizedPnLProps) {
                     </div>
                 </div>
 
-                <div className="bg-white dark:bg-card rounded-xl border border-blue-100 dark:border-blue-900/30 p-4 shadow-sm">
+                <div className="bg-white dark:bg-card rounded-xl border border-primary/20 p-4 shadow-sm">
                     <div className="flex items-center gap-1.5 mb-1">
-                        <Target size={14} className="text-blue-600 dark:text-blue-400" />
+                        <Target size={14} className="text-primary" />
                         <span className="text-[10px] font-medium tracking-tight text-slate-500 dark:text-slate-400">Total trades</span>
                     </div>
-                    <div className="text-2xl font-bold text-blue-700 dark:text-blue-400 tracking-tight">
+                    <div className="text-2xl font-bold text-primary tracking-tight">
                         {summary.total_trades}
                     </div>
                 </div>
@@ -152,7 +152,7 @@ export function RealizedPnL({ selectedAccount }: RealizedPnLProps) {
                                     const isProfit = item.realized_pnl >= 0;
                                     const tickerWinRate = item.sell_count > 0 ? (item.profitable_sells / item.sell_count * 100) : 0;
                                     return (
-                                        <TableRow key={item.ticker} className="hover:bg-slate-50/80 dark:hover:bg-slate-800/50 transition-colors">
+                                        <TableRow key={item.ticker} className="hover:bg-accent hover:text-accent-foreground transition-colors">
                                             <TableCell className="font-semibold text-slate-900 dark:text-slate-100 tracking-tight">{item.ticker}</TableCell>
                                             <TableCell className="text-right font-semibold text-slate-600 dark:text-slate-400 tracking-tight">{item.total_sold_qty}</TableCell>
                                             <TableCell className="text-right font-normal text-slate-600 dark:text-slate-400 tracking-tight">{formatRupees(item.avg_cost)}</TableCell>

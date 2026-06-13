@@ -2,7 +2,7 @@
 
 import { Activity, BarChart3, Globe, PieChart, DollarSign, TrendingUp } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import { formatNepaliNumber, formatRupees } from '@/lib/formatters';
+import { formatNepaliNumber, formatPercent, formatRupees } from '@/lib/formatters';
 import { InfoTooltip } from '@/components/ui/InfoTooltip';
 
 interface BentoMetricsProps {
@@ -11,15 +11,15 @@ interface BentoMetricsProps {
 
 export function BentoMetrics({ fundamental }: BentoMetricsProps) {
     const metrics = [
-        { label: 'EPS (TTM)', value: formatRupees(fundamental?.eps), icon: BarChart3, color: 'text-emerald-500', sub: 'Earnings Per Share', tooltip: 'Earnings Per Share (Trailing 12 Months). Indicates how much profit is generated per share.' },
-        { label: 'Book Value', value: formatRupees(fundamental?.book_value), icon: DollarSign, color: 'text-blue-500', sub: 'Internal Worth', tooltip: 'Net asset value per share. The theoretical value if the company were liquidated today.' },
+        { label: 'EPS (TTM)', value: formatRupees(fundamental?.eps, 2) || 'N/A', icon: BarChart3, color: 'text-emerald-500', sub: 'Earnings Per Share', tooltip: 'Earnings Per Share (Trailing 12 Months). Indicates how much profit is generated per share.' },
+        { label: 'Book Value', value: formatRupees(fundamental?.book_value, 2) || 'N/A', icon: DollarSign, color: 'text-blue-500', sub: 'Internal Worth', tooltip: 'Net asset value per share. The theoretical value if the company were liquidated today.' },
         { label: 'P/E Ratio', value: fundamental?.pe_ratio || 'N/A', icon: TrendingUp, color: 'text-amber-500', sub: 'Market Value', tooltip: 'Price-to-Earnings ratio. Compares the current share price to its annual earnings.' },
-        { label: 'ROE', value: '18.4%', icon: Activity, color: 'text-purple-500', sub: 'Equity Return', tooltip: 'Return on Equity. Measures how efficiently a company uses shareholder capital to generate profit.' },
+        { label: 'ROE', value: formatPercent(fundamental?.ro_equity) || 'N/A', icon: Activity, color: 'text-purple-500', sub: 'Equity Return', tooltip: 'Return on Equity. Measures how efficiently a company uses shareholder capital to generate profit.' },
     ];
 
     const secondary = [
         { label: 'Market Cap', value: fundamental?.market_cap ? `${formatRupees(fundamental.market_cap / 10000000)} Cr` : 'N/A', tooltip: 'Total market value of all outstanding shares.' },
-        { label: 'Dividend Yield', value: `${fundamental?.dividend_yield || '0'}%`, tooltip: 'Annual dividend as a percentage of the current share price.' },
+        { label: 'Dividend Yield', value: formatPercent(fundamental?.dividend_yield) || 'N/A', tooltip: 'Annual dividend as a percentage of the current share price.' },
         { label: 'Listed Date', value: fundamental?.listed_date || 'N/A', tooltip: 'The date when the company was first listed on the exchange.' },
         { label: 'Shares Out.', value: formatNepaliNumber(fundamental?.shares_outstanding) || 'N/A', tooltip: 'Total number of shares currently issued by the company.' },
     ];

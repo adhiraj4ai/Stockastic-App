@@ -95,7 +95,7 @@ export function FibonacciRetracement({ symbol, history, indicators }: FibonacciR
     if (loading) {
         return (
             <div className="flex items-center justify-center min-h-[300px]">
-                <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-blue-500"></div>
+                <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-primary"></div>
             </div>
         );
     }
@@ -151,8 +151,8 @@ export function FibonacciRetracement({ symbol, history, indicators }: FibonacciR
                                 className={cn(
                                     "rounded-lg px-3 font-bold text-[10px] transition-all h-7",
                                     period === p.value
-                                        ? "bg-white dark:bg-slate-700 text-blue-600 dark:text-blue-400 shadow-sm"
-                                        : "text-slate-400 dark:text-slate-500 hover:text-slate-600"
+                                        ? "bg-white dark:bg-slate-700 text-primary shadow-sm"
+                                        : "text-slate-400 dark:text-slate-500 hover:bg-accent hover:text-accent-foreground"
                                 )}
                             >
                                 {p.label}
@@ -208,15 +208,15 @@ export function FibonacciRetracement({ symbol, history, indicators }: FibonacciR
 
                 {/* Max Upside */}
                 <div className="glass-card-light dark:bg-card rounded-2xl p-6 border border-slate-200 dark:border-slate-700 relative overflow-hidden group hover:shadow-lg transition-all">
-                    <div className="absolute top-0 right-0 w-24 h-24 bg-gradient-to-bl from-blue-100/40 dark:from-blue-900/10 to-transparent rounded-bl-full" />
+                    <div className="absolute top-0 right-0 w-24 h-24 bg-gradient-to-bl from-primary/10 to-transparent rounded-bl-full" />
                     <div className="relative">
                         <div className="flex items-center gap-2 mb-3">
-                            <div className="p-1.5 rounded-lg bg-blue-50 dark:bg-blue-900/20 text-blue-500 dark:text-blue-400">
+                            <div className="p-1.5 rounded-lg bg-primary/10 text-primary">
                                 <ChevronUp size={14} />
                             </div>
                             <span className="text-[10px] font-bold text-slate-400 dark:text-slate-500 tracking-wider">Max upside</span>
                         </div>
-                        <div className="text-3xl font-semibold text-blue-600 dark:text-blue-400 tracking-tight">
+                        <div className="text-3xl font-semibold text-primary tracking-tight">
                             {data.max_upside !== null ? `+${data.max_upside}%` : '—'}
                         </div>
                         <div className="mt-2 text-xs text-slate-500 dark:text-slate-400 font-medium">
@@ -251,7 +251,7 @@ export function FibonacciRetracement({ symbol, history, indicators }: FibonacciR
                 <div className="lg:col-span-3">
                     <div className="glass-card-light dark:bg-card rounded-xl p-8 border border-slate-200 dark:border-slate-700 h-full">
                         <div className="flex items-center gap-3 mb-8">
-                            <div className="p-2 rounded-xl bg-indigo-50 dark:bg-indigo-900/20 text-indigo-600 dark:text-indigo-400 border border-indigo-100 dark:border-indigo-800">
+                            <div className="p-2 rounded-xl bg-primary/10 text-primary border border-primary/20">
                                 <Layers size={18} />
                             </div>
                             <div>
@@ -278,7 +278,7 @@ export function FibonacciRetracement({ symbol, history, indicators }: FibonacciR
                                         <div key={level.label} className="relative">
                                             <div className={cn(
                                                 "flex items-center py-3 px-4 rounded-xl transition-all",
-                                                isNearest ? "bg-blue-50/50 dark:bg-blue-900/10" : "",
+                                                isNearest ? "bg-primary/5" : "",
                                                 isCurrentZone ? "bg-amber-50/30 dark:bg-amber-900/10" : ""
                                             )}>
                                                 {/* Price */}
@@ -296,7 +296,7 @@ export function FibonacciRetracement({ symbol, history, indicators }: FibonacciR
                                                     <div className={cn(
                                                         "w-4 h-4 rounded-full border-2 z-10 transition-all",
                                                         isNearest
-                                                            ? "bg-blue-500 border-blue-300 dark:border-blue-600 shadow-lg shadow-blue-500/30 scale-110"
+                                                            ? "bg-primary border-primary/50 shadow-lg shadow-primary/30 scale-110"
                                                             : isAbove
                                                                 ? "bg-emerald-400 dark:bg-emerald-500 border-emerald-200 dark:border-emerald-700"
                                                                 : "bg-rose-400 dark:bg-rose-500 border-rose-200 dark:border-rose-700"
@@ -308,7 +308,7 @@ export function FibonacciRetracement({ symbol, history, indicators }: FibonacciR
                                                     <div className="flex items-center gap-2">
                                                         <span className="font-bold text-slate-700 dark:text-slate-300 text-sm">{level.label}</span>
                                                         {isNearest && (
-                                                            <Badge className="text-[8px] px-1.5 py-0 bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 border-none font-bold">
+                                                            <Badge className="text-[8px] px-1.5 py-0 bg-primary/10 text-primary border-none font-bold">
                                                                 {isAbove ? 'Resistance' : 'Support'}
                                                             </Badge>
                                                         )}
@@ -328,17 +328,17 @@ export function FibonacciRetracement({ symbol, history, indicators }: FibonacciR
                                                 sortedLevels[idx + 1].price <= data.current_price && (
                                                     <div className="flex items-center py-2 px-4 my-1">
                                                         <div className="w-[35%] text-right pr-6">
-                                                            <span className="font-mono font-semibold text-blue-600 dark:text-blue-400 text-sm animate-pulse">
+                                                            <span className="font-mono font-semibold text-primary text-sm animate-pulse">
                                                                 Rs. {data.current_price.toLocaleString()}
                                                             </span>
                                                         </div>
                                                         <div className="w-[10%] flex justify-center relative">
-                                                            <div className="w-5 h-5 rounded-full bg-blue-500 border-2 border-blue-300 dark:border-blue-600 z-10 shadow-lg shadow-blue-500/40 ring-4 ring-blue-500/20" />
+                                                            <div className="w-5 h-5 rounded-full bg-primary border-2 border-primary/50 z-10 shadow-lg shadow-primary/40 ring-4 ring-primary/20" />
                                                         </div>
                                                         <div className="w-[55%] pl-6">
                                                             <div className="flex items-center gap-2">
-                                                                <span className="font-semibold text-blue-600 dark:text-blue-400 text-sm">CMP</span>
-                                                                <Badge className="text-[8px] px-1.5 py-0 bg-blue-500 text-white border-none font-bold animate-pulse">
+                                                                <span className="font-semibold text-primary text-sm">CMP</span>
+                                                                <Badge className="text-[8px] px-1.5 py-0 bg-primary text-primary-foreground border-none font-bold animate-pulse">
                                                                     Current
                                                                 </Badge>
                                                             </div>
@@ -353,8 +353,8 @@ export function FibonacciRetracement({ symbol, history, indicators }: FibonacciR
 
                         {/* Current Zone Info */}
                         {data.current_zone && (
-                            <div className="mt-6 p-4 rounded-2xl bg-gradient-to-r from-blue-50/50 to-indigo-50/50 dark:from-blue-900/10 dark:to-indigo-900/10 border border-blue-100 dark:border-blue-800/50">
-                                <div className="text-[10px] font-bold text-blue-500 dark:text-blue-400 tracking-wider mb-1">Current zone</div>
+                            <div className="mt-6 p-4 rounded-2xl bg-primary/5 border border-primary/20">
+                                <div className="text-[10px] font-bold text-primary tracking-wider mb-1">Current zone</div>
                                 <div className="text-sm font-bold text-slate-700 dark:text-slate-300">
                                     Between {data.current_zone.lower} (Rs. {data.current_zone.lower_price.toLocaleString()}) and {data.current_zone.upper} (Rs. {data.current_zone.upper_price.toLocaleString()})
                                 </div>
@@ -379,7 +379,7 @@ export function FibonacciRetracement({ symbol, history, indicators }: FibonacciR
                             <div className="flex bg-slate-100/80 dark:bg-slate-800/80 rounded-lg p-1 gap-1">
                                 <button
                                     onClick={() => setHistoryView('graph')}
-                                    className={`p-2 rounded-md transition-all flex items-center gap-2 ${historyView === 'graph' ? 'bg-white dark:bg-slate-700 shadow-sm text-blue-600 dark:text-blue-400 font-bold' : 'text-slate-400 dark:text-slate-500 hover:text-slate-600 dark:hover:text-slate-300'}`}
+                                    className={`p-2 rounded-md transition-all flex items-center gap-2 ${historyView === 'graph' ? 'bg-white dark:bg-slate-700 shadow-sm text-primary font-bold' : 'text-slate-400 dark:text-slate-500 hover:bg-accent hover:text-accent-foreground'}`}
                                 >
                                     <LineChartIcon size={16} />
                                     <span className="text-xs">Graph</span>
@@ -412,7 +412,7 @@ export function FibonacciRetracement({ symbol, history, indicators }: FibonacciR
                                             .filter(row => new Date(row.date) > new Date(Date.now() - 90 * 24 * 60 * 60 * 1000))
                                             .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
                                             .map((row, i) => (
-                                                <tr key={i} className="hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors">
+                                                <tr key={i} className="hover:bg-accent hover:text-accent-foreground transition-colors">
                                                     <td className="px-6 py-4 font-bold text-slate-800 dark:text-slate-100">{row.date}</td>
                                                     <td className="px-6 py-4 text-slate-600 dark:text-slate-400">{row.open}</td>
                                                     <td className="px-6 py-4 text-emerald-600 dark:text-emerald-400 font-medium">{row.high}</td>

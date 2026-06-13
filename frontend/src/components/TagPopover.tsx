@@ -73,7 +73,7 @@ export function TagPopover({ itemId, tags, onTagsUpdate }: TagPopoverProps) {
                 ))}
                 <button
                     onClick={() => setIsOpen(!isOpen)}
-                    className="p-0.5 rounded text-slate-400 dark:text-slate-600 hover:text-blue-500 dark:hover:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900/20 transition-all"
+                    className="p-0.5 rounded text-slate-400 dark:text-slate-600 hover:text-primary hover:bg-primary/10 transition-all"
                     title="Manage tags"
                 >
                     <Tag size={10} />
@@ -94,7 +94,7 @@ export function TagPopover({ itemId, tags, onTagsUpdate }: TagPopoverProps) {
                                         key={preset.label}
                                         onClick={() => isActive ? removeTag(preset.label) : addTag(preset.label)}
                                         className={`text-[10px] font-bold px-2 py-0.5 rounded-md border transition-all ${isActive
-                                            ? `${preset.color} ring-1 ring-offset-1 ring-blue-400 dark:ring-offset-slate-900`
+                                            ? `${preset.color} ring-1 ring-offset-1 ring-ring/60 dark:ring-offset-slate-900`
                                             : 'bg-slate-50 dark:bg-slate-800 text-slate-500 dark:text-slate-400 border-slate-200 dark:border-slate-700 hover:bg-slate-100 dark:hover:bg-slate-700'
                                             }`}
                                         disabled={saving}
@@ -120,7 +120,7 @@ export function TagPopover({ itemId, tags, onTagsUpdate }: TagPopoverProps) {
                                 <button
                                     onClick={() => addTag(customTag)}
                                     disabled={!customTag.trim() || saving}
-                                    className="h-7 px-2 bg-slate-900 dark:bg-slate-700 text-white rounded-md text-xs font-bold disabled:opacity-30 hover:bg-black dark:hover:bg-slate-600 transition-all"
+                                    className="h-7 px-2 bg-primary text-primary-foreground rounded-md text-xs font-bold disabled:opacity-30 hover:bg-primary/90 transition-all"
                                 >
                                     <Plus size={12} />
                                 </button>

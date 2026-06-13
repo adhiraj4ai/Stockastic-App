@@ -11,6 +11,8 @@ class DataUploadLog(models.Model):
         ('SIGNALS', 'Signal Generation'),
         ('BROKER_ANALYSIS', 'Broker Analysis'),
         ('EVALUATION', 'Signal Evaluation'),
+        ('API_INGEST', 'API Ingestion'),
+        ('PLAN', 'Daily Plan'),
     )
     STATUS_CHOICES = (
         ('PENDING', 'Pending'),
@@ -75,6 +77,9 @@ class Notification(models.Model):
         SIGNAL_STRONG_BUY = 'SIGNAL_STRONG_BUY', 'Strong Buy Signal'
         SIGNAL_STRONG_SELL = 'SIGNAL_STRONG_SELL', 'Strong Sell Signal'
 
+        # Daily plan
+        DAILY_PLAN_READY = 'DAILY_PLAN_READY', "Tomorrow's Plan Ready"
+
         # Whale Watch / Smart Money alerts
         WHALE_BUY = 'WHALE_BUY', 'Whale Watch Buy'
         WHALE_SELL = 'WHALE_SELL', 'Whale Watch Sell'
@@ -85,10 +90,21 @@ class Notification(models.Model):
         WARNING = 'WARNING', 'Warning'
         PRICE_ALERT = 'PRICE_ALERT', 'Price Alert'
 
+    class Severity(models.TextChoices):
+        CRITICAL = 'critical', 'Critical'
+        HIGH = 'high', 'High'
+        NORMAL = 'normal', 'Normal'
+        LOW = 'low', 'Low'
+
     user = models.ForeignKey(User, on_delete=models.CASCADE)
     title = models.CharField(max_length=255)
     message = models.TextField()
     type = models.CharField(max_length=30, choices=NotificationType.choices, default=NotificationType.INFO)
+    severity = models.CharField(
+        max_length=10, choices=Severity.choices,
+        default=Severity.NORMAL, db_index=True,
+        help_text="Display priority; drives popup behavior on the frontend",
+    )
     ticker = models.CharField(max_length=20, null=True, blank=True)
     read = models.BooleanField(default=False)
     created_at = models.DateTimeField(auto_now_add=True)

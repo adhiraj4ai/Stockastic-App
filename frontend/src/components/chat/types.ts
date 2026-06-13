@@ -77,6 +77,9 @@ export type ChatBlock =
 
 export interface ChatMessage {
     id: string;
+    // Persisted server id for a streamed message (set from the `done` frame). The
+    // React key stays `id` (stable) to avoid remounts; bookmarking uses serverId ?? id.
+    serverId?: string;
     role: 'user' | 'assistant';
     text: string;
     blocks: ChatBlock[];
@@ -85,4 +88,38 @@ export interface ChatMessage {
     output_tokens?: number;
     cache_read_tokens?: number;
     cache_creation_tokens?: number;
+}
+
+export interface SavedAnalysis {
+    id: string;
+    session: string | null;
+    source_message?: string | null; // the assistant message this bookmark was captured from
+    source_question?: string;       // verbatim user question (detail only)
+    source_answer?: string;         // verbatim assistant answer (detail only)
+    title: string;
+    summary?: string;        // present on detail, omitted from list/suggest
+    one_liner: string;
+    category: string;
+    tags: string[];
+    tickers: string[];
+    series_key: string;
+    verdict: string;
+    structured?: Record<string, unknown>;
+    created_at: string;
+    updated_at?: string;
+}
+
+export interface SavedAnalysisDraft {
+    session: string;
+    source_message?: string | null;
+    title: string;
+    summary: string;
+    one_liner: string;
+    category: string;
+    tags: string[];
+    tickers: string[];
+    series_key: string;
+    verdict: string;
+    structured: Record<string, unknown>;
+    degraded: boolean;
 }

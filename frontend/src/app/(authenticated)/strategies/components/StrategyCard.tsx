@@ -36,13 +36,13 @@ export function StrategyCard({
 
             <div className="px-4 py-3 border-b border-border bg-muted/40">
                 <div className="flex items-start gap-4">
-                    <div className="h-10 w-10 rounded-xl bg-blue-50 flex items-center justify-center text-blue-600 flex-shrink-0 shadow-sm border border-blue-100/50 group-hover:scale-110 transition-transform duration-300">
+                    <div className="h-10 w-10 rounded-xl bg-primary/10 flex items-center justify-center text-primary flex-shrink-0 shadow-sm border border-primary/20 group-hover:scale-110 transition-transform duration-300">
                         <Lightbulb size={20} />
                     </div>
                     <div className="min-w-0 flex-1">
                         <div className="flex items-center justify-between gap-2 mb-1">
                             <div className="flex flex-col gap-1.5 min-w-0">
-                                <h3 className="text-base font-bold text-slate-900 leading-tight truncate group-hover:text-blue-600 transition-colors">
+                                <h3 className="text-base font-bold text-slate-900 leading-tight truncate group-hover:text-primary transition-colors">
                                     {name}
                                 </h3>
                                 {publishedCount > 0 && (
@@ -57,7 +57,7 @@ export function StrategyCard({
                             <DropdownMenu>
                                 <DropdownMenuTrigger asChild>
                                     <button
-                                        className="h-8 w-8 rounded-lg hover:bg-white hover:shadow-sm flex items-center justify-center text-slate-400 hover:text-slate-600 transition-all flex-shrink-0"
+                                        className="h-8 w-8 rounded-lg hover:bg-accent hover:text-accent-foreground hover:shadow-sm flex items-center justify-center text-slate-400 transition-all flex-shrink-0"
                                         onClick={(e) => e.stopPropagation()}
                                     >
                                         <MoreVertical size={16} />
@@ -90,16 +90,16 @@ export function StrategyCard({
                         e.stopPropagation();
                         onRun?.();
                     }}
-                    className="flex-1 py-3.5 flex items-center justify-center gap-2 text-xs font-bold text-slate-600 hover:text-blue-600 hover:bg-white transition-all active:scale-95 border-r border-border"
+                    className="flex-1 py-3.5 flex items-center justify-center gap-2 text-xs font-bold text-slate-600 hover:text-primary hover:bg-accent transition-all active:scale-95 border-r border-border"
                 >
-                    <Play size={14} fill="currentColor" className="text-blue-500" /> Run
+                    <Play size={14} fill="currentColor" className="text-primary" /> Run
                 </button>
                 <button
                     onClick={(e) => {
                         e.stopPropagation();
                         onEdit?.();
                     }}
-                    className="flex-1 py-3.5 flex items-center justify-center gap-2 text-xs font-bold text-slate-600 hover:text-emerald-600 hover:bg-white transition-all active:scale-95"
+                    className="flex-1 py-3.5 flex items-center justify-center gap-2 text-xs font-bold text-slate-600 hover:text-emerald-600 hover:bg-accent transition-all active:scale-95"
                 >
                     <Edit size={14} className="text-emerald-500" /> Edit
                 </button>

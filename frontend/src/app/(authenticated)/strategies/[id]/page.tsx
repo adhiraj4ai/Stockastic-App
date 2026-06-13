@@ -9,7 +9,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/com
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
-import { ArrowLeft, Play, Edit, Calendar, Activity, TrendingUp, TrendingDown, Clock, Code, FileJson, History, Target } from 'lucide-react';
+import { ArrowLeft, Play, Edit, Calendar, Activity, TrendingUp, TrendingDown, Clock, Code, FileJson, History, Target, Blocks } from 'lucide-react';
 import Editor from '@monaco-editor/react';
 import ExperimentsTab from './tabs/ExperimentsTab'; // Import the existing ExperimentsTab
 import { toast } from 'sonner';
@@ -19,6 +19,8 @@ interface Strategy {
     name: string;
     description: string;
     code: string;
+    kind?: 'composed' | 'custom';
+    spec?: any;
     created_at: string;
     updated_at: string;
     published_experiments: {
@@ -114,25 +116,37 @@ export default function StrategyDetailPage() {
             <div className="space-y-6">
                 {/* Action Toolbar */}
                 <div className="flex justify-end items-center gap-3">
+                    {/* A strategy is edited in EITHER Build mode (composed) OR Code mode (custom). */}
+                    {strategy.kind === 'composed' ? (
+                        <Button
+                            variant="outline"
+                            size="sm"
+                            className="gap-2 h-9 text-xs font-bold bg-primary/10 border-primary/30 text-primary hover:bg-primary/20 shadow-sm transition-all"
+                            onClick={() => router.push(`/strategies/${id}/builder`)}
+                        >
+                            <Blocks size={14} /> Builder
+                        </Button>
+                    ) : (
+                        <Button
+                            variant="outline"
+                            size="sm"
+                            className="gap-2 h-9 text-xs font-bold border-slate-200 hover:bg-slate-50 shadow-sm"
+                            onClick={() => router.push(`/strategies/${id}/editor`)}
+                        >
+                            <Edit size={14} className="text-slate-500" /> Edit Code
+                        </Button>
+                    )}
                     <Button
                         variant="outline"
                         size="sm"
-                        className="gap-2 h-9 text-xs font-bold border-slate-200 hover:bg-slate-50 shadow-sm"
-                        onClick={() => router.push(`/strategies/${id}/editor`)}
-                    >
-                        <Edit size={14} className="text-slate-500" /> Edit Code
-                    </Button>
-                    <Button
-                        variant="outline"
-                        size="sm"
-                        className="gap-2 h-9 text-xs font-bold bg-purple-50 border-purple-200 text-purple-700 hover:bg-purple-100 hover:border-purple-300 shadow-sm transition-all"
+                        className="gap-2 h-9 text-xs font-bold bg-primary/10 border-primary/30 text-primary hover:bg-primary/20 shadow-sm transition-all"
                         onClick={() => router.push(`/strategies/${id}/optimize`)}
                     >
                         <Activity size={14} /> Optimize Strategy
                     </Button>
                     <Button
                         size="sm"
-                        className="gap-2 h-9 text-xs font-bold bg-blue-600 hover:bg-blue-700 shadow-md hover:shadow-lg transition-all"
+                        className="gap-2 h-9 text-xs font-bold bg-primary hover:bg-primary/90 text-primary-foreground shadow-md hover:shadow-lg transition-all"
                         onClick={() => router.push(`/strategies/${id}/backtest`)}
                     >
                         <Play size={14} /> Run Backtest
@@ -164,12 +178,12 @@ export default function StrategyDetailPage() {
                     {/* Sharpe Ratio - Purple Theme */}
                     <Card className="border-border hover:border-foreground/20 shadow-sm hover:shadow-md transition-all group overflow-hidden relative">
                         <div className="absolute top-0 right-0 p-3 opacity-10 group-hover:opacity-20 transition-opacity">
-                            <Activity size={48} className="text-purple-600" />
+                            <Activity size={48} className="text-primary" />
                         </div>
                         <CardHeader className="p-4 pb-1 relative z-10">
-                            <CardTitle className="text-xs font-bold text-purple-600 uppercase tracking-wider flex items-center gap-1.5">
-                                <div className="p-1 bg-purple-100/80 rounded">
-                                    <Activity size={12} className="text-purple-700" />
+                            <CardTitle className="text-xs font-bold text-primary uppercase tracking-wider flex items-center gap-1.5">
+                                <div className="p-1 bg-primary/10 rounded">
+                                    <Activity size={12} className="text-primary" />
                                 </div>
                                 Sharpe Ratio
                             </CardTitle>
@@ -204,12 +218,12 @@ export default function StrategyDetailPage() {
                     {/* Win Rate - Blue Theme */}
                     <Card className="border-border hover:border-foreground/20 shadow-sm hover:shadow-md transition-all group overflow-hidden relative">
                         <div className="absolute top-0 right-0 p-3 opacity-10 group-hover:opacity-20 transition-opacity">
-                            <Target size={48} className="text-blue-600" />
+                            <Target size={48} className="text-primary" />
                         </div>
                         <CardHeader className="p-4 pb-1 relative z-10">
-                            <CardTitle className="text-xs font-bold text-blue-600 uppercase tracking-wider flex items-center gap-1.5">
-                                <div className="p-1 bg-blue-100/80 rounded">
-                                    <Target size={12} className="text-blue-700" />
+                            <CardTitle className="text-xs font-bold text-primary uppercase tracking-wider flex items-center gap-1.5">
+                                <div className="p-1 bg-primary/10 rounded">
+                                    <Target size={12} className="text-primary" />
                                 </div>
                                 Win Rate
                             </CardTitle>
@@ -227,19 +241,19 @@ export default function StrategyDetailPage() {
                     <TabsList className="bg-gray-200/50 dark:bg-slate-800/50 p-1 gap-1 rounded-lg h-auto">
                         <TabsTrigger
                             value="history"
-                            className="px-4 py-2 rounded-md text-xs font-semibold transition-all data-[state=active]:bg-white dark:data-[state=active]:bg-slate-900 data-[state=active]:text-blue-700 dark:data-[state=active]:text-blue-400 data-[state=active]:shadow-sm text-gray-500 dark:text-slate-400 hover:text-gray-700 dark:hover:text-slate-200 hover:bg-white/50 dark:hover:bg-slate-800/50"
+                            className="px-4 py-2 rounded-md text-xs font-semibold transition-all"
                         >
                             <History size={14} className="mr-1.5" /> History
                         </TabsTrigger>
                         <TabsTrigger
                             value="implementation"
-                            className="px-4 py-2 rounded-md text-xs font-semibold transition-all data-[state=active]:bg-white dark:data-[state=active]:bg-slate-900 data-[state=active]:text-blue-700 dark:data-[state=active]:text-blue-400 data-[state=active]:shadow-sm text-gray-500 dark:text-slate-400 hover:text-gray-700 dark:hover:text-slate-200 hover:bg-white/50 dark:hover:bg-slate-800/50"
+                            className="px-4 py-2 rounded-md text-xs font-semibold transition-all"
                         >
                             <Code size={14} className="mr-1.5" /> Implementation
                         </TabsTrigger>
                         <TabsTrigger
                             value="parameters"
-                            className="px-4 py-2 rounded-md text-xs font-semibold transition-all data-[state=active]:bg-white dark:data-[state=active]:bg-slate-900 data-[state=active]:text-blue-700 dark:data-[state=active]:text-blue-400 data-[state=active]:shadow-sm text-gray-500 dark:text-slate-400 hover:text-gray-700 dark:hover:text-slate-200 hover:bg-white/50 dark:hover:bg-slate-800/50"
+                            className="px-4 py-2 rounded-md text-xs font-semibold transition-all"
                         >
                             <FileJson size={14} className="mr-1.5" /> Published Config
                         </TabsTrigger>
@@ -271,9 +285,10 @@ export default function StrategyDetailPage() {
                                 />
                             </div>
                             <div className="bg-gray-50 p-3 text-xs text-gray-500 flex justify-between items-center">
-                                <span>Read-only view</span>
-                                <Button variant="link" className="h-auto p-0 text-blue-600" onClick={() => router.push(`/strategies/${id}/editor`)}>
-                                    Edit Code &rarr;
+                                <span>Read-only view{strategy.kind === 'composed' ? ' · generated from builder' : ''}</span>
+                                <Button variant="link" className="h-auto p-0 text-primary"
+                                    onClick={() => router.push(`/strategies/${id}/${strategy.kind === 'composed' ? 'builder' : 'editor'}`)}>
+                                    {strategy.kind === 'composed' ? 'Open Builder' : 'Edit Code'} &rarr;
                                 </Button>
                             </div>
                         </Card>
@@ -319,7 +334,7 @@ export default function StrategyDetailPage() {
                                     <div className="text-center py-10 text-gray-500 bg-gray-50 rounded-lg border border-dashed border-gray-200">
                                         <Activity className="mx-auto h-8 w-8 mb-2 opacity-50" />
                                         <p>This strategy is not currently published.</p>
-                                        <Button variant="link" className="mt-2 text-blue-600" onClick={() => router.push(`/strategies/${id}/run`)}>
+                                        <Button variant="link" className="mt-2 text-primary" onClick={() => router.push(`/strategies/${id}/run`)}>
                                             Run an experiment to publish &rarr;
                                         </Button>
                                     </div>

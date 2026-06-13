@@ -68,7 +68,7 @@ export function SymbolSelector({ value, onChange, className }: SymbolSelectorPro
                     role="combobox"
                     aria-expanded={open}
                     className={cn(
-                        "h-9 px-4 hover:bg-gray-100 dark:hover:bg-slate-800 border border-gray-200 dark:border-slate-700 bg-white dark:bg-card shadow-sm transition-all hover:shadow-md justify-between",
+                        "h-9 px-4 hover:bg-accent hover:text-accent-foreground border border-gray-200 dark:border-slate-700 bg-white dark:bg-card shadow-sm transition-all hover:shadow-md justify-between",
                         className
                     )}
                 >

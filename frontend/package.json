@@ -34,7 +34,7 @@
     "echarts": "^6.0.0",
     "echarts-for-react": "^3.0.6",
     "framer-motion": "^12.35.0",
-    "html2canvas": "^1.4.1",
+    "html2canvas-pro": "^2.0.4",
     "js-cookie": "^3.0.5",
     "katex": "^0.16.27",
     "lightweight-charts": "^5.1.0",

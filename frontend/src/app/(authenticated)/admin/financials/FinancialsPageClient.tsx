@@ -134,34 +134,34 @@ export default function AdminPage() {
     }, [groupedCompanies]);
 
     return (
-        <DashboardLayout title="Financials" hideHeader={true}>
-            <div className="w-full mx-auto space-y-6 animate-in fade-in duration-500 px-2 lg:px-4">
+        <DashboardLayout title="Financials" subtitle="Company report management">
+            <div className="w-full space-y-6 animate-in fade-in duration-500 pt-6 pb-10">
 
                 {/* Filters & Controls */}
-                <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 bg-white dark:bg-card p-4 rounded-xl border dark:border-slate-800 shadow-sm transition-colors duration-500">
+                <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 bg-white dark:bg-card p-4 rounded-xl border border-border dark:border-slate-800 shadow-sm transition-colors duration-500">
                     <div className="flex flex-1 items-center gap-4">
                         <div className="relative flex-1 max-w-md">
-                            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 dark:text-slate-500" />
+                            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 dark:text-slate-500" />
                             <Input
                                 placeholder="Search symbol or name..."
                                 value={searchTerm}
                                 onChange={(e) => setSearchTerm(e.target.value)}
-                                className="pl-10 h-10 rounded-lg bg-gray-50 dark:bg-slate-800 border-gray-200 dark:border-slate-700 focus:bg-white dark:focus:bg-slate-900 transition-all text-slate-900 dark:text-slate-100 placeholder:text-slate-400 dark:placeholder:text-slate-600"
+                                className="pl-10 h-10 rounded-lg bg-slate-50 dark:bg-slate-800 border-border dark:border-slate-700 focus:bg-white dark:focus:bg-slate-900 transition-all text-slate-900 dark:text-slate-100 placeholder:text-slate-400 dark:placeholder:text-slate-600"
                             />
                         </div>
 
                         <DropdownMenu>
                             <DropdownMenuTrigger asChild>
-                                <Button variant="outline" className="h-10 gap-2 border-dashed border-gray-300 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-300 dark:hover:bg-slate-700">
-                                    <Filter className="w-4 h-4 text-gray-500 dark:text-slate-400" />
-                                    <span className="text-gray-600 dark:text-slate-300">Filter by Sector</span>
+                                <Button variant="outline" className="h-10 gap-2 border-dashed border-border dark:border-slate-700 dark:bg-slate-800 dark:text-slate-300 hover:bg-accent hover:text-accent-foreground">
+                                    <Filter className="w-4 h-4 text-slate-500 dark:text-slate-400" />
+                                    <span className="text-slate-600 dark:text-slate-300">Filter by Sector</span>
                                     {selectedSectors.length < allSectors.length && selectedSectors.length > 0 && (
-                                        <Badge variant="secondary" className="ml-1 px-1.5 h-5 text-[10px] bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-400 hover:bg-blue-100 dark:hover:bg-blue-900/30">
+                                        <Badge variant="secondary" className="ml-1 px-1.5 h-5 text-[10px] bg-indigo-100 dark:bg-indigo-900/30 text-indigo-700 dark:text-indigo-400 hover:bg-indigo-100 dark:hover:bg-indigo-900/30">
                                             {selectedSectors.length}
                                         </Badge>
                                     )}
                                     {selectedSectors.length === allSectors.length && (
-                                        <Badge variant="secondary" className="ml-1 px-1.5 h-5 text-[10px] bg-gray-100 dark:bg-slate-800 text-gray-600 dark:text-slate-400 hover:bg-gray-100 dark:hover:bg-slate-800">
+                                        <Badge variant="secondary" className="ml-1 px-1.5 h-5 text-[10px] bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800">
                                             All
                                         </Badge>
                                     )}
@@ -195,20 +195,20 @@ export default function AdminPage() {
                     <div className="flex items-center gap-3">
                         {/* Active filter summary */}
                         {selectedSectors.length > 0 && selectedSectors.length < allSectors.length && (
-                            <p className="text-xs text-gray-500 dark:text-slate-400 font-medium px-1 hidden lg:block">
+                            <p className="text-xs text-muted-foreground font-medium px-1 hidden lg:block">
                                 Showing {filteredCompanies.length} companies
                             </p>
                         )}
 
                         {/* View Toggle */}
-                        <div className="flex items-center bg-gray-100 dark:bg-slate-800 rounded-lg p-1 border dark:border-slate-700">
+                        <div className="flex items-center bg-slate-100 dark:bg-slate-800 rounded-lg p-1 border border-border dark:border-slate-700">
                             <Button
                                 variant="ghost"
                                 size="sm"
                                 onClick={() => setViewMode('card')}
                                 className={`h-8 px-3 rounded-md transition-all ${viewMode === 'card'
-                                    ? 'bg-white dark:bg-slate-700 text-blue-600 dark:text-blue-400 shadow-sm'
-                                    : 'text-gray-500 dark:text-slate-400 hover:text-gray-700 dark:hover:text-slate-300'}`}
+                                    ? 'bg-white dark:bg-slate-700 text-indigo-600 dark:text-indigo-400 shadow-sm'
+                                    : 'text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-300'}`}
                             >
                                 <LayoutGrid className="w-4 h-4 mr-2" />
                                 <span className="text-xs font-semibold">Cards</span>
@@ -218,8 +218,8 @@ export default function AdminPage() {
                                 size="sm"
                                 onClick={() => setViewMode('list')}
                                 className={`h-8 px-3 rounded-md transition-all ${viewMode === 'list'
-                                    ? 'bg-white dark:bg-slate-700 text-blue-600 dark:text-blue-400 shadow-sm'
-                                    : 'text-gray-500 dark:text-slate-400 hover:text-gray-700 dark:hover:text-slate-300'}`}
+                                    ? 'bg-primary/10 text-primary shadow-sm'
+                                    : 'text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-300'}`}
                             >
                                 <ListIcon className="w-4 h-4 mr-2" />
                                 <span className="text-xs font-semibold">List</span>
@@ -235,15 +235,15 @@ export default function AdminPage() {
                     <div className="flex-1 min-w-0">
                         {loading ? (
                             <div className="flex items-center justify-center py-24">
-                                <Loader2 className="w-8 h-8 text-blue-600 animate-spin" />
+                                <Loader2 className="w-8 h-8 text-primary animate-spin" />
                             </div>
                         ) : Object.keys(groupedCompanies).length > 0 ? (
                             <div className="space-y-12">
                                 {Object.entries(groupedCompanies).map(([sector, sectorCompanies]) => (
                                     <div key={sector} id={`sector-${sector.replace(/\s+/g, '-').toLowerCase()}`} data-sector={sector} className="space-y-4 scroll-mt-24">
-                                        <div className="flex items-center gap-3 pl-1 border-l-4 border-blue-500 py-1">
-                                            <h3 className="text-xl font-bold text-gray-900 dark:text-slate-100">{sector}</h3>
-                                            <Badge variant="secondary" className="bg-gray-100 dark:bg-slate-800 text-gray-500 dark:text-slate-400 text-xs shadow-sm">
+                                        <div className="flex items-center gap-3 pl-1 border-l-4 border-primary py-1">
+                                            <h3 className="text-base font-semibold text-slate-900 dark:text-slate-100">{sector}</h3>
+                                            <Badge variant="secondary" className="bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400 text-xs shadow-sm">
                                                 {sectorCompanies.length} companies
                                             </Badge>
                                         </div>
@@ -254,33 +254,33 @@ export default function AdminPage() {
                                                     <div
                                                         key={company.symbol}
                                                         onClick={() => router.push(`/admin/financials/${company.symbol}`)}
-                                                        className="bg-white dark:bg-card p-3 rounded-lg border dark:border-slate-800 shadow-sm hover:shadow-md hover:border-blue-200 dark:hover:border-blue-900 transition-all cursor-pointer group relative overflow-hidden"
+                                                        className="bg-white dark:bg-card p-3 rounded-lg border border-border dark:border-slate-800 shadow-sm hover:shadow-md hover:border-primary/30 transition-all cursor-pointer group relative overflow-hidden"
                                                     >
                                                         <div className="flex justify-between items-start mb-2">
                                                             {(company.latest_annual_report || company.latest_quarterly_report) ? (
-                                                                <Badge variant="secondary" className="bg-green-50 dark:bg-emerald-900/20 text-green-700 dark:text-emerald-400 border border-green-100 dark:border-emerald-900/30 text-[9px] px-1 h-4">
+                                                                <Badge variant="secondary" className="bg-emerald-50 dark:bg-emerald-900/20 text-emerald-700 dark:text-emerald-400 border border-emerald-100 dark:border-emerald-900/30 text-[9px] px-1 h-4">
                                                                     Updated
                                                                 </Badge>
                                                             ) : <div className="h-4"></div>}
                                                         </div>
 
-                                                        <h4 className="font-bold text-gray-900 dark:text-slate-100 text-sm mb-0.5 group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors">
+                                                        <h4 className="font-bold text-slate-900 dark:text-slate-100 text-sm mb-0.5 group-hover:text-primary transition-colors">
                                                             {company.symbol}
                                                         </h4>
-                                                        <p className="text-xs text-gray-500 dark:text-slate-500 font-medium line-clamp-1 mb-2" title={company.name}>
+                                                        <p className="text-xs text-muted-foreground font-medium line-clamp-1 mb-2" title={company.name}>
                                                             {company.name}
                                                         </p>
 
-                                                        <div className="flex items-center gap-2 mt-auto pt-2 border-t border-gray-100 dark:border-slate-800">
+                                                        <div className="flex items-center gap-2 mt-auto pt-2 border-t border-border dark:border-slate-800">
                                                             <div className="flex-1 flex flex-col">
-                                                                <span className="text-[9px] font-semibold text-gray-400 dark:text-slate-600 uppercase">Annual</span>
-                                                                <span className="text-[10px] font-mono font-medium text-gray-700 dark:text-slate-300">
+                                                                <span className="text-[9px] font-semibold text-slate-400 dark:text-slate-600 uppercase">Annual</span>
+                                                                <span className="text-[10px] font-mono font-medium text-slate-700 dark:text-slate-300">
                                                                     {company.latest_annual_report || '-'}
                                                                 </span>
                                                             </div>
                                                             <div className="flex-1 flex flex-col">
-                                                                <span className="text-[9px] font-semibold text-gray-400 dark:text-slate-600 uppercase">Quarter</span>
-                                                                <span className="text-[10px] font-mono font-medium text-gray-700 dark:text-slate-300">
+                                                                <span className="text-[9px] font-semibold text-slate-400 dark:text-slate-600 uppercase">Quarter</span>
+                                                                <span className="text-[10px] font-mono font-medium text-slate-700 dark:text-slate-300">
                                                                     {company.latest_quarterly_report || '-'}
                                                                 </span>
                                                             </div>
@@ -289,49 +289,49 @@ export default function AdminPage() {
                                                 ))}
                                             </div>
                                         ) : (
-                                            <div className="bg-white dark:bg-card rounded-xl border dark:border-slate-800 shadow-sm overflow-hidden transition-colors duration-500">
+                                            <div className="bg-white dark:bg-card rounded-xl border border-border dark:border-slate-800 shadow-sm overflow-hidden transition-colors duration-500">
                                                 <Table>
                                                     <TableHeader>
-                                                        <TableRow className="bg-gray-50/50 dark:bg-slate-800/50 hover:bg-gray-50/50 dark:hover:bg-slate-800/50 border-b dark:border-slate-800">
-                                                            <TableHead className="w-[100px] font-bold text-gray-900 dark:text-slate-100">Symbol</TableHead>
-                                                            <TableHead className="font-bold text-gray-900 dark:text-slate-100">Name</TableHead>
-                                                            <TableHead className="font-bold text-gray-900 dark:text-slate-100">Latest Annual</TableHead>
-                                                            <TableHead className="font-bold text-gray-900 dark:text-slate-100">Latest Quarterly</TableHead>
-                                                            <TableHead className="text-right font-bold text-gray-900 dark:text-slate-100">Action</TableHead>
+                                                        <TableRow className="bg-slate-50/50 dark:bg-slate-800/50 hover:bg-slate-50/50 dark:hover:bg-slate-800/50 border-b border-border dark:border-slate-800">
+                                                            <TableHead className="w-[100px] text-[10px] font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider">Symbol</TableHead>
+                                                            <TableHead className="text-[10px] font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider">Name</TableHead>
+                                                            <TableHead className="text-[10px] font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider">Latest Annual</TableHead>
+                                                            <TableHead className="text-[10px] font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider">Latest Quarterly</TableHead>
+                                                            <TableHead className="text-right text-[10px] font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider">Action</TableHead>
                                                         </TableRow>
                                                     </TableHeader>
                                                     <TableBody>
                                                         {sectorCompanies.map((company) => (
                                                             <TableRow
                                                                 key={company.symbol}
-                                                                className="hover:bg-blue-50/50 dark:hover:bg-blue-900/10 cursor-pointer group transition-colors border-b dark:border-slate-800 last:border-0"
+                                                                className="hover:bg-accent hover:text-accent-foreground cursor-pointer group transition-colors border-b border-border dark:border-slate-800 last:border-0"
                                                                 onClick={() => router.push(`/admin/financials/${company.symbol}`)}
                                                             >
-                                                                <TableCell className="font-bold text-gray-900 dark:text-slate-100">{company.symbol}</TableCell>
-                                                                <TableCell className="font-medium text-gray-600 dark:text-slate-400">{company.name}</TableCell>
+                                                                <TableCell className="font-bold text-slate-900 dark:text-slate-100">{company.symbol}</TableCell>
+                                                                <TableCell className="font-medium text-muted-foreground">{company.name}</TableCell>
                                                                 <TableCell>
                                                                     {company.latest_annual_report ? (
-                                                                        <Badge variant="outline" className="text-green-600 dark:text-emerald-400 border-green-200 dark:border-emerald-900/50 bg-green-50 dark:bg-emerald-900/10 font-mono">
+                                                                        <Badge variant="outline" className="text-emerald-600 dark:text-emerald-400 border-emerald-200 dark:border-emerald-900/50 bg-emerald-50 dark:bg-emerald-900/10 font-mono">
                                                                             {company.latest_annual_report}
                                                                         </Badge>
                                                                     ) : (
-                                                                        <span className="text-gray-400 dark:text-slate-600 text-sm">-</span>
+                                                                        <span className="text-slate-400 dark:text-slate-600 text-sm">-</span>
                                                                     )}
                                                                 </TableCell>
                                                                 <TableCell>
                                                                     {company.latest_quarterly_report ? (
-                                                                        <Badge variant="outline" className="text-blue-600 dark:text-blue-400 border-blue-200 dark:border-blue-900/50 bg-blue-50 dark:bg-blue-900/10 font-mono">
+                                                                        <Badge variant="outline" className="text-primary border-primary/30 bg-primary/10 font-mono">
                                                                             {company.latest_quarterly_report}
                                                                         </Badge>
                                                                     ) : (
-                                                                        <span className="text-gray-400 dark:text-slate-600 text-sm">-</span>
+                                                                        <span className="text-slate-400 dark:text-slate-600 text-sm">-</span>
                                                                     )}
                                                                 </TableCell>
                                                                 <TableCell className="text-right">
                                                                     <Button
                                                                         size="sm"
                                                                         variant="outline"
-                                                                        className="h-8 gap-2 dark:border-slate-700 dark:text-slate-300 group-hover:bg-blue-600 dark:group-hover:bg-blue-500 group-hover:text-white group-hover:border-blue-600 dark:group-hover:border-blue-500 transition-colors"
+                                                                        className="h-8 gap-2 border-border dark:border-slate-700 dark:text-slate-300 group-hover:bg-primary group-hover:text-primary-foreground group-hover:border-primary transition-colors"
                                                                     >
                                                                         <Eye className="w-3.5 h-3.5" />
                                                                         Manage
@@ -347,10 +347,10 @@ export default function AdminPage() {
                                 ))}
                             </div>
                         ) : (
-                            <div className="text-center py-24 bg-white dark:bg-card rounded-xl border border-dashed border-gray-200 dark:border-slate-800">
-                                <Building2 className="w-10 h-10 text-gray-300 dark:text-slate-700 mx-auto mb-3" />
-                                <h3 className="text-sm font-bold text-gray-900 dark:text-slate-100">No companies found</h3>
-                                <p className="text-gray-400 dark:text-slate-500 text-xs mt-1">Try adjusting your filters.</p>
+                            <div className="text-center py-24 bg-white dark:bg-card rounded-xl border border-dashed border-border dark:border-slate-800">
+                                <Building2 className="w-10 h-10 text-slate-300 dark:text-slate-700 mx-auto mb-3" />
+                                <h3 className="text-sm font-semibold text-slate-900 dark:text-slate-100">No companies found</h3>
+                                <p className="text-muted-foreground text-xs mt-1">Try adjusting your filters.</p>
                             </div>
                         )}
                     </div>
@@ -358,13 +358,13 @@ export default function AdminPage() {
                     {/* Sticky Sidebar Navigation (Timeline) */}
                     {Object.keys(groupedCompanies).length > 0 && (
                         <div className="hidden xl:block w-56 sticky top-24 h-[calc(100vh-8rem)]">
-                            <div className="bg-white dark:bg-card rounded-xl border dark:border-slate-800 shadow-sm p-4 h-full overflow-y-auto custom-scrollbar">
-                                <h4 className="text-xs font-bold text-gray-400 dark:text-slate-500 uppercase tracking-wider mb-4 px-2">
+                            <div className="bg-white dark:bg-card rounded-xl border border-border dark:border-slate-800 shadow-sm p-4 h-full overflow-y-auto custom-scrollbar">
+                                <h4 className="text-[10px] font-semibold text-slate-400 dark:text-slate-500 uppercase tracking-wider mb-4 px-2">
                                     Sectors
                                 </h4>
                                 <nav className="space-y-1 relative">
                                     {/* Vertical Line */}
-                                    <div className="absolute left-2.5 top-2 bottom-2 w-px bg-gray-200 dark:bg-slate-800 z-0" />
+                                    <div className="absolute left-2.5 top-2 bottom-2 w-px bg-slate-200 dark:bg-slate-800 z-0" />
 
                                     {Object.keys(groupedCompanies).map((sector) => {
                                         const id = `sector-${sector.replace(/\s+/g, '-').toLowerCase()}`;
@@ -379,10 +379,10 @@ export default function AdminPage() {
                                                     document.getElementById(id)?.scrollIntoView({ behavior: 'smooth' });
                                                     setActiveSector(sector);
                                                 }}
-                                                className={`group flex items-center gap-3 px-2 py-2 rounded-lg transition-all relative z-10 ${isActive ? 'bg-green-50 dark:bg-green-900/20' : 'hover:bg-gray-50 dark:hover:bg-slate-800'}`}
+                                                className={`group flex items-center gap-3 px-2 py-2 rounded-lg transition-all relative z-10 ${isActive ? 'bg-primary/10' : 'hover:bg-accent hover:text-accent-foreground'}`}
                                             >
-                                                <div className={`w-1.5 h-1.5 rounded-full ring-4 ring-white dark:ring-slate-900 transition-all duration-300 ${isActive ? 'bg-green-600 scale-125' : 'bg-gray-300 dark:bg-slate-700 group-hover:bg-green-400'}`} />
-                                                <span className={`text-xs font-medium transition-colors line-clamp-1 ${isActive ? 'text-green-700 dark:text-green-300 font-bold' : 'text-gray-600 dark:text-slate-400 group-hover:text-green-600 dark:group-hover:text-green-400'}`}>
+                                                <div className={`w-1.5 h-1.5 rounded-full ring-4 ring-white dark:ring-slate-900 transition-all duration-300 ${isActive ? 'bg-primary scale-125' : 'bg-slate-300 dark:bg-slate-700 group-hover:bg-primary/60'}`} />
+                                                <span className={`text-xs font-medium transition-colors line-clamp-1 ${isActive ? 'text-primary font-semibold' : 'text-slate-600 dark:text-slate-400 group-hover:text-primary'}`}>
                                                     {sector}
                                                 </span>
                                             </a>

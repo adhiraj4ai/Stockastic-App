@@ -19,6 +19,8 @@ from concurrent.futures import ThreadPoolExecutor
 
 logger = logging.getLogger(__name__)
 
+OOS_FRACTION = 0.30  # held-out tail fraction for out-of-sample validation
+
 # --- Wrappers for Robustness and Library Migration ---
 
 class SafeIndicator:
@@ -248,6 +250,116 @@ class SafeTa:
         return df, span_df
 
     # ------------------------------------------------------------------ #
+    #  Composite indicators with no single talib function                 #
+    #  (column order mirrors pandas_ta so .iloc[:, n] access is correct)  #
+    # ------------------------------------------------------------------ #
+
+    def supertrend(self, high, low, close, length=10, multiplier=3.0, **_):
+        """Supertrend. Columns [SUPERT, SUPERTd, SUPERTl, SUPERTs] (iloc 0/1/2/3).
+
+        SUPERTd is direction: 1 = uptrend, -1 = downtrend (matches pandas_ta).
+        """
+        h, l, c = _to_arr(high), _to_arr(low), _to_arr(close)
+        n = len(c)
+        period, mult = int(length), float(multiplier)
+        atr = talib.ATR(h, l, c, timeperiod=period)
+        hl2 = (h + l) / 2.0
+        upper = hl2 + mult * atr
+        lower = hl2 - mult * atr
+
+        final_upper = np.full(n, np.nan)
+        final_lower = np.full(n, np.nan)
+        trend = np.full(n, np.nan)        # the supertrend line
+        direction = np.full(n, np.nan)    # 1 up, -1 down
+
+        for i in range(n):
+            if np.isnan(atr[i]):
+                continue
+            if i == 0 or np.isnan(final_upper[i - 1]):
+                final_upper[i] = upper[i]
+                final_lower[i] = lower[i]
+                direction[i] = 1
+                trend[i] = final_lower[i]
+                continue
+            final_upper[i] = (upper[i] if (upper[i] < final_upper[i - 1] or c[i - 1] > final_upper[i - 1])
+                              else final_upper[i - 1])
+            final_lower[i] = (lower[i] if (lower[i] > final_lower[i - 1] or c[i - 1] < final_lower[i - 1])
+                              else final_lower[i - 1])
+            # Determine direction from previous trend line
+            if c[i] > final_upper[i - 1]:
+                direction[i] = 1
+            elif c[i] < final_lower[i - 1]:
+                direction[i] = -1
+            else:
+                direction[i] = direction[i - 1]
+            trend[i] = final_lower[i] if direction[i] == 1 else final_upper[i]
+
+        long_line = np.where(direction == 1, trend, np.nan)
+        short_line = np.where(direction == -1, trend, np.nan)
+        idx = _idx(close)
+        return pd.DataFrame(
+            {f'SUPERT_{period}_{mult}': trend, f'SUPERTd_{period}_{mult}': direction,
+             f'SUPERTl_{period}_{mult}': long_line, f'SUPERTs_{period}_{mult}': short_line},
+            index=idx,
+        )
+
+    def kc(self, high, low, close, length=20, scalar=2.0, mamode=None, **_):
+        """Keltner Channels. Columns [KCLe, KCBe, KCUe] = lower, basis, upper (iloc 0/1/2)."""
+        h, l, c = _to_arr(high), _to_arr(low), _to_arr(close)
+        period, scale = int(length), float(scalar)
+        basis = talib.EMA(c, timeperiod=period)
+        rng = talib.ATR(h, l, c, timeperiod=period)
+        upper = basis + scale * rng
+        lower = basis - scale * rng
+        idx = _idx(close)
+        return pd.DataFrame(
+            {f'KCLe_{period}_{scale}': lower, f'KCBe_{period}_{scale}': basis, f'KCUe_{period}_{scale}': upper},
+            index=idx,
+        )
+
+    def cmf(self, high, low, close, volume, length=20, **_):
+        """Chaikin Money Flow (single Series)."""
+        h, l, c, v = _to_arr(high), _to_arr(low), _to_arr(close), _to_arr(volume)
+        hl = h - l
+        mfm = np.where(hl > 0, ((c - l) - (h - c)) / hl, 0.0)
+        mfv = mfm * v
+        period = int(length)
+        mfv_s = pd.Series(mfv).rolling(period).sum()
+        v_s = pd.Series(v).rolling(period).sum()
+        cmf = (mfv_s / v_s).to_numpy()
+        return pd.Series(cmf, index=_idx(close))
+
+    def efi(self, close, volume, length=13, **_):
+        """Elder Force Index (single Series): EMA(diff(close) * volume, length)."""
+        c, v = _to_arr(close), _to_arr(volume)
+        raw = np.empty(len(c))
+        raw[0] = np.nan
+        raw[1:] = (c[1:] - c[:-1]) * v[1:]
+        ema = talib.EMA(np.nan_to_num(raw, nan=0.0), timeperiod=int(length))
+        return pd.Series(ema, index=_idx(close))
+
+    def coppock(self, close, length=10, fast=11, slow=14, **_):
+        """Coppock Curve (single Series): WMA(ROC(slow) + ROC(fast), length)."""
+        c = _to_arr(close)
+        roc_fast = talib.ROC(c, timeperiod=int(fast))
+        roc_slow = talib.ROC(c, timeperiod=int(slow))
+        combined = np.nan_to_num(roc_fast, nan=0.0) + np.nan_to_num(roc_slow, nan=0.0)
+        cop = talib.WMA(combined, timeperiod=int(length))
+        return pd.Series(cop, index=_idx(close))
+
+    def aroon(self, high, low, length=14, **_):
+        """Aroon. Columns [AROOND, AROONU, AROONOSC] = down, up, osc (iloc 0/1/2)."""
+        h, l = _to_arr(high), _to_arr(low)
+        period = int(length)
+        down, up = talib.AROON(h, l, timeperiod=period)
+        osc = up - down
+        idx = _idx(high)
+        return pd.DataFrame(
+            {f'AROOND_{period}': down, f'AROONU_{period}': up, f'AROONOSC_{period}': osc},
+            index=idx,
+        )
+
+    # ------------------------------------------------------------------ #
     #  Generic passthrough for any other talib function                   #
     # ------------------------------------------------------------------ #
 
@@ -326,6 +438,12 @@ class OptimizationService:
         return data_map
 
     @staticmethod
+    def anchored_split(df, oos_fraction=OOS_FRACTION):
+        """Split a date-ordered price frame into (in_sample, out_of_sample) by tail fraction."""
+        cut = int(len(df) * (1 - oos_fraction))
+        return df.iloc[:cut], df.iloc[cut:]
+
+    @staticmethod
     def run_optimization(strategy_model, scope_type, scope_val, start_date, end_date, n_trials, objective_type='win_rate'):
         """Runs Bayesian optimization for a strategy."""
         param_ranges = OptimizationService.extract_param_ranges(strategy_model.code)
@@ -336,17 +454,14 @@ class OptimizationService:
         if not data_map:
             raise ValueError(f"No valid data for scope {scope_type}:{scope_val}")
 
-        def objective(trial):
-            params = {}
-            for name, r in param_ranges.items():
-                if isinstance(r[0], int) and isinstance(r[1], int):
-                    params[name] = trial.suggest_int(name, r[0], r[1])
-                else:
-                    params[name] = trial.suggest_float(name, r[0], r[1])
+        # Split full data into in-sample (for tuning) and out-of-sample (for validation)
+        is_map = {t: OptimizationService.anchored_split(df)[0] for t, df in data_map.items()}
+        oos_map = {t: OptimizationService.anchored_split(df)[1] for t, df in data_map.items()}
 
-            code = strategy_model.code
-            if code == 'broker_accumulation_v1':
-                code = """
+        def _resolve_code(raw_code):
+            """Return the executable strategy code string, resolving named aliases."""
+            if raw_code == 'broker_accumulation_v1':
+                return """
 from backtesting import Strategy
 import numpy as np
 import pandas as pd
@@ -371,8 +486,8 @@ class BrokerAccumulationStrategy(Strategy):
         elif self.acc[-1] < 0 and self.acc[-2] >= 0:
             if self.position: self.position.close()
 """
-            elif code == 'ichimoku_accumulation_v1' or (isinstance(code, str) and code.startswith('ichimoku_accumulation_v1')):
-                code = """
+            elif raw_code == 'ichimoku_accumulation_v1' or (isinstance(raw_code, str) and raw_code.startswith('ichimoku_accumulation_v1')):
+                return """
 from backtesting import Strategy
 import pandas as pd
 import numpy as np
@@ -388,7 +503,7 @@ class IchimokuAccumulation(Strategy):
         ichimoku_df = ta.ichimoku(high, low, close)[0]
         self.span_a = self.I(lambda: ichimoku_df.iloc[:, 2].values)
         self.span_b = self.I(lambda: ichimoku_df.iloc[:, 3].values)
-        
+
         # Accumulation
         qs = DailyCumulativeAccumulation.objects.filter(symbol=symbol).values('transaction_date', 'cumulative_net')
         if not qs:
@@ -408,8 +523,8 @@ class IchimokuAccumulation(Strategy):
         elif price < self.span_a[-1] or price < self.span_b[-1]:
             if self.position: self.position.close()
 """
-            elif code == 'smart_accumulated_crossover_v1':
-                code = """
+            elif raw_code == 'smart_accumulated_crossover_v1':
+                return """
 from backtesting import Strategy
 from backtesting.lib import crossover
 import pandas as pd
@@ -442,6 +557,18 @@ class SmartAccumulatedCrossover(Strategy):
         elif crossover(self.slow_ma, self.fast_ma):
             if self.position: self.position.close()
 """
+            return raw_code
+
+        def _eval_params(params, eval_map):
+            """Run a strategy with the given params over eval_map and return the average score.
+
+            This is the single evaluation mechanism shared by both the Optuna objective
+            (in-sample) and the OOS validation pass, ensuring the two numbers are comparable.
+            Returns None if no symbol yields a valid score (all skipped or all errored).
+            """
+            base_code = _resolve_code(strategy_model.code)
+            # Inject param values into the code
+            code = base_code
             for name, val in params.items():
                 code = re.sub(rf"({name}\s*=\s*)[\d\.]+", rf"\g<1>{val}", code)
 
@@ -454,21 +581,53 @@ class SmartAccumulatedCrossover(Strategy):
             }
             try:
                 exec(code, local_scope)
-                strat_class = next((obj for obj in local_scope.values() if inspect.isclass(obj) and issubclass(obj, Strategy) and obj is not Strategy), None)
-                if not strat_class: return -9999
-                
-                scores = []
-                for ticker, df in data_map.items():
-                    bt = Backtest(df, strat_class, cash=100_000, commission=OptimizationService.DEFAULT_COMMISSION, exclusive_orders=True, finalize_trades=True)
+                strat_class = next(
+                    (obj for obj in local_scope.values()
+                     if inspect.isclass(obj) and issubclass(obj, Strategy) and obj is not Strategy),
+                    None,
+                )
+                if not strat_class:
+                    return None
+            except Exception:
+                return None
+
+            scores = []
+            for ticker, df in eval_map.items():
+                if len(df) < 20:
+                    continue
+                try:
+                    bt = Backtest(
+                        df, strat_class,
+                        cash=100_000,
+                        commission=OptimizationService.DEFAULT_COMMISSION,
+                        exclusive_orders=True,
+                        finalize_trades=True,
+                    )
                     stats = bt.run()
                     val = stats.get('Win Rate [%]' if objective_type == 'win_rate' else 'Return [%]', 0)
                     scores.append(val or 0)
-                return sum(scores) / len(scores) if scores else -9999
-            except:
-                return -9999
+                except Exception:
+                    continue
+
+            return sum(scores) / len(scores) if scores else None
+
+        def objective(trial):
+            params = {}
+            for name, r in param_ranges.items():
+                if isinstance(r[0], int) and isinstance(r[1], int):
+                    params[name] = trial.suggest_int(name, r[0], r[1])
+                else:
+                    params[name] = trial.suggest_float(name, r[0], r[1])
+
+            # Tune ONLY on in-sample slice
+            result = _eval_params(params, is_map)
+            return result if result is not None else -9999
 
         study = optuna.create_study(direction='maximize')
         study.optimize(objective, n_trials=n_trials)
+
+        # Evaluate best params on the held-out OOS tail using the SAME mechanism
+        oos_value = _eval_params(study.best_params, oos_map)
 
         batch_id = uuid.uuid4()
         StrategyExperiment.objects.create(
@@ -480,7 +639,21 @@ class SmartAccumulatedCrossover(Strategy):
             start_date=start_date,
             end_date=end_date,
             parameters=study.best_params,
-            metrics={'best_value': study.best_value, 'n_trials': len(study.trials)},
+            metrics={
+                "best_value": study.best_value,
+                "oos_value": oos_value,
+                "oos_fraction": OOS_FRACTION,
+                # Accept only when there was a positive in-sample edge AND the OOS
+                # run retained >= 50% of it. Guarding on best_value > 0 keeps the
+                # flag coherent for the 'return' objective, whose best_value can be
+                # negative (where a 0.5x multiplier would invert the threshold).
+                "oos_accepted": bool(
+                    oos_value is not None
+                    and study.best_value > 0
+                    and oos_value >= 0.5 * study.best_value
+                ),
+                "n_trials": len(study.trials),
+            },
             batch_id=batch_id,
             status=StrategyExperiment.Status.SUCCESS
         )

@@ -61,10 +61,10 @@ const WhaleWatchCard = ({ data }: { data: WhaleWatchData[] }) => {
 
     return (
         <Card >
-            <div className="absolute -right-10 -top-10 w-40 h-40 bg-blue-500/10 blur-3xl opacity-50" />
+            <div className="absolute -right-10 -top-10 w-40 h-40 bg-primary/10 blur-3xl opacity-50" />
             <CardHeader className="p-5 border-b border-slate-50 dark:border-slate-800 relative z-10">
                 <CardTitle className="text-sm font-bold text-slate-800 dark:text-slate-100 tracking-tight flex items-center gap-2">
-                    <Zap size={14} className="text-blue-600" /> WHALE WATCH (SMART MONEY)
+                    <Zap size={14} className="text-primary" /> WHALE WATCH (SMART MONEY)
                 </CardTitle>
                 <p className="text-[10px] text-slate-500 font-bold uppercase tracking-wider">Top Brokers & Their Accumulation</p>
             </CardHeader>
@@ -72,7 +72,7 @@ const WhaleWatchCard = ({ data }: { data: WhaleWatchData[] }) => {
                 {data.map((broker, i) => (
                     <div key={i} className="bg-slate-50 dark:bg-slate-800/50 rounded-xl p-3 border border-border dark:border-border space-y-3">
                         <div className="flex justify-between items-center border-b border-border dark:border-border pb-2">
-                            <Badge variant="outline" className="bg-blue-50 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300 border-none text-[10px] px-2">
+                            <Badge variant="outline" className="bg-primary/10 text-primary border-none text-[10px] px-2">
                                 Broker {broker.broker}
                             </Badge>
                             <span className="text-[10px] font-mono text-slate-400">Total: {formatRupees(broker.total_turnover / 10000000)} Cr</span>
@@ -231,7 +231,7 @@ const PaginatedTable = ({ data, type }: { data: StockData[], type: 'high' | 'low
                         {paginatedData.map((stock) => (
                             <TableRow
                                 key={stock.ticker}
-                                className="border-slate-50 dark:border-border cursor-pointer hover:bg-slate-50 dark:hover:bg-white/5"
+                                className="border-slate-50 dark:border-border cursor-pointer hover:bg-accent hover:text-accent-foreground"
                                 onClick={() => router.push(`/ticker/${stock.ticker}`)}
                             >
                                 <TableCell className="py-2.5 font-bold text-xs">{stock.ticker}</TableCell>
@@ -264,7 +264,7 @@ const PaginatedTable = ({ data, type }: { data: StockData[], type: 'high' | 'low
                     <button
                         onClick={() => setPage(p => Math.max(1, p - 1))}
                         disabled={page === 1}
-                        className="text-[10px] font-bold text-slate-500 disabled:opacity-30 disabled:cursor-not-allowed hover:text-blue-600 transition-colors"
+                        className="text-[10px] font-bold text-slate-500 disabled:opacity-30 disabled:cursor-not-allowed hover:text-primary transition-colors"
                     >
                         PREV
                     </button>
@@ -274,7 +274,7 @@ const PaginatedTable = ({ data, type }: { data: StockData[], type: 'high' | 'low
                     <button
                         onClick={() => setPage(p => Math.min(totalPages, p + 1))}
                         disabled={page === totalPages}
-                        className="text-[10px] font-bold text-slate-500 disabled:opacity-30 disabled:cursor-not-allowed hover:text-blue-600 transition-colors"
+                        className="text-[10px] font-bold text-slate-500 disabled:opacity-30 disabled:cursor-not-allowed hover:text-primary transition-colors"
                     >
                         NEXT
                     </button>
@@ -358,9 +358,9 @@ export default function MoversShakersPage() {
                 <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-border dark:border-border pb-4">
                     <Tabs defaultValue="daily" value={timeframe} className="w-full max-w-[400px]" onValueChange={setTimeframe}>
                         <TabsList className="grid w-full grid-cols-3 bg-slate-100 dark:bg-slate-800/50 p-1 rounded-lg">
-                            <TabsTrigger value="daily" className="rounded-md font-bold text-xs data-[state=active]:bg-white data-[state=active]:dark:bg-slate-700 data-[state=active]:shadow-sm transition-all">Daily</TabsTrigger>
-                            <TabsTrigger value="weekly" className="rounded-md font-bold text-xs data-[state=active]:bg-white data-[state=active]:dark:bg-slate-700 data-[state=active]:shadow-sm transition-all">Weekly</TabsTrigger>
-                            <TabsTrigger value="monthly" className="rounded-md font-bold text-xs data-[state=active]:bg-white data-[state=active]:dark:bg-slate-700 data-[state=active]:shadow-sm transition-all">Monthly</TabsTrigger>
+                            <TabsTrigger value="daily" className="rounded-md font-bold text-xs transition-all">Daily</TabsTrigger>
+                            <TabsTrigger value="weekly" className="rounded-md font-bold text-xs transition-all">Weekly</TabsTrigger>
+                            <TabsTrigger value="monthly" className="rounded-md font-bold text-xs transition-all">Monthly</TabsTrigger>
                         </TabsList>
                     </Tabs>
 
@@ -381,10 +381,10 @@ export default function MoversShakersPage() {
                     <>
                         {/* 1. ROCKET LIST (Circuit Breakers) */}
                         <Card className=" group">
-                            <div className="absolute -left-10 -top-10 w-40 h-40 bg-purple-500/10 blur-3xl opacity-50 transition-opacity group-hover:opacity-70" />
+                            <div className="absolute -left-10 -top-10 w-40 h-40 bg-primary/10 blur-3xl opacity-50 transition-opacity group-hover:opacity-70" />
                             <CardHeader className="p-5 border-b border-slate-50 dark:border-slate-800 relative z-10">
                                 <CardTitle className="text-sm font-bold text-slate-800 dark:text-slate-100 tracking-tight flex items-center gap-2">
-                                    <Rocket size={14} className="text-purple-600" /> ROCKET LIST
+                                    <Rocket size={14} className="text-primary" /> ROCKET LIST
                                 </CardTitle>
                                 <p className="text-[10px] text-slate-500 font-bold uppercase tracking-wider">Top 10 Highest Volatility Stocks</p>
                             </CardHeader>
@@ -420,16 +420,16 @@ export default function MoversShakersPage() {
                                                         statusColor = stock.percent_change > 0 ? 'bg-emerald-500' : 'bg-rose-500';
                                                     } else if (absChange >= 5) {
                                                         statusLabel = 'HIGH VOL';
-                                                        statusColor = 'bg-orange-500';
+                                                        statusColor = 'bg-amber-500';
                                                     } else {
                                                         statusLabel = 'ACTIVE';
-                                                        statusColor = 'bg-blue-500';
+                                                        statusColor = 'bg-primary';
                                                     }
 
                                                     return (
                                                         <TableRow
                                                             key={stock.ticker}
-                                                            className="border-slate-50 dark:border-border cursor-pointer hover:bg-slate-50 dark:hover:bg-white/5"
+                                                            className="border-slate-50 dark:border-border cursor-pointer hover:bg-accent hover:text-accent-foreground"
                                                             onClick={() => router.push(`/ticker/${stock.ticker}`)}
                                                         >
                                                             <TableCell className="py-3 font-bold text-xs pl-6">{stock.ticker}</TableCell>
@@ -500,7 +500,7 @@ export default function MoversShakersPage() {
                             <Card >
                                 <CardHeader className="p-5 border-b border-slate-50 dark:border-slate-800">
                                     <CardTitle className="text-sm font-bold text-slate-800 dark:text-slate-100 tracking-tight flex items-center gap-2">
-                                        <Magnet size={14} className="text-blue-600" /> MONEY MAGNETS
+                                        <Magnet size={14} className="text-primary" /> MONEY MAGNETS
                                     </CardTitle>
                                     <p className="text-[10px] text-slate-500 font-bold uppercase tracking-wider">Highest Turnover Leaders</p>
                                 </CardHeader>
@@ -510,7 +510,7 @@ export default function MoversShakersPage() {
                                             <div className="flex justify-between items-center text-xs">
                                                 <div className="flex items-center gap-2">
                                                     <span className="font-bold text-slate-700 dark:text-slate-300 w-6 text-right text-[10px] text-slate-400">#{i + 1}</span>
-                                                    <span className="font-bold text-slate-700 dark:text-slate-300 group-hover:text-blue-600 transition-colors">{stock.ticker}</span>
+                                                    <span className="font-bold text-slate-700 dark:text-slate-300 group-hover:text-primary transition-colors">{stock.ticker}</span>
                                                     <SectorBadge sector={stock.sector} />
                                                 </div>
                                                 <span className="font-mono text-[10px] text-slate-500">{formatRupees(stock.turnover / 10000000)} Cr</span>
@@ -612,20 +612,20 @@ export default function MoversShakersPage() {
                         <Card >
                             <CardHeader className="p-5 border-b border-slate-50 dark:border-slate-800">
                                 <CardTitle className="text-sm font-bold text-slate-800 dark:text-slate-100 tracking-tight flex items-center gap-2">
-                                    <Gauge size={14} className="text-orange-600" /> VOLATILITY RADAR
+                                    <Gauge size={14} className="text-primary" /> VOLATILITY RADAR
                                 </CardTitle>
                                 <p className="text-[10px] text-slate-500 font-bold uppercase tracking-wider">Highest Intraday Swings (High/Low spread)</p>
                             </CardHeader>
                             <CardContent className="p-0">
                                 <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-5 gap-4 p-5">
                                     {scanners.volatile.map((stock) => (
-                                        <div key={stock.ticker} className="p-3 bg-slate-50 dark:bg-slate-800/50 rounded-xl border border-border dark:border-border cursor-pointer hover:border-orange-500/30 transition-all group" onClick={() => router.push(`/ticker/${stock.ticker}`)}>
+                                        <div key={stock.ticker} className="p-3 bg-slate-50 dark:bg-slate-800/50 rounded-xl border border-border dark:border-border cursor-pointer hover:border-primary/30 transition-all group" onClick={() => router.push(`/ticker/${stock.ticker}`)}>
                                             <div className="flex justify-between items-start mb-2">
-                                                <span className="text-xs font-bold text-slate-900 dark:text-slate-100 group-hover:text-orange-600 transition-colors">{stock.ticker}</span>
-                                                <Sparkline data={stock.sparkline} color="#f97316" width={50} height={20} />
+                                                <span className="text-xs font-bold text-slate-900 dark:text-slate-100 group-hover:text-primary transition-colors">{stock.ticker}</span>
+                                                <Sparkline data={stock.sparkline} color="#10b981" width={50} height={20} />
                                             </div>
                                             <div className="space-y-0.5">
-                                                <div className="text-lg font-bold text-orange-600 dark:text-orange-400 font-mono">{stock.volatility.toFixed(1)}%</div>
+                                                <div className="text-lg font-bold text-primary font-mono">{stock.volatility.toFixed(1)}%</div>
                                                 <div className="text-[9px] text-slate-400 uppercase font-semibold tracking-wider">Spread</div>
                                             </div>
                                         </div>

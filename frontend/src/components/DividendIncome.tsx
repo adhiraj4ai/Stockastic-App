@@ -102,15 +102,15 @@ export function DividendIncome() {
 
                 <Card className="bg-gradient-to-br from-blue-50 to-blue-100 dark:from-blue-900/20 dark:to-blue-900/10 border-blue-200 dark:border-blue-800">
                     <CardHeader className="pb-2">
-                        <CardTitle className="text-sm font-medium text-blue-800 dark:text-blue-400 flex items-center gap-2">
+                        <CardTitle className="text-sm font-medium text-primary flex items-center gap-2">
                             <TrendingUp className="h-4 w-4" /> Yield on Cost
                         </CardTitle>
                     </CardHeader>
                     <CardContent>
-                        <div className="text-2xl font-bold text-blue-900 dark:text-blue-300">
+                        <div className="text-2xl font-bold text-primary">
                             {summary?.yield_on_cost.toFixed(2)}%
                         </div>
-                        <p className="text-xs text-blue-700 dark:text-blue-500 mt-1">
+                        <p className="text-xs text-primary/80 mt-1">
                             Lifetime yield based on current invested capital
                         </p>
                     </CardContent>
@@ -168,7 +168,7 @@ export function DividendIncome() {
                             ) : (
                                 <div className="rounded-md border border-gray-200 dark:border-gray-800 overflow-hidden">
                                     <Table>
-                                        <TableHeader className="bg-gray-50 dark:bg-gray-900/50">
+                                        <TableHeader className="bg-muted/50">
                                             <TableRow>
                                                 <TableHead>Ticker</TableHead>
                                                 <TableHead className="text-right">Realized P&L</TableHead>
@@ -224,7 +224,7 @@ export function DividendIncome() {
                 <TabsContent value="upcoming" className="space-y-4">
                     <Card>
                         <CardHeader>
-                            <CardTitle className="flex items-center gap-2"><Calendar className="h-5 w-5 text-orange-500" /> Upcoming Dividends</CardTitle>
+                            <CardTitle className="flex items-center gap-2"><Calendar className="h-5 w-5 text-primary" /> Upcoming Dividends</CardTitle>
                             <CardDescription>Dividends announced with future book closure dates. Ensure you hold shares before the book close date to be eligible.</CardDescription>
                         </CardHeader>
                         <CardContent>
@@ -246,7 +246,7 @@ function DividendTable({ data, isUpcoming = false }: { data: DividendItem[], isU
     return (
         <div className="rounded-md border border-gray-200 dark:border-gray-800 overflow-hidden">
             <Table>
-                <TableHeader className="bg-gray-50 dark:bg-gray-900/50">
+                <TableHeader className="bg-muted/50">
                     <TableRow>
                         <TableHead className="w-[100px]">Date</TableHead>
                         <TableHead>Ticker</TableHead>
@@ -263,7 +263,7 @@ function DividendTable({ data, isUpcoming = false }: { data: DividendItem[], isU
                             <TableCell className="font-medium">
                                 <span className="whitespace-nowrap">{item.book_close_date}</span>
                                 {isUpcoming && (
-                                    <Badge variant="outline" className="ml-2 text-[10px] bg-orange-100 text-orange-800 border-orange-200">
+                                    <Badge variant="outline" className="ml-2 text-[10px] bg-primary/10 text-primary border-primary/30">
                                         Book Close
                                     </Badge>
                                 )}

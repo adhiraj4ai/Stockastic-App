@@ -70,9 +70,9 @@ export function TopNavigationBar() {
                         <Image
                             src={logoSrc}
                             alt="Stockastic"
-                            width={104}
-                            height={28}
-                            className="object-contain"
+                            width={120}
+                            height={45}
+                            className="h-9 w-auto object-contain"
                             priority
                         />
                     </Link>

@@ -75,6 +75,7 @@ system: |
 
   Use Rs notation throughout. Always show % alongside Rs for P/L.
   Never make specific buy/sell recommendations — flag and defer to the strategist.
+  Before producing a fundamental or technical analysis, call search_saved_analyses for the relevant ticker/topic; if a prior analysis or recurring series exists, fetch it with get_saved_analysis and explicitly surface what has changed since then.
 
 user: |
   Retrieve and analyze this user's portfolio.

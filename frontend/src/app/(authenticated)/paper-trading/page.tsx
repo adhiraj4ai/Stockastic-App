@@ -70,7 +70,7 @@ export default function PaperTradingPage() {
                     <div className="lg:col-span-1 space-y-6">
                         <div className="bg-white dark:bg-card p-6 rounded-xl shadow-sm border border-gray-100 dark:border-slate-800">
                             <div className="flex items-center gap-2 mb-4">
-                                <BarChart2 className="w-5 h-5 text-blue-500" />
+                                <BarChart2 className="w-5 h-5 text-primary" />
                                 <h2 className="text-lg font-bold text-gray-800 dark:text-slate-200">My Virtual Accounts</h2>
                             </div>
 
@@ -102,11 +102,11 @@ export default function PaperTradingPage() {
                             )}
                         </div>
 
-                        <div className="bg-blue-50 dark:bg-blue-900/20 p-6 rounded-xl border border-blue-100 dark:border-blue-800">
-                            <h3 className="font-bold text-blue-800 dark:text-blue-300 mb-2 flex items-center gap-2">
+                        <div className="bg-primary/5 dark:bg-primary/10 p-6 rounded-xl border border-primary/20">
+                            <h3 className="font-bold text-primary mb-2 flex items-center gap-2">
                                 <TrendingUp size={18} /> How it works
                             </h3>
-                            <ul className="text-sm text-blue-700 dark:text-blue-400 space-y-2 list-disc pl-4">
+                            <ul className="text-sm text-primary/80 dark:text-primary/70 space-y-2 list-disc pl-4">
                                 <li>Start with a virtual balance (Rs. 1,000,000 by default).</li>
                                 <li>Place buy, sell, and short sell orders using real-time market data.</li>
                                 <li>Broker fees and commissions are automatically simulated.</li>
@@ -140,7 +140,7 @@ export default function PaperTradingPage() {
                                             </tr>
                                         ) : (
                                             leaderboard.map((entry, index) => (
-                                                <tr key={index} className="border-b border-gray-50 dark:border-slate-800 last:border-0 hover:bg-gray-50 dark:hover:bg-slate-800/50 transition-colors">
+                                                <tr key={index} className="border-b border-gray-50 dark:border-slate-800 last:border-0 hover:bg-accent hover:text-accent-foreground transition-colors">
                                                     <td className="px-6 py-4">
                                                         <div className="flex items-center justify-center w-8 h-8 rounded-full bg-gray-100 dark:bg-slate-800 font-bold text-gray-700 dark:text-slate-300">
                                                             {index + 1}

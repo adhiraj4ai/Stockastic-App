@@ -1,0 +1,617 @@
+[
+  {
+    "name": "Dual Thrust Breakout",
+    "passed": true,
+    "median_excess_return_pct": 745.94,
+    "pooled_win_rate": 37.44,
+    "win_rate_ci": [
+      0.3472,
+      0.4024
+    ],
+    "win_rate_reportable": true,
+    "pvalue": 0.0002,
+    "total_trades": 1178,
+    "survives_fdr": true,
+    "qvalue": 0.0041
+  },
+  {
+    "name": "Three White Soldiers (Trend)",
+    "passed": true,
+    "median_excess_return_pct": 616.55,
+    "pooled_win_rate": 41.17,
+    "win_rate_ci": [
+      0.37,
+      0.4547
+    ],
+    "win_rate_reportable": true,
+    "pvalue": 0.0028,
+    "total_trades": 515,
+    "survives_fdr": true,
+    "qvalue": 0.0155
+  },
+  {
+    "name": "RSI & Bollinger Mean Reversion",
+    "passed": true,
+    "median_excess_return_pct": 608.55,
+    "pooled_win_rate": 64.8,
+    "win_rate_ci": [
+      0.561,
+      0.7262
+    ],
+    "win_rate_reportable": true,
+    "pvalue": 0.0038,
+    "total_trades": 125,
+    "survives_fdr": true,
+    "qvalue": 0.0156
+  },
+  {
+    "name": "On-Balance Volume (OBV) Trend",
+    "passed": true,
+    "median_excess_return_pct": 212.19,
+    "pooled_win_rate": 25.67,
+    "win_rate_ci": [
+      0.2223,
+      0.2944
+    ],
+    "win_rate_reportable": true,
+    "pvalue": 0.0006,
+    "total_trades": 561,
+    "survives_fdr": true,
+    "qvalue": 0.0082
+  },
+  {
+    "name": "NR7 Volatility Breakout",
+    "passed": true,
+    "median_excess_return_pct": 164.83,
+    "pooled_win_rate": 30.41,
+    "win_rate_ci": [
+      0.2544,
+      0.3587
+    ],
+    "win_rate_reportable": true,
+    "pvalue": 0.0206,
+    "total_trades": 296,
+    "survives_fdr": true,
+    "qvalue": 0.0422
+  },
+  {
+    "name": "Volatility Stop (ATR Trailing)",
+    "passed": true,
+    "median_excess_return_pct": 154.46,
+    "pooled_win_rate": 28.95,
+    "win_rate_ci": [
+      0.259,
+      0.3221
+    ],
+    "win_rate_reportable": true,
+    "pvalue": 0.001,
+    "total_trades": 791,
+    "survives_fdr": true,
+    "qvalue": 0.0103
+  },
+  {
+    "name": "Elder's Triple Screen",
+    "passed": true,
+    "median_excess_return_pct": 115.27,
+    "pooled_win_rate": 56.15,
+    "win_rate_ci": [
+      0.5119,
+      0.6099
+    ],
+    "win_rate_reportable": true,
+    "pvalue": 0.0052,
+    "total_trades": 390,
+    "survives_fdr": true,
+    "qvalue": 0.017
+  },
+  {
+    "name": "Golden Cross + ADX",
+    "passed": true,
+    "median_excess_return_pct": 63.55,
+    "pooled_win_rate": 28.21,
+    "win_rate_ci": [
+      0.2084,
+      0.3695
+    ],
+    "win_rate_reportable": true,
+    "pvalue": 0.0098,
+    "total_trades": 117,
+    "survives_fdr": true,
+    "qvalue": 0.0251
+  },
+  {
+    "name": "Coppock Curve (Long Term)",
+    "passed": true,
+    "median_excess_return_pct": 50.06,
+    "pooled_win_rate": 29.05,
+    "win_rate_ci": [
+      0.244,
+      0.3419
+    ],
+    "win_rate_reportable": true,
+    "pvalue": 0.0026,
+    "total_trades": 327,
+    "survives_fdr": true,
+    "qvalue": 0.0155
+  },
+  {
+    "name": "Broker Accumulation (Institutional)",
+    "passed": true,
+    "median_excess_return_pct": 48.59,
+    "pooled_win_rate": 36.06,
+    "win_rate_ci": [
+      0.3264,
+      0.3963
+    ],
+    "win_rate_reportable": true,
+    "pvalue": 0.0018,
+    "total_trades": 721,
+    "survives_fdr": true,
+    "qvalue": 0.0148
+  },
+  {
+    "name": "MACD Trend Follower",
+    "passed": true,
+    "median_excess_return_pct": 35.51,
+    "pooled_win_rate": 29.64,
+    "win_rate_ci": [
+      0.2557,
+      0.3406
+    ],
+    "win_rate_reportable": true,
+    "pvalue": 0.007,
+    "total_trades": 442,
+    "survives_fdr": true,
+    "qvalue": 0.0205
+  },
+  {
+    "name": "Force Index Impulse",
+    "passed": true,
+    "median_excess_return_pct": 33.18,
+    "pooled_win_rate": 18.55,
+    "win_rate_ci": [
+      0.1493,
+      0.2281
+    ],
+    "win_rate_reportable": true,
+    "pvalue": 0.0206,
+    "total_trades": 372,
+    "survives_fdr": true,
+    "qvalue": 0.0422
+  },
+  {
+    "name": "Turtle Trading (Channel Breakout)",
+    "passed": true,
+    "median_excess_return_pct": 25.62,
+    "pooled_win_rate": 27.55,
+    "win_rate_ci": [
+      0.2297,
+      0.3267
+    ],
+    "win_rate_reportable": true,
+    "pvalue": 0.018,
+    "total_trades": 323,
+    "survives_fdr": true,
+    "qvalue": 0.041
+  },
+  {
+    "name": "Aroon Trend Strength",
+    "passed": true,
+    "median_excess_return_pct": 22.71,
+    "pooled_win_rate": 26.52,
+    "win_rate_ci": [
+      0.2224,
+      0.313
+    ],
+    "win_rate_reportable": true,
+    "pvalue": 0.0032,
+    "total_trades": 362,
+    "survives_fdr": true,
+    "qvalue": 0.0155
+  },
+  {
+    "name": "Accumulation Divergence",
+    "passed": true,
+    "median_excess_return_pct": 22.35,
+    "pooled_win_rate": 46.14,
+    "win_rate_ci": [
+      0.4348,
+      0.4882
+    ],
+    "win_rate_reportable": true,
+    "pvalue": 0.0176,
+    "total_trades": 1335,
+    "survives_fdr": true,
+    "qvalue": 0.041
+  },
+  {
+    "name": "Parabolic SAR (Momentum)",
+    "passed": true,
+    "median_excess_return_pct": 14.43,
+    "pooled_win_rate": 26.68,
+    "win_rate_ci": [
+      0.2324,
+      0.3042
+    ],
+    "win_rate_reportable": true,
+    "pvalue": 0.0042,
+    "total_trades": 581,
+    "survives_fdr": true,
+    "qvalue": 0.0157
+  },
+  {
+    "name": "Fibonacci Golden Zone",
+    "passed": false,
+    "median_excess_return_pct": 334.0,
+    "pooled_win_rate": 46.67,
+    "win_rate_ci": [
+      0.3023,
+      0.6386
+    ],
+    "win_rate_reportable": true,
+    "pvalue": 0.0002,
+    "total_trades": 30,
+    "survives_fdr": true,
+    "qvalue": 0.0041
+  },
+  {
+    "name": "VWAP Pullback",
+    "passed": false,
+    "median_excess_return_pct": 41.33,
+    "pooled_win_rate": 24.52,
+    "win_rate_ci": [
+      0.1841,
+      0.3185
+    ],
+    "win_rate_reportable": true,
+    "pvalue": 0.0086,
+    "total_trades": 155,
+    "survives_fdr": true,
+    "qvalue": 0.0235
+  },
+  {
+    "name": "Smart Money Accumulation",
+    "passed": false,
+    "median_excess_return_pct": 36.06,
+    "pooled_win_rate": 39.4,
+    "win_rate_ci": [
+      0.3592,
+      0.4299
+    ],
+    "win_rate_reportable": true,
+    "pvalue": 0.0034,
+    "total_trades": 731,
+    "survives_fdr": true,
+    "qvalue": 0.0155
+  },
+  {
+    "name": "MACD + Parabolic SAR",
+    "passed": false,
+    "median_excess_return_pct": 33.49,
+    "pooled_win_rate": 28.54,
+    "win_rate_ci": [
+      0.2441,
+      0.3305
+    ],
+    "win_rate_reportable": true,
+    "pvalue": 0.0054,
+    "total_trades": 417,
+    "survives_fdr": true,
+    "qvalue": 0.017
+  },
+  {
+    "name": "Williams %R Trend",
+    "passed": true,
+    "median_excess_return_pct": 44.43,
+    "pooled_win_rate": 58.87,
+    "win_rate_ci": [
+      0.5402,
+      0.6355
+    ],
+    "win_rate_reportable": true,
+    "pvalue": 0.027,
+    "total_trades": 406,
+    "survives_fdr": false,
+    "qvalue": 0.0527
+  },
+  {
+    "name": "Chaikin Money Flow Divergence",
+    "passed": true,
+    "median_excess_return_pct": 33.54,
+    "pooled_win_rate": 33.33,
+    "win_rate_ci": [
+      0.2795,
+      0.3919
+    ],
+    "win_rate_reportable": true,
+    "pvalue": 0.3989,
+    "total_trades": 267,
+    "survives_fdr": false,
+    "qvalue": 0.4304
+  },
+  {
+    "name": "Supertrend Follower",
+    "passed": true,
+    "median_excess_return_pct": 29.52,
+    "pooled_win_rate": 25.95,
+    "win_rate_ci": [
+      0.2016,
+      0.3271
+    ],
+    "win_rate_reportable": true,
+    "pvalue": 0.0586,
+    "total_trades": 185,
+    "survives_fdr": false,
+    "qvalue": 0.0961
+  },
+  {
+    "name": "RSI-2 Mean Reversion",
+    "passed": true,
+    "median_excess_return_pct": 28.48,
+    "pooled_win_rate": 47.97,
+    "win_rate_ci": [
+      0.4438,
+      0.5157
+    ],
+    "win_rate_reportable": true,
+    "pvalue": 0.1142,
+    "total_trades": 738,
+    "survives_fdr": false,
+    "qvalue": 0.1561
+  },
+  {
+    "name": "Z-Score Mean Reversion",
+    "passed": true,
+    "median_excess_return_pct": 28.0,
+    "pooled_win_rate": 54.05,
+    "win_rate_ci": [
+      0.448,
+      0.6303
+    ],
+    "win_rate_reportable": true,
+    "pvalue": 0.1618,
+    "total_trades": 111,
+    "survives_fdr": false,
+    "qvalue": 0.214
+  },
+  {
+    "name": "Inside Bar Momentum",
+    "passed": false,
+    "median_excess_return_pct": 46.16,
+    "pooled_win_rate": 27.43,
+    "win_rate_ci": [
+      0.2136,
+      0.3447
+    ],
+    "win_rate_reportable": true,
+    "pvalue": 0.0486,
+    "total_trades": 175,
+    "survives_fdr": false,
+    "qvalue": 0.083
+  },
+  {
+    "name": "Volume Breakout Hunter",
+    "passed": false,
+    "median_excess_return_pct": 22.28,
+    "pooled_win_rate": 28.81,
+    "win_rate_ci": [
+      0.2348,
+      0.348
+    ],
+    "win_rate_reportable": true,
+    "pvalue": 1.0,
+    "total_trades": 243,
+    "survives_fdr": false,
+    "qvalue": 1.0
+  },
+  {
+    "name": "Ichimoku Cloud Trend",
+    "passed": false,
+    "median_excess_return_pct": 21.16,
+    "pooled_win_rate": 28.55,
+    "win_rate_ci": [
+      0.2544,
+      0.3188
+    ],
+    "win_rate_reportable": true,
+    "pvalue": 0.1064,
+    "total_trades": 753,
+    "survives_fdr": false,
+    "qvalue": 0.1555
+  },
+  {
+    "name": "Smart Money Trend (Ownership)",
+    "passed": false,
+    "median_excess_return_pct": 19.41,
+    "pooled_win_rate": 35.0,
+    "win_rate_ci": [
+      0.276,
+      0.4321
+    ],
+    "win_rate_reportable": true,
+    "pvalue": 0.0466,
+    "total_trades": 140,
+    "survives_fdr": false,
+    "qvalue": 0.083
+  },
+  {
+    "name": "Smart Accumulated Crossover",
+    "passed": false,
+    "median_excess_return_pct": 19.41,
+    "pooled_win_rate": 35.0,
+    "win_rate_ci": [
+      0.276,
+      0.4321
+    ],
+    "win_rate_reportable": true,
+    "pvalue": 0.0466,
+    "total_trades": 140,
+    "survives_fdr": false,
+    "qvalue": 0.083
+  },
+  {
+    "name": "Institutional Breakout",
+    "passed": false,
+    "median_excess_return_pct": 18.08,
+    "pooled_win_rate": 28.57,
+    "win_rate_ci": [
+      0.2306,
+      0.3481
+    ],
+    "win_rate_reportable": true,
+    "pvalue": 0.198,
+    "total_trades": 224,
+    "survives_fdr": false,
+    "qvalue": 0.246
+  },
+  {
+    "name": "Golden Cross Pullback",
+    "passed": false,
+    "median_excess_return_pct": 13.45,
+    "pooled_win_rate": 18.85,
+    "win_rate_ci": [
+      0.1444,
+      0.2423
+    ],
+    "win_rate_reportable": true,
+    "pvalue": 0.0854,
+    "total_trades": 244,
+    "survives_fdr": false,
+    "qvalue": 0.1297
+  },
+  {
+    "name": "Williams Alligator v2",
+    "passed": false,
+    "median_excess_return_pct": 10.39,
+    "pooled_win_rate": 29.32,
+    "win_rate_ci": [
+      0.2463,
+      0.345
+    ],
+    "win_rate_reportable": true,
+    "pvalue": 0.0724,
+    "total_trades": 324,
+    "survives_fdr": false,
+    "qvalue": 0.1142
+  },
+  {
+    "name": "ADX Trend Strength",
+    "passed": false,
+    "median_excess_return_pct": 7.13,
+    "pooled_win_rate": 25.84,
+    "win_rate_ci": [
+      0.2173,
+      0.3042
+    ],
+    "win_rate_reportable": true,
+    "pvalue": 1.0,
+    "total_trades": 387,
+    "survives_fdr": false,
+    "qvalue": 1.0
+  },
+  {
+    "name": "Keltner Channel Breakout",
+    "passed": false,
+    "median_excess_return_pct": 5.2,
+    "pooled_win_rate": 19.76,
+    "win_rate_ci": [
+      0.1443,
+      0.2645
+    ],
+    "win_rate_reportable": true,
+    "pvalue": 0.11,
+    "total_trades": 167,
+    "survives_fdr": false,
+    "qvalue": 0.1555
+  },
+  {
+    "name": "SMA Crossover",
+    "passed": false,
+    "median_excess_return_pct": 0.82,
+    "pooled_win_rate": 25.26,
+    "win_rate_ci": [
+      0.1966,
+      0.3181
+    ],
+    "win_rate_reportable": true,
+    "pvalue": 0.2541,
+    "total_trades": 194,
+    "survives_fdr": false,
+    "qvalue": 0.2977
+  },
+  {
+    "name": "Accumulation Squeeze",
+    "passed": false,
+    "median_excess_return_pct": -1.62,
+    "pooled_win_rate": 20.96,
+    "win_rate_ci": [
+      0.1668,
+      0.26
+    ],
+    "win_rate_reportable": true,
+    "pvalue": 0.2521,
+    "total_trades": 291,
+    "survives_fdr": false,
+    "qvalue": 0.2977
+  },
+  {
+    "name": "Stochastic RSI Cross",
+    "passed": false,
+    "median_excess_return_pct": -5.86,
+    "pooled_win_rate": 42.62,
+    "win_rate_ci": [
+      0.3852,
+      0.4682
+    ],
+    "win_rate_reportable": true,
+    "pvalue": 0.3441,
+    "total_trades": 542,
+    "survives_fdr": false,
+    "qvalue": 0.3919
+  },
+  {
+    "name": "Ichimoku Cloud + Accumulation",
+    "passed": false,
+    "median_excess_return_pct": -32.46,
+    "pooled_win_rate": 31.23,
+    "win_rate_ci": [
+      0.2756,
+      0.3515
+    ],
+    "win_rate_reportable": true,
+    "pvalue": 0.3917,
+    "total_trades": 570,
+    "survives_fdr": false,
+    "qvalue": 0.4304
+  },
+  {
+    "name": "Money Flow Index Reversal",
+    "passed": false,
+    "median_excess_return_pct": -38.46,
+    "pooled_win_rate": 49.44,
+    "win_rate_ci": [
+      0.4349,
+      0.554
+    ],
+    "win_rate_reportable": true,
+    "pvalue": 0.1782,
+    "total_trades": 267,
+    "survives_fdr": false,
+    "qvalue": 0.2283
+  },
+  {
+    "name": "Turtle Soup Reversal",
+    "passed": false,
+    "median_excess_return_pct": -95.15,
+    "pooled_win_rate": 27.43,
+    "win_rate_ci": [
+      0.2491,
+      0.3011
+    ],
+    "win_rate_reportable": true,
+    "pvalue": 1.0,
+    "total_trades": 1130,
+    "survives_fdr": false,
+    "qvalue": 1.0
+  }
+]

@@ -48,7 +48,7 @@ class SignalDetailErrorBoundary extends React.Component<
                     </p>
                     <button
                         onClick={() => { this.setState({ hasError: false }); this.props.onReset(); }}
-                        className="px-4 py-2 text-sm font-bold rounded-lg bg-slate-900 dark:bg-white text-white dark:text-black hover:opacity-90 transition-opacity"
+                        className="px-4 py-2 text-sm font-bold rounded-lg bg-primary text-primary-foreground hover:bg-primary/90 transition-opacity"
                     >Close</button>
                 </div>
             );
@@ -216,8 +216,8 @@ function SectorFilter({ sectors, value, onChange }: {
                     className={cn(
                         'shrink-0 px-2.5 py-1 rounded-md text-[11px] font-bold transition-all whitespace-nowrap',
                         value === 'ALL'
-                            ? 'bg-slate-900 dark:bg-white text-white dark:text-black'
-                            : 'bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200'
+                            ? 'bg-primary/10 text-primary border border-primary/30'
+                            : 'bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400 hover:bg-accent hover:text-accent-foreground'
                     )}>
                     All
                 </button>
@@ -228,8 +228,8 @@ function SectorFilter({ sectors, value, onChange }: {
                         className={cn(
                             'shrink-0 px-2.5 py-1 rounded-md text-[11px] font-bold transition-all whitespace-nowrap',
                             value === s
-                                ? 'bg-slate-900 dark:bg-white text-white dark:text-black'
-                                : 'bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200'
+                                ? 'bg-primary/10 text-primary border border-primary/30'
+                                : 'bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400 hover:bg-accent hover:text-accent-foreground'
                         )}>
                         {s}
                     </button>
@@ -242,11 +242,17 @@ function SectorFilter({ sectors, value, onChange }: {
 
 // ─── Signal Card ─────────────────────────────────────────────────────────────
 
+const CANONICAL_BADGE: Record<string, { label: string; color: string }> = {
+    IN_ZONE:  { label: 'In Zone',  color: 'bg-emerald-50 text-emerald-600 border-emerald-200 dark:bg-emerald-900/30 dark:text-emerald-400 dark:border-emerald-800/40' },
+    EXTENDED: { label: 'Extended', color: 'bg-amber-50 text-amber-600 border-amber-200 dark:bg-amber-900/30 dark:text-amber-400 dark:border-amber-800/40' },
+    STALE:    { label: 'Stale',    color: 'bg-slate-100 text-slate-500 border-slate-200 dark:bg-slate-800 dark:text-slate-400 dark:border-slate-700' },
+};
+
 function UnifiedSignalCard({
     symbol, direction, ltp, currentPrice, indicators, date,
     strength, reason, tagline, conviction,
     targetPrice, stopLoss, tp1, tp2, tp3, status,
-    smartMoneyMetadata, onSelect
+    smartMoneyMetadata, canonicalStatus, onSelect
 }: {
     symbol: string; direction: 'BUY' | 'SELL'; ltp: number;
     currentPrice?: number; indicators?: BatchIndicatorData; date?: string;
@@ -254,6 +260,7 @@ function UnifiedSignalCard({
     targetPrice?: number; stopLoss?: number; tp1?: number; tp2?: number; tp3?: number;
     status?: 'ACTIVE' | 'WON' | 'LOST' | 'CLOSED_MANUAL';
     smartMoneyMetadata?: any;
+    canonicalStatus?: string;
     onSelect: (s: any) => void;
 }) {
     const freshness = getFreshness(date);
@@ -266,7 +273,9 @@ function UnifiedSignalCard({
             ? { label: 'Stopped Out', color: 'bg-rose-500 text-white border-transparent' }
             : action;
 
-    const dimmed = (status === 'LOST' || (action && action.status !== 'valid' && status !== 'WON'));
+    const isTerminal = status === 'WON' || status === 'LOST';
+    const dimmed = (status === 'LOST' || (action && action.status !== 'valid' && status !== 'WON'))
+        && !(canonicalStatus === 'IN_ZONE' && !isTerminal);
 
     return (
         <div
@@ -380,15 +389,18 @@ function UnifiedSignalCard({
 
                     {/* Right side: status + arrow */}
                     <div className="flex items-center gap-2 shrink-0">
-                        {resolvedAction && (
-                            <span className={cn('text-[10px] font-bold px-2 py-0.5 rounded-md border', resolvedAction?.color || 'bg-slate-500/10 text-slate-500')}>
-                                {resolvedAction.label}
-                            </span>
-                        )}
+                        {(() => {
+                            const badge = (!isTerminal && canonicalStatus && CANONICAL_BADGE[canonicalStatus]) || resolvedAction;
+                            return badge ? (
+                                <span className={cn('text-[10px] font-bold px-2 py-0.5 rounded-md border', badge.color || 'bg-slate-500/10 text-slate-500')}>
+                                    {badge.label}
+                                </span>
+                            ) : null;
+                        })()}
                         <div className={cn(
                             'p-2 rounded-xl transition-all',
                             'bg-slate-100 dark:bg-slate-800 text-slate-400',
-                            'group-hover:bg-slate-900 group-hover:text-white dark:group-hover:bg-white dark:group-hover:text-black'
+                            'group-hover:bg-primary group-hover:text-primary-foreground'
                         )}>
                             <ArrowRight size={13} strokeWidth={2.5} />
                         </div>
@@ -420,6 +432,7 @@ function AllSourcesView({ onSelect, liveMarketMap, batchIndicators, fetchBatchIn
     const [minConviction, setMinConviction] = useState(1);
     const [sectorFilter, setSectorFilter] = useState('ALL');
     const [generatedDate, setGeneratedDate] = useState<string | null>(null);
+    const [entryStatuses, setEntryStatuses] = useState<Record<string, string>>({});
 
     useEffect(() => {
         const fetchData = async () => {
@@ -430,10 +443,12 @@ function AllSourcesView({ onSelect, liveMarketMap, batchIndicators, fetchBatchIn
                 return map.get(symbol)!;
             };
             try {
-                const [genRes, stRes] = await Promise.all([
+                const [genRes, stRes, statusRes] = await Promise.all([
                     api.get('/api/stocks/generated-signals/latest/').catch(() => null),
                     api.get('/api/stocks/signals/', { params: { page_size: 500 } }).catch(() => null),
+                    api.get('/api/stocks/entry-statuses/').catch(() => null),
                 ]);
+                setEntryStatuses(statusRes?.data?.statuses ?? {});
                 if (genRes?.data) {
                     for (const sig of genRes.data as GeneratedSignal[]) {
                         const ltp = parseFloat(sig.ltp) || 0;
@@ -581,8 +596,8 @@ function AllSourcesView({ onSelect, liveMarketMap, batchIndicators, fetchBatchIn
                             <button key={n} onClick={() => setMinConviction(n)}
                                 className={cn('w-8 h-7 rounded-md text-xs font-semibold transition-all flex items-center justify-center',
                                     minConviction === n
-                                        ? 'bg-slate-900 dark:bg-slate-700 text-white shadow-sm'
-                                        : 'text-slate-500 hover:text-slate-900 dark:text-slate-400 dark:hover:text-slate-200')}>
+                                        ? 'bg-primary/10 text-primary border border-primary/30 shadow-sm'
+                                        : 'text-slate-500 hover:bg-accent hover:text-accent-foreground dark:text-slate-400')}>
                                 {n}+
                             </button>
                         ))}
@@ -592,7 +607,7 @@ function AllSourcesView({ onSelect, liveMarketMap, batchIndicators, fetchBatchIn
                 <div className="relative w-full lg:w-64 px-2 lg:px-0 lg:pr-2 pb-2 lg:pb-0">
                     <Search size={14} className="absolute left-5 lg:left-3 top-[calc(50%-4px)] lg:top-1/2 -translate-y-1/2 text-slate-400" strokeWidth={2.5} />
                     <input value={search} onChange={e => setSearch(e.target.value)} placeholder="Search by symbol…"
-                        className="w-full pl-9 pr-4 py-2 text-xs font-semibold rounded-lg border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-950/50 text-slate-900 dark:text-slate-100 outline-none focus:ring-2 focus:ring-indigo-500/50 transition-all placeholder:text-slate-400" />
+                        className="w-full pl-9 pr-4 py-2 text-xs font-semibold rounded-lg border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-950/50 text-slate-900 dark:text-slate-100 outline-none focus-visible:ring-[3px] focus-visible:ring-ring/50 focus-visible:border-ring transition-all placeholder:text-slate-400" />
                 </div>
             </div>
 
@@ -634,6 +649,7 @@ function AllSourcesView({ onSelect, liveMarketMap, batchIndicators, fetchBatchIn
                             status={u.status}
                             indicators={batchIndicators[u.symbol]}
                             smartMoneyMetadata={u.smartMoney}
+                            canonicalStatus={entryStatuses[u.symbol]}
                             onSelect={onSelect}
                         />
                     ))}
@@ -674,7 +690,7 @@ function SmartMoneyView({ onSelect, liveMarketMap, batchIndicators, fetchBatchIn
     };
 
     const sections = [
-        { id: 'platinum', label: 'Platinum', dot: 'bg-slate-900 dark:bg-white', items: signals.filter(s => filterFn(s, 'Platinum Buy')) },
+        { id: 'platinum', label: 'Platinum', dot: 'bg-primary', items: signals.filter(s => filterFn(s, 'Platinum Buy')) },
         { id: 'gold', label: 'Gold', dot: 'bg-amber-500', items: signals.filter(s => filterFn(s, 'Gold Signal')) },
         { id: 'silver', label: 'Silver', dot: 'bg-slate-400', items: signals.filter(s => filterFn(s, 'Silver Signal')) },
         { id: 'divergence', label: 'Divergence', dot: 'bg-emerald-500', items: signals.filter(s => filterFn(s, 'Bullish Divergence')) },
@@ -716,7 +732,7 @@ function SmartMoneyView({ onSelect, liveMarketMap, batchIndicators, fetchBatchIn
                 <div className="relative ml-auto">
                     <Search size={13} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" strokeWidth={2.5} />
                     <input value={search} onChange={e => setSearch(e.target.value)} placeholder="Search symbol…"
-                        className="pl-8 pr-4 py-2 text-xs font-medium rounded-lg border border-slate-200 dark:border-slate-700/50 bg-white dark:bg-slate-800/50 text-slate-700 dark:text-slate-200 outline-none focus:ring-2 focus:ring-slate-900/20 dark:focus:ring-white/10 w-48" />
+                        className="pl-8 pr-4 py-2 text-xs font-medium rounded-lg border border-slate-200 dark:border-slate-700/50 bg-white dark:bg-slate-800/50 text-slate-700 dark:text-slate-200 outline-none focus-visible:ring-[3px] focus-visible:ring-ring/50 focus-visible:border-ring w-48" />
                 </div>
             </div>
 
@@ -810,7 +826,7 @@ function StrategiesView({ onSelect, liveMarketMap, batchIndicators, fetchBatchIn
                 <div className="relative ml-auto">
                     <Search size={13} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" strokeWidth={2.5} />
                     <input value={search} onChange={e => setSearch(e.target.value)} placeholder="Search symbol…"
-                        className="pl-8 pr-4 py-2 text-xs font-medium rounded-lg border border-slate-200 dark:border-slate-700/50 bg-white dark:bg-slate-800/50 text-slate-700 dark:text-slate-200 outline-none focus:ring-2 focus:ring-slate-900/20 dark:focus:ring-white/10 w-48" />
+                        className="pl-8 pr-4 py-2 text-xs font-medium rounded-lg border border-slate-200 dark:border-slate-700/50 bg-white dark:bg-slate-800/50 text-slate-700 dark:text-slate-200 outline-none focus-visible:ring-[3px] focus-visible:ring-ring/50 focus-visible:border-ring w-48" />
                 </div>
             </div>
             {groups.length === 0 ? <Empty label="No strategy signals match filters" /> : (
@@ -896,7 +912,7 @@ function WhaleWatchView({ onSelect, liveMarketMap, batchIndicators, fetchBatchIn
                 <div className="relative ml-auto">
                     <Search size={13} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" strokeWidth={2.5} />
                     <input value={search} onChange={e => setSearch(e.target.value)} placeholder="Search symbol…"
-                        className="pl-8 pr-4 py-2 text-xs font-medium rounded-lg border border-slate-200 dark:border-slate-700/50 bg-white dark:bg-slate-800/50 text-slate-700 dark:text-slate-200 outline-none focus:ring-2 focus:ring-slate-900/20 dark:focus:ring-white/10 w-48" />
+                        className="pl-8 pr-4 py-2 text-xs font-medium rounded-lg border border-slate-200 dark:border-slate-700/50 bg-white dark:bg-slate-800/50 text-slate-700 dark:text-slate-200 outline-none focus-visible:ring-[3px] focus-visible:ring-ring/50 focus-visible:border-ring w-48" />
                 </div>
             </div>
             {loading ? <Loader /> : filtered.length === 0 ? <Empty label="No signals from this engine. Run pipeline to generate." /> : (
@@ -1007,8 +1023,8 @@ export default function IntelHubClient() {
                             role="switch"
                             aria-checked={showHistorical}
                             className={cn(
-                                'relative h-5 w-9 rounded-full transition-colors duration-200 focus:outline-none focus-visible:ring-2 focus-visible:ring-slate-900',
-                                showHistorical ? 'bg-slate-900 dark:bg-white' : 'bg-slate-200 dark:bg-slate-700'
+                                'relative h-5 w-9 rounded-full transition-colors duration-200 focus:outline-none focus-visible:ring-[3px] focus-visible:ring-ring/50',
+                                showHistorical ? 'bg-primary' : 'bg-slate-200 dark:bg-slate-700'
                             )}>
                             <span className={cn(
                                 'absolute top-0.5 left-0.5 h-4 w-4 rounded-full bg-white dark:bg-card shadow transition-transform duration-200',

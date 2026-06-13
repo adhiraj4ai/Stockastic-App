@@ -23,9 +23,14 @@ STUDY_YEARS = 2
 
 def _load_price_df(symbols=None, start_date=None):
     """
-    Load DailyStockPrice into a DataFrame.
+    Load DailyStockPrice into a DataFrame, corporate-action ADJUSTED so the
+    event study sees continuous prices across bonus/rights ex-dates (matching
+    the backtest harness) instead of phantom drops.
     Returns columns: ticker, date, open, high, low, close, volume, turnover, trans
     """
+    from stocks.services.backtest_harness.adjustments import apply_adjustments_long
+    from stocks.services.backtest_harness.runner import fetch_actions_map
+
     qs = DailyStockPrice.objects.filter(date__gte=start_date)
     if symbols:
         qs = qs.filter(ticker__in=symbols)
@@ -37,6 +42,7 @@ def _load_price_df(symbols=None, start_date=None):
         df[col] = pd.to_numeric(df[col], errors='coerce')
     df['trans'] = pd.to_numeric(df['trans'], errors='coerce')
     df['date'] = pd.to_datetime(df['date'])
+    df = apply_adjustments_long(df, fetch_actions_map(df['ticker'].unique()))
     df.sort_values(['ticker', 'date'], inplace=True)
     df.reset_index(drop=True, inplace=True)
     return df
@@ -401,98 +407,23 @@ class AccumulationForecastView(APIView):
     permission_classes = [IsAuthenticated]
 
     def get(self, request, symbol):
+        """
+        Per-symbol accumulation forecast. Thin wrapper around
+        broker_research.accumulation_forecast() which already caches the heavy
+        computation for 4h. No @cache_page here — it would cache 404 responses.
+        """
+        from stocks.services import broker_research
+
         symbol = symbol.upper().strip()
         try:
             min_intensity = float(request.query_params.get('min_intensity', 3.0))
         except (ValueError, TypeError):
             min_intensity = 3.0
 
-        start_date = date.today() - timedelta(days=STUDY_YEARS * 365)
-
-        # Load price data for this symbol
-        price_df = _load_price_df(symbols=[symbol], start_date=start_date)
-        if price_df.empty:
-            return Response({'error': f'No price data found for symbol {symbol}.'}, status=404)
-
-        acc_df = _load_acc_df(symbols=[symbol], start_date=start_date)
-        if acc_df.empty:
-            return Response({'error': f'No accumulation data found for symbol {symbol}.'}, status=404)
-
-        daily_acc = _build_daily_acc(acc_df)
-        features = _compute_features(price_df, daily_acc)
-        if features.empty:
-            return Response({'error': f'Insufficient data to compute features for {symbol}.'}, status=422)
-
-        # ---------------------------------------------------------------
-        # Current state (most recent row with valid intensity)
-        # ---------------------------------------------------------------
-        latest = features[features['ticker'] == symbol].sort_values('date')
-        latest_valid = latest[latest['intensity'].notna()]
-        if latest_valid.empty:
-            return Response({'error': f'Cannot compute current accumulation intensity for {symbol}.'}, status=422)
-
-        current_row = latest_valid.iloc[-1]
-        current_price = float(current_row['close']) if not pd.isna(current_row['close']) else None
-        current_date = current_row['date'].strftime('%Y-%m-%d')
-        current_intensity = float(current_row['intensity']) if not pd.isna(current_row['intensity']) else 0.0
-        current_vol_spike = float(current_row['volume_spike']) if not pd.isna(current_row['volume_spike']) else None
-        current_turn_spike = float(current_row['turnover_spike']) if not pd.isna(current_row['turnover_spike']) else None
-        current_net_acc_10d = float(current_row['net_acc_10d']) if not pd.isna(current_row['net_acc_10d']) else 0.0
-        current_avg_vol = float(current_row['avg_daily_volume_20d']) if not pd.isna(current_row['avg_daily_volume_20d']) else None
-
-        current_state = {
-            'ltp': round(current_price, 2) if current_price else None,
-            'date': current_date,
-            'intensity': round(current_intensity, 4),
-            'volume_spike': round(current_vol_spike, 4) if current_vol_spike else None,
-            'turnover_spike': round(current_turn_spike, 4) if current_turn_spike else None,
-            'net_acc_10d': round(current_net_acc_10d, 2),
-            'avg_daily_volume_20d': round(current_avg_vol, 2) if current_avg_vol else None,
-        }
-
-        # ---------------------------------------------------------------
-        # Study — all historical events for this symbol
-        # ---------------------------------------------------------------
-        events = _identify_events(features, min_intensity)
-        events_with_returns = _compute_forward_returns(events, features) if not events.empty else pd.DataFrame()
-        if not events_with_returns.empty:
-            events_with_returns = _add_extra_lags_for_analysis(events_with_returns, features, LAG_ANALYSIS_LAGS)
-            stats = _compute_study_stats(events_with_returns)
-            study = {
-                'total_events': len(events_with_returns),
-                **stats,
-            }
-        else:
-            study = {
-                'total_events': 0,
-                'win_rates': {}, 'avg_returns': {}, 'median_returns': {},
-                'p25_returns': {}, 'p75_returns': {}, 'correlation': {},
-                'scatter_data': [], 'lag_analysis': [],
-            }
-
-        # ---------------------------------------------------------------
-        # Projection model
-        # ---------------------------------------------------------------
-        projection = _build_projection(events_with_returns, current_intensity, current_price, current_date)
-
-        # ---------------------------------------------------------------
-        # History table (individual past events)
-        # ---------------------------------------------------------------
-        history = _build_history(events_with_returns)
-
-        # ---------------------------------------------------------------
-        # Price series (full OHLCV + intensity for charting)
-        # ---------------------------------------------------------------
-        price_series = _build_price_series(features, events, symbol)
-
-        return Response({
-            'symbol': symbol,
-            'current': current_state,
-            'study': study,
-            'projection': projection,
-            'history': history,
-            'price_series': price_series,
-        })
+        result = broker_research.accumulation_forecast(symbol=symbol, min_intensity=min_intensity)
+        if result is None:
+            return Response({'error': f'No data found for symbol {symbol}.'}, status=404)
+        return Response(result)
 
 
 def _build_projection(events_with_returns, current_intensity, current_price, current_date_str):

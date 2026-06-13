@@ -17,6 +17,7 @@ import {
 import StockLink from '@/components/StockLink';
 import { formatNepaliNumber } from '@/lib/formatters';
 import { InfoTooltip } from '@/components/ui/InfoTooltip';
+import { SentimentBadge } from '@/components/portfolio/ui';
 
 export interface PortfolioItem {
     id: number;
@@ -84,78 +85,78 @@ export function PortfolioTable({
     isExitPlanDialogOpen
 }: PortfolioTableProps) {
     if (items.length === 0) {
-        return <div className="p-4 text-center text-gray-500">No holdings found for this account.</div>;
+        return <div className="p-6 text-center text-sm text-muted-foreground">No holdings found for this account.</div>;
     }
 
     return (
         <div className="overflow-x-auto">
             <Table>
                 <TableHeader>
-                    <TableRow className="bg-gray-50/50 dark:bg-slate-800/30 hover:bg-gray-50/50 dark:hover:bg-slate-800/30">
-                        <TableHead className="w-[50px] font-bold text-gray-900 dark:text-slate-100 py-4 px-6 text-center">SN</TableHead>
-                        <TableHead className="font-bold text-gray-900 dark:text-slate-100 cursor-pointer select-none py-4" onClick={() => onSort('ticker')}>
+                    <TableRow className="bg-muted/40 hover:bg-muted/40 border-border">
+                        <TableHead className="w-[50px] text-[10px] font-semibold uppercase tracking-wider text-muted-foreground py-4 px-6 text-center">SN</TableHead>
+                        <TableHead className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground cursor-pointer select-none py-4" onClick={() => onSort('ticker')}>
                             <div className="flex items-center gap-1">
                                 Ticker 
                                 <InfoTooltip content="The unique stock symbol and business sector category." />
                                 <ArrowUpDown size={12} className="opacity-50" />
                             </div>
                         </TableHead>
-                        <TableHead className="text-right font-bold text-gray-900 dark:text-slate-100 cursor-pointer select-none py-4" onClick={() => onSort('quantity')}>
+                        <TableHead className="text-right text-[10px] font-semibold uppercase tracking-wider text-muted-foreground cursor-pointer select-none py-4" onClick={() => onSort('quantity')}>
                             <div className="flex items-center justify-end gap-1">
                                 Quantity 
                                 <InfoTooltip content="Total number of units currently held in this position." />
                                 <ArrowUpDown size={12} className="opacity-50" />
                             </div>
                         </TableHead>
-                        <TableHead className="text-right font-bold text-gray-900 dark:text-slate-100 cursor-pointer select-none py-4" onClick={() => onSort('wacc')}>
+                        <TableHead className="text-right text-[10px] font-semibold uppercase tracking-wider text-muted-foreground cursor-pointer select-none py-4" onClick={() => onSort('wacc')}>
                             <div className="flex items-center justify-end gap-1">
                                 WACC (रू) 
                                 <InfoTooltip content="Weighted Average Cost of Capital (Break-even entry price including commissions)." />
                                 <ArrowUpDown size={12} className="opacity-50" />
                             </div>
                         </TableHead>
-                        <TableHead className="text-right font-bold text-gray-900 dark:text-slate-100 cursor-pointer select-none py-4" onClick={() => onSort('current_price')}>
+                        <TableHead className="text-right text-[10px] font-semibold uppercase tracking-wider text-muted-foreground cursor-pointer select-none py-4" onClick={() => onSort('current_price')}>
                             <div className="flex items-center justify-end gap-1">
                                 LTP (रू) 
                                 <InfoTooltip content="Last Traded Price. The current real-time market value per unit." />
                                 <ArrowUpDown size={12} className="opacity-50" />
                             </div>
                         </TableHead>
-                        <TableHead className="text-right font-bold text-gray-900 dark:text-slate-100 cursor-pointer select-none py-4" onClick={() => onSort('current_value')}>
+                        <TableHead className="text-right text-[10px] font-semibold uppercase tracking-wider text-muted-foreground cursor-pointer select-none py-4" onClick={() => onSort('current_value')}>
                             <div className="flex items-center justify-end gap-1">
                                 Total Value (रू) 
                                 <InfoTooltip content="The total monetary valuation of the position at current market prices." />
                                 <ArrowUpDown size={12} className="opacity-50" />
                             </div>
                         </TableHead>
-                        <TableHead className="text-right font-bold text-gray-900 dark:text-slate-100 cursor-pointer select-none py-4" onClick={() => onSort('gain_loss')}>
+                        <TableHead className="text-right text-[10px] font-semibold uppercase tracking-wider text-muted-foreground cursor-pointer select-none py-4" onClick={() => onSort('gain_loss')}>
                             <div className="flex items-center justify-end gap-1">
                                 Profit/Loss (रू) 
                                 <InfoTooltip content="Unrealized profit or loss (Current Value minus initial Investment)." />
                                 <ArrowUpDown size={12} className="opacity-50" />
                             </div>
                         </TableHead>
-                        <TableHead className="text-right font-bold text-gray-900 dark:text-slate-100 cursor-pointer select-none py-4" onClick={() => onSort('value_yield')}>
+                        <TableHead className="text-right text-[10px] font-semibold uppercase tracking-wider text-muted-foreground cursor-pointer select-none py-4" onClick={() => onSort('value_yield')}>
                             <div className="flex items-center justify-end gap-1">
                                 Value Yield 
                                 <InfoTooltip content="The percentage of profit relative to the total current value of the position." />
                                 <ArrowUpDown size={12} className="opacity-50" />
                             </div>
                         </TableHead>
-                        <TableHead className="text-right font-bold text-gray-900 dark:text-slate-100 cursor-pointer select-none py-4" onClick={() => onSort('day_gain_loss')}>
+                        <TableHead className="text-right text-[10px] font-semibold uppercase tracking-wider text-muted-foreground cursor-pointer select-none py-4" onClick={() => onSort('day_gain_loss')}>
                             <div className="flex items-center justify-end gap-1">
                                 Today's P/L (रू) 
                                 <InfoTooltip content="Profit or loss generated specifically during the current trading session." />
                                 <ArrowUpDown size={12} className="opacity-50" />
                             </div>
                         </TableHead>
-                        <TableHead className="text-center font-bold text-gray-900 dark:text-slate-100">
+                        <TableHead className="text-center text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
                             <div className="flex items-center justify-center gap-1">
                                 Health
                                 <InfoTooltip content="Proprietary health score based on business fundamentals (Valuation, Growth, Efficiency)." />
                             </div>
                         </TableHead>
-                        <TableHead className="text-center font-bold text-gray-900 dark:text-slate-100">Action</TableHead>
+                        <TableHead className="text-center text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">Action</TableHead>
                     </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -179,10 +180,10 @@ export function PortfolioTable({
                         return (
                             <React.Fragment key={`${item.ticker}-${idx}`}>
                                 <TableRow
-                                    className={`transition-all duration-200 cursor-pointer border-l-4 hover:shadow-lg hover:scale-[1.01] hover:-translate-y-0.5 ${isExitPlanDialogOpen && selectedPortfolioItem?.ticker === item.ticker ? 'bg-blue-50/50 dark:bg-blue-900/30 border-l-blue-500 shadow-lg scale-[1.01]' : isUnderwater ? 'border-l-red-500/50 hover:bg-red-50/20 dark:hover:bg-red-900/20 hover:border-l-red-500' : hasStrategy ? 'border-l-green-500/50 hover:bg-green-50/20 dark:hover:bg-green-900/20 hover:border-l-green-500' : 'border-l-transparent hover:bg-slate-50/80 dark:hover:bg-slate-800/50 hover:border-l-blue-400/50'}`}
+                                    className={`transition-colors duration-150 cursor-pointer border-l-4 border-border/50 even:bg-muted/20 ${isExitPlanDialogOpen && selectedPortfolioItem?.ticker === item.ticker ? 'bg-primary/10 border-l-primary' : isUnderwater ? 'border-l-rose-500/50 hover:bg-rose-500/15 hover:border-l-rose-500' : hasStrategy ? 'border-l-emerald-500/50 hover:bg-emerald-500/15 hover:border-l-emerald-500' : 'border-l-transparent hover:bg-muted/40 hover:border-l-primary/50'}`}
                                     onClick={() => onStrategies(item)}
                                 >
-                                    <TableCell className="text-center font-bold text-gray-400 dark:text-gray-500 text-sm py-4 px-6">
+                                    <TableCell className="text-center font-semibold text-muted-foreground text-xs py-4 px-6 tabular-nums">
                                         {(currentPage - 1) * pageSize + idx + 1}
                                     </TableCell>
                                     <TableCell className="font-bold tracking-tight py-4">
@@ -190,43 +191,45 @@ export function PortfolioTable({
                                             <div className="flex items-center gap-2">
                                                 <StockLink ticker={item.ticker} />
                                                 {isUnderwater && (
-                                                    <Badge variant="secondary" className="bg-red-50 dark:bg-red-900/30 text-red-600 dark:text-red-400 border-red-100 dark:border-red-800 text-[9px] px-1.5 h-4 flex items-center gap-1">
+                                                    <Badge variant="secondary" className="bg-rose-500/10 text-rose-600 dark:text-rose-400 border-rose-500/25 text-[9px] px-1.5 h-4 flex items-center gap-1">
                                                         Underwater
                                                     </Badge>
                                                 )}
                                                 {hasStrategy && (
-                                                    <Badge variant="secondary" className="bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 border-blue-100 dark:border-blue-800 text-[9px] px-1.5 h-4 flex items-center gap-1 animate-pulse">
+                                                    <Badge variant="secondary" className="bg-primary/10 text-primary border-primary/25 text-[9px] px-1.5 h-4 flex items-center gap-1 animate-pulse">
                                                         <Radio className="h-2 w-2" /> Active
                                                     </Badge>
                                                 )}
                                             </div>
                                             {(item.stop_loss_price || item.target_price) && (
                                                 <div className="flex flex-wrap gap-1">
-                                                    {item.stop_loss_price && <span className="text-xs bg-red-50 dark:bg-red-900/30 text-red-600 dark:text-red-400 px-1.5 py-0.5 rounded border border-red-100 dark:border-red-800 font-bold tracking-tight shadow-sm">SL: {Number(item.stop_loss_price).toFixed(0)}</span>}
-                                                    {item.target_price && <span className="text-xs bg-green-50 dark:bg-green-900/30 text-green-600 dark:text-green-400 px-1.5 py-0.5 rounded border border-green-100 dark:border-green-800 font-bold tracking-tight shadow-sm">TP: {Number(item.target_price).toFixed(0)}</span>}
-                                                    {rrRatio !== 'N/A' && <span className="text-xs bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 px-1.5 py-0.5 rounded border border-blue-100 dark:border-blue-800 font-bold tracking-tight shadow-sm">R/R: {rrRatio}</span>}
+                                                    {item.stop_loss_price && <span className="text-xs bg-rose-500/10 text-rose-600 dark:text-rose-400 px-1.5 py-0.5 rounded-full border border-rose-500/25 font-semibold tabular-nums">SL: {Number(item.stop_loss_price).toFixed(0)}</span>}
+                                                    {item.target_price && <span className="text-xs bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 px-1.5 py-0.5 rounded-full border border-emerald-500/25 font-semibold tabular-nums">TP: {Number(item.target_price).toFixed(0)}</span>}
+                                                    {rrRatio !== 'N/A' && <span className="text-xs bg-primary/10 text-primary px-1.5 py-0.5 rounded-full border border-primary/25 font-semibold tabular-nums">R/R: {rrRatio}</span>}
                                                 </div>
                                             )}
                                         </div>
                                     </TableCell>
-                                    <TableCell className="text-right text-gray-600 dark:text-slate-400 font-bold tracking-tight py-4">{formatNepaliNumber(item.quantity)}</TableCell>
-                                    <TableCell className="text-right text-gray-600 dark:text-slate-400 font-bold tracking-tight py-4">{formatNepaliNumber(Number(item.wacc || item.buy_price).toFixed(2))}</TableCell>
-                                    <TableCell className="text-right text-gray-900 dark:text-slate-100 font-bold tracking-tight py-4">{formatNepaliNumber(item.current_price)}</TableCell>
-                                    <TableCell className="text-right font-bold text-gray-900 dark:text-slate-100 tracking-tight py-4">{formatNepaliNumber(item.current_value)}</TableCell>
-                                    <TableCell className={`text-right ${isPos ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'} py-4`}>
-                                        <div className="font-bold text-base tracking-tight">
+                                    <TableCell className="text-right text-muted-foreground font-medium tabular-nums py-4">{formatNepaliNumber(item.quantity)}</TableCell>
+                                    <TableCell className="text-right text-muted-foreground font-medium tabular-nums py-4">{formatNepaliNumber(Number(item.wacc || item.buy_price).toFixed(2))}</TableCell>
+                                    <TableCell className="text-right text-foreground font-semibold tabular-nums py-4">{formatNepaliNumber(item.current_price)}</TableCell>
+                                    <TableCell className="text-right text-foreground font-semibold tabular-nums py-4">{formatNepaliNumber(item.current_value)}</TableCell>
+                                    <TableCell className={`text-right ${isPos ? 'text-emerald-600 dark:text-emerald-400' : 'text-rose-600 dark:text-rose-400'} py-4`}>
+                                        <div className="font-semibold text-sm tabular-nums">
                                             {isPos ? '+' : ''}{formatNepaliNumber(pl)}
                                         </div>
-                                        <div className={`text-xs font-bold tracking-tight ${isPos ? 'bg-green-50 dark:bg-green-900/30 text-green-700 dark:text-green-400' : 'bg-red-50 dark:bg-red-900/30 text-red-700 dark:text-red-400'} px-1 rounded inline-block mt-0.5`}>
-                                            {Number(item.gain_loss_percent).toFixed(2)}%
+                                        <div className="mt-0.5">
+                                            <SentimentBadge tone={isPos ? 'up' : 'down'}>
+                                                {isPos ? '+' : ''}{Number(item.gain_loss_percent).toFixed(2)}%
+                                            </SentimentBadge>
                                         </div>
                                     </TableCell>
                                     <TableCell className="text-right py-4">
-                                        <div className="font-bold text-gray-600 dark:text-slate-400 text-sm text-right tracking-tight">
+                                        <div className="font-medium text-muted-foreground text-sm text-right tabular-nums">
                                             {(item.value_yield || 0).toFixed(1)}%
                                         </div>
                                     </TableCell>
-                                    <TableCell className={`text-right font-bold tracking-tight ${isDayPos ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'} py-4`}>
+                                    <TableCell className={`text-right font-semibold tabular-nums text-sm ${isDayPos ? 'text-emerald-600 dark:text-emerald-400' : 'text-rose-600 dark:text-rose-400'} py-4`}>
                                         {isDayPos ? '+' : ''}{formatNepaliNumber(dayPl)}
                                     </TableCell>
                                     <TableCell className="text-center py-4">
@@ -237,7 +240,7 @@ export function PortfolioTable({
                                                         variant="secondary"
                                                         className={`font-bold transition-all px-2.5 py-1 ${item.health_score >= 70 ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-400' :
                                                             item.health_score >= 40 ? 'bg-amber-100 text-amber-700 dark:bg-amber-900/40 dark:text-amber-400' :
-                                                                'bg-red-100 text-red-700 dark:bg-red-900/40 dark:text-red-400'
+                                                                'bg-rose-100 text-rose-700 dark:bg-rose-900/40 dark:text-rose-400'
                                                             }`}
                                                     >
                                                         {item.health_score}
@@ -286,7 +289,7 @@ export function PortfolioTable({
                                                             e.stopPropagation();
                                                             onBuy(item.ticker);
                                                         }}
-                                                        className="p-2 text-gray-300 dark:text-slate-600 hover:text-green-600 dark:hover:text-green-400 hover:bg-green-50 dark:hover:bg-green-900/20 rounded-lg transition-all"
+                                                        className="p-2 text-muted-foreground/70 hover:text-emerald-600 dark:hover:text-emerald-400 hover:bg-emerald-500/10 rounded-lg transition-all"
                                                     >
                                                         <PlusCircle size={18} />
                                                     </button>
@@ -303,7 +306,7 @@ export function PortfolioTable({
                                                             e.stopPropagation();
                                                             onSell(item.ticker);
                                                         }}
-                                                        className="p-2 text-gray-300 dark:text-slate-600 hover:text-red-600 dark:hover:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition-all"
+                                                        className="p-2 text-muted-foreground/70 hover:text-rose-600 dark:hover:text-rose-400 hover:bg-rose-500/10 rounded-lg transition-all"
                                                     >
                                                         <MinusCircle size={18} />
                                                     </button>
@@ -316,7 +319,7 @@ export function PortfolioTable({
                                             <Tooltip>
                                                 <TooltipTrigger asChild>
                                                     <button
-                                                        className={`p-2 rounded-lg transition-all ${isExitPlanDialogOpen && selectedPortfolioItem?.ticker === item.ticker ? 'bg-blue-600 dark:bg-blue-500 text-white shadow-xl rotate-0' : 'text-gray-300 dark:text-slate-600 hover:text-blue-600 dark:hover:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900/20 rotate-[-45deg] hover:rotate-0'}`}
+                                                        className={`p-2 rounded-lg transition-all ${isExitPlanDialogOpen && selectedPortfolioItem?.ticker === item.ticker ? 'bg-primary text-primary-foreground shadow-sm rotate-0' : 'text-muted-foreground/70 hover:text-primary hover:bg-primary/10 rotate-[-45deg] hover:rotate-0'}`}
                                                     >
                                                         <Target size={18} />
                                                     </button>

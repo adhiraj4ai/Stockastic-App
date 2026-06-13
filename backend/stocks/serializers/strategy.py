@@ -34,13 +34,78 @@ class StrategySerializer(serializers.ModelSerializer):
     max_drawdown = serializers.SerializerMethodField()
     sharpe_ratio = serializers.SerializerMethodField()
     win_rate = serializers.SerializerMethodField()
+    kind = serializers.SerializerMethodField()
+    summary = serializers.SerializerMethodField()
+    metrics_summary = serializers.SerializerMethodField()
 
     class Meta:
         model = Strategy
-        fields = ['id', 'name', 'description', 'code', 'optimization_config', 'created_at', 'is_public', 
+        fields = ['id', 'name', 'description', 'code', 'spec', 'kind', 'summary', 'metrics_summary', 'optimization_config', 'created_at', 'is_public',
                   'pnl_amount', 'pnl_percent', 'max_drawdown', 'sharpe_ratio', 'win_rate', 'icon', 'icon_color', 'default_parameters',
                   'published_experiments']
-        read_only_fields = ['id', 'created_at', 'published_experiments']
+        read_only_fields = ['id', 'created_at', 'published_experiments', 'kind', 'summary', 'metrics_summary']
+
+    def get_metrics_summary(self, obj):
+        """Headline metrics for the library views — from the best published experiment,
+        falling back to the most recent successful run so unpublished strategies still
+        show numbers."""
+        exp = self._get_best_published_exp(obj)
+        if exp is None:
+            exp = obj.experiments.filter(status='SUCCESS').exclude(metrics={}).order_by('-created_at').first()
+        m = (exp.metrics if exp else None) or {}
+
+        def pick(*keys):
+            for k in keys:
+                v = m.get(k)
+                if v not in (None, ''):
+                    try:
+                        return round(float(v), 2)
+                    except (TypeError, ValueError):
+                        return v
+            return None
+
+        return {
+            'return_pct': pick('pnl_percent', 'return_pct', 'Return [%]'),
+            'sharpe': pick('sharpe_ratio', 'Sharpe Ratio'),
+            'sortino': pick('sortino', 'Sortino Ratio'),
+            'win_rate': pick('win_rate', 'Win Rate [%]'),
+            'max_drawdown': pick('max_drawdown', 'Max. Drawdown [%]'),
+            'num_trades': pick('total_trades', 'num_trades', '# Trades'),
+            'profit_factor': pick('profit_factor', 'Profit Factor'),
+            'exposure': pick('exposure_pct', 'Exposure Time [%]'),
+        }
+
+    def get_kind(self, obj):
+        return 'composed' if obj.spec else 'custom'
+
+    def get_summary(self, obj):
+        if obj.spec:
+            try:
+                from ..services.strategy_framework import spec_to_sentence
+                return spec_to_sentence(obj.spec)
+            except Exception:
+                return 'Composed strategy.'
+        return 'Custom Python strategy.'
+
+    def _apply_spec(self, validated_data):
+        """Keep `spec` and `code` consistent: when a spec is provided, it is the source of
+        truth and `code` is rendered from it; if raw `code` is edited without a spec, the
+        spec is detached (set null) so the two never silently disagree."""
+        from ..services.strategy_framework import spec_to_code, SpecError
+        if 'spec' in validated_data and validated_data['spec']:
+            try:
+                validated_data['code'] = spec_to_code(validated_data['spec'])
+            except SpecError as e:
+                raise serializers.ValidationError({'spec': str(e)})
+        elif 'code' in validated_data:
+            validated_data['spec'] = None
+        return validated_data
+
+    def create(self, validated_data):
+        return super().create(self._apply_spec(validated_data))
+
+    def update(self, instance, validated_data):
+        return super().update(instance, self._apply_spec(validated_data))
 
     def _get_best_published_exp(self, obj):
         if hasattr(obj, '_best_published_exp'):

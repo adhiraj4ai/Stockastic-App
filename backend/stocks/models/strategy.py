@@ -10,6 +10,8 @@ class Strategy(models.Model):
     name = models.CharField(max_length=255)
     description = models.TextField()
     code = models.TextField(blank=True, default="")
+    # Declarative composition spec (source of truth when set; `code` is rendered from it).
+    spec = models.JSONField(null=True, blank=True)
     user = models.ForeignKey(User, on_delete=models.CASCADE)
     created_at = models.DateTimeField(auto_now_add=True)
     is_public = models.BooleanField(default=False)

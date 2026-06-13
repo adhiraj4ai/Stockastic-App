@@ -51,7 +51,7 @@ function BrokerBarRow({
     const barW = maxQty > 0 ? Math.round((qty / maxQty) * 100) : 0;
     return (
         <Link href={`/broker/${broker_id}`}>
-            <div className="grid grid-cols-[20px_1fr_auto] items-center gap-3 px-3 py-2.5 rounded-lg hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors group">
+            <div className="grid grid-cols-[20px_1fr_auto] items-center gap-3 px-3 py-2.5 rounded-lg hover:bg-accent hover:text-accent-foreground transition-colors group">
                 <span className="text-[10px] text-slate-400 tabular-nums text-center">{rank}</span>
                 <div className="min-w-0 space-y-1">
                     <div className="flex items-center justify-between gap-2">
@@ -343,7 +343,7 @@ export default function TickerSmartMoney({ symbol }: { symbol: string }) {
                                         </thead>
                                         <tbody className="divide-y divide-slate-50 dark:divide-slate-800/60">
                                             {data.net_accumulators.map(a => (
-                                                <tr key={a.broker_id} className="hover:bg-slate-50 dark:hover:bg-slate-800/40 transition-colors">
+                                                <tr key={a.broker_id} className="hover:bg-accent hover:text-accent-foreground transition-colors">
                                                     <td className="px-4 py-2.5">
                                                         <Link href={`/broker/${a.broker_id}`}>
                                                             <span className="text-[11px] text-slate-600 dark:text-slate-300 hover:underline">#{a.broker_id}</span>
@@ -377,7 +377,7 @@ export default function TickerSmartMoney({ symbol }: { symbol: string }) {
                                         </thead>
                                         <tbody className="divide-y divide-slate-50 dark:divide-slate-800/60">
                                             {data.net_distributors.map(d => (
-                                                <tr key={d.broker_id} className="hover:bg-slate-50 dark:hover:bg-slate-800/40 transition-colors">
+                                                <tr key={d.broker_id} className="hover:bg-accent hover:text-accent-foreground transition-colors">
                                                     <td className="px-4 py-2.5">
                                                         <Link href={`/broker/${d.broker_id}`}>
                                                             <span className="text-[11px] text-slate-600 dark:text-slate-300 hover:underline">#{d.broker_id}</span>

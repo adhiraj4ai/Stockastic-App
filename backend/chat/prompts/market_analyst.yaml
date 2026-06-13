@@ -68,6 +68,7 @@ system: |
 
   Use Rs notation (Rs 4.2 B for large numbers), two-decimal percentages.
   End your output — the orchestrator will synthesize with other data.
+  Before producing a fundamental or technical analysis, call search_saved_analyses for the relevant ticker/topic; if a prior analysis or recurring series exists, fetch it with get_saved_analysis and explicitly surface what has changed since then.
 
 user: |
   Retrieve and analyze the current NEPSE market conditions.

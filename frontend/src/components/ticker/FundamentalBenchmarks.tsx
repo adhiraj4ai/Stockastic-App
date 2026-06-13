@@ -12,7 +12,7 @@ export const FundamentalBenchmarks: React.FC<FundamentalBenchmarksProps> = ({ fu
     return (
         <div className="glass-card-light rounded-xl p-8">
             <div className="flex items-center gap-3 mb-10">
-                <div className="p-2 rounded-xl bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 border border-blue-100 dark:border-blue-800">
+                <div className="p-2 rounded-xl bg-primary/10 text-primary border border-primary/20">
                     <BarChart2 size={18} />
                 </div>
                 <div>
@@ -49,10 +49,10 @@ export const FundamentalBenchmarks: React.FC<FundamentalBenchmarksProps> = ({ fu
                             const displayValue = indicator?.value || formatRupees(rawValue);
 
                             return (
-                                <tr key={i} className="hover:bg-slate-50/50 dark:hover:bg-slate-800/50 transition-colors group">
+                                <tr key={i} className="hover:bg-accent transition-colors group">
                                     <td className="px-6 py-4 font-semibold text-slate-700 dark:text-slate-300 whitespace-nowrap tracking-tight">{metric.name}</td>
                                     <td className="px-6 py-4 text-center">
-                                        <span className="px-2.5 py-1 rounded bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 font-semibold text-xs ring-1 ring-blue-100 dark:ring-blue-800 tracking-tight">{displayValue}</span>
+                                        <span className="px-2.5 py-1 rounded bg-primary/10 text-primary font-semibold text-xs ring-1 ring-primary/20 tracking-tight">{displayValue}</span>
                                     </td>
                                     <td className="px-6 py-4">
                                         <div className="flex items-center gap-4">
@@ -61,7 +61,7 @@ export const FundamentalBenchmarks: React.FC<FundamentalBenchmarksProps> = ({ fu
                                                 <span className="text-[8px] text-slate-400 dark:text-slate-500 font-mono leading-tight">{indicator?.sector_low_ticker || ''}</span>
                                             </div>
                                             <div className="flex-1 h-1 bg-slate-100 dark:bg-slate-800 rounded-full relative">
-                                                <div className="absolute top-1/2 left-1/4 w-1.5 h-1.5 -translate-y-1/2 bg-blue-500 rounded-full shadow-sm" />
+                                                <div className="absolute top-1/2 left-1/4 w-1.5 h-1.5 -translate-y-1/2 bg-primary rounded-full shadow-sm" />
                                             </div>
                                             <div className="flex flex-col items-end min-w-[40px]">
                                                 <span className="text-xs text-emerald-500 dark:text-emerald-400 font-semibold tracking-tight">{indicator?.sector_high || '-'}</span>

@@ -15,10 +15,13 @@ from ..models import (
     DailyStockPrice, Company, FinancialReport, TransactionType, PortfolioTarget,
     TradePlan, TradePlanLeg,
 )
+from ..models.portfolio import PortfolioActionDraft
 from ..serializers import (
     PortfolioAccountSerializer, PortfolioItemSerializer, PortfolioTransactionSerializer,
     PortfolioTargetSerializer, TradePlanSerializer,
+    PortfolioActionDraftSerializer,
 )
+from ..services.portfolio_drafts import confirm_draft, DraftError
 from ..utils import (
     calculate_broker_commission, calculate_sebon_fee, 
     calculate_dp_charge, calculate_cgt
@@ -864,7 +867,14 @@ class PortfolioPerformanceView(viewsets.ViewSet):
         ).order_by('date')
         
         if account_id != 'all':
-            snapshots = snapshots.filter(account_id=account_id)
+            # Select dict rows (not model objects) so the DataFrame has 'date'/
+            # 'total_value' columns. We intentionally omit 'nepse_index' (like the
+            # 'all' branch) because per-snapshot nepse_index is sparsely populated;
+            # the benchmark is sourced consistently from the DailyStockPrice NEPSE
+            # fallback below instead.
+            snapshots = snapshots.filter(account_id=account_id).values(
+                'date', 'total_value', 'invested_value', 'cash_balance'
+            ).order_by('date')
         else:
             # If 'all', we might need to aggregate snapshots by date if we stored them per account
             # Currently model has account, so we need to sum up total_value per date
@@ -881,7 +891,13 @@ class PortfolioPerformanceView(viewsets.ViewSet):
         df_port = pd.DataFrame(list(snapshots))
         df_port['date'] = pd.to_datetime(df_port['date'])
         df_port.set_index('date', inplace=True)
-        
+
+        # total_value comes from a Decimal Sum() (DecimalField), so the column is
+        # object-dtype Python Decimals. Cast to float once here, otherwise the
+        # downstream numpy stats (np.cov / .std()) raise
+        # "'float' object has no attribute 'shape'" on object-dtype input.
+        df_port['total_value'] = df_port['total_value'].astype(float)
+
         # Calculate daily returns
         df_port['return'] = df_port['total_value'].pct_change().fillna(0)
         
@@ -924,8 +940,10 @@ class PortfolioPerformanceView(viewsets.ViewSet):
         chart_data = []
         
         if has_benchmark:
-            df_bench['date'] = pd.to_datetime(df_bench['date'])
-            df_bench.set_index('date', inplace=True)
+            # df_bench is already indexed by 'date' in BOTH branches above: the
+            # snapshot path inherits df_port's date index, and the fallback path
+            # calls set_index('date') itself. Re-indexing here raised
+            # KeyError: 'date' (no 'date' column exists at this point).
             df_bench['close'] = df_bench['close'].astype(float)
             df_bench['benchmark_return'] = df_bench['close'].pct_change().fillna(0)
             
@@ -949,40 +967,39 @@ class PortfolioPerformanceView(viewsets.ViewSet):
                     df_combined['bench_cum_return'] = ((df_combined['close'] - initial_bench_val) / initial_bench_val) * 100
                 
                 # Metrics Calculation
-                # Beta
-                covariance = np.cov(df_combined['return'], df_combined['benchmark_return'])[0][1]
-                benchmark_variance = np.var(df_combined['benchmark_return'])
-                beta = covariance / benchmark_variance if benchmark_variance != 0 else 0
-                
-                # Total Return
+                # Total Return & Max Drawdown are well-defined with a single data point.
                 total_return = df_combined['port_cum_return'].iloc[-1]
                 benchmark_total_return = df_combined['bench_cum_return'].iloc[-1]
-                
-                # Alpha (Jensen's Alpha roughly: Rp - (Rf + B * (Rm - Rf)))
-                # Assuming Risk Free Rate (Rf) = 6% annualized approx = 0.06/252 daily
-                rf_daily = 0.06 / 252
-                avg_port_ret = df_combined['return'].mean()
-                avg_bench_ret = df_combined['benchmark_return'].mean()
-                
-                alpha = (avg_port_ret - rf_daily) - (beta * (avg_bench_ret - rf_daily))
-                alpha = alpha * 252 # Annualized
-                
-                # Sharpe Ratio
-                sharpe = (df_combined['return'].mean() - rf_daily) / df_combined['return'].std()
-                sharpe = sharpe * (252 ** 0.5) # Annualized
-                
-                # Max Drawdown
+
                 roll_max = df_port['total_value'].cummax()
                 drawdown = (df_port['total_value'] - roll_max) / roll_max
                 max_drawdown = drawdown.min() * 100
-                
+
+                # Risk metrics (Beta/Alpha/Sharpe) need >= 2 aligned observations:
+                # np.cov / .std() on a single point raise or produce NaN. Leave them
+                # at 0 when there isn't enough history rather than 500 / emit NaN JSON.
+                beta = alpha = sharpe = 0.0
+                rf_daily = 0.06 / 252  # ~6% annualized risk-free, daily
+                if len(df_combined) >= 2:
+                    covariance = np.cov(df_combined['return'], df_combined['benchmark_return'])[0][1]
+                    benchmark_variance = np.var(df_combined['benchmark_return'])
+                    beta = covariance / benchmark_variance if benchmark_variance != 0 else 0.0
+
+                    avg_port_ret = df_combined['return'].mean()
+                    avg_bench_ret = df_combined['benchmark_return'].mean()
+                    alpha = ((avg_port_ret - rf_daily) - (beta * (avg_bench_ret - rf_daily))) * 252
+
+                    std = df_combined['return'].std()
+                    if std and not pd.isna(std) and std != 0:
+                        sharpe = ((df_combined['return'].mean() - rf_daily) / std) * (252 ** 0.5)
+
                 metrics = {
-                    "alpha": round(alpha, 4),
-                    "beta": round(beta, 4),
-                    "sharpe_ratio": round(sharpe, 4),
-                    "total_return": round(total_return, 2),
-                    "max_drawdown": round(max_drawdown, 2),
-                    "benchmark_return": round(benchmark_total_return, 2)
+                    "alpha": round(float(alpha), 4),
+                    "beta": round(float(beta), 4),
+                    "sharpe_ratio": round(float(sharpe), 4),
+                    "total_return": round(float(total_return), 2),
+                    "max_drawdown": round(float(max_drawdown), 2),
+                    "benchmark_return": round(float(benchmark_total_return), 2)
                 }
                 
                 # Prepare Chart Data
@@ -1025,12 +1042,128 @@ class PortfolioPerformanceView(viewsets.ViewSet):
                     "benchmark_pct": None
                 })
         
+        # Defense-in-depth: NaN/inf are not JSON-compliant — they make DRF fail to
+        # render (500) and break the client parser. Sparse/zero-laden snapshot data
+        # can produce them upstream, so scrub before returning: non-finite metric
+        # values -> 0.0, non-finite chart values -> None.
+        import math
+
+        def _finite(v, default=0.0):
+            try:
+                f = float(v)
+            except (TypeError, ValueError):
+                return default
+            return f if math.isfinite(f) else default
+
+        metrics = {k: _finite(v) for k, v in metrics.items()}
+        for _row in chart_data:
+            for _k, _v in list(_row.items()):
+                if isinstance(_v, float) and not math.isfinite(_v):
+                    _row[_k] = None
+
         return Response({
             "metrics": metrics,
             "chart_data": chart_data,
             "period": period,
             "has_benchmark": has_benchmark
         })
+
+    @action(detail=False, methods=['get'])
+    def twr_xirr(self, request):
+        """Time-weighted return (TWR) and money-weighted return (XIRR) for the portfolio.
+
+        Query Params:
+        - account: account_id or 'all' (default: 'all')
+
+        Sign conventions used internally:
+          TWR external_flow: +amount when cash enters the portfolio (BUY injects
+            invested capital), -amount when cash leaves (SELL/dividend withdraws it).
+          XIRR cashflows: outflows are negative (investor pays out cash), inflows
+            are positive (investor receives cash back). BUY is negative, SELL and
+            DIVIDEND received are positive. Final terminal flow = current portfolio
+            market value (positive).
+
+        Returns:
+          {"twr_pct": <float|null>, "xirr_pct": <float|null>}
+          Both values are percentages (fraction * 100). None when no data or
+          the solver cannot converge.
+        """
+        from ..services.finance import xirr as _xirr, time_weighted_return as _twr
+        import datetime as dt
+
+        user = request.user
+        account_id = request.query_params.get('account', 'all')
+
+        # ── 1. Fetch all-time snapshots for TWR ──────────────────────────────
+        snapshots_qs = PortfolioSnapshot.objects.filter(user=user).order_by('date')
+        if account_id != 'all':
+            snapshots_qs = snapshots_qs.filter(account_id=account_id)
+
+        # Aggregate per date if 'all' (multiple accounts on same day)
+        if account_id == 'all':
+            snapshot_rows = list(
+                snapshots_qs.values('date').annotate(total_value=Sum('total_value')).order_by('date')
+            )
+        else:
+            snapshot_rows = list(snapshots_qs.values('date', 'total_value').order_by('date'))
+
+        # ── 2. Fetch transactions for external-flow mapping ──────────────────
+        txns_qs = PortfolioTransaction.objects.filter(user=user).order_by('transaction_date')
+        if account_id != 'all':
+            txns_qs = txns_qs.filter(account_id=account_id)
+
+        # Build date → net external flow for TWR (cash entering the portfolio base)
+        # BUY / RIGHTS: investor commits cash → +amount (capital base grows)
+        # SELL: investor withdraws proceeds → -receivable_amount
+        # DIVIDEND: cash received but paid out of investable base → -amount
+        # BONUS: non-cash share issuance, no cash flow impact → skip
+        from collections import defaultdict
+        flow_by_date = defaultdict(float)
+        xirr_flows = []
+
+        for txn in txns_qs:
+            d = txn.transaction_date.date() if hasattr(txn.transaction_date, 'date') else txn.transaction_date
+            txn_type = txn.transaction_type
+            amount = float(txn.amount)
+            receivable = float(txn.receivable_amount)
+
+            if txn_type in (TransactionType.BUY, TransactionType.RIGHTS):
+                flow_by_date[d] += amount          # capital deposited into portfolio
+                xirr_flows.append((d, -amount))    # investor pays out (negative)
+            elif txn_type == TransactionType.SELL:
+                flow_by_date[d] -= receivable      # proceeds leave investable base
+                xirr_flows.append((d, receivable)) # investor receives cash (positive)
+            elif txn_type == TransactionType.DIVIDEND:
+                flow_by_date[d] -= amount          # dividend cash out of portfolio base
+                xirr_flows.append((d, amount))     # investor receives dividend (positive)
+            # BONUS / SHORT_SELL / BUY_TO_COVER: no external cash flow for XIRR/TWR
+
+        # ── 3. Build TWR points ──────────────────────────────────────────────
+        twr_result = None
+        if len(snapshot_rows) >= 2:
+            twr_points = []
+            for row in snapshot_rows:
+                snap_date = row['date']
+                snap_val = float(row['total_value'])
+                ext_flow = flow_by_date.get(snap_date, 0.0)
+                twr_points.append((snap_date, snap_val, ext_flow))
+            twr_raw = _twr(twr_points)
+            if twr_raw is not None:
+                twr_result = round(twr_raw * 100, 4)
+
+        # ── 4. Build XIRR cashflows (add terminal value = current portfolio) ─
+        xirr_result = None
+        if xirr_flows:
+            # Current portfolio market value = latest snapshot total_value
+            today = timezone.now().date()
+            if snapshot_rows:
+                latest_val = float(snapshot_rows[-1]['total_value'])
+                xirr_flows_with_terminal = list(xirr_flows) + [(today, latest_val)]
+                xirr_raw = _xirr(xirr_flows_with_terminal)
+                if xirr_raw is not None:
+                    xirr_result = round(xirr_raw * 100, 4)
+
+        return Response({"twr_pct": twr_result, "xirr_pct": xirr_result})
 
 
 def _check_and_close_plan(plan):
@@ -1160,3 +1293,45 @@ class TradePlanViewSet(viewsets.ModelViewSet):
 
         plan.refresh_from_db()
         return Response(self.get_serializer(plan).data)
+
+
+class PortfolioActionDraftViewSet(viewsets.ReadOnlyModelViewSet):
+    """List/detail a user's proposed portfolio actions; confirm or cancel them.
+
+    Drafts are created by the chat portfolio-manager tools, not via POST here.
+    """
+    permission_classes = [IsAuthenticated]
+    serializer_class = PortfolioActionDraftSerializer
+
+    def get_queryset(self):
+        qs = PortfolioActionDraft.objects.filter(user=self.request.user)
+        status_filter = self.request.query_params.get('status')
+        if status_filter:
+            qs = qs.filter(status=status_filter.upper())
+        return qs
+
+    @action(detail=True, methods=['post'])
+    def confirm(self, request, pk=None):
+        draft = self.get_object()  # 404s if not this user's draft
+        try:
+            result = confirm_draft(draft)
+        except DraftError as e:
+            return Response({"error": str(e)}, status=status.HTTP_409_CONFLICT)
+        except ValueError as e:
+            return Response({"error": str(e)}, status=status.HTTP_400_BAD_REQUEST)
+        draft.refresh_from_db()
+        return Response({"status": draft.status, "kind": draft.kind, "result": result})
+
+    @action(detail=True, methods=['post'])
+    def cancel(self, request, pk=None):
+        draft = self.get_object()
+        if draft.status == PortfolioActionDraft.Status.PENDING:
+            draft.status = PortfolioActionDraft.Status.CANCELLED
+            draft.save(update_fields=['status'])
+        elif draft.status != PortfolioActionDraft.Status.CANCELLED:
+            # CONFIRMED or EXPIRED — a resolved draft cannot be cancelled.
+            return Response(
+                {"error": f"Draft is {draft.status} and cannot be cancelled."},
+                status=status.HTTP_409_CONFLICT,
+            )
+        return Response({"status": draft.status})

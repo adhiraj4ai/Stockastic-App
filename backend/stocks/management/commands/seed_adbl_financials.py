@@ -1,6 +1,6 @@
 from django.core.management.base import BaseCommand
 from stocks.models import Company, FinancialReport
-from decimal import Decimal
+from stocks.services.dividend_service import sync_dividends_from_financials
 
 
 class Command(BaseCommand):
@@ -816,16 +816,16 @@ class Command(BaseCommand):
 
         # ADBL Dividend Data (FY 072-073 to 081-082)
         dividend_data = {
-            '072/073': {'bonus': 20, 'cash': 1.05, 'announced': '2016-12-15', 'book_close': '2017-01-05'},
-            '073/074': {'bonus': 20, 'cash': 1.05, 'announced': '2017-12-10', 'book_close': '2017-12-25'},
-            '074/075': {'bonus': 6, 'cash': 15.053, 'announced': '2019-01-05', 'book_close': '2019-01-20'},
-            '075/076': {'bonus': 20, 'cash': 1.053, 'announced': '2019-12-15', 'book_close': '2019-12-30'},
-            '076/077': {'bonus': 15, 'cash': 0.789, 'announced': '2020-12-20', 'book_close': '2021-01-10'},
-            '077/078': {'bonus': 20, 'cash': 1.053, 'announced': '2021-12-05', 'book_close': '2021-12-20'},
-            '078/079': {'bonus': 2, 'cash': 11, 'announced': '2023-01-10', 'book_close': '2023-01-25'},
-            '079/080': {'bonus': 0, 'cash': 0, 'announced': None, 'book_close': None},
-            '080/081': {'bonus': 0, 'cash': 0, 'announced': None, 'book_close': None},
-            '081/082': {'bonus': 0, 'cash': 0, 'announced': None, 'book_close': None},
+            '072/073': {'bonus': 20.00, 'cash': 1.05, 'announced': None, 'book_close': '2017-04-03'},
+            '073/074': {'bonus': 20.00, 'cash': 1.053, 'announced': None, 'book_close': '2018-01-29'},
+            '074/075': {'bonus': 6.00, 'cash': 15.053, 'announced': None, 'book_close': '2019-02-28'},
+            '075/076': {'bonus': 6.00, 'cash': 24.00, 'announced': None, 'book_close': '2019-12-29'},
+            '076/077': {'bonus': 15.00, 'cash': 0.7895, 'announced': None, 'book_close': '2020-12-30'},
+            '077/078': {'bonus': 20.00, 'cash': 1.0526, 'announced': None, 'book_close': '2021-12-31'},
+            '078/079': {'bonus': 2.00, 'cash': 11.00, 'announced': None, 'book_close': '2023-03-14'},
+            '079/080': {'bonus': 0.00, 'cash': 0.00, 'announced': None, 'book_close': None},
+            '080/081': {'bonus': 3.00, 'cash': 7.53, 'announced': None, 'book_close': '2024-12-31'},
+            '081/082': {'bonus': 3.25, 'cash': 9.75, 'announced': None, 'book_close': '2025-11-30'},
         }
 
         # ADBL Cash Flow Data (FY 077-078 to 081-082)
@@ -1103,10 +1103,27 @@ class Command(BaseCommand):
             if net_profit and total_equity and total_equity > 0:
                 roe = round((net_profit / total_equity) * 100, 2)
             
+            formatted_fy = fiscal_year.replace('/', '-')
+
+            div = dividend_data.get(fiscal_year, {})
+            key_ratios = {
+                'Per Share': {
+                    'EPS': eps,
+                    'Book Value': book_value,
+                },
+                'Performance': {
+                    'ROE': roe,
+                },
+                'Dividend': {
+                    'Bonus Share %': div.get('bonus'),
+                    'Cash Dividend %': div.get('cash'),
+                },
+            }
+
             # Create or update the financial report
             report, created = FinancialReport.objects.update_or_create(
                 ticker='ADBL',
-                fiscal_year=fiscal_year,
+                fiscal_year=formatted_fy,
                 report_type='ANNUAL',
                 quarter=None,
                 defaults={
@@ -1115,6 +1132,7 @@ class Command(BaseCommand):
                     'balance_sheet': balance_sheet,
                     'profit_loss': profit_loss,
                     'cash_flow': cash_flow if cash_flow else None,
+                    'key_ratios': key_ratios,
                     'paid_up_capital': share_capital,
                     'reserves_and_surplus': data['EQUITY'].get('reserves_reserves'),
                     'net_profit': net_profit,
@@ -1130,13 +1148,22 @@ class Command(BaseCommand):
             
             if created:
                 created_count += 1
-                self.stdout.write(self.style.SUCCESS(f'✓ Created report for FY {fiscal_year}'))
+                self.stdout.write(self.style.SUCCESS(f'✓ Created report for FY {formatted_fy}'))
             else:
                 updated_count += 1
-                self.stdout.write(self.style.WARNING(f'⟳ Updated report for FY {fiscal_year}'))
+                self.stdout.write(self.style.WARNING(f'⟳ Updated report for FY {formatted_fy}'))
 
         self.stdout.write(self.style.SUCCESS(
             f'\n✓ Successfully processed {len(financial_data)} financial reports for ADBL'
         ))
         self.stdout.write(f'  Created: {created_count}')
         self.stdout.write(f'  Updated: {updated_count}')
+
+        # Sync the Dividend table (read by chat get_dividend_history, catalysts,
+        # watchlist, and portfolio dividend income) from the dividend fields
+        # just written onto the annual reports.
+        div_created, div_updated = sync_dividends_from_financials('ADBL')
+        self.stdout.write(self.style.SUCCESS(
+            f'✓ Dividend table synced from financials: '
+            f'created={div_created} updated={div_updated}'
+        ))

@@ -17,6 +17,7 @@ from typing import Any
 from asgiref.sync import sync_to_async
 from claude_agent_sdk import create_sdk_mcp_server, tool
 from django.db.models import Avg, Count, Max, Min, Q, Sum
+from django.db.utils import OperationalError, ProgrammingError
 
 from stocks.models.fundamentals import Dividend, FinancialReport, StockFundamental
 from stocks.models.market import (
@@ -28,6 +29,7 @@ from stocks.models.market import (
 )
 from stocks.models.portfolio import (
     PortfolioAccount,
+    PortfolioActionDraft,
     PortfolioItem,
     PortfolioSnapshot,
     PortfolioTarget,
@@ -38,14 +40,22 @@ from stocks.models.portfolio import (
 from stocks.models.strategy import Strategy, StrategyExperiment
 from stocks.models.signal import SignalEpisode, USER_STRATEGY
 from stocks.models.system import Notification
+from stocks.services import broker_research
 from stocks.services.fundamental_service import FundamentalService
+from stocks.services.portfolio_drafts import create_draft
 from stocks.services.portfolio_service import PortfolioService
 from stocks.services.position_sizing import PositionSizingService
 from stocks.services.risk_service import RiskAnalysisService
 from stocks.services.watchlist_service import WatchlistService
+from stocks.optimization import perform_portfolio_optimization
 from stocks.technical import get_technical_indicators
+from stocks.utils import (
+    calculate_broker_commission, calculate_sebon_fee, calculate_dp_charge, calculate_cgt,
+)
 
 from ._user_context import get_user, push_card
+from chat.models import SavedAnalysis
+from .services.saved_match import match_saved_analyses
 
 
 # ─────────────────────────────────────────────────────────────────────────────
@@ -139,6 +149,28 @@ def _rank_strategy_signals(strat_signals: list) -> tuple[list[dict], str | None]
 
     best = enriched[0]["strategy"] if enriched else None
     return enriched, best
+
+
+def score_candidate(*, expected_return_pct, win_rate, concentration_pct, health_score):
+    """Manager Scorecard: blend return, win rate, and risk into a 0–100 score.
+
+    - return component: expected_return_pct, clamped to [-20, 40] → [0, 1]
+    - win-rate component: win_rate (0–100) → [0, 1]
+    - risk penalty: concentration above 25% and health below 40 subtract.
+
+    Weights: 45% return, 40% win rate, 15% health; minus a concentration penalty.
+    """
+    ret = max(-20.0, min(40.0, float(expected_return_pct)))
+    ret_norm = (ret + 20.0) / 60.0                      # [0, 1]
+    wr_norm = max(0.0, min(100.0, float(win_rate))) / 100.0
+    health_norm = max(0.0, min(100.0, float(health_score))) / 100.0
+
+    score = (0.45 * ret_norm + 0.40 * wr_norm + 0.15 * health_norm) * 100.0
+
+    conc = max(0.0, float(concentration_pct))
+    if conc > 25.0:
+        score -= min(30.0, (conc - 25.0))               # up to -30 for heavy concentration
+    return max(0.0, min(100.0, score))
 
 
 # ─────────────────────────────────────────────────────────────────────────────
@@ -2051,6 +2083,1718 @@ async def get_rebalance_targets(args: dict) -> dict:
 
 
 # ─────────────────────────────────────────────────────────────────────────────
+# Strategy builder / inference tools
+# ─────────────────────────────────────────────────────────────────────────────
+@tool(
+    "list_strategy_components",
+    "List the building blocks (signals, entry filters, stops, exits) available to compose "
+    "a strategy, with their parameters. Call this BEFORE drafting a strategy spec.",
+    {},
+)
+async def list_strategy_components(args: dict) -> dict:
+    @sync_to_async
+    def _run():
+        from stocks.services.strategy_framework import registry_schema
+        sch = registry_schema()
+        lines = []
+        for kind in ("alpha", "regime", "stop", "exit"):
+            lines.append(f"{kind.upper()}S:")
+            for c in sch[kind]:
+                ps = ", ".join(p["name"] for p in c["params"]) or "no params"
+                lines.append(f"  {c['type']} — {c['desc']} [{ps}]")
+        return _result("\n".join(lines), card={"type": "strategy_components", "data": sch})
+    return await _run()
+
+
+@tool(
+    "describe_strategy",
+    "Explain a strategy in plain English with its headline metrics. Provide strategy_id.",
+    {"strategy_id": int},
+)
+async def describe_strategy(args: dict) -> dict:
+    sid = args.get("strategy_id")
+
+    @sync_to_async
+    def _run():
+        from stocks.services.strategy_framework import spec_to_sentence
+        from stocks.serializers.strategy import StrategySerializer
+        s = Strategy.objects.filter(id=sid).first()
+        if not s:
+            return _result(f"No strategy with id {sid}.", is_error=True)
+        d = StrategySerializer(s).data
+        desc = spec_to_sentence(s.spec) if s.spec else (s.description or "Custom Python strategy.")
+        m = d.get("metrics_summary") or {}
+        prose = (f"{s.name} ({d['kind']}): {desc}\n"
+                 f"Metrics — return {m.get('return_pct')}%, Sharpe {m.get('sharpe')}, "
+                 f"win {m.get('win_rate')}%, max drawdown {m.get('max_drawdown')}%.")
+        return _result(prose, card={"type": "strategy_description",
+                                    "data": {"id": s.id, "name": s.name, "kind": d["kind"], "summary": desc, "metrics": m}})
+    return await _run()
+
+
+@tool(
+    "backtest_strategy",
+    "Run a backtest of a strategy on a symbol and report performance vs buy-and-hold. "
+    "Provide strategy_id and symbol (e.g. NABIL).",
+    {"strategy_id": int, "symbol": str},
+)
+async def backtest_strategy(args: dict) -> dict:
+    sid = args.get("strategy_id")
+    symbol = (args.get("symbol") or "").upper()
+
+    @sync_to_async
+    def _run():
+        from stocks.services.backtest_harness import run_backtest
+        s = Strategy.objects.filter(id=sid).first()
+        if not s:
+            return _result(f"No strategy with id {sid}.", is_error=True)
+        r = run_backtest(s, symbol)
+        if not r.ok:
+            return _result(f"Backtest failed for {symbol}: {r.error}", is_error=True)
+        m = r.metrics
+        prose = (f"{s.name} on {symbol} (full history): return {m['return_pct']:.1f}% vs "
+                 f"buy&hold {m['buy_hold_return_pct']:.1f}%, Sharpe {m['sharpe']:.2f}, "
+                 f"Sortino {m['sortino']:.2f}, max drawdown {m['max_drawdown_pct']:.1f}%, "
+                 f"win rate {m['win_rate_pct']:.0f}%, {m['num_trades']} trades.")
+        return _result(prose, card={"type": "strategy_backtest", "data": {"strategy": s.name, "symbol": symbol, **m}})
+    return await _run()
+
+
+@tool(
+    "strategy_signal_today",
+    "What is a strategy signaling for a symbol right now (BUY / SELL / HOLD / NEUTRAL)? "
+    "Runs the strategy to the latest bar. Provide strategy_id and symbol.",
+    {"strategy_id": int, "symbol": str},
+)
+async def strategy_signal_today(args: dict) -> dict:
+    sid = args.get("strategy_id")
+    symbol = (args.get("symbol") or "").upper()
+
+    @sync_to_async
+    def _run():
+        from stocks.services.strategy_service import StrategyService
+        s = Strategy.objects.filter(id=sid).first()
+        if not s:
+            return _result(f"No strategy with id {sid}.", is_error=True)
+        res = StrategyService.infer_current_signal(s, symbol)
+        prose = f"{s.name} on {symbol}: currently {res['signal']} (as of {res.get('date')}, close {res.get('close')})."
+        return _result(prose, card={"type": "strategy_signal", "data": {"strategy": s.name, **res}})
+    return await _run()
+
+
+@tool(
+    "draft_strategy",
+    "Create a DRAFT strategy from a composition spec for the user to review and save in the "
+    "builder. Provide name and spec — a JSON object with alpha (required), optional regime "
+    "(list), stop, exit (list) and rr, using component types from list_strategy_components, "
+    "e.g. {'alpha':{'type':'SupertrendFlip'},'regime':[{'type':'AboveEMA'}],'stop':{'type':'AtrTrail'}}.",
+    {"name": str, "spec": dict},
+)
+async def draft_strategy(args: dict) -> dict:
+    user = get_user()
+    name = args.get("name") or "Drafted Strategy"
+    spec = args.get("spec")
+
+    @sync_to_async
+    def _run():
+        from stocks.services.strategy_framework import validate_spec, spec_to_code, spec_to_sentence, SpecError
+        try:
+            validate_spec(spec)
+            code = spec_to_code(spec)
+        except SpecError as e:
+            return _result(f"That spec is invalid: {e}. Call list_strategy_components for valid types.", is_error=True)
+        sentence = spec_to_sentence(spec)
+        s = Strategy.objects.create(user=user, name=name,
+                                    description=f"Drafted via chat. {sentence}",
+                                    code=code, spec=spec, is_public=False)
+        return _result(
+            f"Drafted '{name}' (id {s.id}). {sentence}\nReview & save it in the builder: /strategies/{s.id}/builder",
+            card={"type": "strategy_draft", "data": {"id": s.id, "name": name, "summary": sentence, "url": f"/strategies/{s.id}/builder"}})
+    return await _run()
+
+
+@tool(
+    "scan_strategies_for_symbol",
+    "Backtest ALL strategies on one symbol across multiple timeframes (1y/3y/5y/max) and "
+    "rank them to find the best strategy for THAT stock. Use for 'which strategy works best "
+    "on X' or as part of an in-depth symbol analysis. Provide symbol.",
+    {"symbol": str},
+)
+async def scan_strategies_for_symbol(args: dict) -> dict:
+    symbol = (args.get("symbol") or "").upper()
+
+    @sync_to_async
+    def _run():
+        from stocks.services.strategy_scan import scan_symbol
+        res = scan_symbol(symbol, timeframes=("1y", "3y", "5y", "max"))
+        if not res["results"]:
+            return _result(f"No strategies could be backtested on {symbol}.", is_error=True)
+        b, ra = res["best"], res["best_risk_adjusted"]
+        lines = [f"Scanned {res['count']} strategies on {symbol} across 1y/3y/5y/max — "
+                 f"{res['beating_bh']} beat buy-and-hold on their best timeframe."]
+        if b:
+            lines.append(f"Best by return: {b['name']} {b['return_pct']:+.0f}% on {b['timeframe']} "
+                         f"(buy&hold {b['buy_hold_return_pct']:+.0f}%, Sharpe {b['sharpe']}, {b['num_trades']} trades).")
+        if ra:
+            lines.append(f"Best risk-adjusted: {ra['name']} (Sortino {ra['sortino']}, "
+                         f"{ra['return_pct']:+.0f}% on {ra['timeframe']}).")
+        lines.append("Top: " + "; ".join(f"{r['name']} {r['return_pct']:+.0f}% ({r['timeframe']})" for r in res["results"][:5]))
+        return _result("\n".join(lines), card={"type": "strategy_scan", "data": res})
+    return await _run()
+
+
+# ─────────────────────────────────────────────────────────────────────────────
+# Portfolio Manager (propose-then-confirm) tools
+# ─────────────────────────────────────────────────────────────────────────────
+
+
+def _trade_preview(user, account, ticker, txn_type, quantity, rate):
+    """Estimate fees/CGT/net for a single trade WITHOUT mutating anything.
+
+    Uses the same stocks.utils fee helpers as PortfolioService.process_transaction.
+    CGT on SELL is estimated against the holding's current WACC.
+    """
+    quantity = int(quantity)
+    rate = Decimal(str(rate))
+    amount = Decimal(quantity) * rate
+    commission = calculate_broker_commission(amount)
+    sebon_fee = calculate_sebon_fee(amount)
+    dp_charge = calculate_dp_charge()
+    cgt = Decimal("0.00")
+    warnings = []
+    if txn_type == "SELL":
+        item = PortfolioItem.objects.filter(user=user, ticker=ticker, account=account).first()
+        wacc = Decimal(str(item.wacc)) if item and item.wacc else None
+        if item is None:
+            warnings.append(f"No {ticker} holding found in this account.")
+        elif item.quantity < quantity:
+            warnings.append(f"Only {item.quantity} {ticker} held; cannot sell {quantity}.")
+        if wacc is not None:
+            profit = (rate - wacc) * Decimal(quantity)
+            if profit > 0:
+                from stocks.services.finance import weighted_acquisition_date, is_long_term_holding
+                _prior = PortfolioTransaction.objects.filter(
+                    user=user, ticker=ticker,
+                    transaction_type__in=[TransactionType.BUY, TransactionType.BONUS],
+                )
+                if account:
+                    _prior = _prior.filter(account=account)
+                _lots = [(t.quantity, t.transaction_date.date()) for t in _prior if t.quantity]
+                _long_term = is_long_term_holding(weighted_acquisition_date(_lots), date.today())
+                cgt = calculate_cgt(profit, is_long_term=_long_term)
+        net = amount - commission - sebon_fee - dp_charge - cgt
+    else:  # BUY
+        net = amount + commission + sebon_fee + dp_charge
+        if account and getattr(account, "account_type", None) == "PAPER" and account.balance < net:
+            warnings.append(f"Insufficient paper balance (need Rs {float(net):,.0f}, have Rs {float(account.balance):,.0f}).")
+    return {
+        "amount": float(amount),
+        "commission": float(commission),
+        "sebon_fee": float(sebon_fee),
+        "dp_charge": float(dp_charge),
+        "cgt": float(cgt),
+        "net": float(net),
+        "warnings": warnings,
+    }
+
+
+@tool(
+    "propose_trade",
+    "Draft a BUY or SELL of a NEPSE ticker for the user to CONFIRM before it is recorded. "
+    "Computes fees + CGT and creates a pending proposal card. Does NOT execute — the user "
+    "confirms it. action='BUY'|'SELL'. Pass account_id to scope to one account.",
+    {"ticker": str, "action": str, "quantity": int, "rate": float, "account_id": str},
+)
+async def propose_trade(args: dict) -> dict:
+    ticker = (args.get("ticker") or "").upper().strip()
+    action = (args.get("action") or "").upper().strip()
+    quantity = int(args.get("quantity") or 0)
+    rate = args.get("rate")
+    account_id = args.get("account_id")
+    if not ticker or action not in ("BUY", "SELL") or quantity <= 0 or rate is None:
+        return _result("Provide ticker, action (BUY/SELL), positive quantity, and rate.", is_error=True)
+
+    user = get_user()
+
+    @sync_to_async
+    def _run():
+        account = _resolve_account(user, account_id)
+        preview = _trade_preview(user, account, ticker, action, quantity, float(rate))
+        title = f"{action} {quantity} {ticker} @ Rs {float(rate):,.2f}"
+        payload = {
+            "account_id": account.id if account else None,
+            "trades": [{"ticker": ticker, "txn_type": action, "quantity": quantity, "rate": float(rate)}],
+        }
+        card_preview = {
+            "title": title,
+            "lines": [{
+                "ticker": ticker, "action": action, "quantity": quantity, "rate": float(rate),
+                "fees": {"commission": preview["commission"], "sebon_fee": preview["sebon_fee"],
+                         "dp_charge": preview["dp_charge"], "cgt": preview["cgt"]},
+                "net": preview["net"],
+            }],
+            "warnings": preview["warnings"],
+        }
+        draft = create_draft(
+            user=user, account=account, kind=PortfolioActionDraft.Kind.TRADE,
+            title=title, payload=payload, preview=card_preview,
+        )
+        money_label = "Total cost" if action == "BUY" else "Net proceeds"
+        warn = f" ⚠️ {'; '.join(preview['warnings'])}" if preview["warnings"] else ""
+        prose = (f"Drafted: {title}. {money_label} Rs {preview['net']:,.0f} "
+                 f"(fees Rs {preview['commission'] + preview['sebon_fee'] + preview['dp_charge']:,.0f}, "
+                 f"CGT Rs {preview['cgt']:,.0f}). Awaiting your confirmation.{warn}")
+        return _result(prose, card={
+            "type": "proposal",
+            "data": {"draft_id": draft.id, "kind": "TRADE", "title": title,
+                     "status": "PENDING", "preview": card_preview},
+        }, _tool_name="propose_trade")
+
+    return await _run()
+
+
+@tool(
+    "propose_exits",
+    "Draft a stop-loss and/or target price for one of the user's holdings, for them to "
+    "CONFIRM. Pass ticker and at least one of stop_loss_price / target_price. Optional "
+    "account_id to disambiguate which account's holding. Does NOT execute.",
+    {"ticker": str, "stop_loss_price": float, "target_price": float, "account_id": str},
+)
+async def propose_exits(args: dict) -> dict:
+    ticker = (args.get("ticker") or "").upper().strip()
+    stop = args.get("stop_loss_price")
+    target = args.get("target_price")
+    account_id = args.get("account_id")
+    if not ticker or (stop is None and target is None):
+        return _result("Provide ticker and at least one of stop_loss_price / target_price.", is_error=True)
+
+    user = get_user()
+
+    @sync_to_async
+    def _run():
+        account = _resolve_account(user, account_id)
+        qs = PortfolioItem.objects.filter(user=user, ticker=ticker)
+        if account:
+            qs = qs.filter(account=account)
+        item = qs.first()
+        if not item:
+            return _result(f"You don't hold {ticker}{' in that account' if account else ''}.", is_error=True)
+        title = f"Set exits on {ticker}" + (
+            f" — stop Rs {float(stop):,.2f}" if stop is not None else "") + (
+            f", target Rs {float(target):,.2f}" if target is not None else "")
+        line = {"label": ticker, "ticker": ticker}
+        if stop is not None:
+            line["stop_loss_price"] = float(stop)
+        if target is not None:
+            line["target_price"] = float(target)
+        payload = {"items": [{
+            "item_id": item.id, "ticker": ticker,
+            "stop_loss_price": float(stop) if stop is not None else None,
+            "target_price": float(target) if target is not None else None,
+        }]}
+        card_preview = {"title": title, "lines": [line], "warnings": []}
+        draft = create_draft(
+            user=user, account=account, kind=PortfolioActionDraft.Kind.EXITS,
+            title=title, payload=payload, preview=card_preview,
+        )
+        return _result(f"Drafted: {title}. Awaiting your confirmation.", card={
+            "type": "proposal",
+            "data": {"draft_id": draft.id, "kind": "EXITS", "title": title,
+                     "status": "PENDING", "preview": card_preview},
+        }, _tool_name="propose_exits")
+
+    return await _run()
+
+
+@tool(
+    "propose_rebalance",
+    "Draft a rebalance toward an optimized allocation for the user to CONFIRM. Runs the "
+    "portfolio optimizer (method='max_sharpe'|'min_volatility'|'max_return', default "
+    "max_sharpe), compares to current holdings, and drafts the BUY/SELL legs to move "
+    "toward the optimal weights. Pass account_id to scope. Does NOT execute.",
+    {"account_id": str, "method": str},
+)
+async def propose_rebalance(args: dict) -> dict:
+    account_id = args.get("account_id")
+    method = (args.get("method") or "max_sharpe").strip()
+    user = get_user()
+
+    @sync_to_async
+    def _run():
+        account = _resolve_account(user, account_id)
+        qs = PortfolioItem.objects.filter(user=user)
+        if account:
+            qs = qs.filter(account=account)
+        items = list(qs)
+        if not items:
+            return _result("Your portfolio is empty — nothing to rebalance.", is_error=True)
+
+        # Build current holdings map {ticker: {quantity, price}} like the /optimize view.
+        # Use WACC as initial price; the optimizer will return latest_prices for trade sizing.
+        holdings = {}
+        for it in items:
+            fallback_price = float(it.wacc or 0)
+            try:
+                px = DailyStockPrice.objects.filter(ticker=it.ticker).order_by("-date").first()
+                price = float(px.close) if px and px.close else fallback_price
+            except (OperationalError, ProgrammingError):
+                price = fallback_price
+            h = holdings.setdefault(it.ticker, {"quantity": 0, "price": price})
+            h["quantity"] += int(it.quantity)
+
+        tickers = list(holdings.keys())
+        opt = perform_portfolio_optimization(tickers, current_holdings=holdings, method=method)
+        if not opt.get("success"):
+            return _result(f"Optimizer could not produce a result: {opt.get('error', 'unknown')}.", is_error=True)
+
+        weights = opt.get("optimal_weights") or {}
+        prices = opt.get("latest_prices") or {t: holdings[t]["price"] for t in tickers}
+        total_value = sum(holdings[t]["quantity"] * float(prices.get(t, holdings[t]["price"])) for t in tickers)
+
+        trades = []
+        lines = []
+        all_warnings = []
+        for t in tickers:
+            price = float(prices.get(t, holdings[t]["price"]) or 0)
+            if price <= 0:
+                continue
+            target_value = total_value * float(weights.get(t, 0))
+            target_qty = int(target_value // price)
+            delta = target_qty - holdings[t]["quantity"]
+            if delta == 0:
+                continue
+            txn_type = "BUY" if delta > 0 else "SELL"
+            qty = abs(delta)
+            pv = _trade_preview(user, account, t, txn_type, qty, price)
+            all_warnings.extend(pv["warnings"])
+            trades.append({"ticker": t, "txn_type": txn_type, "quantity": qty, "rate": price})
+            lines.append({
+                "label": f"{txn_type} {qty} {t}", "ticker": t,
+                "action": txn_type, "quantity": qty, "rate": price,
+                "fees": {"commission": pv["commission"], "sebon_fee": pv["sebon_fee"],
+                         "dp_charge": pv["dp_charge"], "cgt": pv["cgt"]},
+                "net": pv["net"],
+            })
+
+        if not trades:
+            return _result("Your portfolio is already at the optimal allocation — no trades needed.", is_error=True)
+
+        title = f"Rebalance ({method}) — {len(trades)} trade(s)"
+        payload = {
+            "account_id": account.id if account else None,
+            "method": method,
+            "targets": [],  # sector/tag targets left to a separate propose; weights are per-ticker here
+            "trades": trades,
+        }
+        card_preview = {"title": title, "lines": lines, "warnings": all_warnings}
+        draft = create_draft(
+            user=user, account=account, kind=PortfolioActionDraft.Kind.REBALANCE,
+            title=title, payload=payload, preview=card_preview,
+        )
+        return _result(
+            f"Drafted a {method} rebalance: {len(trades)} trade(s) to reach the optimal allocation. "
+            f"Awaiting your confirmation.",
+            card={"type": "proposal",
+                  "data": {"draft_id": draft.id, "kind": "REBALANCE", "title": title,
+                           "status": "PENDING", "preview": card_preview}},
+            _tool_name="propose_rebalance")
+
+    return await _run()
+
+
+@tool(
+    "propose_trade_plan",
+    "Draft a staged multi-leg trade plan (up to 5 legs) for the user to CONFIRM. legs is a "
+    "list of {leg_number, price_target, allocation_pct, stop_loss_price}; allocation_pct must "
+    "sum to 100 and each stop_loss_price must be below its price_target. Pass ticker, "
+    "risk_budget_pct, optional account_id, thesis, target_price. Does NOT execute — on confirm "
+    "it creates a TradePlan the user works through over time.",
+    {"ticker": str, "legs": list, "risk_budget_pct": float, "target_price": float,
+     "thesis": str, "account_id": str},
+)
+async def propose_trade_plan(args: dict) -> dict:
+    ticker = (args.get("ticker") or "").upper().strip()
+    legs = args.get("legs") or []
+    risk_budget_pct = args.get("risk_budget_pct")
+    if not ticker or not legs or risk_budget_pct is None:
+        return _result("Provide ticker, risk_budget_pct, and at least one leg.", is_error=True)
+
+    total_alloc = 0.0
+    for l in legs:
+        for key in ("leg_number", "price_target", "allocation_pct", "stop_loss_price"):
+            if l.get(key) is None:
+                return _result(
+                    f"Each leg needs leg_number, price_target, allocation_pct, and stop_loss_price. "
+                    f"Leg {l.get('leg_number', '?')} is missing {key}.",
+                    is_error=True,
+                )
+        if float(l["stop_loss_price"]) >= float(l["price_target"]):
+            return _result(f"Leg {l['leg_number']}: stop_loss_price must be below price_target.", is_error=True)
+        total_alloc += round(float(l["allocation_pct"]), 2)
+    if round(total_alloc, 2) != 100.0:
+        return _result(f"Leg allocation_pct must sum to 100 (got {total_alloc:.2f}).", is_error=True)
+
+    account_id = args.get("account_id")
+    thesis = args.get("thesis") or ""
+    target_price = args.get("target_price")
+    user = get_user()
+
+    @sync_to_async
+    def _run():
+        account = _resolve_account(user, account_id)
+        # Build the payload in the exact shape TradePlanSerializer expects.
+        payload = {
+            "ticker": ticker,
+            "account": account.id if account else None,
+            "thesis": thesis,
+            "risk_budget_pct": f"{float(risk_budget_pct):.2f}",
+            "target_price": f"{float(target_price):.2f}" if target_price is not None else None,
+            "legs": [{
+                "leg_number": int(l["leg_number"]),
+                "price_target": f"{float(l['price_target']):.2f}",
+                "allocation_pct": f"{float(l['allocation_pct']):.2f}",
+                "stop_loss_price": f"{float(l['stop_loss_price']):.2f}",
+            } for l in legs],
+        }
+        title = f"Trade plan: {ticker} — {len(legs)} legs"
+        lines = [{"label": f"Leg {l['leg_number']}: {float(l['allocation_pct']):.0f}% @ Rs {float(l['price_target']):,.2f}",
+                  "ticker": ticker} for l in legs]
+        card_preview = {"title": title, "lines": lines, "warnings": []}
+        draft = create_draft(
+            user=user, account=account, kind=PortfolioActionDraft.Kind.TRADE_PLAN,
+            title=title, payload=payload, preview=card_preview,
+        )
+        return _result(
+            f"Drafted a {len(legs)}-leg trade plan for {ticker} (risk budget {float(risk_budget_pct):.1f}%). "
+            f"Awaiting your confirmation.",
+            card={"type": "proposal",
+                  "data": {"draft_id": draft.id, "kind": "TRADE_PLAN", "title": title,
+                           "status": "PENDING", "preview": card_preview}},
+            _tool_name="propose_trade_plan")
+
+    return await _run()
+
+
+# ─────────────────────────────────────────────────────────────────────────────
+# Opportunity Engine tools
+# ─────────────────────────────────────────────────────────────────────────────
+
+
+@tool(
+    "get_top_opportunities",
+    "Today's best NEPSE BUY opportunities, ranked by validated, regime-aware, fee-net edge with live-track-record trust. Use when the user asks what to buy / best trades / opportunities right now.",
+    {"limit": int, "symbols": str},
+)
+async def get_top_opportunities(args: dict) -> dict:
+    limit = args.get("limit") or 15
+    symbols_arg = (args.get("symbols") or "").strip()
+    symbols = [s.strip() for s in symbols_arg.split(",")] if symbols_arg else None
+
+    @sync_to_async
+    def _run():
+        from stocks.services.opportunity_engine import rank_opportunities
+        res = rank_opportunities(symbols=symbols, limit=int(limit))
+        reg = res["regime"]
+        opps = res["opportunities"]
+        if not opps:
+            return _result(
+                f"No ranked BUY entries right now (market regime: {reg['regime']}, "
+                f"breadth {reg['breadth']}). {len(res.get('exits', []))} exit signals today.",
+            )
+        lines = [
+            f"{i+1}. {o['symbol']} via {o['strategy_name']} — "
+            f"annualized edge {o['edge']*100:.1f}%, trust {o['trust']}"
+            + (f", live win {o['live_win_rate']*100:.0f}% (n={o['live_resolved']})" if o['live_resolved'] else "")
+            for i, o in enumerate(opps[:int(limit)])
+        ]
+        prose = (f"Top opportunities in a {reg['regime']} market (breadth {reg['breadth']}):\n"
+                 + "\n".join(lines)
+                 + "\n\nEdge is annualized, fee-net, per-symbol. CONFIRMED = backtest agrees with the "
+                   "live signal record; UNCONFIRMED = not enough resolved live signals yet.")
+        return _result(prose, card={"type": "opportunities", "data": res})
+
+    return await _run()
+
+
+@tool(
+    "explain_opportunity",
+    "Full breakdown of one opportunity: backtest edge, significance, live track record, trust tier, regime. Args: producer (e.g. 'USER_STRATEGY:15') and symbol.",
+    {"producer": str, "symbol": str},
+)
+async def explain_opportunity(args: dict) -> dict:
+    producer = (args.get("producer") or "").strip()
+    symbol = (args.get("symbol") or "").strip().upper()
+    if not producer or not symbol:
+        return _result("Both 'producer' and 'symbol' are required.", is_error=True)
+
+    @sync_to_async
+    def _run():
+        from stocks.services.opportunity_engine import rank_opportunities
+        from stocks.services.live_validation import producer_track_record
+        res = rank_opportunities(symbols=[symbol], limit=100)
+        match = next((o for o in res["opportunities"] if o["producer"] == producer and o["symbol"] == symbol), None)
+        live = producer_track_record(producer)
+        reg = res["regime"]
+        if not match:
+            return _result(
+                f"{producer} is not signalling a BUY on {symbol} today (regime {reg['regime']}). "
+                f"Live record: {live['won']}W/{live['lost']}L/{live['active']}A, "
+                f"avg P&L {live['avg_pnl_pct']:.1f}%.",
+            )
+        prose = (
+            f"{symbol} via {match['strategy_name']} ({producer}) — {reg['regime']} market.\n"
+            f"- Annualized fee-net edge (this symbol): {match['edge']*100:.1f}%\n"
+            f"- Backtest significance p-value: {match['pvalue']:.3f}"
+            f" ({'significant' if match['pvalue']<=0.05 else 'not significant'})\n"
+            f"- Trust: {match['trust']} — live record {live['won']}W/{live['lost']}L "
+            f"(avg P&L {live['avg_pnl_pct']:.1f}%, {live['resolved']} resolved)\n"
+            f"- Composite score: {match['score']:.4f}"
+        )
+        return _result(prose, card={"type": "opportunity_detail", "data": {"opportunity": match, "live": live, "regime": reg}})
+
+    return await _run()
+
+
+# ─────────────────────────────────────────────────────────────────────────────
+# Next-day plan & verdict
+# ─────────────────────────────────────────────────────────────────────────────
+
+
+@tool(
+    "get_tomorrows_plan",
+    "Tomorrow's precomputed trading plan: market regime, top IN_ZONE confluence picks with entry zones/targets/analog base rates, watch list, and upcoming catalysts. Use for 'what should I trade tomorrow', daily briefings, or before recommending entries.",
+    {},
+)
+async def get_tomorrows_plan(args: dict) -> dict:
+    @sync_to_async
+    def _run():
+        from chat.briefing import render_plan_briefing
+        from stocks.models import DailyTradingPlan
+
+        plan = DailyTradingPlan.objects.order_by("-date").first()
+        if plan is None:
+            return _result("No trading plan has been generated yet. Try again after the nightly pipeline has run.")
+
+        prose = render_plan_briefing(plan)
+        card_data = _jsonable({
+            "date": plan.date.isoformat(),
+            "regime": plan.regime,
+            "breadth": plan.breadth,
+            **(plan.payload or {}),
+        })
+        return _result(prose, card={"type": "daily_plan", "data": card_data}, _tool_name="get_tomorrows_plan")
+
+    return await _run()
+
+
+@tool(
+    "get_my_actions",
+    "The user's personal action list for the next session: their positions near "
+    "stop-loss/targets, active SELL signals against their holdings, watchlist entry "
+    "triggers, and risk-sized suggestions for tomorrow's plan picks. ALWAYS use this "
+    "for 'what should I do with my positions/portfolio tomorrow'. No args.",
+    {},
+)
+async def get_my_actions(args: dict) -> dict:
+    @sync_to_async
+    def _run():
+        from chat.briefing import render_my_actions
+        from stocks.models import DailyTradingPlan
+        from stocks.services.daily_plan import user_overlay
+        from stocks.services.position_sizing import sizing_map_for_user
+
+        user = get_user()
+        plan = DailyTradingPlan.objects.order_by("-date").first()
+        picks = plan.payload.get("picks", []) if plan else []
+        overlay = user_overlay(user)
+        sizing = sizing_map_for_user(user, picks)
+        prose = render_my_actions(overlay, sizing, picks)
+        if plan:
+            prose = f"Your actions for {plan.date} (plan as of {plan.payload.get('as_of')}):\n" + prose
+        return _result(prose, card={"type": "my_actions",
+                                    "data": {"overlay": overlay, "sizing": sizing}})
+
+    return await _run()
+
+
+@tool(
+    "get_ticker_verdict",
+    "Canonical per-symbol verdict: cross-engine confluence score (0-100) with component breakdown, ATR entry-zone status (IN_ZONE/EXTENDED/STALE), TP/SL, historical analog base rates, and upcoming catalyst. ALWAYS prefer this over raw signal lists when judging whether a setup is actionable now. Args: symbol.",
+    {"symbol": str},
+)
+async def get_ticker_verdict(args: dict) -> dict:
+    symbol = (args.get("symbol") or "").strip().upper()
+    if not symbol:
+        return _result("A symbol is required.", is_error=True)
+
+    @sync_to_async
+    def _run():
+        from django.core.cache import cache
+        from stocks.services.ticker_verdict import build_verdict
+
+        key = f"ticker_verdict:{symbol}"
+        verdict = cache.get(key)
+        if verdict is None:
+            try:
+                verdict = build_verdict(symbol)
+            except Exception:
+                return _result(f"Verdict computation failed for {symbol}.", is_error=True)
+            cache.set(key, verdict, 900)
+
+        score = verdict.get("confluence_score", 0)
+        components = verdict.get("components") or {}
+        entry = verdict.get("entry")
+        targets = verdict.get("targets") or {}
+        analog = verdict.get("analog")
+        catalyst = verdict.get("catalyst")
+        as_of = verdict.get("as_of", "?")
+
+        # Component summary
+        agreeing = components.get("agreeing_engines") or []
+        conflicting = components.get("conflicting_engines") or []
+        opp = components.get("opportunity") or {}
+        acc = components.get("accumulation") or {}
+        sector = components.get("sector") or {}
+
+        n_agree = len(agreeing)
+        n_conflict = len(conflicting)
+        agree_str = f"{n_agree} engine{'s' if n_agree != 1 else ''} agree ({', '.join(agreeing)})" if agreeing else "no agreeing engines"
+        conflict_str = f"{n_conflict} conflicting" if n_conflict else "0 conflicting"
+        edge_label = opp.get("trust") or "UNCONFIRMED"
+        edge_p = opp.get("pvalue")
+        edge_detail = f"p={edge_p:.2f}" if edge_p is not None else "no backtest"
+        acc_signal = acc.get("signal") or "unknown"
+        sector_intensity = sector.get("intensity")
+        sector_str = f"sector accumulating ({sector_intensity:.1f})" if sector_intensity is not None else "sector neutral"
+
+        lines = [
+            f"{symbol} verdict: {score}/100.",
+            f"Components: {agree_str}, {conflict_str}; validated edge {edge_label} ({edge_detail}); "
+            f"accumulation {acc_signal}; {sector_str}.",
+        ]
+
+        # Entry / zone
+        if entry:
+            status = entry.get("status", "?")
+            zl = entry.get("zone_low")
+            zh = entry.get("zone_high")
+            close = entry.get("latest_close")
+            age = entry.get("last_signal_age_days")
+            tp = targets.get("tp1")
+            sl = targets.get("sl")
+
+            zone_str = (f"zone {zl:.1f}–{zh:.1f}" if zl is not None and zh is not None else "no zone")
+            close_str = f", last close {close:.0f}" if close is not None else ""
+            age_str = f", signal {age} trading day{'s' if age != 1 else ''} old" if age is not None else ""
+            tp_sl_str = ""
+            if tp is not None and sl is not None:
+                tp_sl_str = f" Targets: TP {tp:.0f} / SL {sl:.0f}."
+            elif tp is not None:
+                tp_sl_str = f" Target: TP {tp:.0f}."
+            elif sl is not None:
+                tp_sl_str = f" Stop: SL {sl:.0f}."
+
+            lines.append(f"Entry: {status} — {zone_str}{close_str}{age_str}.{tp_sl_str}")
+        else:
+            lines.append(f"No active entry setup as of {as_of}.")
+
+        # Analog
+        if analog:
+            n = analog.get("n")
+            med3d = analog.get("fwd_3d_median_pct")
+            wr = analog.get("win_rate_3d")
+            if n and med3d is not None:
+                wr_str = f", {wr*100:.0f}% win rate" if wr is not None else ""
+                lines.append(f"Similar setups (n={n}): {med3d:+.1f}% median over 3d{wr_str}.")
+
+        # Catalyst
+        if catalyst:
+            ctype = catalyst.get("type", "").lower().replace("_", " ")
+            days_away = catalyst.get("days_away", "?")
+            lines.append(f"Catalyst: {ctype} in {days_away}d.")
+
+        prose = "\n".join(lines)
+        return _result(prose, card={"type": "ticker_verdict", "data": _jsonable(verdict)}, _tool_name="get_ticker_verdict")
+
+    return await _run()
+
+
+@tool(
+    "get_upcoming_catalysts",
+    "Forward catalyst calendar (book-close dates and dividend announcements) within the next N days (default 14), market-wide or for one symbol. Book-close runs are a known NEPSE price phenomenon. Args: symbol (optional), days (optional).",
+    {"symbol": str, "days": int},
+)
+async def get_upcoming_catalysts(args: dict) -> dict:
+    raw_symbol = (args.get("symbol") or "").strip().upper()
+    symbol = raw_symbol or None
+    raw_days = args.get("days")
+    try:
+        horizon = int(raw_days) if raw_days is not None else 14
+    except (TypeError, ValueError):
+        horizon = 14
+    horizon = max(1, min(60, horizon))
+
+    @sync_to_async
+    def _run():
+        from stocks.services.catalysts import upcoming_catalysts
+
+        all_items = upcoming_catalysts(horizon_days=horizon)
+        if symbol:
+            items = [c for c in all_items if c.get("symbol") == symbol]
+        else:
+            items = all_items
+
+        if not items:
+            scope = f"for {symbol}" if symbol else "market-wide"
+            return _result(
+                f"No dividend/book-close catalysts {scope} in the next {horizon} days.",
+                card={"type": "catalysts", "data": {"horizon_days": horizon, "items": []}},
+                _tool_name="get_upcoming_catalysts",
+            )
+
+        lines = []
+        for c in items:
+            sym = c.get("symbol", "?")
+            ctype = c.get("type", "").lower().replace("_", " ")
+            cat_date = c.get("date", "?")
+            days_away = c.get("days_away", "?")
+            detail = c.get("detail", "")
+            lines.append(f"{sym} — {ctype} {cat_date} (in {days_away}d): {detail}")
+
+        scope_label = f"for {symbol}" if symbol else "(market-wide)"
+        prose = f"Catalysts in the next {horizon} days {scope_label}:\n" + "\n".join(lines)
+        return _result(
+            prose,
+            card={"type": "catalysts", "data": {"horizon_days": horizon, "items": _jsonable(items)}},
+            _tool_name="get_upcoming_catalysts",
+        )
+
+    return await _run()
+
+
+# ─────────────────────────────────────────────────────────────────────────────
+# Watchlist actions
+# ─────────────────────────────────────────────────────────────────────────────
+
+
+@tool(
+    "add_to_watchlist",
+    "Add a stock to the user's watchlist or update its levels (upsert). Optional entry "
+    "target_price, stop_loss_price, notes. Alerts are enabled by default — the user gets "
+    "notified on level hits and when the symbol enters its canonical entry zone. "
+    "Args: symbol, target_price?, stop_loss_price?, notes?, alerts?.",
+    {"symbol": str, "target_price": float, "stop_loss_price": float, "notes": str, "alerts": bool},
+)
+async def add_to_watchlist(args: dict) -> dict:
+    symbol = (args.get("symbol") or "").strip().upper()
+    if not symbol:
+        return _result("'symbol' is required.", is_error=True)
+
+    @sync_to_async
+    def _run():
+        from stocks.models import Company, WatchlistItem
+        user = get_user()
+        try:
+            known = Company.objects.filter(symbol=symbol).exists()
+        except (OperationalError, ProgrammingError):
+            known = True  # company table unavailable — don't block the add
+        updates = {}
+        if args.get("target_price") is not None:
+            updates["target_price"] = args["target_price"]
+        if args.get("stop_loss_price") is not None:
+            updates["stop_loss_price"] = args["stop_loss_price"]
+        if args.get("notes"):
+            updates["notes"] = str(args["notes"])[:500]
+        if "alerts" in args and args["alerts"] is not None:
+            updates["alert_enabled"] = bool(args["alerts"])
+        item, created = WatchlistItem.objects.update_or_create(
+            user=user, ticker=symbol,
+            defaults=updates,
+            create_defaults={**updates, "alert_enabled": updates.get("alert_enabled", True)},
+        )
+        parts = [f"{'Added' if created else 'Updated'} {symbol} on the watchlist"]
+        if item.target_price is not None:
+            parts.append(f"entry target {float(item.target_price):.1f}")
+        if item.stop_loss_price is not None:
+            parts.append(f"stop {float(item.stop_loss_price):.1f}")
+        parts.append("alerts on" if item.alert_enabled else "alerts off")
+        prose = ", ".join(parts) + "."
+        if not known:
+            prose += f" (Note: '{symbol}' is not a listed equity I recognize — double-check the ticker.)"
+        return _result(prose)
+
+    return await _run()
+
+
+@tool(
+    "remove_from_watchlist",
+    "Remove a stock from the user's watchlist. Args: symbol.",
+    {"symbol": str},
+)
+async def remove_from_watchlist(args: dict) -> dict:
+    symbol = (args.get("symbol") or "").strip().upper()
+    if not symbol:
+        return _result("'symbol' is required.", is_error=True)
+
+    @sync_to_async
+    def _run():
+        from stocks.models import WatchlistItem
+        deleted, _ = WatchlistItem.objects.filter(user=get_user(), ticker=symbol).delete()
+        if deleted:
+            return _result(f"Removed {symbol} from the watchlist.")
+        return _result(f"{symbol} is not on the watchlist.")
+
+    return await _run()
+
+
+# ─────────────────────────────────────────────────────────────────────────────
+# User memory
+# ─────────────────────────────────────────────────────────────────────────────
+
+
+def _clean_fact(raw: str) -> str:
+    cleaned = " ".join(str(raw or "").split())  # collapse whitespace incl. newlines
+    return cleaned[:220]
+
+
+@tool(
+    "remember_about_user",
+    "Save a short durable fact about the user for ALL future conversations (risk appetite, "
+    "horizon, sector preferences/aversions, capital constraints, recurring goals). Use when the "
+    "user states a lasting preference — not for one-off questions. Never store secrets, "
+    "passwords, or account numbers. Args: fact.",
+    {"fact": str},
+)
+async def remember_about_user(args: dict) -> dict:
+    fact = _clean_fact(args.get("fact"))
+    if not fact:
+        return _result("A non-empty 'fact' is required.", is_error=True)
+
+    @sync_to_async
+    def _run():
+        from chat.models import UserMemory
+        user = get_user()
+        if UserMemory.objects.filter(user=user, content=fact).exists():
+            return _result(f"Already remembered: {fact}")
+        if UserMemory.objects.filter(user=user).count() >= UserMemory.MAX_FACTS_PER_USER:
+            return _result(
+                f"Memory is full ({UserMemory.MAX_FACTS_PER_USER} facts). "
+                "Use forget_about_user to remove an outdated fact first.",
+                is_error=True,
+            )
+        UserMemory.objects.create(user=user, content=fact)
+        return _result(f"Remembered: {fact}")
+
+    return await _run()
+
+
+@tool(
+    "forget_about_user",
+    "Delete remembered facts about the user whose text contains the given substring "
+    "(case-insensitive). Reports exactly what was removed. Args: match.",
+    {"match": str},
+)
+async def forget_about_user(args: dict) -> dict:
+    match = (args.get("match") or "").strip()
+    if not match:
+        return _result("A non-empty 'match' is required.", is_error=True)
+
+    @sync_to_async
+    def _run():
+        from chat.models import UserMemory
+        user = get_user()
+        hits = list(UserMemory.objects.filter(user=user, content__icontains=match))
+        if not hits:
+            return _result(f"No remembered facts match '{match}'.")
+        removed = [m.content for m in hits]
+        UserMemory.objects.filter(id__in=[m.id for m in hits]).delete()
+        return _result("Forgot:\n" + "\n".join(f"- {c}" for c in removed))
+
+    return await _run()
+
+
+# ─────────────────────────────────────────────────────────────────────────────
+# Accountability
+# ─────────────────────────────────────────────────────────────────────────────
+
+
+@tool(
+    "get_chat_action_record",
+    "Honest accounting of chat's own past proposals for THIS user (last 90 days): "
+    "action drafts by kind and status (proposed/confirmed/cancelled/expired), trade plans "
+    "with executed/skipped legs and recorded entry prices. Consult this before giving "
+    "high-conviction advice — it is your own track record. No args.",
+    {},
+)
+async def get_chat_action_record(args: dict) -> dict:
+    @sync_to_async
+    def _run():
+        from collections import Counter
+        from datetime import timedelta
+        from django.utils import timezone
+        from stocks.models import TradePlan
+        from stocks.models.portfolio import PortfolioActionDraft
+
+        user = get_user()
+        since = timezone.now() - timedelta(days=90)
+        drafts = PortfolioActionDraft.objects.filter(user=user, created_at__gte=since)
+        plans = TradePlan.objects.filter(user=user, created_at__gte=since).prefetch_related("legs")
+
+        if not drafts.exists() and not plans.exists():
+            return _result("No chat-proposed actions in the last 90 days.")
+
+        lines = ["Chat action record (last 90 days):"]
+        combo = Counter((d.kind, d.status) for d in drafts)
+        if combo:
+            lines.append("Proposals:")
+            for (kind, status), n in sorted(combo.items()):
+                lines.append(f"- {kind} {status}: {n}")
+        if plans.exists():
+            lines.append("Trade plans:")
+            for p in plans:
+                legs = list(p.legs.all())
+                executed = [l for l in legs if l.status == "EXECUTED"]
+                skipped = [l for l in legs if l.status == "SKIPPED"]
+                leg_bits = f"{len(executed)}/{len(legs)} legs executed"
+                if skipped:
+                    leg_bits += f", {len(skipped)} skipped"
+                entries = [f"{float(l.transaction.rate):.1f}" for l in executed
+                           if getattr(l, "transaction", None)]
+                entry_bits = f" (entries at {', '.join(entries)})" if entries else ""
+                lines.append(f"- {p.ticker} [{p.status}]: {leg_bits}{entry_bits}")
+        lines.append(
+            "Note: realized P&L attribution to chat proposals is not yet tracked — "
+            "executed entries are recorded, outcomes are not attributed."
+        )
+        return _result("\n".join(lines), card={"type": "chat_action_record", "data": {
+            "drafts": [{"kind": k, "status": s, "count": n} for (k, s), n in combo.items()],
+        }})
+
+    return await _run()
+
+
+# ─────────────────────────────────────────────────────────────────────────────
+# Broker Intelligence
+# ─────────────────────────────────────────────────────────────────────────────
+
+
+def _broker_table_card(title: str, columns: list[dict], rows: list[dict], meta: dict | None = None) -> dict:
+    """Generic table card payload rendered by BrokerTableCard on the frontend."""
+    return {"type": "broker_table", "data": {"title": title, "columns": columns, "rows": rows, "meta": meta or {}}}
+
+
+@tool(
+    "get_accumulation_flows",
+    "Market-wide smart-money accumulation: per-symbol buy/sell/net broker flow with RSI/ROC and top buyers/sellers. Optional sector or symbol filter. Valid range values: 1D, 1W, 2W, 1M, 3M, 6M, 1Y, 2Y, ALL.",
+    {"range": str, "sector": str, "symbol": str},
+)
+async def get_accumulation_flows(args: dict) -> dict:
+    range_key = (args.get("range") or "1D").upper()
+    sector = args.get("sector") or "All"
+    symbol = (args.get("symbol") or "").upper().strip() or None
+
+    @sync_to_async
+    def _run():
+        try:
+            rows = broker_research.accumulation_flows(range_key=range_key, sector=sector, symbol=symbol)
+        except Exception as exc:
+            return _result(f"Data unavailable: {exc}", is_error=True, _tool_name="get_accumulation_flows")
+        if not rows:
+            return _result(
+                f"No accumulation flow data found for range={range_key}, sector={sector}.",
+                is_error=True, _tool_name="get_accumulation_flows",
+            )
+        top = rows[:15]
+        lines = [f"Accumulation flows ({range_key}, {sector}), top {len(top)} of {len(rows)} by net qty:"]
+        for r in top:
+            lines.append(
+                f"- {r.get('symbol')}: net {int(r.get('net_qty') or 0):,} sh, "
+                f"acc_ratio {r.get('accumulation_ratio')}, RSI {r.get('rsi')}, ROC {r.get('roc')}"
+            )
+        return _result(
+            "\n".join(lines),
+            card=_broker_table_card(
+                f"Accumulation Flows ({range_key})",
+                [
+                    {"key": "symbol", "label": "Symbol"},
+                    {"key": "net_qty", "label": "Net Qty", "align": "right", "format": "number"},
+                    {"key": "buy_qty", "label": "Buy Qty", "align": "right", "format": "number"},
+                    {"key": "sell_qty", "label": "Sell Qty", "align": "right", "format": "number"},
+                    {"key": "accumulation_ratio", "label": "Acc Ratio", "align": "right", "format": "decimal"},
+                    {"key": "close", "label": "Close", "align": "right", "format": "decimal"},
+                    {"key": "rsi", "label": "RSI", "align": "right", "format": "decimal"},
+                    {"key": "roc", "label": "ROC %", "align": "right", "format": "percent"},
+                ],
+                rows,
+            ),
+            _tool_name="get_accumulation_flows",
+        )
+
+    return await _run()
+
+
+@tool(
+    "get_smart_money_flows",
+    "Top-10 whale brokers for a period: leaderboard, their per-symbol net buys, and aggregate whale volume KPIs. Valid range values: 1D, 2D, 3D, 1W, 1M, 3M, 6M.",
+    {"range": str},
+)
+async def get_smart_money_flows(args: dict) -> dict:
+    range_key = (args.get("range") or "1D").upper()
+
+    @sync_to_async
+    def _run():
+        try:
+            data = broker_research.smart_money(range_key=range_key)
+        except Exception as exc:
+            return _result(f"Data unavailable: {exc}", is_error=True, _tool_name="get_smart_money_flows")
+        leaderboard = data.get("leaderboard") or []
+        symbol_flows = data.get("symbol_flows") or []
+        kpi = data.get("kpi") or {}
+        if not leaderboard and not symbol_flows:
+            return _result(
+                f"No smart money data found for range={range_key}.",
+                is_error=True, _tool_name="get_smart_money_flows",
+            )
+        lines = [f"Smart money flows ({range_key}):"]
+        lines.append(
+            f"KPI: whale vol {int(kpi.get('total_whale_volume') or 0):,} sh, "
+            f"Rs {float(kpi.get('total_whale_amount') or 0):,.0f}, "
+            f"{kpi.get('active_symbols')} symbols, {kpi.get('active_brokers')} brokers."
+        )
+        if leaderboard:
+            lines.append("Leaderboard: " + ", ".join(
+                f"#{b.get('broker_id')}({b.get('rank')},score={b.get('score')})" for b in leaderboard[:10]
+            ))
+        top_flows = symbol_flows[:15]
+        if top_flows:
+            lines.append(f"Top symbol flows ({len(top_flows)}):")
+            for sf in top_flows:
+                lines.append(
+                    f"- {sf.get('symbol')}: smart_buy {int(sf.get('smart_buy_qty') or 0):,}, "
+                    f"net {int(sf.get('net_qty') or 0):,}"
+                )
+        return _result(
+            "\n".join(lines),
+            card=_broker_table_card(
+                f"Smart Money Flows ({range_key})",
+                [
+                    {"key": "symbol", "label": "Symbol"},
+                    {"key": "smart_buy_qty", "label": "Smart Buy", "align": "right", "format": "number"},
+                    {"key": "net_qty", "label": "Net Qty", "align": "right", "format": "number"},
+                ],
+                symbol_flows,
+                meta={"leaderboard": leaderboard, "kpi": kpi},
+            ),
+            _tool_name="get_smart_money_flows",
+        )
+
+    return await _run()
+
+
+@tool(
+    "get_broker_trends",
+    "Per-broker cumulative net position, weighted avg cost, and 5/10/20/50-day accumulation trends. Optionally for one symbol; otherwise top global positions. Valid range values: 1D, 1W, 2W, 1M, 3M, 6M, 1Y, 2Y, ALL.",
+    {"symbol": str, "range": str},
+)
+async def get_broker_trends(args: dict) -> dict:
+    symbol = (args.get("symbol") or "").upper().strip() or None
+    range_key = (args.get("range") or "ALL").upper()
+
+    @sync_to_async
+    def _run():
+        try:
+            rows = broker_research.broker_trends(symbol=symbol, range_key=range_key)
+        except Exception as exc:
+            return _result(f"Data unavailable: {exc}", is_error=True, _tool_name="get_broker_trends")
+        if not rows:
+            return _result(
+                f"No broker trend data found{f' for {symbol}' if symbol else ''} (range={range_key}).",
+                is_error=True, _tool_name="get_broker_trends",
+            )
+        top = rows[:15]
+        lines = [f"Broker trends ({range_key}{f', {symbol}' if symbol else ''}), top {len(top)} by cumulative net:"]
+        for r in top:
+            lines.append(
+                f"- {r.get('symbol')} broker#{r.get('broker')}: cumnet {int(r.get('cumulative_net') or 0):,}, "
+                f"WAC {float(r.get('wac') or 0):.2f}, LTP {r.get('ltp')}, trend_20d {r.get('trend_20d')}"
+            )
+        return _result(
+            "\n".join(lines),
+            card=_broker_table_card(
+                f"Broker Trends ({range_key})",
+                [
+                    {"key": "symbol", "label": "Symbol"},
+                    {"key": "broker", "label": "Broker"},
+                    {"key": "cumulative_net", "label": "Cum Net", "align": "right", "format": "number"},
+                    {"key": "wac", "label": "WAC", "align": "right", "format": "decimal"},
+                    {"key": "ltp", "label": "LTP", "align": "right", "format": "decimal"},
+                    {"key": "trend_5d", "label": "5D Trend"},
+                    {"key": "trend_20d", "label": "20D Trend"},
+                    {"key": "change_20d", "label": "Chg 20D %", "align": "right", "format": "percent"},
+                ],
+                rows,
+            ),
+            _tool_name="get_broker_trends",
+        )
+
+    return await _run()
+
+
+@tool(
+    "get_broker_focus_ranking",
+    "Which symbols the top brokers focused their buying on each day (rank series over the period). Valid range values: 1W, 2W, 1M.",
+    {"range": str},
+)
+async def get_broker_focus_ranking(args: dict) -> dict:
+    range_key = (args.get("range") or "1W").upper()
+
+    @sync_to_async
+    def _run():
+        try:
+            data = broker_research.focus_ranking(range_key=range_key)
+        except Exception as exc:
+            return _result(f"Data unavailable: {exc}", is_error=True, _tool_name="get_broker_focus_ranking")
+        # Exclude debug_info from both prose and card
+        series = data.get("series") or []
+        dates = data.get("dates") or []
+        if not series:
+            return _result(
+                f"No broker focus ranking data found for range={range_key}.",
+                is_error=True, _tool_name="get_broker_focus_ranking",
+            )
+        top = series[:15]
+        lines = [f"Broker focus ranking ({range_key}), {len(series)} symbols over {len(dates)} days:"]
+        for s in top:
+            lines.append(
+                f"- {s.get('symbol')}: appearances {s.get('appearances')}, avg_rank {s.get('avg_rank')}, LTP {s.get('ltp')}"
+            )
+        # Build card rows with only safe columns (no debug_info)
+        card_rows = [
+            {k: v for k, v in row.items() if k not in ("ranks", "volumes")}
+            for row in series
+        ]
+        return _result(
+            "\n".join(lines),
+            card=_broker_table_card(
+                f"Broker Focus Ranking ({range_key})",
+                [
+                    {"key": "symbol", "label": "Symbol"},
+                    {"key": "ltp", "label": "LTP", "align": "right", "format": "decimal"},
+                    {"key": "appearances", "label": "Appearances", "align": "right", "format": "number"},
+                    {"key": "avg_rank", "label": "Avg Rank", "align": "right", "format": "decimal"},
+                ],
+                card_rows,
+                meta={"dates": dates},
+            ),
+            _tool_name="get_broker_focus_ranking",
+        )
+
+    return await _run()
+
+
+@tool(
+    "get_broker_favorites",
+    "A broker's accumulated stocks over a period: current net position, WAC, buy/sell qty, LTP, RSI/ROC. Requires broker_id. Valid range values: 1D, 1W, 2W, 1M, 3M, 6M, 1Y, 2Y, ALL.",
+    {"broker_id": int, "range": str},
+)
+async def get_broker_favorites(args: dict) -> dict:
+    broker_id = args.get("broker_id")
+    range_key = (args.get("range") or "3M").upper()
+    if not broker_id:
+        return _result("broker_id is required (integer broker number).", is_error=True, _tool_name="get_broker_favorites")
+
+    @sync_to_async
+    def _run():
+        try:
+            rows = broker_research.broker_favorites(broker_id=int(broker_id), range_key=range_key)
+        except Exception as exc:
+            return _result(f"Data unavailable: {exc}", is_error=True, _tool_name="get_broker_favorites")
+        if not rows:
+            return _result(
+                f"No accumulation activity found for broker {broker_id} in range {range_key}.",
+                is_error=True, _tool_name="get_broker_favorites",
+            )
+        top = rows[:15]
+        lines = [f"Broker {broker_id} favorites ({range_key}), top {len(top)} of {len(rows)} by net amount:"]
+        for r in top:
+            lines.append(
+                f"- {r.get('symbol')}: net {int(r.get('current_net') or 0):,} sh @ WAC {float(r.get('wac') or 0):.2f}, "
+                f"LTP {r.get('ltp')}, ROC {r.get('roc')}"
+            )
+        return _result(
+            "\n".join(lines),
+            card=_broker_table_card(
+                f"Broker {broker_id} Favorites ({range_key})",
+                [
+                    {"key": "symbol", "label": "Symbol"},
+                    {"key": "current_net", "label": "Net Qty", "align": "right", "format": "number"},
+                    {"key": "wac", "label": "WAC", "align": "right", "format": "decimal"},
+                    {"key": "ltp", "label": "LTP", "align": "right", "format": "decimal"},
+                    {"key": "buy_qty", "label": "Bought", "align": "right", "format": "number"},
+                    {"key": "sell_qty", "label": "Sold", "align": "right", "format": "number"},
+                    {"key": "roc", "label": "ROC %", "align": "right", "format": "percent"},
+                    {"key": "rsi", "label": "RSI", "align": "right", "format": "decimal"},
+                ],
+                rows,
+            ),
+            _tool_name="get_broker_favorites",
+        )
+
+    return await _run()
+
+
+@tool(
+    "get_navigator_signals",
+    "Institutional clustering signals: Platinum/Gold/Silver buys and bullish divergences where multiple smart-money brokers accumulate together, with rationale and strength.",
+    {},
+)
+async def get_navigator_signals(args: dict) -> dict:
+    @sync_to_async
+    def _run():
+        try:
+            rows = broker_research.navigator_signals()
+        except Exception as exc:
+            return _result(f"Data unavailable: {exc}", is_error=True, _tool_name="get_navigator_signals")
+        if not rows:
+            return _result(
+                "No navigator signals found at this time.",
+                is_error=True, _tool_name="get_navigator_signals",
+            )
+        top = rows[:15]
+        lines = [f"Navigator signals — {len(rows)} active signal(s):"]
+        for r in top:
+            lines.append(
+                f"- {r.get('symbol')} [{r.get('signal_type')}] strength={r.get('strength')}, "
+                f"clusters={r.get('cluster_count')}, inst_net_5d={int(r.get('inst_net_5d') or 0):,}, "
+                f"LTP {r.get('ltp')}, WAC {r.get('top_broker_wac')}"
+            )
+        return _result(
+            "\n".join(lines),
+            card=_broker_table_card(
+                "Navigator Signals",
+                [
+                    {"key": "symbol", "label": "Symbol"},
+                    {"key": "signal_type", "label": "Signal"},
+                    {"key": "cluster_count", "label": "Clusters", "align": "right", "format": "number"},
+                    {"key": "inst_net_5d", "label": "Inst Net 5D", "align": "right", "format": "number"},
+                    {"key": "top_broker_wac", "label": "Top WAC", "align": "right", "format": "decimal"},
+                    {"key": "ltp", "label": "LTP", "align": "right", "format": "decimal"},
+                    {"key": "strength", "label": "Strength"},
+                ],
+                rows,
+            ),
+            _tool_name="get_navigator_signals",
+        )
+
+    return await _run()
+
+
+@tool(
+    "get_below_cost_positions",
+    "Broker positions currently priced below the broker's weighted average cost (underwater accumulations), most underwater first. Optional sector filter. Valid range values: 1D, 1W, 2W, 1M, 3M, 6M, 1Y, 2Y, ALL.",
+    {"range": str, "sector": str, "limit": int},
+)
+async def get_below_cost_positions(args: dict) -> dict:
+    range_key = (args.get("range") or "ALL").upper()
+    sector = args.get("sector") or "All"
+    try:
+        limit = min(int(args.get("limit") or 50), 200)
+    except (TypeError, ValueError):
+        limit = 50
+
+    @sync_to_async
+    def _run():
+        try:
+            rows = broker_research.below_cost(range_key=range_key, sector=sector)
+        except Exception as exc:
+            return _result(f"Data unavailable: {exc}", is_error=True, _tool_name="get_below_cost_positions")
+        rows = rows[:limit]
+        if not rows:
+            return _result(
+                f"No below-cost positions found for range={range_key}, sector={sector}.",
+                is_error=True, _tool_name="get_below_cost_positions",
+            )
+        top = rows[:15]
+        lines = [f"Below-cost positions ({range_key}, {sector}), top {len(top)} of {len(rows)} most underwater:"]
+        for r in top:
+            lines.append(
+                f"- {r.get('symbol')} broker#{r.get('broker')}: "
+                f"WAC {float(r.get('wac') or 0):.2f} vs LTP {r.get('ltp')}, "
+                f"ROC {r.get('roc')}, net {int(r.get('cumulative_net') or 0):,}"
+            )
+        return _result(
+            "\n".join(lines),
+            card=_broker_table_card(
+                f"Below-Cost Positions ({range_key})",
+                [
+                    {"key": "symbol", "label": "Symbol"},
+                    {"key": "broker", "label": "Broker"},
+                    {"key": "cumulative_net", "label": "Net Qty", "align": "right", "format": "number"},
+                    {"key": "wac", "label": "WAC", "align": "right", "format": "decimal"},
+                    {"key": "ltp", "label": "LTP", "align": "right", "format": "decimal"},
+                    {"key": "roc", "label": "ROC %", "align": "right", "format": "percent"},
+                    {"key": "rsi", "label": "RSI", "align": "right", "format": "decimal"},
+                    {"key": "trend_20d", "label": "Trend 20D"},
+                ],
+                rows,
+            ),
+            _tool_name="get_below_cost_positions",
+        )
+
+    return await _run()
+
+
+@tool(
+    "get_accumulation_history",
+    "Daily buy/sell/net delta history for one broker in one symbol (rates, amounts, cumulative position, WAC).",
+    {"broker_id": int, "symbol": str, "limit": int},
+)
+async def get_accumulation_history(args: dict) -> dict:
+    broker_id = args.get("broker_id")
+    symbol = (args.get("symbol") or "").upper().strip()
+    limit = min(int(args.get("limit") or 60), 250)
+    if not broker_id:
+        return _result("broker_id is required.", is_error=True, _tool_name="get_accumulation_history")
+    if not symbol:
+        return _result("symbol is required.", is_error=True, _tool_name="get_accumulation_history")
+
+    @sync_to_async
+    def _run():
+        try:
+            rows = broker_research.accumulation_history(broker_id=int(broker_id), symbol=symbol, page=1, page_size=limit)
+        except Exception as exc:
+            return _result(f"Data unavailable: {exc}", is_error=True, _tool_name="get_accumulation_history")
+        if not rows:
+            return _result(
+                f"No accumulation history for broker {broker_id} / {symbol}.",
+                is_error=True, _tool_name="get_accumulation_history",
+            )
+        top = rows[:10]
+        lines = [f"Accumulation history for broker {broker_id} in {symbol} (last {len(rows)} days):"]
+        for r in top:
+            lines.append(
+                f"- {r.get('date')}: buy {int(r.get('buy_qty') or 0):,}@{float(r.get('buy_rate') or 0):.2f}, "
+                f"sell {int(r.get('sell_qty') or 0):,}, net {int(r.get('net_quantity') or 0):,}, "
+                f"cum {int(r.get('cumulative_qty') or 0):,}, WAC {float(r.get('wac') or 0):.2f}"
+            )
+        return _result(
+            "\n".join(lines),
+            card=_broker_table_card(
+                f"Broker {broker_id} History — {symbol}",
+                [
+                    {"key": "date", "label": "Date"},
+                    {"key": "buy_qty", "label": "Buy Qty", "align": "right", "format": "number"},
+                    {"key": "buy_rate", "label": "Buy Rate", "align": "right", "format": "decimal"},
+                    {"key": "sell_qty", "label": "Sell Qty", "align": "right", "format": "number"},
+                    {"key": "sell_rate", "label": "Sell Rate", "align": "right", "format": "decimal"},
+                    {"key": "net_quantity", "label": "Net Qty", "align": "right", "format": "number"},
+                    {"key": "cumulative_qty", "label": "Cum Qty", "align": "right", "format": "number"},
+                    {"key": "wac", "label": "WAC", "align": "right", "format": "decimal"},
+                ],
+                rows,
+            ),
+            _tool_name="get_accumulation_history",
+        )
+
+    return await _run()
+
+
+@tool(
+    "get_share_transfers",
+    "Share transfer analysis between two specific brokers in one symbol: volumes each direction, net accumulation, and daily stats. Valid range values: 1D, 1W, 2W, 1M, 3M, 6M, 1Y, ALL.",
+    {"symbol": str, "broker1": int, "broker2": int, "range": str},
+)
+async def get_share_transfers(args: dict) -> dict:
+    symbol = (args.get("symbol") or "").upper().strip()
+    broker1 = args.get("broker1")
+    broker2 = args.get("broker2")
+    range_key = (args.get("range") or "1M").upper()
+    if not symbol:
+        return _result("symbol is required.", is_error=True, _tool_name="get_share_transfers")
+    if not broker1:
+        return _result("broker1 is required.", is_error=True, _tool_name="get_share_transfers")
+    if not broker2:
+        return _result("broker2 is required.", is_error=True, _tool_name="get_share_transfers")
+
+    @sync_to_async
+    def _run():
+        try:
+            data = broker_research.share_transfers(
+                symbol=symbol, broker1=int(broker1), broker2=int(broker2), range_key=range_key
+            )
+        except Exception as exc:
+            return _result(f"Data unavailable: {exc}", is_error=True, _tool_name="get_share_transfers")
+        summary = data.get("summary") or {}
+        daily_stats = data.get("daily_stats") or []
+        b1_to_b2 = summary.get("broker1_to_broker2") or {}
+        b2_to_b1 = summary.get("broker2_to_broker1") or {}
+        if not b1_to_b2.get("total_volume") and not b2_to_b1.get("total_volume"):
+            return _result(
+                f"No transfers found between broker {broker1} and broker {broker2} for {symbol} in range {range_key}.",
+                is_error=True, _tool_name="get_share_transfers",
+            )
+        lines = [
+            f"Share transfers {symbol}: broker {broker1} ↔ broker {broker2} ({range_key})",
+            f"- {broker1}→{broker2}: vol {int(b1_to_b2.get('total_volume') or 0):,}, "
+            f"amt {float(b1_to_b2.get('total_amount') or 0):,.0f}, avg rate {float(b1_to_b2.get('avg_rate') or 0):.2f}",
+            f"- {broker2}→{broker1}: vol {int(b2_to_b1.get('total_volume') or 0):,}, "
+            f"amt {float(b2_to_b1.get('total_amount') or 0):,.0f}, avg rate {float(b2_to_b1.get('avg_rate') or 0):.2f}",
+        ]
+        recent = daily_stats[-5:] if daily_stats else []
+        if recent:
+            lines.append(f"Last {len(recent)} daily stats:")
+            for d in recent:
+                dt = d.get("transaction_date") or d.get("date") or ""
+                lines.append(
+                    f"  {dt}: {broker1}→{broker2} {int(d.get('volume_1_to_2') or 0):,}, "
+                    f"{broker2}→{broker1} {int(d.get('volume_2_to_1') or 0):,}"
+                )
+        return _result("\n".join(lines), _tool_name="get_share_transfers")
+
+    return await _run()
+
+
+@tool(
+    "get_broker_portfolio",
+    "A broker's full current holdings book: quantity, value, WAC, and 5d/10d/1m/3m position trends per symbol.",
+    {"broker_id": int},
+)
+async def get_broker_portfolio(args: dict) -> dict:
+    broker_id = args.get("broker_id")
+    if not broker_id:
+        return _result("broker_id is required.", is_error=True, _tool_name="get_broker_portfolio")
+
+    @sync_to_async
+    def _run():
+        try:
+            data = broker_research.broker_portfolio(broker_id=int(broker_id))
+        except Exception as exc:
+            return _result(f"Data unavailable: {exc}", is_error=True, _tool_name="get_broker_portfolio")
+        holdings = data.get("holdings") or []
+        total_value = float(data.get("total_value") or 0)
+        if not holdings:
+            return _result(
+                f"No holdings found for broker {broker_id}.",
+                is_error=True, _tool_name="get_broker_portfolio",
+            )
+        top = holdings[:10]
+        lines = [
+            f"Broker {broker_id} portfolio — {len(holdings)} holding(s), total value Rs {total_value:,.0f}:",
+        ]
+        for h in top:
+            lines.append(
+                f"- {h.get('symbol')} ({h.get('sector')}): {int(h.get('quantity') or 0):,} sh @ "
+                f"WAC {float(h.get('wac') or 0):.2f}, LTP {h.get('current_price')}, "
+                f"val Rs {float(h.get('value') or 0):,.0f}"
+            )
+        return _result(
+            "\n".join(lines),
+            card=_broker_table_card(
+                f"Broker {broker_id} Portfolio",
+                [
+                    {"key": "symbol", "label": "Symbol"},
+                    {"key": "sector", "label": "Sector"},
+                    {"key": "quantity", "label": "Qty", "align": "right", "format": "number"},
+                    {"key": "value", "label": "Value", "align": "right", "format": "number"},
+                    {"key": "wac", "label": "WAC", "align": "right", "format": "decimal"},
+                    {"key": "current_price", "label": "LTP", "align": "right", "format": "decimal"},
+                    {"key": "trend_5d", "label": "5D Trend", "align": "right"},
+                    {"key": "trend_1m", "label": "1M Trend", "align": "right"},
+                ],
+                holdings,
+                meta={"broker_id": broker_id, "total_value": total_value},
+            ),
+            _tool_name="get_broker_portfolio",
+        )
+
+    return await _run()
+
+
+@tool(
+    "get_accumulation_forecast",
+    "Accumulation-intensity price projection for ONE symbol: current intensity, historical win rates by horizon, "
+    "and p10-p90 price bands for 5/10/20/30 days. Cold call may take ~10s (cached 4h after).",
+    {"symbol": str, "min_intensity": float},
+)
+async def get_accumulation_forecast(args: dict) -> dict:
+    symbol = (args.get("symbol") or "").upper().strip()
+    min_intensity = float(args.get("min_intensity") or 3.0)
+    if not symbol:
+        return _result("symbol is required.", is_error=True, _tool_name="get_accumulation_forecast")
+
+    @sync_to_async
+    def _run():
+        try:
+            data = broker_research.accumulation_forecast(symbol=symbol, min_intensity=min_intensity)
+        except Exception as exc:
+            return _result(f"Data unavailable: {exc}", is_error=True, _tool_name="get_accumulation_forecast")
+        if not data:
+            return _result(
+                f"No accumulation events found for {symbol} at intensity >= {min_intensity}.",
+                is_error=True, _tool_name="get_accumulation_forecast",
+            )
+        cur = data.get("current") or {}
+        proj = (data.get("projection") or {}).get("bands") or {}
+        lines = [
+            f"{symbol} accumulation forecast — LTP {cur.get('ltp')}, current intensity {cur.get('intensity')}, "
+            f"volume spike {cur.get('volume_spike')}.",
+        ]
+        for horizon, band in proj.items():
+            lines.append(f"- {horizon}: p10 {band.get('p10')} / p50 {band.get('p50')} / p90 {band.get('p90')}")
+        wr = (data.get("study") or {}).get("win_rates")
+        if wr:
+            lines.append(f"Historical win rates: {wr}")
+        return _result("\n".join(lines), _tool_name="get_accumulation_forecast")  # prose-only per spec
+
+    return await _run()
+
+
+# ─────────────────────────────────────────────────────────────────────────────
+# Saved analyses recall tools
+# ─────────────────────────────────────────────────────────────────────────────
+
+
+@tool(
+    "search_saved_analyses",
+    "Search the user's saved analyses (bookmarked past analyses). Returns a compact "
+    "catalog — title, category, tags, tickers, series, date, one-line summary, verdict. "
+    "Call this BEFORE a fundamental or technical analysis to check for a prior analysis "
+    "or recurring series on this ticker/topic, then fetch the full one with "
+    "get_saved_analysis to compare what changed. Args (all optional): ticker, category, "
+    "tag, series_key, query, limit.",
+    {"ticker": str, "category": str, "tag": str, "series_key": str, "query": str, "limit": int},
+)
+async def search_saved_analyses(args: dict) -> dict:
+    user = get_user()
+
+    @sync_to_async
+    def _run():
+        ticker = (args.get("ticker") or "").upper().strip()
+        category = (args.get("category") or "").strip()
+        tag = (args.get("tag") or "").strip()
+        series_key = (args.get("series_key") or "").strip()
+        query = (args.get("query") or "").strip()
+        limit = int(args.get("limit") or 20)
+
+        qs = SavedAnalysis.objects.filter(user=user)
+        if ticker:
+            qs = qs.filter(tickers__contains=[ticker])
+        if category:
+            qs = qs.filter(category=category)
+        if tag:
+            qs = qs.filter(tags__contains=[tag])
+        if series_key:
+            qs = qs.filter(series_key=series_key)
+
+        records = list(qs.order_by("-created_at")[:max(1, min(limit, 50))])
+        # If a free-text query is given and structured filters didn't already
+        # narrow things, rank by lexical relevance.
+        if query and not (ticker or category or tag or series_key):
+            records = match_saved_analyses(user, query, limit=max(1, min(limit, 50)))
+
+        catalog = [{
+            "id": str(r.id),
+            "title": r.title,
+            "category": r.category,
+            "tags": r.tags,
+            "tickers": r.tickers,
+            "series_key": r.series_key,
+            "verdict": r.verdict,
+            "date": r.created_at.date().isoformat(),
+            "one_liner": r.one_liner,
+        } for r in records]
+
+        if not catalog:
+            return _result("No saved analyses match.", card=None, _tool_name="search_saved_analyses")
+
+        lines = [
+            f"- [{c['id']}] {c['title']} ({c['date']}) — {c['one_liner']} "
+            f"[{', '.join(c['tickers'])}{' · ' + c['series_key'] if c['series_key'] else ''}]"
+            for c in catalog
+        ]
+        prose = "Saved analyses (use get_saved_analysis with the id for full detail):\n" + "\n".join(lines)
+        return _result(prose, card={"type": "saved_analyses", "data": {"items": catalog}},
+                       _tool_name="search_saved_analyses")
+
+    return await _run()
+
+
+@tool(
+    "get_saved_analysis",
+    "Fetch one saved analysis in full by id: the frozen summary, captured verdict, and "
+    "any earlier analyses in the same series (oldest→newest) so you can describe the trend. "
+    "Args: id.",
+    {"id": str},
+)
+async def get_saved_analysis(args: dict) -> dict:
+    user = get_user()
+    sa_id = (args.get("id") or "").strip()
+    if not sa_id:
+        return _result("id is required.", is_error=True, _tool_name="get_saved_analysis")
+
+    @sync_to_async
+    def _run():
+        sa = SavedAnalysis.objects.filter(id=sa_id, user=user).first()
+        if not sa:
+            return _result("No saved analysis with that id.", is_error=True,
+                           _tool_name="get_saved_analysis")
+
+        series = []
+        if sa.series_key:
+            series = list(
+                SavedAnalysis.objects.filter(user=user, series_key=sa.series_key)
+                .order_by("created_at")
+                .values("id", "title", "created_at", "verdict", "one_liner")
+            )
+
+        transcript_link = (
+            f"/chat?session={sa.session_id}" if sa.session_id else "original chat deleted"
+        )
+        series_lines = "\n".join(
+            f"  - {s['created_at'].date().isoformat()}: {s['title']} "
+            f"({s['verdict'] or 'no verdict'}) — {s['one_liner']}"
+            for s in series
+        )
+        prose_parts = [
+            f"# {sa.title}",
+            f"Saved {sa.created_at.date().isoformat()} · category: {sa.category or 'none'} · "
+            f"tickers: {', '.join(sa.tickers) or 'none'} · verdict: {sa.verdict or 'none'}",
+            f"Transcript: {transcript_link}",
+            "",
+            sa.summary,
+        ]
+        if series_lines:
+            prose_parts += ["", f"Series '{sa.series_key}' (oldest→newest):", series_lines]
+        prose = "\n".join(prose_parts)
+
+        card = {
+            "type": "saved_analysis",
+            "data": {
+                "id": str(sa.id),
+                "title": sa.title,
+                "summary": sa.summary,
+                "category": sa.category,
+                "tags": sa.tags,
+                "tickers": sa.tickers,
+                "series_key": sa.series_key,
+                "verdict": sa.verdict,
+                "structured": sa.structured,
+                "date": sa.created_at.date().isoformat(),
+                "transcript": transcript_link,
+                "series": [
+                    {"id": str(s["id"]), "title": s["title"],
+                     "date": s["created_at"].date().isoformat(),
+                     "verdict": s["verdict"], "one_liner": s["one_liner"]}
+                    for s in series
+                ],
+            },
+        }
+        return _result(prose, card=card, _tool_name="get_saved_analysis")
+
+    return await _run()
+
+
+# ─────────────────────────────────────────────────────────────────────────────
 # MCP server registration
 # ─────────────────────────────────────────────────────────────────────────────
 
@@ -2084,6 +3828,21 @@ ALL_TOOLS = [
     screen_stocks,
     get_closed_signals,
     get_strategy_experiments,
+    # Opportunity Engine
+    get_top_opportunities,
+    explain_opportunity,
+    # Next-day plan & verdict
+    get_tomorrows_plan,
+    get_my_actions,
+    get_ticker_verdict,
+    get_upcoming_catalysts,
+    # Strategy builder / inference
+    list_strategy_components,
+    describe_strategy,
+    backtest_strategy,
+    strategy_signal_today,
+    draft_strategy,
+    scan_strategies_for_symbol,
     # Portfolio Advisor
     get_portfolio_overview,
     get_holdings,
@@ -2097,6 +3856,34 @@ ALL_TOOLS = [
     get_recent_alerts,
     get_watchlist_item,
     get_rebalance_targets,
+    # Portfolio Manager (propose-then-confirm)
+    propose_trade,
+    propose_exits,
+    propose_rebalance,
+    propose_trade_plan,
+    # Watchlist actions
+    add_to_watchlist,
+    remove_from_watchlist,
+    # User memory
+    remember_about_user,
+    forget_about_user,
+    # Accountability
+    get_chat_action_record,
+    # Saved analyses (chat bookmarks)
+    search_saved_analyses,
+    get_saved_analysis,
+    # Broker Intelligence
+    get_accumulation_flows,
+    get_smart_money_flows,
+    get_broker_trends,
+    get_broker_focus_ranking,
+    get_broker_favorites,
+    get_navigator_signals,
+    get_below_cost_positions,
+    get_accumulation_history,
+    get_share_transfers,
+    get_broker_portfolio,
+    get_accumulation_forecast,
 ]
 
 

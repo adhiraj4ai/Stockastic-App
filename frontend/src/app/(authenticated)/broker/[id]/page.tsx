@@ -250,14 +250,14 @@ export default function BrokerPage() {
     const SortIcon = ({ column }: { column: keyof BrokerHolding }) => {
         if (sortConfig.key !== column) return <ArrowUpDown size={12} className="ml-1.5 opacity-20" />;
         return sortConfig.direction === 'asc' 
-            ? <ArrowUp size={12} className="ml-1.5 text-blue-500" /> 
-            : <ArrowDown size={12} className="ml-1.5 text-blue-500" />;
+            ? <ArrowUp size={12} className="ml-1.5 text-primary" />
+            : <ArrowDown size={12} className="ml-1.5 text-primary" />;
     };
 
     return (
         <DashboardLayout 
             noPadding
-            title={<>Broker Analysis <span className="text-blue-600 dark:text-blue-400">#{id}</span></>}
+            title={<>Broker Analysis <span className="text-primary">#{id}</span></>}
             subtitle="Quant-driven institutional portfolio forensics and holding velocity tracking."
             extraHeaderItems={
                 <Button 
@@ -272,7 +272,7 @@ export default function BrokerPage() {
             <div className="bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-slate-100 terminal-grid-light selection:bg-blue-500/10 font-sans relative">
                 
                 {/* Content Container */}
-                <div className="max-w-[1700px] mx-auto px-8 py-10 space-y-10 relative z-10 animate-in fade-in slide-in-from-bottom-6 duration-1000">
+                <div className="px-8 py-10 space-y-10 relative z-10 animate-in fade-in slide-in-from-bottom-6 duration-1000">
                     
                     {/* Top Stats Row - Optimized 3-Column Layout */}
                     <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 items-stretch">
@@ -413,7 +413,7 @@ export default function BrokerPage() {
                                 <h4 className="text-[11px] font-bold uppercase tracking-wider text-slate-500">Filter nodes by Sector</h4>
                             </div>
                             <div className="flex gap-4">
-                                <button onClick={selectAllSectors} className="text-[10px] font-bold uppercase tracking-[0.1em] text-blue-500 hover:text-blue-600 transition-colors">Select All</button>
+                                <button onClick={selectAllSectors} className="text-[10px] font-bold uppercase tracking-[0.1em] text-primary hover:text-primary/80 transition-colors">Select All</button>
                                 <button onClick={deselectAllSectors} className="text-[10px] font-bold uppercase tracking-[0.1em] text-rose-500 hover:text-rose-600 transition-colors">Deselect All</button>
                             </div>
                         </div>
@@ -425,8 +425,8 @@ export default function BrokerPage() {
                                     className={cn(
                                         "px-4 py-2 rounded-xl text-[10px] font-bold uppercase tracking-wide transition-all border",
                                         selectedSectors.includes(sector)
-                                            ? "bg-blue-500 text-white border-blue-500 shadow-[0_4px_12px_rgba(59,130,246,0.3)]"
-                                            : "bg-white dark:bg-card border-slate-200 dark:border-slate-800 text-slate-500 hover:border-slate-300 dark:hover:border-slate-700"
+                                            ? "bg-primary/10 text-primary border-primary/30 shadow"
+                                            : "bg-white dark:bg-card border-slate-200 dark:border-slate-800 text-slate-500 hover:bg-accent hover:text-accent-foreground"
                                     )}
                                 >
                                     {sector}
@@ -457,12 +457,12 @@ export default function BrokerPage() {
                                 <TableHeader className="bg-slate-50 dark:bg-card border-b border-slate-200 dark:border-slate-800">
                                     <TableRow className="hover:bg-transparent h-14">
                                         <TableHead onClick={() => handleSort('symbol')} className="cursor-pointer group px-8">
-                                            <div className="flex items-center text-[10px] font-semibold uppercase tracking-wider text-slate-400 dark:text-slate-500 group-hover:text-blue-500 transition-colors">
+                                            <div className="flex items-center text-[10px] font-semibold uppercase tracking-wider text-slate-400 dark:text-slate-500 group-hover:text-primary transition-colors">
                                                 Symbol <SortIcon column="symbol" />
                                             </div>
                                         </TableHead>
                                         <TableHead onClick={() => handleSort('quantity')} className="text-right cursor-pointer group px-4">
-                                            <div className="flex items-center justify-end text-[10px] font-semibold uppercase tracking-wider text-slate-400 dark:text-slate-500 group-hover:text-blue-500 transition-colors">
+                                            <div className="flex items-center justify-end text-[10px] font-semibold uppercase tracking-wider text-slate-400 dark:text-slate-500 group-hover:text-primary transition-colors">
                                                 Qty <SortIcon column="quantity" />
                                             </div>
                                         </TableHead>
@@ -472,33 +472,33 @@ export default function BrokerPage() {
                                             </div>
                                         </TableHead>
                                         <TableHead onClick={() => handleSort('current_price')} className="text-right cursor-pointer group px-4">
-                                            <div className="flex items-center justify-end text-[10px] font-semibold uppercase tracking-wider text-slate-400 dark:text-slate-500 group-hover:text-blue-500 transition-colors">
+                                            <div className="flex items-center justify-end text-[10px] font-semibold uppercase tracking-wider text-slate-400 dark:text-slate-500 group-hover:text-primary transition-colors">
                                                 LTP <SortIcon column="current_price" />
                                             </div>
                                         </TableHead>
                                         <TableHead onClick={() => handleSort('value')} className="text-right cursor-pointer group px-4">
-                                            <div className="flex items-center justify-end text-[10px] font-semibold uppercase tracking-wider text-slate-400 dark:text-slate-500 group-hover:text-blue-500 transition-colors">
+                                            <div className="flex items-center justify-end text-[10px] font-semibold uppercase tracking-wider text-slate-400 dark:text-slate-500 group-hover:text-primary transition-colors">
                                                 NAV <SortIcon column="value" />
                                             </div>
                                         </TableHead>
                                         {/* Trend Columns */}
                                         <TableHead onClick={() => handleSort('trend_5d')} className="text-right cursor-pointer group px-4 bg-blue-500/[0.03]">
-                                            <div className="flex items-center justify-end text-[10px] font-semibold uppercase tracking-wider text-slate-400 dark:text-slate-500 group-hover:text-blue-500 transition-colors">
+                                            <div className="flex items-center justify-end text-[10px] font-semibold uppercase tracking-wider text-slate-400 dark:text-slate-500 group-hover:text-primary transition-colors">
                                                 5D Δ (%) <SortIcon column="trend_5d" />
                                             </div>
                                         </TableHead>
                                         <TableHead onClick={() => handleSort('trend_10d')} className="text-right cursor-pointer group px-4">
-                                            <div className="flex items-center justify-end text-[10px] font-semibold uppercase tracking-wider text-slate-400 dark:text-slate-500 group-hover:text-blue-500 transition-colors">
+                                            <div className="flex items-center justify-end text-[10px] font-semibold uppercase tracking-wider text-slate-400 dark:text-slate-500 group-hover:text-primary transition-colors">
                                                 10D Δ (%) <SortIcon column="trend_10d" />
                                             </div>
                                         </TableHead>
                                         <TableHead onClick={() => handleSort('trend_1m')} className="text-right cursor-pointer group px-4">
-                                            <div className="flex items-center justify-end text-[10px] font-semibold uppercase tracking-wider text-slate-400 dark:text-slate-500 group-hover:text-blue-500 transition-colors">
+                                            <div className="flex items-center justify-end text-[10px] font-semibold uppercase tracking-wider text-slate-400 dark:text-slate-500 group-hover:text-primary transition-colors">
                                                 1M Δ (%) <SortIcon column="trend_1m" />
                                             </div>
                                         </TableHead>
                                         <TableHead onClick={() => handleSort('trend_3m')} className="text-right cursor-pointer group px-8">
-                                            <div className="flex items-center justify-end text-[10px] font-semibold uppercase tracking-wider text-slate-400 dark:text-slate-500 group-hover:text-blue-500 transition-colors">
+                                            <div className="flex items-center justify-end text-[10px] font-semibold uppercase tracking-wider text-slate-400 dark:text-slate-500 group-hover:text-primary transition-colors">
                                                 3M Δ (%) <SortIcon column="trend_3m" />
                                             </div>
                                         </TableHead>
@@ -506,10 +506,10 @@ export default function BrokerPage() {
                                 </TableHeader>
                                 <TableBody className="divide-y divide-slate-100 dark:divide-slate-800/60 bg-white/30 dark:bg-card">
                                     {filteredAndSortedHoldings.map((h) => (
-                                        <TableRow key={h.symbol} className="group hover:bg-slate-50/80 dark:hover:bg-slate-900/80 transition-all duration-300">
+                                        <TableRow key={h.symbol} className="group hover:bg-accent hover:text-accent-foreground transition-all duration-300">
                                             <TableCell className="py-5 px-8">
                                                 <div className="flex flex-col">
-                                                    <Link href={`/ticker/${h.symbol}`} className="text-sm font-bold text-blue-600 dark:text-blue-400 hover:text-blue-500 dark:hover:text-blue-300 transition-colors">
+                                                    <Link href={`/ticker/${h.symbol}`} className="text-sm font-bold text-primary hover:text-primary/80 transition-colors">
                                                         {h.symbol}
                                                     </Link>
                                                     <span className="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-tight truncate max-w-[140px] opacity-60 group-hover:opacity-100 transition-opacity">{h.name}</span>

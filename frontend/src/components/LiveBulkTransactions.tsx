@@ -68,7 +68,7 @@ export function LiveBulkTransactions() {
         return (
             <div className="h-[400px] flex items-center justify-center bg-slate-50/50 dark:bg-muted rounded-2xl border border-dashed border-slate-200 dark:border-slate-800">
                 <div className="flex flex-col items-center gap-3">
-                    <Activity className="h-8 w-8 text-blue-500 animate-pulse" />
+                    <Activity className="h-8 w-8 text-primary animate-pulse" />
                     <span className="text-sm font-bold text-slate-500">Connecting to Bulk Feed...</span>
                 </div>
             </div>
@@ -119,7 +119,7 @@ export function LiveBulkTransactions() {
                                             transition={{ type: 'spring', stiffness: 500, damping: 30 }}
                                             className={cn(
                                                 "cursor-pointer group border-slate-50 dark:border-slate-800/50 transition-colors h-12",
-                                                isMega ? "bg-amber-500/5 hover:bg-amber-500/10" : "hover:bg-slate-100/50 dark:hover:bg-white/[0.03]"
+                                                isMega ? "bg-amber-500/5 hover:bg-amber-500/10" : "hover:bg-accent hover:text-accent-foreground"
                                             )}
                                             onClick={() => router.push(`/ticker/${trade.symbol}`)}
                                         >
@@ -178,7 +178,7 @@ export function LiveBulkTransactions() {
                 <div className="p-3 bg-slate-50/50 dark:bg-muted border-t border-border dark:border-slate-800 flex justify-center">
                     <button 
                         onClick={() => router.push('/market/bulk')}
-                        className="text-[10px] font-semibold text-blue-600 dark:text-blue-400 uppercase tracking-wider hover:underline flex items-center gap-1.5"
+                        className="text-[10px] font-semibold text-primary uppercase tracking-wider hover:underline flex items-center gap-1.5"
                     >
                         View Historical Shifts <ExternalLink size={10} />
                     </button>

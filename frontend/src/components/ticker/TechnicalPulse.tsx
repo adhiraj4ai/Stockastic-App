@@ -42,7 +42,7 @@ export function TechnicalPulse({
         <Card className="glass-card-light rounded-xl overflow-hidden">
             <div className={cn("px-6 py-4 border-b border-white/10 dark:border-slate-800/50 flex items-center justify-between", mStyle.bg, mStyle.border)}>
                 <div className="flex items-center gap-3">
-                    <div className={cn("p-2 rounded-lg bg-white/80 dark:bg-card/80 shadow-sm", mStyle.color)}>
+                    <div className={cn("p-2 rounded-lg bg-white dark:bg-card shadow-sm", mStyle.color)}>
                         <mStyle.icon size={18} />
                     </div>
                     <div className="space-y-0.5">

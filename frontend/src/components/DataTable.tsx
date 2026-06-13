@@ -52,7 +52,7 @@ export function DataTable({ data }: DataTableProps) {
                                 <th
                                     key={col}
                                     onClick={() => requestSort(col)}
-                                    className="px-4 py-3 text-xs font-semibold text-gray-500 tracking-tight cursor-pointer hover:bg-gray-100 transition-colors select-none whitespace-nowrap group"
+                                    className="px-4 py-3 text-xs font-semibold text-gray-500 tracking-tight cursor-pointer hover:bg-accent hover:text-accent-foreground transition-colors select-none whitespace-nowrap group"
                                 >
                                     <div className="flex items-center gap-1">
                                         {col.replace(/_/g, ' ')}
@@ -76,7 +76,7 @@ export function DataTable({ data }: DataTableProps) {
                         {sortedData.map((row, idx) => (
                             <tr
                                 key={idx}
-                                className="hover:bg-blue-50/50 transition-colors bg-white even:bg-gray-50/30"
+                                className="hover:bg-accent transition-colors bg-white even:bg-gray-50/30"
                             >
                                 {columns.map((col) => (
                                     <td key={`${idx}-${col}`} className="px-4 py-2.5 text-sm text-gray-700 whitespace-nowrap">

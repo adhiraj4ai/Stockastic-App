@@ -37,7 +37,7 @@ export const VolumeShockers = ({ stocks }: VolumeShockersProps) => {
                 {shockers.map((stock) => (
                     <TableRow
                         key={stock.ticker}
-                        className="border-transparent hover:bg-slate-50 dark:hover:bg-slate-800 cursor-pointer transition-colors"
+                        className="border-transparent hover:bg-accent hover:text-accent-foreground cursor-pointer transition-colors"
                         onClick={() => router.push(`/ticker/${stock.ticker}`)}
                     >
                         <TableCell className="py-2.5 px-0 text-[11px] font-bold text-slate-900 dark:text-slate-100">{stock.ticker}</TableCell>
@@ -46,13 +46,13 @@ export const VolumeShockers = ({ stocks }: VolumeShockersProps) => {
                                 {[1, 2, 3, 4, 5].map((level) => (
                                     <div
                                         key={level}
-                                        className={`h-3 w-1.5 rounded-sm transition-all duration-500 ${stock.intensity > level * 20 ? 'bg-blue-600 dark:bg-blue-500 shadow-[0_0_8px_rgba(37,99,235,0.4)]' : 'bg-slate-200 dark:bg-slate-800'}`}
+                                        className={`h-3 w-1.5 rounded-sm transition-all duration-500 ${stock.intensity > level * 20 ? 'bg-primary shadow-[0_0_8px_hsl(var(--primary)/0.4)]' : 'bg-slate-200 dark:bg-slate-800'}`}
                                     ></div>
                                 ))}
                             </div>
                         </TableCell>
-                        <TableCell className="py-2.5 px-0 text-right text-[11px] font-bold text-blue-700 dark:text-blue-400 flex items-center justify-end gap-1">
-                            <Zap size={10} className="fill-blue-700 dark:fill-blue-400" />
+                        <TableCell className="py-2.5 px-0 text-right text-[11px] font-bold text-primary flex items-center justify-end gap-1">
+                            <Zap size={10} className="fill-primary" />
                             Shocking
                         </TableCell>
                     </TableRow>

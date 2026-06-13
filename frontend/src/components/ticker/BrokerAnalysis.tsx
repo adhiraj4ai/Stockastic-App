@@ -214,7 +214,7 @@ export function BrokerAnalysis({ symbol }: BrokerAnalysisProps) {
             <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
                 <div>
                     <h3 className="text-lg font-bold text-slate-800 dark:text-slate-100 flex items-center gap-2">
-                        <TrendingUp className="w-5 h-5 text-blue-500" />
+                        <TrendingUp className="w-5 h-5 text-primary" />
                         Broker Forensics
                     </h3>
                     <p className="text-sm text-slate-500 dark:text-slate-400">Analyze institutional accumulation and aggressive trading</p>
@@ -225,8 +225,8 @@ export function BrokerAnalysis({ symbol }: BrokerAnalysisProps) {
                             key={t.value}
                             onClick={() => setRange(t.value)}
                             className={`px-3 py-1.5 text-xs font-bold rounded-md transition-all ${range === t.value
-                                ? 'bg-white dark:bg-slate-700 text-blue-600 dark:text-blue-400 shadow-sm transform scale-105'
-                                : 'text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-300'
+                                ? 'bg-white dark:bg-slate-700 text-primary shadow-sm transform scale-105'
+                                : 'text-slate-500 dark:text-slate-400 hover:bg-accent hover:text-accent-foreground'
                                 }`}
                         >
                             {t.label}
@@ -237,7 +237,7 @@ export function BrokerAnalysis({ symbol }: BrokerAnalysisProps) {
 
             {loading ? (
                 <div className="h-[400px] flex flex-col items-center justify-center text-slate-400">
-                    <Loader2 className="w-8 h-8 animate-spin mb-2 text-blue-500" />
+                    <Loader2 className="w-8 h-8 animate-spin mb-2 text-primary" />
                     <span className="text-sm font-medium">Analyzing broker data...</span>
                 </div>
             ) : error ? (

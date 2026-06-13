@@ -2,9 +2,11 @@
 
 import { useEffect, useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
+import { Bookmark, PanelRightClose, PanelRightOpen } from 'lucide-react';
 import DashboardLayout from '@/components/DashboardLayout';
 import { ChatInterface } from '@/components/chat/ChatInterface';
 import { SessionList } from '@/components/chat/SessionList';
+import { BookmarkCatalog } from '@/components/chat/BookmarkCatalog';
 import api from '@/lib/api';
 import type { ChatSession } from '@/components/chat/types';
 
@@ -15,6 +17,19 @@ export default function ChatPageClient() {
 
     const [sessions, setSessions] = useState<ChatSession[]>([]);
     const [loading, setLoading] = useState(true);
+    // Captured once from ?q= (home omnibox handoff); the URL is then cleaned.
+    const [pendingPrompt, setPendingPrompt] = useState<string | null>(null);
+    // Right-side bookmark catalog; preference persisted across visits.
+    const [bookmarksOpen, setBookmarksOpen] = useState<boolean>(() =>
+        typeof window === 'undefined' ? true : localStorage.getItem('chat:bookmarksOpen') !== '0',
+    );
+    const toggleBookmarks = () =>
+        setBookmarksOpen((v) => {
+            const next = !v;
+            if (typeof window !== 'undefined')
+                localStorage.setItem('chat:bookmarksOpen', next ? '1' : '0');
+            return next;
+        });
 
     const refresh = async () => {
         try {
@@ -33,6 +48,22 @@ export default function ChatPageClient() {
         refresh();
     }, []);
 
+    // ?q= handoff: stash the prompt, ensure a session exists, drop q from the URL.
+    useEffect(() => {
+        const q = searchParams.get('q');
+        if (!q) return;
+        setPendingPrompt(q);
+        if (activeId) {
+            router.replace(`/chat?session=${activeId}`);
+            return;
+        }
+        api.post('/api/chat/sessions/', { title: 'New chat' }).then(async res => {
+            await refresh();
+            router.replace(`/chat?session=${res.data.id}`);
+        });
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, []);
+
     const handleNew = async () => {
         const res = await api.post('/api/chat/sessions/', { title: 'New chat' });
         const created = res.data;
@@ -49,8 +80,8 @@ export default function ChatPageClient() {
     };
 
     return (
-        <DashboardLayout title="Chat" noPadding hideHeader>
-            <div className="flex h-screen overflow-hidden">
+        <DashboardLayout title="Chat" subtitle="Orchestrated AI analysts for NEPSE" noPadding>
+            <div className="flex h-[calc(100vh-72px)] overflow-hidden">
                 <SessionList
                     sessions={sessions}
                     activeId={activeId}
@@ -63,11 +94,43 @@ export default function ChatPageClient() {
                         <ChatInterface
                             sessionId={activeId}
                             onTitleChange={refresh}
+                            initialPrompt={pendingPrompt ?? undefined}
                         />
                     ) : (
                         <EmptyState onNew={handleNew} />
                     )}
                 </div>
+
+                {/* Right-side saved-analyses catalog (shares BookmarkCatalog with /bookmarks) */}
+                {bookmarksOpen ? (
+                    <aside className="hidden w-80 shrink-0 flex-col border-l border-border bg-sidebar md:flex">
+                        <div className="flex h-12 shrink-0 items-center justify-between border-b border-border px-3">
+                            <span className="inline-flex items-center gap-2 text-[13px] font-semibold text-foreground">
+                                <Bookmark size={14} className="text-emerald-500" /> Saved analyses
+                            </span>
+                            <button
+                                onClick={toggleBookmarks}
+                                title="Hide saved analyses"
+                                className="rounded p-1 text-muted-foreground transition-colors hover:bg-sidebar-accent hover:text-foreground"
+                            >
+                                <PanelRightClose size={15} />
+                            </button>
+                        </div>
+                        <div className="min-h-0 flex-1">
+                            <BookmarkCatalog variant="sidebar" />
+                        </div>
+                    </aside>
+                ) : (
+                    <button
+                        onClick={toggleBookmarks}
+                        title="Show saved analyses"
+                        className="hidden w-10 shrink-0 flex-col items-center gap-2 border-l border-border bg-sidebar py-3 text-muted-foreground transition-colors hover:text-foreground md:flex"
+                    >
+                        <PanelRightOpen size={15} />
+                        <Bookmark size={14} className="text-emerald-500" />
+                        <span className="[writing-mode:vertical-rl] text-[11px] tracking-wide">Saved</span>
+                    </button>
+                )}
             </div>
         </DashboardLayout>
     );
@@ -86,7 +149,7 @@ function EmptyState({ onNew }: { onNew: () => void }) {
                 </p>
                 <button
                     onClick={onNew}
-                    className="px-4 py-2 rounded-md bg-foreground text-background text-sm font-medium hover:opacity-90 transition-opacity"
+                    className="px-4 py-2 rounded-md bg-foreground text-background text-sm font-medium hover:bg-accent hover:text-accent-foreground transition-colors"
                 >
                     Start a new chat
                 </button>

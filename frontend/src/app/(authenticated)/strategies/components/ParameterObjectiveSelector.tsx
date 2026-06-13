@@ -38,8 +38,8 @@ interface Props {
 
 const OBJECTIVES = [
     { value: 'profit', label: 'Max Profit', subtitle: 'Aggressive Growth', icon: TrendingUp, color: 'emerald' },
-    { value: 'win_rate', label: 'Win Rate', subtitle: 'Safety & Precision', icon: ShieldCheck, color: 'indigo' },
-    { value: 'balanced', label: 'Balanced', subtitle: 'Optimal Risk/Reward', icon: Scale, color: 'blue' }
+    { value: 'win_rate', label: 'Win Rate', subtitle: 'Safety & Precision', icon: ShieldCheck, color: 'primary' },
+    { value: 'balanced', label: 'Balanced', subtitle: 'Optimal Risk/Reward', icon: Scale, color: 'primary' }
 ] as const;
 
 export default function ParameterObjectiveSelector({ strategyId, symbol, onParametersSelected }: Props) {
@@ -139,9 +139,9 @@ export default function ParameterObjectiveSelector({ strategyId, symbol, onParam
                             className={`
                                 w-full group relative flex items-center gap-3 p-3 rounded-xl transition-all duration-300
                                 ${isSelected && isAvailable
-                                    ? 'bg-slate-50 dark:bg-slate-800'
+                                    ? 'bg-accent'
                                     : isAvailable
-                                        ? 'hover:bg-slate-50/50 dark:hover:bg-slate-800/50'
+                                        ? 'hover:bg-accent hover:text-accent-foreground'
                                         : 'opacity-40 grayscale cursor-not-allowed'
                                 }
                             `}
@@ -149,7 +149,9 @@ export default function ParameterObjectiveSelector({ strategyId, symbol, onParam
                             <div className={`
                                 p-2 rounded-lg transition-all
                                 ${isSelected
-                                    ? `bg-${obj.color}-100 dark:bg-${obj.color}-900/30 text-${obj.color}-600 dark:text-${obj.color}-400`
+                                    ? obj.color === 'primary'
+                                        ? 'bg-primary/10 text-primary'
+                                        : `bg-${obj.color}-100 dark:bg-${obj.color}-900/30 text-${obj.color}-600 dark:text-${obj.color}-400`
                                     : 'bg-slate-100 dark:bg-slate-800 text-slate-400 group-hover:bg-slate-200 dark:group-hover:bg-slate-700 group-hover:text-slate-600'}
                             `}>
                                 <Icon size={18} />
@@ -161,7 +163,7 @@ export default function ParameterObjectiveSelector({ strategyId, symbol, onParam
                                         {obj.label}
                                     </span>
                                     {obj.value === 'balanced' && (
-                                        <span className="text-[8px] font-semibold bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 px-1.5 py-0.5 rounded tracking-wider animate-pulse">REC</span>
+                                        <span className="text-[8px] font-semibold bg-primary/10 text-primary px-1.5 py-0.5 rounded tracking-wider animate-pulse">REC</span>
                                     )}
                                 </div>
                                 <p className="text-[10px] font-bold text-slate-400 dark:text-slate-500 truncate opacity-80 uppercase tracking-tighter">
@@ -184,8 +186,8 @@ export default function ParameterObjectiveSelector({ strategyId, symbol, onParam
                             )}
 
                             {isSelected && (
-                                <div className="ml-2 w-5 h-5 bg-blue-600 rounded-full flex items-center justify-center">
-                                    <Check size={12} className="text-white" />
+                                <div className="ml-2 w-5 h-5 bg-primary rounded-full flex items-center justify-center">
+                                    <Check size={12} className="text-primary-foreground" />
                                 </div>
                             )}
                         </button>

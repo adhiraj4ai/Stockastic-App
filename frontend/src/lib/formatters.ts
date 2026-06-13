@@ -89,3 +89,14 @@ export function formatRupees(value: number | string | null | undefined, decimals
     if (!formatted) return '';
     return `रू ${formatted}`;
 }
+
+/**
+ * Format a percent value (already expressed as a percentage, e.g. 16.66)
+ * Example: "16.66" -> 16.66%
+ */
+export function formatPercent(value: number | string | null | undefined, decimals: number = 2): string {
+    if (value === null || value === undefined || value === '') return '';
+    const numValue = typeof value === 'string' ? parseFloat(value.replace(/,/g, '')) : value;
+    if (isNaN(numValue)) return '';
+    return `${numValue.toFixed(decimals)}%`;
+}

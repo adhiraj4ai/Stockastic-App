@@ -14,8 +14,10 @@ function NotebookPageContent() {
 
     if (notebookId) {
         return (
-            <DashboardLayout title="Notebook" noPadding hideHeader>
-                <NotebookInterface notebookId={notebookId} />
+            <DashboardLayout title="Notebook" subtitle="AI-powered research notebook" noPadding>
+                <div className="h-[calc(100vh-72px)] overflow-hidden">
+                    <NotebookInterface notebookId={notebookId} />
+                </div>
             </DashboardLayout>
         );
     }

@@ -36,7 +36,7 @@ export function StockMetricHero({
 
     return (
         <div className="bg-white dark:bg-slate-950 border-b border-slate-200 dark:border-slate-800">
-            <div className="max-w-[1600px] mx-auto px-6 py-4">
+            <div className="px-6 py-4">
                 <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-6">
                     {/* Left: Price Action */}
                     <div className="flex items-center gap-8">
@@ -84,14 +84,14 @@ export function StockMetricHero({
                     {/* Right: Actions */}
                     <div className="flex items-center gap-3">
                         <Button
-                            className="h-10 px-6 bg-slate-900 dark:bg-slate-100 text-white dark:text-slate-900 hover:bg-black dark:hover:bg-white rounded-lg font-bold text-xs transition-all active:scale-95"
+                            className="h-10 px-6 bg-primary text-primary-foreground hover:bg-primary/90 rounded-lg font-bold text-xs transition-all active:scale-95"
                             onClick={() => onTrade?.('BUY')}
                         >
                             Accumulate
                         </Button>
                         <Button
                             variant="outline"
-                            className="h-10 px-6 border-slate-200 dark:border-slate-800 text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800 rounded-lg font-bold text-xs transition-all active:scale-95"
+                            className="h-10 px-6 border-slate-200 dark:border-slate-800 text-slate-600 dark:text-slate-400 hover:bg-accent hover:text-accent-foreground rounded-lg font-bold text-xs transition-all active:scale-95"
                             onClick={() => onTrade?.('SELL')}
                         >
                             Distribute

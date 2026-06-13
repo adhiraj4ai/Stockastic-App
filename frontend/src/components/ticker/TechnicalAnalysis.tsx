@@ -32,11 +32,11 @@ export default function TechnicalAnalysis({ symbol, data, history }: TechnicalAn
         {
             name: 'Momentum',
             icon: TrendingUp,
-            color: 'blue',
-            bgClass: 'bg-blue-50 dark:bg-blue-900/20',
-            borderClass: 'border-blue-100 dark:border-blue-800',
-            textClass: 'text-blue-600 dark:text-blue-400',
-            hoverClass: 'hover:bg-blue-50/50 dark:hover:bg-blue-900/10'
+            color: 'primary',
+            bgClass: 'bg-primary/5 dark:bg-primary/10',
+            borderClass: 'border-primary/20 dark:border-primary/30',
+            textClass: 'text-primary',
+            hoverClass: 'hover:bg-primary/10'
         },
         {
             name: 'Trend',
@@ -51,10 +51,10 @@ export default function TechnicalAnalysis({ symbol, data, history }: TechnicalAn
             name: 'Volume',
             icon: LineChart, // Fallback icon since BarChart2 is removed
             color: 'purple',
-            bgClass: 'bg-purple-50 dark:bg-purple-900/20',
-            borderClass: 'border-purple-100 dark:border-purple-800',
-            textClass: 'text-purple-600 dark:text-purple-400',
-            hoverClass: 'hover:bg-purple-50/50 dark:hover:bg-purple-900/10'
+            bgClass: 'bg-primary/5 dark:bg-primary/10',
+            borderClass: 'border-primary/20 dark:border-primary/30',
+            textClass: 'text-primary',
+            hoverClass: 'hover:bg-primary/10'
         }
     ];
 
@@ -135,7 +135,7 @@ export default function TechnicalAnalysis({ symbol, data, history }: TechnicalAn
                                                 <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
                                                     {indicators.length > 0 ? (
                                                         indicators.map((indicator: any, i: number) => (
-                                                            <tr key={i} className="hover:bg-slate-50/50 dark:hover:bg-slate-800/50 transition-colors">
+                                                            <tr key={i} className="hover:bg-accent hover:text-accent-foreground transition-colors">
                                                                 <td className="px-4 py-3 font-medium text-slate-700 dark:text-slate-300 text-xs">
                                                                     <div className="flex items-center gap-1">
                                                                         {indicator.name}

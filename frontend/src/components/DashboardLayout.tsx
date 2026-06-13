@@ -1,13 +1,14 @@
 'use client';
 
-import { useState, useEffect, Suspense } from 'react';
+import { useState, useEffect, useMemo, Suspense } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
 import { usePathname, useRouter, useSearchParams } from 'next/navigation';
 import { useTheme } from 'next-themes';
-import { LayoutDashboard, TrendingUp, TrendingDown, FileText, LogOut, Wallet, Lightbulb, Activity, ArrowLeft, MessageSquare, NotebookPen, ChevronLeft, ChevronRight, Settings, User, PanelLeftClose, PanelLeftOpen, ChevronDown, Bell, Home, Target, Briefcase, Eye, Users, BarChart3, History, Star, Brain, Radar, Building2, ScanLine, Zap, Share2, Crosshair, DollarSign, Layers, GitMerge, Shield, Search } from 'lucide-react';
+import { TrendingUp, TrendingDown, LogOut, ArrowLeft, Settings, PanelLeftClose, PanelLeftOpen, ChevronDown, Sparkles } from 'lucide-react';
 import { FullPageLoader } from '@/components/ui/StockLoader';
 import { SearchBar } from './SearchBar';
+import { navItems } from './navItems';
 import { AlertsDropdown } from './AlertsDropdown';
 import SystemOffline from './SystemOffline';
 import { SymbolSelector } from './SymbolSelector';
@@ -22,89 +23,6 @@ import {
 } from "@/components/ui/dropdown-menu";
 import Cookies from 'js-cookie';
 import { SettingsDialog } from './SettingsDialog';
-
-const navItems = [
-    { name: 'Home', href: '/', icon: Home, permission: 'home' },
-    { name: 'Ticker Intelligence', href: '/ticker', icon: Search, permission: 'home' },
-    {
-        name: 'Market',
-        icon: Building2,
-        subItems: [
-            { name: 'Terminal', href: '/market', icon: LayoutDashboard, permission: 'market_overview' },
-            { name: 'Movers & Shakers', href: '/market/movers', icon: Zap, permission: 'market_movers' },
-            { name: 'Deep Dive', href: '/market/activity', icon: Activity, permission: 'market_activity' },
-            { name: 'Sector Rotation', href: '/market/rotation', icon: BarChart3, permission: 'market_rotation' },
-            { name: 'Social Highlights', href: '/social', icon: Share2, permission: 'market_social' },
-            { name: 'Global PA Screener', href: '/market/pa-screener', icon: Target, permission: 'market_pa_screener' },
-        ]
-    },
-    {
-        name: 'Floorsheet',
-        icon: FileText,
-        subItems: [
-            { name: 'Floorsheet', href: '/floorsheet', icon: FileText, permission: 'market_floorsheet' },
-            { name: 'Bulk Transactions', href: '/market/bulk', icon: Layers, permission: 'market_bulk' },
-            { name: 'Matching Transactions', href: '/market/matching', icon: GitMerge, permission: 'market_matching' },
-            { name: 'Volume Profile', href: '/market/volume-profile', icon: BarChart3, permission: 'market_volume' },
-            { name: 'Accumulation History', href: '/accumulation/history', icon: History, permission: 'accumulation_history' },
-            { name: 'Share Transfer', href: '/accumulation/share-transfer', icon: Share2, permission: 'share_transfer' },
-        ]
-    },
-    // Chat moved to top nav
-    {
-        name: 'Finfolio',
-        icon: Wallet,
-        subItems: [
-            { name: 'My Portfolio', href: '/portfolio', icon: Briefcase, permission: 'portfolio_main' },
-            { name: 'Performance', href: '/portfolio/performance', icon: TrendingUp, permission: 'portfolio_performance' },
-            { name: 'Income', href: '/portfolio/income', icon: DollarSign, permission: 'portfolio_income' },
-            { name: 'Transactions', href: '/portfolio/transactions', icon: History, permission: 'portfolio_transactions' },
-            { name: 'Watchlist', href: '/portfolio/watchlist', icon: Eye, permission: 'portfolio_watchlist' },
-            { name: 'Trade Plans', href: '/portfolio/plans', icon: Layers, permission: 'portfolio_trade_plans' },
-            { name: 'Paper Trading', href: '/paper-trading', icon: LayoutDashboard, permission: 'paper_trading' },
-        ]
-    },
-    {
-        name: 'Accumulation',
-        icon: Activity,
-        subItems: [
-            { name: 'Command Center', href: '/accumulation/dashboard', icon: Layers, permission: 'accumulation_dash' },
-            { name: 'Smart Money', href: '/accumulation/smart-money', icon: Brain, permission: 'smart_money' },
-            { name: 'Broker Trends', href: '/accumulation/trends', icon: BarChart3, permission: 'broker_trends' },
-            { name: 'Focus Ranking', href: '/accumulation/focus-ranking', icon: Target, permission: 'focus_ranking' },
-            { name: 'Price Study', href: '/accumulation/price-study', icon: TrendingUp, permission: 'price_study' },
-            { name: 'Broker Favorites', href: '/accumulation/favorites', icon: Star, permission: 'broker_favorites' },
-            { name: 'Accumulators Navigator', href: '/accumulation/navigator', icon: Users, permission: 'navigator' },
-            { name: 'Below Cost Positions', href: '/accumulation/below-cost', icon: TrendingDown, permission: 'below_cost' },
-        ]
-    },
-    {
-        name: 'Strategic Hub',
-        icon: Layers,
-        subItems: [
-            { name: 'Intel Hub', href: '/signals', icon: Radar, permission: 'intel_hub' },
-            { name: 'Strategies', href: '/strategies', icon: Lightbulb, permission: 'strategies' },
-            { name: 'Track Record', href: '/signals/track-record', icon: History, permission: 'track_record' },
-        ]
-    },
-    {
-        name: 'Stockastic AI',
-        icon: Brain,
-        subItems: [
-            { name: 'Chat', href: '/chat', icon: MessageSquare, permission: 'chat' },
-            { name: 'Notebooks', href: '/notebook', icon: NotebookPen, permission: 'chat' },
-        ]
-    },
-    {
-        name: 'Administration',
-        icon: Shield,
-        subItems: [
-            { name: 'User Management', href: '/admin/users', icon: Users, permission: 'admin_user_mgmt' },
-            { name: 'Financials', href: '/admin/financials', icon: FileText, permission: 'admin_financials' },
-            { name: 'Pipeline', href: '/admin/pipeline', icon: GitMerge, permission: 'admin_pipeline' },
-        ]
-    },
-];
 
 const stocks = [
     { symbol: 'NABIL', name: 'Nabil Bank Ltd.' },
@@ -177,6 +95,9 @@ function DashboardContent({
     const isNotebookPage = pathname === '/notebook';
     const isFullWidthPage = isChatPage || isNotebookPage;
 
+    const canChat = !!currentUser &&
+        (currentUser.permissions === 'all' || currentUser.permissions?.chat === true);
+
     useEffect(() => {
         // Fetch Market Status for Header
         import('@/lib/api').then(({ default: api }) => {
@@ -248,7 +169,7 @@ function DashboardContent({
     const filteredNavItems = navItems.map(item => {
         // While loading, default to most restrictive (Basic)
         if (!currentUser) {
-            const basic = ['Home', 'Market', 'Finfolio'];
+            const basic = ['Home', 'Market', 'Portfolio'];
             if (!basic.includes(item.name)) return null;
             return item;
         }
@@ -311,13 +232,13 @@ function DashboardContent({
         if (!checkPathAllowed(pathname)) {
             // Special cases for Chat and partial paths
             if (pathname === '/chat' && !perms['chat']) {
-                router.push('/ticker');
+                router.push('/');
                 return;
             }
 
-            // For general restricted paths, push to home or market
-            if (pathname !== '/ticker' && pathname !== '/market') {
-                router.push('/ticker');
+            // For general restricted paths, push to home (Ticker Intelligence) or market
+            if (pathname !== '/' && pathname !== '/market') {
+                router.push('/');
             }
         }
     }, [pathname, currentUser, router]);
@@ -326,33 +247,41 @@ function DashboardContent({
         setIsSidebarCollapsed(isChatPinned || isFullWidthPage);
     }, [isChatPinned, isFullWidthPage]);
 
-    // Auto-expand menus that contain the active sub-item
-    useEffect(() => {
-        navItems.forEach(item => {
-            if ('subItems' in item && item.subItems) {
-                const hasActiveSubItem = item.subItems.some(subItem => {
-                    const subPath = subItem.href.split('?')[0];
-                    const subTab = new URLSearchParams(subItem.href.split('?')[1]).get('tab');
-                    const currentTab = searchParams.get('tab');
-                    return pathname === subPath && (subTab ? currentTab === subTab : true);
-                });
-
-                if (hasActiveSubItem && !expandedMenus.includes(item.name)) {
-                    setExpandedMenus(prev => [...prev, item.name]);
-                }
-            }
+    // Resolve the single active nav link by GLOBAL longest-prefix match. This avoids the
+    // "Home is active everywhere" bug (every path startsWith '/') and the cross-group
+    // double-match (e.g. /market/bulk under Floorsheet also matching /market under Market):
+    // the most specific (longest) matching href wins across the entire nav.
+    const activeHref = useMemo(() => {
+        const leaves: string[] = [];
+        navItems.forEach((item: any) => {
+            if (item.subItems) item.subItems.forEach((s: any) => leaves.push(s.href));
+            else if (item.href) leaves.push(item.href);
         });
+        const currentTab = searchParams.get('tab');
+        const score = (href: string) => {
+            const [p, q] = href.split('?');
+            const tab = q ? new URLSearchParams(q).get('tab') : null;
+            const pathOk = p === pathname || (p !== '/' && pathname.startsWith(p + '/'));
+            if (!pathOk) return -1;
+            if (tab && currentTab !== tab) return -1;
+            return p.length + (tab ? 1000 : 0); // tab-specific links outrank a plain path match
+        };
+        let bestHref: string | null = null, best = 0;
+        leaves.forEach((h) => { const s = score(h); if (s > best) { best = s; bestHref = h; } });
+        return bestHref;
     }, [pathname, searchParams]);
 
-    const isMenuHoverActive = (item: any) => {
-        if (!('subItems' in item && item.subItems)) return false;
-        return item.subItems.some((subItem: any) => {
-            const subPath = subItem.href.split('?')[0];
-            const subTab = new URLSearchParams(subItem.href.split('?')[1]).get('tab');
-            const currentTab = searchParams.get('tab');
-            return pathname === subPath && (subTab ? currentTab === subTab : true);
+    const isParentActive = (item: any) =>
+        'subItems' in item && Array.isArray(item.subItems) && item.subItems.some((s: any) => s.href === activeHref);
+
+    // Auto-expand the menu that contains the active sub-item.
+    useEffect(() => {
+        navItems.forEach((item: any) => {
+            if (item.subItems && item.subItems.some((s: any) => s.href === activeHref)) {
+                setExpandedMenus(prev => prev.includes(item.name) ? prev : [...prev, item.name]);
+            }
         });
-    };
+    }, [activeHref]);
 
     const toggleSidebar = () => {
         setIsSidebarCollapsed(!isSidebarCollapsed);
@@ -378,7 +307,7 @@ function DashboardContent({
     };
 
     const closeMenu = (item: any) => {
-        const isCurrentlyActive = isMenuHoverActive(item);
+        const isCurrentlyActive = isParentActive(item);
         if (!isSidebarCollapsed && expandedMenus.includes(item.name) && !isCurrentlyActive) {
             setExpandedMenus(prev => prev.filter(i => i !== item.name));
         }
@@ -420,9 +349,9 @@ function DashboardContent({
                             <Image
                                 src={logoSrc}
                                 alt="Stockastic Logo"
-                                width={104}
-                                height={28}
-                                className="object-contain"
+                                width={120}
+                                height={45}
+                                className="h-9 w-auto object-contain"
                                 priority
                             />
                         </Link>
@@ -439,18 +368,19 @@ function DashboardContent({
                     {filteredNavItems.map((item) => {
                         const hasSubItems = 'subItems' in item && item.subItems && item.subItems.length > 0;
                         const isExpanded = expandedMenus.includes(item.name);
-                        const isActive = 'href' in item && item.href ? (pathname.startsWith(item.href) && item.href !== '/market' || pathname === item.href) : false;
+                        const isActive = 'href' in item && item.href ? item.href === activeHref : false;
+                        const parentActive = hasSubItems && isParentActive(item);
 
                         return (
                             <div key={item.name}>
                                 {hasSubItems ? (
                                     <button
                                         onClick={() => toggleMenu(item.name)}
-                                        className={`w-full flex items-center gap-2.5 px-2.5 py-1.5 rounded-md transition-colors text-sidebar-foreground/70 hover:bg-sidebar-accent hover:text-sidebar-foreground ${isSidebarCollapsed ? 'justify-center' : 'justify-between'}`}
+                                        className={`w-full flex items-center gap-2.5 px-2.5 py-1.5 rounded-md transition-colors ${isSidebarCollapsed ? 'justify-center' : 'justify-between'} ${parentActive ? 'bg-sidebar-accent text-sidebar-foreground font-medium' : 'text-sidebar-foreground/70 hover:bg-sidebar-accent hover:text-sidebar-foreground'}`}
                                         title={isSidebarCollapsed ? item.name : ''}
                                     >
                                         <div className="flex items-center gap-2.5">
-                                            <item.icon size={16} className="text-muted-foreground" />
+                                            <item.icon size={16} className={item.color || "text-muted-foreground"} />
                                             {!isSidebarCollapsed && <span className="text-[13px] font-medium">{item.name}</span>}
                                         </div>
                                         {!isSidebarCollapsed && (
@@ -466,7 +396,7 @@ function DashboardContent({
                                             } ${isSidebarCollapsed ? 'justify-center' : ''}`}
                                         title={isSidebarCollapsed ? item.name : ''}
                                     >
-                                        <item.icon size={16} className={isActive ? 'text-foreground' : 'text-muted-foreground'} />
+                                        <item.icon size={16} className={isActive ? 'text-foreground' : (item.color || 'text-muted-foreground')} />
                                         {!isSidebarCollapsed && <span className="text-[13px]">{item.name}</span>}
                                     </Link>
                                 )}
@@ -475,10 +405,7 @@ function DashboardContent({
                                 {hasSubItems && isExpanded && !isSidebarCollapsed && (
                                     <div className="ml-[22px] mt-0.5 mb-1 space-y-0.5 border-l border-sidebar-border pl-2">
                                         {(item as any).subItems.map((subItem: any) => {
-                                            const subPath = subItem.href.split('?')[0];
-                                            const subTab = new URLSearchParams(subItem.href.split('?')[1]).get('tab');
-                                            const currentTab = searchParams.get('tab');
-                                            const isActiveLink = pathname === subPath && (subTab ? currentTab === subTab : true);
+                                            const isActiveLink = subItem.href === activeHref;
 
                                             return (
                                                 <Link
@@ -587,7 +514,7 @@ function DashboardContent({
                                 {pathname.startsWith('/signals') ? (
                                     <div className="flex flex-col min-w-0 leading-tight">
                                         <h2 className="text-[15px] font-semibold text-foreground tracking-tight">
-                                            Strategic Hub
+                                            Signals
                                         </h2>
                                         <p className="text-[11px] text-muted-foreground truncate">Real-time signals from multiple engines, ranked by conviction</p>
                                     </div>
@@ -605,31 +532,8 @@ function DashboardContent({
                         )}
 
 
-                        {/* Center Section: Navigation Links & Ticker Pulse */}
+                        {/* Center Section: Ticker Pulse */}
                         <div className="flex-1 flex justify-center items-center gap-1">
-                            {[
-                                { name: 'Home', href: '/', icon: Home },
-                                { name: 'Dashboard', href: '/market', icon: LayoutDashboard },
-                                { name: 'Portfolio', href: '/portfolio', icon: Briefcase }
-                            ].map((link) => {
-                                const isActive = pathname === link.href || (link.href === '/market' && pathname.startsWith('/market'));
-                                return (
-                                    <Link
-                                        key={link.href}
-                                        href={link.href}
-                                        className={cn(
-                                            "px-2.5 py-1.5 rounded-md text-[13px] font-medium transition-colors flex items-center gap-2",
-                                            isActive
-                                                ? "bg-accent text-foreground"
-                                                : "text-muted-foreground hover:bg-accent hover:text-foreground"
-                                        )}
-                                    >
-                                        <link.icon size={14} />
-                                        <span className="hidden lg:inline">{link.name}</span>
-                                    </Link>
-                                );
-                            })}
-
                             {pathname.startsWith('/ticker/') && (
                                 <div className="flex items-center bg-card border border-border rounded-md overflow-hidden ml-3">
                                     <SymbolSelector
@@ -668,6 +572,21 @@ function DashboardContent({
                                 <div className="hidden md:block">
                                     {extraHeaderItems}
                                 </div>
+                            )}
+                            {canChat && (
+                                <Link
+                                    href="/chat"
+                                    className={cn(
+                                        "flex items-center gap-1.5 px-2.5 h-8 rounded-md border text-[12px] font-medium transition-colors",
+                                        isChatPage
+                                            ? "border-primary/30 bg-primary/10 text-primary"
+                                            : "border-border text-muted-foreground hover:text-primary hover:border-primary/30 hover:bg-primary/10"
+                                    )}
+                                    title="Ask Stockastic AI"
+                                >
+                                    <Sparkles size={13} />
+                                    <span className="hidden lg:inline">Ask AI</span>
+                                </Link>
                             )}
                             {marketMeta && (
                                 <div className="hidden md:flex items-center gap-2 leading-tight">

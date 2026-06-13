@@ -48,3 +48,6 @@ django-ratelimit==4.1.0
 django-axes==6.1.1
 TA-Lib
 PyYAML>=6.0
+# Async task queue (settings.py CELERY_*, stocks/tasks.py; worker in docker-compose)
+celery[redis]==5.6.3
+redis==6.4.0

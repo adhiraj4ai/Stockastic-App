@@ -1,0 +1,87 @@
+'use client';
+
+import { useEffect, useState } from 'react';
+import Link from 'next/link';
+import { usePathname } from 'next/navigation';
+import api from '@/lib/api';
+import { Blocks, Code, Play, Activity, GitCompare } from 'lucide-react';
+
+type Tab = 'build' | 'code' | 'backtest' | 'optimize';
+
+function tabFromPath(pathname: string): Tab {
+    if (pathname.endsWith('/editor')) return 'code';
+    if (pathname.includes('/backtest')) return 'backtest';
+    if (pathname.includes('/optimize')) return 'optimize';
+    return 'build';
+}
+
+const TABS: { key: Tab; label: string; icon: any; href: (id: string) => string }[] = [
+    { key: 'build', label: 'Build', icon: Blocks, href: (id) => `/strategies/${id}/builder` },
+    { key: 'code', label: 'Code', icon: Code, href: (id) => `/strategies/${id}/editor` },
+    { key: 'backtest', label: 'Backtest', icon: Play, href: (id) => `/strategies/${id}/backtest` },
+    { key: 'optimize', label: 'Optimize', icon: Activity, href: (id) => `/strategies/${id}/optimize` },
+];
+
+/**
+ * Persistent workspace header + tab bar shared across a strategy's sub-pages, so
+ * Build / Code / Backtest / Optimize feel like one workspace. Fetches the strategy's
+ * lightweight identity (name, kind, summary, published) itself.
+ */
+export function StrategyWorkspaceNav({ strategyId, active }: { strategyId: string; active?: Tab }) {
+    const pathname = usePathname();
+    const activeTab: Tab = active || tabFromPath(pathname || '');
+    const [s, setS] = useState<any>(null);
+    useEffect(() => {
+        api.get(`/api/stocks/strategies/${strategyId}/`).then((r) => setS(r.data)).catch(() => { });
+    }, [strategyId]);
+
+    const composed = s?.kind === 'composed';
+    const published = (s?.published_experiments?.length || 0) > 0;
+
+    // A strategy is edited in EITHER Build mode (composed) OR Code mode (custom) — never both.
+    // Until the kind loads, infer the mode from the current page so the right tab shows without flicker.
+    const onEditor = (pathname || '').endsWith('/editor');
+    const onBuilder = (pathname || '').includes('/builder');
+    const showBuild = s ? composed : onBuilder;
+    const showCode = s ? !composed : onEditor;
+    const visibleTabs = TABS.filter((t) =>
+        t.key === 'build' ? showBuild : t.key === 'code' ? showCode : true
+    );
+
+    return (
+        <div className="mb-5 border-b border-gray-100 dark:border-slate-800 pb-2">
+            <div className="flex items-start justify-between gap-3 flex-wrap mb-3">
+                <div className="min-w-0">
+                    <div className="flex items-center gap-2 flex-wrap">
+                        <span className="text-lg font-bold truncate">{s?.name || 'Strategy'}</span>
+                        {s && (
+                            <span className={`text-[10px] uppercase font-bold px-2 py-0.5 rounded-full ${composed
+                                ? 'bg-primary/10 text-primary'
+                                : 'bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-300'}`}>
+                                {composed ? 'Composed' : 'Custom'}
+                            </span>
+                        )}
+                        {published && <span className="text-[10px] uppercase font-bold px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-300">Published</span>}
+                    </div>
+                    {s?.summary && <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5 max-w-3xl">{s.summary}</p>}
+                </div>
+                <Link href="/strategies/compare" className="text-xs text-primary inline-flex items-center gap-1 shrink-0 mt-1">
+                    <GitCompare size={13} /> Compare
+                </Link>
+            </div>
+            <div className="flex gap-1 overflow-x-auto">
+                {visibleTabs.map((t) => {
+                    const isActive = t.key === activeTab;
+                    return (
+                        <Link key={t.key} href={t.href(strategyId)}
+                            className={`px-3 py-2 text-sm font-medium rounded-t-lg flex items-center gap-1.5 whitespace-nowrap border-b-2 transition-colors ${isActive
+                                ? 'border-primary text-primary'
+                                : 'border-transparent text-gray-500 hover:text-gray-800 dark:hover:text-gray-200'}`}>
+                            <t.icon size={15} /> {t.label}
+                        </Link>
+                    );
+                })}
+            </div>
+        </div>
+    );
+}

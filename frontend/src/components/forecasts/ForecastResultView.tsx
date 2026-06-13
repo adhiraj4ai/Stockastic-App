@@ -220,7 +220,7 @@ export default function ForecastResultView({ job }: ForecastResultViewProps) {
             case 'SUCCESS':
                 return <Badge className="bg-emerald-500/10 text-emerald-600 border-emerald-200/50 px-3 py-1 rounded-full text-[10px] font-bold">Success</Badge>;
             case 'RUNNING':
-                return <Badge className="bg-blue-500/10 text-blue-600 border-blue-200/50 px-3 py-1 rounded-full text-[10px] font-bold animate-pulse">Running</Badge>;
+                return <Badge className="bg-primary/10 text-primary border-primary/20 px-3 py-1 rounded-full text-[10px] font-bold animate-pulse">Running</Badge>;
             case 'FAILED':
                 return <Badge className="bg-red-500/10 text-red-600 border-red-200/50 px-3 py-1 rounded-full text-[10px] font-bold">Failed</Badge>;
             default:
@@ -240,7 +240,7 @@ export default function ForecastResultView({ job }: ForecastResultViewProps) {
             <Card className="border-0 shadow-[0_2px_10px_rgb(0,0,0,0.02)] bg-white rounded-xl overflow-hidden">
                 <CardHeader className="bg-slate-50/50 border-b border-border/50 px-4 py-2">
                     <CardTitle className="text-lg font-bold text-slate-700 flex items-center gap-2">
-                        <LineChartIcon className="w-5 h-5 text-blue-600" />
+                        <LineChartIcon className="w-5 h-5 text-primary" />
                         Performance & Forecast
                     </CardTitle>
                 </CardHeader>
@@ -260,7 +260,7 @@ export default function ForecastResultView({ job }: ForecastResultViewProps) {
             <Card className="border-0 shadow-[0_2px_10px_rgb(0,0,0,0.02)] bg-white rounded-xl overflow-hidden">
                 <CardHeader className="bg-slate-50/50 border-b border-border/50 px-4 py-2">
                     <CardTitle className="text-base font-bold text-slate-700 flex items-center gap-2">
-                        <Settings2 className="w-4 h-4 text-blue-600" />
+                        <Settings2 className="w-4 h-4 text-primary" />
                         Training Configuration
                     </CardTitle>
                 </CardHeader>
@@ -301,7 +301,7 @@ export default function ForecastResultView({ job }: ForecastResultViewProps) {
                 <Card className="border-0 shadow-[0_2px_10px_rgb(0,0,0,0.02)] bg-white rounded-xl overflow-hidden h-full">
                     <CardHeader className="bg-slate-50/50 border-b border-border/50 px-4 py-2">
                         <CardTitle className="text-base font-bold text-slate-700 flex items-center gap-2">
-                            <Target className="w-4 h-4 text-blue-600" />
+                            <Target className="w-4 h-4 text-primary" />
                             Evaluation Metrics
                         </CardTitle>
                     </CardHeader>
@@ -316,7 +316,7 @@ export default function ForecastResultView({ job }: ForecastResultViewProps) {
                                 </thead>
                                 <tbody className="divide-y divide-slate-100">
                                     {[
-                                        { label: 'Test MAPE', value: job.result_data?.test_mape, unit: '%', desc: 'Mean Absolute Percentage Error - Lower is better', color: 'text-blue-600' },
+                                        { label: 'Test MAPE', value: job.result_data?.test_mape, unit: '%', desc: 'Mean Absolute Percentage Error - Lower is better', color: 'text-primary' },
                                         { label: 'Test RMSE', value: job.result_data?.test_rmse, unit: '', desc: 'Root Mean Squared Error - Lower is better', color: 'text-slate-900' },
                                         { label: 'Test MAE', value: job.result_data?.test_mae, unit: '', desc: 'Mean Absolute Error - Lower is better', color: 'text-slate-900' },
                                         { label: 'R² Score', value: job.result_data?.test_r2, unit: '', desc: 'Coefficient of Determination - Higher is better', color: 'text-emerald-600' },
@@ -325,13 +325,13 @@ export default function ForecastResultView({ job }: ForecastResultViewProps) {
                                         { label: 'Test Samples', value: job.result_data?.test_samples, unit: '', desc: 'Number of samples used for testing', color: 'text-slate-900' },
                                         { label: 'Horizon', value: job.result_data?.forecast_days || '30', unit: ' d', desc: 'Number of days forecasted into the future', color: 'text-emerald-600' }
                                     ].map((metric, idx) => (
-                                        <tr key={idx} className="hover:bg-slate-50/50 transition-colors">
+                                        <tr key={idx} className="hover:bg-accent transition-colors">
                                             <td className="px-4 py-1.5 text-[11px] font-semibold text-slate-700 flex items-center gap-1.5">
                                                 {metric.label}
                                                 <TooltipProvider>
                                                     <Tooltip delayDuration={0}>
                                                         <TooltipTrigger>
-                                                            <Info className="w-3 h-3 text-slate-400 hover:text-blue-500 transition-colors" />
+                                                            <Info className="w-3 h-3 text-slate-400 hover:text-primary transition-colors" />
                                                         </TooltipTrigger>
                                                         <TooltipContent>
                                                             <p className="text-[10px]">{metric.desc}</p>
@@ -354,7 +354,7 @@ export default function ForecastResultView({ job }: ForecastResultViewProps) {
                 <Card className="border-0 shadow-[0_2px_10px_rgb(0,0,0,0.02)] bg-white rounded-xl overflow-hidden h-full">
                     <CardHeader className="bg-slate-50/30 border-b border-border/50 px-4 py-2">
                         <CardTitle className="text-base font-bold text-slate-700 flex items-center gap-2">
-                            <Database className="w-4 h-4 text-blue-600" />
+                            <Database className="w-4 h-4 text-primary" />
                             Forecast Points
                         </CardTitle>
                     </CardHeader>
@@ -371,11 +371,11 @@ export default function ForecastResultView({ job }: ForecastResultViewProps) {
                                 <tbody className="divide-y divide-slate-100">
                                     {job.future_forecasts && job.future_forecasts.length > 0 ? (
                                         job.future_forecasts.map((point, idx) => (
-                                            <tr key={idx} className="hover:bg-slate-50/50 transition-colors">
+                                            <tr key={idx} className="hover:bg-accent transition-colors">
                                                 <td className="px-4 py-1.5 text-[11px] font-medium text-slate-700">
                                                     {new Date(point.date).toLocaleDateString(undefined, { month: 'short', day: 'numeric' })}
                                                 </td>
-                                                <td className="px-4 py-1.5 text-[11px] font-bold text-blue-600 tabular-nums">
+                                                <td className="px-4 py-1.5 text-[11px] font-bold text-primary tabular-nums">
                                                     {formatCurrency(point.price)}
                                                 </td>
                                                 <td className="px-4 py-1.5 text-[10px] text-slate-50 text-right tabular-nums">

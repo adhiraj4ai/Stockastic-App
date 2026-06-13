@@ -15,6 +15,7 @@ import re
 
 from ..models import DataUploadLog, DailyStockPrice, DailyFloorsheet
 from ..serializers import DailyStockPriceSerializer
+from stocks.services.ingest_validation import validate_price_rows
 
 class PipelineViewSet(viewsets.ViewSet):
     """
@@ -137,6 +138,10 @@ class PipelineViewSet(viewsets.ViewSet):
                 prog_match = re.search(r"Processed (?:symbol )?(\d+)/\d+", line_str)
                 if prog_match: records_found = max(records_found, int(prog_match.group(1)))
 
+                # API ingest: Total records saved: 123
+                api_match = re.search(r"Total records saved: (\d+)", line_str)
+                if api_match: records_found = int(api_match.group(1))
+
                 yield f"data: {json.dumps({'type': 'log', 'message': line_str})}\n\n"
             
             process.wait()
@@ -186,6 +191,18 @@ class PipelineViewSet(viewsets.ViewSet):
     def trigger_evaluation_stream(self, request):
         log_entry = DataUploadLog.objects.create(file_name='Signal Evaluation', upload_type='EVALUATION', status='PENDING')
         return self._run_manage_command_stream(['evaluate_signals'], log_entry)
+
+    @action(detail=False, methods=['get'])
+    def ingest_market_data_stream(self, request):
+        datasets = request.query_params.get('datasets', 'prices,floorsheet,summary,companies,indices')
+        date_str = request.query_params.get('date')
+        log_entry = DataUploadLog.objects.create(
+            file_name=f'NepseAPI Ingest ({datasets})', upload_type='API_INGEST', status='PENDING'
+        )
+        args = ['ingest_market_data', '--datasets', datasets]
+        if date_str:
+            args += ['--date', date_str]
+        return self._run_manage_command_stream(args, log_entry)
 
     @action(detail=False, methods=['post'])
     def upload_floorsheet(self, request):
@@ -288,10 +305,18 @@ class PipelineViewSet(viewsets.ViewSet):
                     weeks_52_low=p(nrow.get('52 Weeks Low') or nrow.get('weeks_52_low')),
                 ))
             
-            DailyStockPrice.objects.bulk_create(items, ignore_conflicts=True)
-            log.status, log.records_count = 'SUCCESS', len(items)
+            valid, rejected = validate_price_rows(items)
+            DailyStockPrice.objects.bulk_create(valid, ignore_conflicts=True)
+            log.status, log.records_count = 'SUCCESS', len(valid)
+            if rejected:
+                log.error_message = f"rejected {len(rejected)}: " + "; ".join(
+                    f"{t} ({r})" for t, r in rejected[:20]
+                )
             log.save()
-            return Response({'message': f'Successfully loaded {len(items)} price records'})
+            return Response({
+                'message': f'Loaded {len(valid)} price records',
+                'rejected': [{'ticker': t, 'reason': r} for t, r in rejected],
+            })
         except Exception as e:
             if 'log' in locals(): log.status, log.error_message = 'FAILED', str(e); log.save()
             return Response({'error': str(e)}, status=500)
@@ -348,10 +373,18 @@ class PipelineViewSet(viewsets.ViewSet):
                     weeks_52_low=p(nrow.get('52 Weeks Low') or nrow.get('weeks_52_low')),
                 ))
             
-            DailyStockPrice.objects.bulk_create(items, ignore_conflicts=True)
-            log.status, log.records_count = 'SUCCESS', len(items)
+            valid, rejected = validate_price_rows(items)
+            DailyStockPrice.objects.bulk_create(valid, ignore_conflicts=True)
+            log.status, log.records_count = 'SUCCESS', len(valid)
+            if rejected:
+                log.error_message = f"rejected {len(rejected)}: " + "; ".join(
+                    f"{t} ({r})" for t, r in rejected[:20]
+                )
             log.save()
-            return Response({'message': f'Successfully synced {len(items)} github price records'})
+            return Response({
+                'message': f'Synced {len(valid)} github price records',
+                'rejected': [{'ticker': t, 'reason': r} for t, r in rejected],
+            })
         except Exception as e:
             if 'log' in locals(): log.status, log.error_message = 'FAILED', str(e); log.save()
             return Response({'error': str(e)}, status=500)

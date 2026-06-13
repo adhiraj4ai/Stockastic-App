@@ -447,7 +447,7 @@ export function FullFeaturedChart({ symbol, crossoverDate, crossoverPrice, signa
         return (
             <div className="w-full h-full flex items-center justify-center bg-white dark:bg-card">
                 <div className="flex flex-col items-center gap-3">
-                    <Loader2 className="w-10 h-10 text-blue-500 animate-spin" />
+                    <Loader2 className="w-10 h-10 text-primary animate-spin" />
                     <div className="text-center">
                         <p className="text-sm font-semibold text-slate-700 dark:text-slate-200">Loading advanced charts</p>
                         <p className="text-xs text-slate-400 dark:text-slate-500 mt-1">Fetching OHLC data from local source...</p>
@@ -494,7 +494,7 @@ export function FullFeaturedChart({ symbol, crossoverDate, crossoverPrice, signa
                     {crossoverDate && crossoverPrice && (
                         <div className="flex items-center gap-2 text-xs">
                             <span className="text-slate-400 dark:text-slate-500">Crossover:</span>
-                            <span className="font-mono font-semibold text-blue-600 dark:text-blue-400">{crossoverDate}</span>
+                            <span className="font-mono font-semibold text-primary">{crossoverDate}</span>
                             <span className="text-slate-300 dark:text-slate-700">@</span>
                             <span className="font-mono font-semibold text-slate-700 dark:text-slate-300">Rs. {crossoverPrice.toLocaleString()}</span>
                         </div>
@@ -511,8 +511,8 @@ export function FullFeaturedChart({ symbol, crossoverDate, crossoverPrice, signa
                                 className={cn(
                                     "px-2.5 py-1 text-xs font-bold rounded transition-all",
                                     timeframe === tf.id
-                                        ? "bg-slate-900 dark:bg-slate-100 text-white dark:text-slate-900 shadow-sm"
-                                        : "text-slate-500 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800"
+                                        ? "bg-primary text-primary-foreground shadow-sm"
+                                        : "text-slate-500 dark:text-slate-400 hover:bg-accent"
                                 )}
                             >
                                 {tf.label}
@@ -524,12 +524,12 @@ export function FullFeaturedChart({ symbol, crossoverDate, crossoverPrice, signa
                     <div className="relative">
                         <button
                             onClick={() => setIndicatorPanelOpen(!indicatorPanelOpen)}
-                            className="flex items-center gap-2 px-3 py-1 text-xs font-semibold text-slate-600 dark:text-slate-300 bg-white dark:bg-card border border-slate-200 dark:border-slate-800 rounded-lg hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors"
+                            className="flex items-center gap-2 px-3 py-1 text-xs font-semibold text-slate-600 dark:text-slate-300 bg-white dark:bg-card border border-slate-200 dark:border-slate-800 rounded-lg hover:bg-accent transition-colors"
                         >
                             <Layers size={14} />
                             Indicators
                             {activeIndicators.length > 0 && (
-                                <span className="bg-blue-100 dark:bg-blue-900 text-blue-700 dark:text-blue-300 text-[10px] font-bold px-1.5 py-0.5 rounded-full">
+                                <span className="bg-primary/10 text-primary text-[10px] font-bold px-1.5 py-0.5 rounded-full">
                                     {activeIndicators.length}
                                 </span>
                             )}
@@ -540,7 +540,7 @@ export function FullFeaturedChart({ symbol, crossoverDate, crossoverPrice, signa
                             <div className="absolute right-0 top-full mt-2 w-80 bg-white dark:bg-card border border-slate-200 dark:border-slate-800 rounded-xl shadow-xl z-50 overflow-hidden">
                                 <div className="p-3 border-b border-border dark:border-slate-800 bg-slate-50 dark:bg-slate-800 flex items-center justify-between">
                                     <span className="text-xs font-bold text-slate-700 dark:text-slate-200">Technical Indicators</span>
-                                    <button onClick={() => setIndicatorPanelOpen(false)} className="text-slate-400 dark:text-slate-500 hover:text-slate-600 dark:hover:text-slate-300">
+                                    <button onClick={() => setIndicatorPanelOpen(false)} className="text-slate-400 dark:text-slate-500 hover:text-accent-foreground">
                                         <X size={14} />
                                     </button>
                                 </div>
@@ -561,8 +561,8 @@ export function FullFeaturedChart({ symbol, crossoverDate, crossoverPrice, signa
                                                                     className={cn(
                                                                         "text-[10px] font-bold px-2 py-0.5 rounded transition-colors",
                                                                         activeIndicators.includes(`${ind.id}-${p}`)
-                                                                            ? "bg-blue-500 text-white"
-                                                                            : "bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400 hover:bg-slate-200 dark:hover:bg-slate-700"
+                                                                            ? "bg-primary text-primary-foreground"
+                                                                            : "bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400 hover:bg-accent hover:text-accent-foreground"
                                                                     )}
                                                                 >
                                                                     {p}
@@ -586,8 +586,8 @@ export function FullFeaturedChart({ symbol, crossoverDate, crossoverPrice, signa
                                                     className={cn(
                                                         "w-full flex items-center justify-between px-2 py-1.5 rounded-md transition-colors text-left",
                                                         activeIndicators.includes(ind.id)
-                                                            ? "bg-blue-50 text-blue-700"
-                                                            : "hover:bg-slate-50 text-slate-600"
+                                                            ? "bg-primary/10 text-primary"
+                                                            : "hover:bg-accent text-slate-600"
                                                     )}
                                                 >
                                                     <span className="text-xs font-medium">{ind.name}</span>
@@ -608,8 +608,8 @@ export function FullFeaturedChart({ symbol, crossoverDate, crossoverPrice, signa
                                                     className={cn(
                                                         "w-full flex items-center justify-between px-2 py-1.5 rounded-md transition-colors text-left",
                                                         activeIndicators.includes(ind.id)
-                                                            ? "bg-blue-50 text-blue-700"
-                                                            : "hover:bg-slate-50 text-slate-600"
+                                                            ? "bg-primary/10 text-primary"
+                                                            : "hover:bg-accent text-slate-600"
                                                     )}
                                                 >
                                                     <span className="text-xs font-medium">{ind.name}</span>

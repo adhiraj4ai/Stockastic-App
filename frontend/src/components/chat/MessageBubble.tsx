@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useRef, useEffect } from 'react';
-import { ChevronRight, Brain, CheckCircle2, XCircle, Loader2, Wrench } from 'lucide-react';
+import { ChevronRight, Brain, CheckCircle2, XCircle, Loader2, Wrench, Bookmark } from 'lucide-react';
 import { useWorkbench } from './WorkbenchContext';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
@@ -78,7 +78,15 @@ const MarkdownComponents = {
     td: ({ children }: any) => <td className="px-3 py-2">{children}</td>,
 };
 
-export function MessageBubble({ message }: { message: ChatMessage }) {
+export function MessageBubble({
+    message,
+    onBookmark,
+    bookmarked = false,
+}: {
+    message: ChatMessage;
+    onBookmark?: (messageId: string) => void;
+    bookmarked?: boolean;
+}) {
     if (message.role === 'user') {
         return (
             <div className="flex justify-end">
@@ -90,7 +98,43 @@ export function MessageBubble({ message }: { message: ChatMessage }) {
             </div>
         );
     }
-    return <AssistantBubble blocks={message.blocks || []} />;
+
+    // Use the persisted server id once known; a still-streaming message keeps its
+    // temp id and stays non-bookmarkable until the `done` frame supplies serverId.
+    const bookmarkId = message.serverId ?? message.id;
+    const canBookmark = !!onBookmark && !bookmarkId.startsWith('temp-');
+
+    return (
+        <div className="group">
+            <AssistantBubble blocks={message.blocks || []} />
+            {canBookmark && (
+                <div
+                    className={cn(
+                        'mt-1 transition-opacity',
+                        bookmarked
+                            ? 'opacity-100'
+                            : 'opacity-60 group-hover:opacity-100 focus-within:opacity-100',
+                    )}
+                >
+                    <button
+                        type="button"
+                        onClick={() => !bookmarked && onBookmark!(bookmarkId)}
+                        disabled={bookmarked}
+                        title={bookmarked ? 'Saved to bookmarks' : 'Bookmark this answer'}
+                        className={cn(
+                            'inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[11px] font-medium transition-colors',
+                            bookmarked
+                                ? 'cursor-default text-emerald-500'
+                                : 'text-muted-foreground hover:text-emerald-500 hover:bg-accent',
+                        )}
+                    >
+                        <Bookmark size={12} className={bookmarked ? 'fill-current' : ''} />
+                        {bookmarked ? 'Bookmarked' : 'Bookmark'}
+                    </button>
+                </div>
+            )}
+        </div>
+    );
 }
 
 // ─── Timeline types ────────────────────────────────────────────────────────────

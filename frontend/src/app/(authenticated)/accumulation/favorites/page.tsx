@@ -94,8 +94,8 @@ export default function FavoritesPage() {
                                     className={cn(
                                         "px-4 py-1.5 rounded-lg text-xs font-semibold transition-all duration-300 tracking-tighter whitespace-nowrap",
                                         range === t.value
-                                            ? "bg-slate-900 dark:bg-indigo-600 text-white shadow-lg"
-                                            : "text-slate-400 hover:text-slate-600 dark:hover:text-slate-200"
+                                            ? "bg-primary/10 text-primary border border-primary/30"
+                                            : "text-slate-400 hover:bg-accent hover:text-accent-foreground"
                                     )}
                                 >
                                     {t.label}
@@ -103,8 +103,8 @@ export default function FavoritesPage() {
                             ))}
                         </div>
                         <div className="h-4 w-px bg-slate-200 dark:bg-white/10 hidden md:block" />
-                        <div className="flex items-center gap-2 bg-muted/40 dark:from-slate-800 dark:to-indigo-900/30 p-1.5 rounded-xl border border-blue-100 dark:border-indigo-500/20 shadow-sm w-full md:w-auto transition-all hover:shadow-md">
-                            <span className="text-[10px] font-semibold text-blue-600 dark:text-indigo-300 px-2 tracking-wider uppercase">Broker</span>
+                        <div className="flex items-center gap-2 bg-muted/40 p-1.5 rounded-xl border border-border shadow-sm w-full md:w-auto transition-all hover:shadow-md">
+                            <span className="text-[10px] font-semibold text-primary px-2 tracking-wider uppercase">Broker</span>
                             <select
                                 value={selectedBroker}
                                 onChange={(e) => {
@@ -120,7 +120,7 @@ export default function FavoritesPage() {
                         </div>
                     </div>
                     <div className="relative group max-w-md w-full xl:w-80">
-                        <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 dark:text-slate-500 group-focus-within:text-indigo-500 dark:group-focus-within:text-indigo-400 transition-colors" />
+                        <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 dark:text-slate-500 group-focus-within:text-primary transition-colors" />
                         <Input
                             placeholder="Find a stock..."
                             value={search}
@@ -128,7 +128,7 @@ export default function FavoritesPage() {
                                 setSearch(e.target.value);
                                 setPage(1);
                             }}
-                            className="pl-11 pr-4 h-11 w-full rounded-xl bg-white dark:bg-card border-slate-200 dark:border-border shadow-sm focus:bg-white dark:focus:bg-slate-900 hover:border-slate-300 dark:hover:border-white/20 focus:ring-2 focus:ring-indigo-500/30 dark:focus:ring-indigo-500/40 transition-all font-bold text-sm"
+                            className="pl-11 pr-4 h-11 w-full rounded-xl bg-white dark:bg-card border-slate-200 dark:border-border shadow-sm focus:bg-white dark:focus:bg-slate-900 hover:border-slate-300 dark:hover:border-white/20 focus-visible:ring-[3px] focus-visible:ring-ring/50 focus-visible:border-ring transition-all font-bold text-sm"
                         />
                     </div>
                 </div>
@@ -138,9 +138,9 @@ export default function FavoritesPage() {
                 ) : !selectedBroker ? (
                     <div className="py-32 px-4 text-center flex flex-col items-center justify-center min-h-[400px]">
                         <div className="relative mb-6">
-                            <div className="absolute inset-0 bg-blue-500/20 dark:bg-indigo-500/20 blur-2xl rounded-full" />
-                            <div className="w-24 h-24 bg-muted/40 dark:from-slate-800 dark:to-indigo-900/50 border border-white/50 dark:border-border shadow-xl rounded-xl flex items-center justify-center relative transform -rotate-6 hover:rotate-0 transition-all duration-500 cursor-default">
-                                <Activity className="w-10 h-10 text-blue-500 dark:text-indigo-400" />
+                            <div className="absolute inset-0 bg-primary/20 blur-2xl rounded-full" />
+                            <div className="w-24 h-24 bg-muted/40 border border-white/50 dark:border-border shadow-xl rounded-xl flex items-center justify-center relative transform -rotate-6 hover:rotate-0 transition-all duration-500 cursor-default">
+                                <Activity className="w-10 h-10 text-primary" />
                             </div>
                         </div>
                         <h3 className="text-xl font-semibold text-slate-800 dark:text-white mb-2 tracking-tight">Broker Analysis</h3>
@@ -151,14 +151,14 @@ export default function FavoritesPage() {
                         <div className="overflow-x-auto no-scrollbar">
                             <table className="w-full border-collapse">
                                 <thead>
-                                    <tr className="bg-gray-50/50 dark:bg-slate-800/30 hover:bg-gray-50/50 dark:hover:bg-slate-800/30 border-b border-gray-100 dark:border-slate-800 h-14 transition-all">
+                                    <tr className="bg-gray-50/50 dark:bg-slate-800/30 border-b border-gray-100 dark:border-slate-800 h-14 transition-all hover:bg-transparent">
                                         <TableHead className="px-6 text-left sticky top-0 z-30 bg-gray-50/80 dark:bg-card/80 shadow-sm font-bold text-gray-900 dark:text-slate-100 border-b border-gray-100 dark:border-slate-800"> Symbol </TableHead>
                                         <TableHead className="text-right px-6 sticky top-0 z-30 bg-gray-50/80 dark:bg-card/80 shadow-sm font-bold text-gray-900 dark:text-slate-100 text-[11px] uppercase tracking-wider border-b border-gray-100 dark:border-slate-800"> RSI </TableHead>
                                         <TableHead className="text-right px-6 sticky top-0 z-30 bg-gray-50/80 dark:bg-card/80 shadow-sm font-bold text-emerald-600 dark:text-emerald-400 text-[11px] uppercase tracking-wider border-b border-gray-100 dark:border-slate-800"> Buy Qty </TableHead>
                                         <TableHead className="text-right px-6 sticky top-0 z-30 bg-gray-50/80 dark:bg-card/80 shadow-sm font-bold text-rose-600 dark:text-rose-400 text-[11px] uppercase tracking-wider border-b border-gray-100 dark:border-slate-800"> Sell Qty </TableHead>
-                                        <TableHead className="text-right px-6 sticky top-0 z-30 bg-gray-50/80 dark:bg-card/80 shadow-sm font-bold text-blue-600 dark:text-indigo-400 text-[11px] uppercase tracking-wider border-b border-gray-100 dark:border-slate-800"> Net Acc. ({range}) </TableHead>
+                                        <TableHead className="text-right px-6 sticky top-0 z-30 bg-gray-50/80 dark:bg-card/80 shadow-sm font-bold text-primary text-[11px] uppercase tracking-wider border-b border-gray-100 dark:border-slate-800"> Net Acc. ({range}) </TableHead>
                                         <TableHead className="text-right px-6 sticky top-0 z-30 bg-gray-50/80 dark:bg-card/80 shadow-sm font-bold text-gray-900 dark:text-slate-100 text-[11px] uppercase tracking-wider border-b border-gray-100 dark:border-slate-800"> Holding </TableHead>
-                                        <TableHead className="text-right px-6 sticky top-0 z-30 bg-gray-50/80 dark:bg-card/80 shadow-sm font-bold text-orange-500 dark:text-orange-400 text-[11px] uppercase tracking-wider border-b border-gray-100 dark:border-slate-800"> WAC </TableHead>
+                                        <TableHead className="text-right px-6 sticky top-0 z-30 bg-gray-50/80 dark:bg-card/80 shadow-sm font-bold text-primary text-[11px] uppercase tracking-wider border-b border-gray-100 dark:border-slate-800"> WAC </TableHead>
                                         <TableHead className="text-right px-6 sticky top-0 z-30 bg-gray-50/80 dark:bg-card/80 shadow-sm font-bold text-gray-900 dark:text-slate-100 text-[11px] uppercase tracking-wider border-b border-gray-100 dark:border-slate-800"> LTP </TableHead>
                                         <TableHead className="text-right px-6 sticky top-0 z-30 bg-gray-50/80 dark:bg-card/80 shadow-sm font-bold text-gray-900 dark:text-slate-100 text-[11px] uppercase tracking-wider border-b border-gray-100 dark:border-slate-800"> ROC </TableHead>
                                         <TableHead className="w-[80px] px-6 sticky top-0 z-30 bg-gray-50/80 dark:bg-card/80 shadow-sm border-b border-gray-100 dark:border-slate-800"></TableHead>
@@ -176,14 +176,14 @@ export default function FavoritesPage() {
                                             <TableRow 
                                                 key={idx} 
                                                 className={cn(
-                                                    "group border-b border-gray-50 dark:border-slate-800 hover:bg-blue-50/30 dark:hover:bg-slate-800/30 last:border-0 transition-all duration-200 cursor-pointer border-l-4 hover:shadow-lg hover:scale-[1.01] hover:-translate-y-0.5",
-                                                    fav.qty_accumulated > 0 ? "border-l-emerald-500/50 hover:border-l-emerald-500" : fav.qty_accumulated < 0 ? "border-l-rose-500/50 hover:border-l-rose-500" : "border-l-transparent hover:border-l-blue-400/50"
+                                                    "group border-b border-gray-50 dark:border-slate-800 hover:bg-accent hover:text-accent-foreground last:border-0 transition-all duration-200 cursor-pointer border-l-4 hover:shadow-lg hover:scale-[1.01] hover:-translate-y-0.5",
+                                                    fav.qty_accumulated > 0 ? "border-l-emerald-500/50 hover:border-l-emerald-500" : fav.qty_accumulated < 0 ? "border-l-rose-500/50 hover:border-l-rose-500" : "border-l-transparent hover:border-l-primary/50"
                                                 )}
                                             >
                                                 <TableCell className="px-6 py-4">
                                                     <div className="flex flex-col">
                                                         <Link href={`/ticker/${fav.symbol}`}>
-                                                            <span className="text-base font-medium text-slate-900 dark:text-indigo-400 leading-none hover:text-blue-600 dark:hover:text-white transition-colors cursor-pointer">{fav.symbol}</span>
+                                                            <span className="text-base font-medium text-slate-900 dark:text-slate-100 leading-none hover:text-primary transition-colors cursor-pointer">{fav.symbol}</span>
                                                         </Link>
                                                         <span className="text-[10px] font-medium lg:hidden text-slate-400 mt-1 tracking-tighter truncate max-w-[80px]">{fav.name}</span>
                                                     </div>
@@ -219,7 +219,7 @@ export default function FavoritesPage() {
                                                 <TableCell className="text-right px-6 font-mono font-medium text-slate-800 dark:text-slate-200">
                                                     {formatNepaliNumber(fav.current_net)}
                                                 </TableCell>
-                                                <TableCell className="text-right px-6 font-mono font-medium text-orange-600 dark:text-orange-400">
+                                                <TableCell className="text-right px-6 font-mono font-medium text-primary">
                                                     {formatRupees(fav.wac, 1)}
                                                 </TableCell>
                                                 <TableCell className="text-right px-6 font-mono font-medium text-slate-800 dark:text-slate-200">
@@ -240,7 +240,7 @@ export default function FavoritesPage() {
                                                         <Button 
                                                             variant="ghost" 
                                                             size="icon" 
-                                                            className="h-9 w-9 bg-slate-100 dark:bg-white/[0.05] rounded-xl hover:bg-blue-600 hover:text-white dark:hover:bg-indigo-600 transition-all duration-300 opacity-0 group-hover:opacity-100"
+                                                            className="h-9 w-9 bg-slate-100 dark:bg-white/[0.05] rounded-xl hover:bg-primary hover:text-primary-foreground transition-all duration-300 opacity-0 group-hover:opacity-100"
                                                         >
                                                             <History className="w-4 h-4" />
                                                         </Button>
@@ -284,7 +284,7 @@ export default function FavoritesPage() {
                                             size="sm"
                                             onClick={() => setPage(p => Math.max(1, p - 1))}
                                             disabled={page === 1}
-                                            className="h-9 px-4 rounded-xl font-semibold text-[10px] tracking-wider border-slate-200 dark:border-border hover:bg-slate-100 dark:hover:bg-white/5 transition-all"
+                                            className="h-9 px-4 rounded-xl font-semibold text-[10px] tracking-wider border-slate-200 dark:border-border hover:bg-accent hover:text-accent-foreground transition-all"
                                         >
                                             Previous
                                         </Button>
@@ -293,7 +293,7 @@ export default function FavoritesPage() {
                                             size="sm"
                                             onClick={() => setPage(p => Math.min(Math.ceil(filteredFavorites.length / pageSize), p + 1))}
                                             disabled={page * pageSize >= filteredFavorites.length}
-                                            className="h-9 px-4 rounded-xl font-semibold text-[10px] uppercase tracking-wider border-slate-200 dark:border-border hover:bg-slate-100 dark:hover:bg-white/5 transition-all"
+                                            className="h-9 px-4 rounded-xl font-semibold text-[10px] uppercase tracking-wider border-slate-200 dark:border-border hover:bg-accent hover:text-accent-foreground transition-all"
                                         >
                                             Next
                                         </Button>

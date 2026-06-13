@@ -391,41 +391,39 @@ export default function SmartMoneyPage() {
 
     const colorMap = {
         amber: { icon: 'bg-amber-100 dark:bg-amber-900/30 text-amber-600 dark:text-amber-400', val: 'text-slate-800 dark:text-slate-100' },
-        indigo: { icon: 'bg-indigo-100 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-400', val: 'text-slate-800 dark:text-slate-100' },
+        indigo: { icon: 'bg-primary/10 text-primary', val: 'text-slate-800 dark:text-slate-100' },
         emerald: { icon: 'bg-emerald-100 dark:bg-emerald-900/30 text-emerald-600 dark:text-emerald-400', val: 'text-slate-800 dark:text-slate-100' },
-        violet: { icon: 'bg-violet-100 dark:bg-violet-900/30 text-violet-600 dark:text-violet-400', val: 'text-slate-800 dark:text-slate-100' },
+        violet: { icon: 'bg-primary/10 text-primary', val: 'text-slate-800 dark:text-slate-100' },
     } as const;
 
     // ─── Render ───────────────────────────────────────────────────────────────
 
     return (
-        <div className="space-y-6 max-w-[1400px] mx-auto px-1">
+        <div className="space-y-6 px-1">
 
-            {/* ── Header ─────────────────────────────────────────────────────── */}
-            <div className="flex flex-col sm:flex-row sm:items-start gap-4 justify-between">
-                <div className="space-y-1">
-                    <div className="flex items-center gap-2">
-                        <Brain className="w-4 h-4 text-amber-500" />
-                        <span className="text-[10px] font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400">
-                            Institutional Intelligence · {range} Window
-                        </span>
-                    </div>
-                    <p className="text-xs text-slate-400 max-w-lg">
-                        Track the top institutional brokers, their whale-sized accumulations, and which stocks are attracting the most smart money.
-                    </p>
-                </div>
-                <div className="flex items-center gap-1.5 shrink-0 flex-wrap">
+            {/* ═══ Global Controls Bar ════════════════════════════════════════ */}
+            <div className="bg-white dark:bg-card rounded-2xl border border-slate-200 dark:border-border shadow-lg px-4 py-3 flex flex-col sm:flex-row items-stretch sm:items-center gap-3 flex-wrap">
+                <div className="bg-slate-50 dark:bg-card p-1 rounded-xl border border-border dark:border-border flex overflow-x-auto no-scrollbar shrink-0">
                     {RANGES.map(r => (
                         <button key={r} onClick={() => setRange(r)}
                             className={cn(
-                                'px-3 py-1.5 text-[11px] font-semibold rounded-lg border transition-all',
+                                'px-3 py-1.5 rounded-lg text-xs font-semibold transition-all duration-200 tracking-tight whitespace-nowrap',
                                 range === r
-                                    ? 'bg-slate-800 dark:bg-slate-100 border-slate-800 dark:border-border text-white dark:text-slate-900 shadow-sm'
-                                    : 'border-slate-200 dark:border-slate-700 text-slate-500 dark:text-slate-400 hover:border-slate-400 dark:hover:border-slate-500',
+                                    ? 'bg-primary/10 text-primary border-primary/30'
+                                    : 'text-slate-400 hover:bg-accent hover:text-accent-foreground',
                             )}>
                             {r}
                         </button>
                     ))}
+                </div>
+
+                <div className="h-4 w-px bg-slate-200 dark:bg-white/10 hidden sm:block" />
+
+                <div className="flex items-center gap-2 min-w-0">
+                    <Brain className="w-4 h-4 text-amber-500 shrink-0" />
+                    <span className="text-xs font-medium text-slate-500 dark:text-slate-400 truncate">
+                        Top institutional brokers, whale-sized accumulations, and the stocks attracting the most smart money · {range} window
+                    </span>
                 </div>
             </div>
 
@@ -552,7 +550,7 @@ export default function SmartMoneyPage() {
                                             onClick={() => setSelectedId(isSelected ? null : broker.broker_id)}
                                             className={cn(
                                                 'p-3 rounded-xl border transition-all cursor-pointer group relative overflow-hidden',
-                                                isSelected ? `${style.bg} ${style.border} ring-1 ring-inset ring-current/20` : 'border-border dark:border-border hover:bg-slate-50 dark:hover:bg-white/[0.02]',
+                                                isSelected ? `${style.bg} ${style.border} ring-1 ring-inset ring-current/20` : 'border-border dark:border-border hover:bg-accent hover:text-accent-foreground',
                                             )}>
                                             <div className="flex items-center gap-2.5 mb-2 relative z-10">
                                                 <div className={cn('w-6 h-6 rounded-full flex items-center justify-center text-[10px] font-semibold shrink-0', style.badge)}>
@@ -577,7 +575,7 @@ export default function SmartMoneyPage() {
                                             </div>
                                             <Link href={`/broker/${broker.broker_id}`}
                                                 onClick={(e) => e.stopPropagation()}
-                                                className="absolute top-2 right-2 p-1 rounded-md opacity-0 group-hover:opacity-100 hover:bg-slate-200 dark:hover:bg-white/10 transition-all z-20">
+                                                className="absolute top-2 right-2 p-1 rounded-md opacity-0 group-hover:opacity-100 hover:bg-accent hover:text-accent-foreground transition-all z-20">
                                                 <ArrowUpRight className="w-3 h-3 text-slate-400" />
                                             </Link>
                                         </div>
@@ -669,7 +667,7 @@ export default function SmartMoneyPage() {
                                                             onClick={() => h.key && toggleSort(h.key)}
                                                             className={cn(
                                                                 'px-4 py-3 text-left font-medium text-slate-400 dark:text-slate-500 uppercase tracking-wider text-[10px]',
-                                                                h.key && 'cursor-pointer hover:text-amber-600 dark:hover:text-amber-400 select-none',
+                                                                h.key && 'cursor-pointer hover:text-primary select-none',
                                                             )}>
                                                             <span className="flex items-center gap-1">
                                                                 {h.label}
@@ -698,7 +696,7 @@ export default function SmartMoneyPage() {
                                                         )}>
                                                             <td className="px-4 py-3">
                                                                 <Link href={`/broker/${signal.broker_id}`}>
-                                                                    <span className="px-2 py-1 bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 rounded-lg font-medium border border-slate-200 dark:border-slate-700 hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors text-[10px]">
+                                                                    <span className="px-2 py-1 bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 rounded-lg font-medium border border-slate-200 dark:border-slate-700 hover:bg-accent hover:text-accent-foreground transition-colors text-[10px]">
                                                                         #{signal.broker_id}
                                                                     </span>
                                                                 </Link>
@@ -762,7 +760,7 @@ export default function SmartMoneyPage() {
                                                         </thead>
                                                         <tbody className="divide-y divide-slate-50 dark:divide-slate-800/60">
                                                             {filteredFlows.map((sf, idx) => (
-                                                                <tr key={sf.symbol} className="hover:bg-slate-50 dark:hover:bg-white/[0.02] transition-colors">
+                                                                <tr key={sf.symbol} className="hover:bg-accent hover:text-accent-foreground transition-colors">
                                                                     <td className="px-4 py-3 text-slate-400 font-bold tabular-nums">{idx + 1}</td>
                                                                     <td className="px-4 py-3">
                                                                         <Link href={`/ticker/${sf.symbol}`}>

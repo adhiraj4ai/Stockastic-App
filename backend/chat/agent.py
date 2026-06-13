@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import logging
 import os
+import re
 from datetime import date
 from pathlib import Path
 from typing import AsyncIterator
@@ -11,6 +12,7 @@ from typing import AsyncIterator
 log = logging.getLogger(__name__)
 
 import yaml
+from asgiref.sync import sync_to_async
 from claude_agent_sdk import ClaudeAgentOptions, ClaudeSDKClient
 
 from . import _user_context
@@ -23,11 +25,52 @@ _ORCHESTRATOR_SYSTEM: str = _ORCHESTRATOR_YAML["system"]
 _ORCHESTRATOR_USER_TEMPLATE: str = _ORCHESTRATOR_YAML.get("user", "{message}")
 
 
-def _format_prompt(user, message: str) -> str:
+def _safe_prompt_value(value, max_len: int = 64) -> str:
+    """Strip prompt-control characters from user-derived prompt values.
+
+    Removes any character that is not alphanumeric, underscore, space,
+    period, hyphen, or at-sign — reducing the prompt-injection surface for
+    values that flow into the system/user-turn template.  The message
+    content itself must NOT be altered (it is the user's free-form input).
+    """
+    return re.sub(r"[^A-Za-z0-9_ .\-@]", "", str(value or ""))[:max_len]
+
+
+def _build_saved_hint(user, message: str, limit: int = 3) -> str:
+    """Render a short, sanitized hint listing saved analyses related to `message`.
+
+    Reuses the same lexical matcher as the live composer hint. Empty string when
+    nothing matches.
+    """
+    from chat.services.saved_match import match_saved_analyses
+
+    matches = match_saved_analyses(user, message, limit=limit)
+    if not matches:
+        return ""
+    lines = []
+    for sa in matches:
+        label = _safe_prompt_value(sa.title, max_len=80)
+        one = _safe_prompt_value(sa.one_liner, max_len=120)
+        date_str = sa.created_at.date().isoformat()
+        series = f" [series: {_safe_prompt_value(sa.series_key, max_len=60)}]" if sa.series_key else ""
+        lines.append(f"- {label} ({date_str}): {one}{series}")
+    return "Saved analyses you may build on (use search_saved_analyses / get_saved_analysis):\n" + "\n".join(lines)
+
+
+def _format_prompt(user, message: str, memory: list[str] | None = None,
+                   saved_hint: str = "") -> str:
     """Render the orchestrator user-turn template with live context."""
+    safe_username = _safe_prompt_value(getattr(user, "username", ""))
+    memory_block = (
+        "Known about this user:\n" + "\n".join(f"- {f}" for f in memory)
+        if memory else "(nothing recorded about this user yet)"
+    )
+    saved_block = saved_hint or "(no related saved analyses)"
     return _ORCHESTRATOR_USER_TEMPLATE.format(
         date=date.today().isoformat(),
-        username=getattr(user, "username", ""),
+        username=safe_username,
+        memory=memory_block,
+        saved_hint=saved_block,
         message=message,
     )
 
@@ -59,6 +102,7 @@ def _build_options(sdk_session_id: str = "") -> ClaudeAgentOptions:
         max_turns=16,
         thinking={"type": "adaptive"},
         effort="high",
+        include_partial_messages=True,  # token-level streaming via StreamEvent deltas
         env=_sdk_env(),
         resume=sdk_session_id or None,
     )
@@ -87,7 +131,22 @@ async def run_chat_session(user, sdk_session_id: str, prompt: str) -> AsyncItera
     fresh session so the user gets a response instead of an error.
     """
     _user_context.set_user(user)
-    formatted_prompt = _format_prompt(user, prompt)
+
+    @sync_to_async
+    def _fetch_memory():
+        from chat.models import UserMemory
+        return list(
+            UserMemory.objects.filter(user=user).values_list("content", flat=True)
+        )
+
+    memory = await _fetch_memory()
+
+    @sync_to_async
+    def _fetch_saved_hint():
+        return _build_saved_hint(user, prompt)
+
+    saved_hint = await _fetch_saved_hint()
+    formatted_prompt = _format_prompt(user, prompt, memory=memory, saved_hint=saved_hint)
 
     # Try with resumption first; fall back to a brand-new session if stale.
     session_ids = [sdk_session_id, ""] if sdk_session_id else [""]

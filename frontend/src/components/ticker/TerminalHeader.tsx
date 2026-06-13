@@ -37,14 +37,14 @@ export function TerminalHeader({
         <div className={cn(
             "sticky top-0 z-50 border-b glass-card-light dark:bg-card/95 rounded-none border-border dark:border-slate-800/50 py-3",
         )}>
-            <div className="max-w-[1700px] mx-auto px-8 flex items-center justify-center gap-6">
+            <div className="px-8 flex items-center justify-center gap-6">
                 {/* Unified Identity & Price Area */}
                 <div className="flex items-center gap-6">
                     {/* Symbol & Signal */}
                     <div className="flex items-center gap-3">
                         <h1 className={cn(
                             "font-bold tracking-tight tabular-nums text-3xl",
-                            signal === 'BUY' ? "text-blue-600" :
+                            signal === 'BUY' ? "text-primary" :
                                 signal === 'SELL' ? "text-rose-600" :
                                     "text-slate-900 dark:text-slate-100"
                         )}>
@@ -56,7 +56,7 @@ export function TerminalHeader({
                                 className={cn(
                                     "px-2 py-0.5 rounded text-[10px] font-bold border",
                                     signal === 'BUY'
-                                        ? "bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 border-blue-200 dark:border-blue-800"
+                                        ? "bg-primary/10 text-primary border-primary/30"
                                         : "bg-rose-50 dark:bg-rose-900/30 text-rose-600 dark:text-rose-400 border-rose-200 dark:border-rose-800"
                                 )}
                             >

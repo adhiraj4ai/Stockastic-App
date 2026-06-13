@@ -26,6 +26,7 @@ export function middleware(request: NextRequest) {
         '/screener',
         '/smart-money',
         '/paper-trading',
+        '/plan',
     ];
 
     // Auth pages that should redirect away if already logged in
@@ -74,5 +75,6 @@ export const config = {
         '/screener/:path*',
         '/smart-money/:path*',
         '/paper-trading/:path*',
+        '/plan/:path*',
     ],
 };

@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { X, Calculator, ShieldAlert, Calendar } from 'lucide-react';
-import axios from 'axios';
+import api from '@/lib/api';
 import { CompanySelect } from './CompanySelect';
 import { formatRupees } from '@/lib/formatters';
 import {
@@ -63,18 +63,12 @@ export default function TransactionModal({
     useEffect(() => {
         const checkUser = async () => {
             try {
-                const token = localStorage.getItem('access_token');
-                if (token) {
-                    const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
-                    const res = await axios.get(`${apiUrl}/api/users/me/`, {
-                        headers: { Authorization: `Bearer ${token}` }
-                    });
-                    if (res.data.username === 'ashmi') {
-                        setIsAshmi(true);
-                        // Auto-select first account ONLY if not explicitly provided by props
-                        if (accounts.length > 0 && !formData.account && !defaultAccount) {
-                            setFormData(prev => ({ ...prev, account: accounts[0].id.toString() }));
-                        }
+                const res = await api.get('/api/users/me/');
+                if (res.data.username === 'ashmi') {
+                    setIsAshmi(true);
+                    // Auto-select first account ONLY if not explicitly provided by props
+                    if (accounts.length > 0 && !formData.account && !defaultAccount) {
+                        setFormData(prev => ({ ...prev, account: accounts[0].id.toString() }));
                     }
                 }
             } catch (error) {
@@ -171,9 +165,6 @@ export default function TransactionModal({
         e.preventDefault();
         setLoading(true);
         try {
-            const token = localStorage.getItem('access_token');
-            const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
-
             const payload: any = {
                 ...formData,
                 transaction_type: activeTab,
@@ -186,13 +177,9 @@ export default function TransactionModal({
             }
 
             if (transactionToEdit) {
-                await axios.put(`${apiUrl}/api/stocks/transactions/${transactionToEdit.id}/`, payload, {
-                    headers: { Authorization: `Bearer ${token}` }
-                });
+                await api.put(`/api/stocks/transactions/${transactionToEdit.id}/`, payload);
             } else {
-                await axios.post(`${apiUrl}/api/stocks/transactions/`, payload, {
-                    headers: { Authorization: `Bearer ${token}` }
-                });
+                await api.post('/api/stocks/transactions/', payload);
             }
 
             onSuccess();
@@ -226,7 +213,7 @@ export default function TransactionModal({
                 {/* Header */}
                 <div className="flex justify-between items-center p-6 border-b border-gray-100 dark:border-slate-800">
                     <h2 className="text-xl font-bold text-gray-800 dark:text-slate-100">New Transaction</h2>
-                    <button onClick={onClose} className="p-1 rounded-full hover:bg-gray-100 dark:hover:bg-slate-800 transition-colors">
+                    <button onClick={onClose} className="p-1 rounded-full hover:bg-accent hover:text-accent-foreground transition-colors">
                         <X className="h-5 w-5 text-gray-500 dark:text-slate-400" />
                     </button>
                 </div>
@@ -249,8 +236,8 @@ export default function TransactionModal({
                                 className={`flex-1 py-3 px-4 min-w-[100px] text-sm font-medium transition-colors border-b-2 whitespace-nowrap tracking-tight ${activeTab === type
                                     ? type === 'BUY' || type === 'BUY_TO_COVER' ? 'border-green-500 text-green-600 dark:text-green-400 bg-green-50/50 dark:bg-green-900/20'
                                         : type === 'SELL' || type === 'SHORT_SELL' ? 'border-red-500 text-red-600 dark:text-red-400 bg-red-50/50 dark:bg-red-900/20'
-                                            : 'border-blue-500 text-blue-600 dark:text-blue-400 bg-blue-50/50 dark:bg-blue-900/20'
-                                    : 'border-transparent text-gray-500 dark:text-slate-400 hover:text-gray-700 dark:hover:text-slate-200 hover:bg-gray-100 dark:hover:bg-slate-800'
+                                            : 'border-primary text-primary bg-primary/10'
+                                    : 'border-transparent text-gray-500 dark:text-slate-400 hover:bg-accent hover:text-accent-foreground'
                                     }`}
                             >
                                 {type === 'BONUS' ? 'Bonus share' : type === 'DIVIDEND' ? 'Cash dividend' : type === 'SHORT_SELL' ? 'Short sell' : type === 'BUY_TO_COVER' ? 'Buy to cover' : type.charAt(0) + type.slice(1).toLowerCase()}
@@ -318,7 +305,7 @@ export default function TransactionModal({
                                     required
                                     min="1"
                                     placeholder="e.g. 100"
-                                    className="w-full px-4 py-2 bg-white dark:bg-card border border-gray-200 dark:border-slate-700 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition-all dark:text-slate-100 font-bold h-10"
+                                    className="w-full px-4 py-2 bg-white dark:bg-card border border-gray-200 dark:border-slate-700 rounded-lg focus-visible:ring-[3px] focus-visible:ring-ring/50 focus-visible:border-ring outline-none transition-all dark:text-slate-100 font-bold h-10"
                                     value={formData.quantity}
                                     onChange={(e) => setFormData({ ...formData, quantity: e.target.value })}
                                 />
@@ -334,7 +321,7 @@ export default function TransactionModal({
                                         required
                                         step="0.01"
                                         placeholder="0.00"
-                                        className="w-full pl-10 pr-4 py-2 bg-white dark:bg-card border border-gray-200 dark:border-slate-700 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition-all dark:text-slate-100 font-bold h-10"
+                                        className="w-full pl-10 pr-4 py-2 bg-white dark:bg-card border border-gray-200 dark:border-slate-700 rounded-lg focus-visible:ring-[3px] focus-visible:ring-ring/50 focus-visible:border-ring outline-none transition-all dark:text-slate-100 font-bold h-10"
                                         value={formData.rate}
                                         onChange={(e) => setFormData({ ...formData, rate: e.target.value })}
                                     />
@@ -403,7 +390,7 @@ export default function TransactionModal({
                         disabled={loading || accounts.length === 0}
                         className={`w-full py-3 rounded-lg font-bold text-white transition-transform active:scale-95 ${activeTab === 'BUY' || activeTab === 'BUY_TO_COVER' ? 'bg-green-600 hover:bg-green-700'
                             : activeTab === 'SELL' || activeTab === 'SHORT_SELL' ? 'bg-red-600 hover:bg-red-700'
-                                : 'bg-blue-600 hover:bg-blue-700'
+                                : 'bg-primary hover:bg-primary/90'
                             } ${loading ? 'opacity-70 cursor-not-allowed' : ''}`}
                     >
                         {loading ? 'Processing...' : `Confirm ${activeTab.replace(/_/g, ' ')}`}

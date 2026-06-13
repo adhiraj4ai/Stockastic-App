@@ -122,7 +122,7 @@ export function CreateTradePlanForm({ onClose, onCreated }: Props) {
               <select
                 value={accountId}
                 onChange={e => setAccountId(e.target.value)}
-                className="w-full bg-white dark:bg-card border border-slate-200 dark:border-slate-700 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/20"
+                className="w-full bg-white dark:bg-card border border-slate-200 dark:border-slate-700 rounded-lg px-3 py-2 text-sm focus:outline-none focus-visible:ring-[3px] focus-visible:ring-ring/50 focus-visible:border-ring"
               >
                 <option value="">No account</option>
                 {accounts.map(a => <option key={a.id} value={a.id}>{a.name}</option>)}
@@ -148,7 +148,7 @@ export function CreateTradePlanForm({ onClose, onCreated }: Props) {
               onChange={e => setThesis(e.target.value)}
               rows={2}
               placeholder="Why are you entering this trade?"
-              className="w-full bg-white dark:bg-card border border-slate-200 dark:border-slate-700 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/20 resize-none"
+              className="w-full bg-white dark:bg-card border border-slate-200 dark:border-slate-700 rounded-lg px-3 py-2 text-sm focus:outline-none focus-visible:ring-[3px] focus-visible:ring-ring/50 focus-visible:border-ring resize-none"
             />
           </div>
 

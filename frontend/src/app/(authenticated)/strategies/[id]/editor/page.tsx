@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react';
 import api from '@/lib/api';
 import { useRouter, useParams } from 'next/navigation';
 import dynamic from 'next/dynamic';
-import DashboardLayout from '@/components/DashboardLayout';
+import { WorkspaceShell } from '../../components/WorkspaceShell';
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
 import { Play, Save, Sun, Moon, AlertTriangle, XOctagon, ShieldAlert, Zap, Activity, RotateCcw } from 'lucide-react';
@@ -185,10 +185,7 @@ export default function EditStrategyPage() {
     if (loading) return <FullPageLoader />;
 
     return (
-        <DashboardLayout
-            showBack={true}
-            title={`Edit — ${strategy?.name || 'Strategy'}`}
-        >
+        <WorkspaceShell strategyId={String(strategyId)}>
             <div className="flex flex-col h-[calc(100vh-100px)] -mt-4">
 
                 {/* Published warning */}
@@ -259,7 +256,7 @@ export default function EditStrategyPage() {
                                         value={strategy?.name || ''}
                                         onChange={e => setStrategy(s => s ? { ...s, name: e.target.value } : s)}
                                         disabled={isPublished}
-                                        className="w-full h-9 px-3 text-xs rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-950 dark:text-slate-100 focus:border-blue-300 dark:focus:border-blue-800 focus:ring-2 focus:ring-blue-500/10 outline-none transition-all shadow-sm disabled:opacity-50 disabled:cursor-not-allowed"
+                                        className="w-full h-9 px-3 text-xs rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-950 dark:text-slate-100 focus-visible:ring-[3px] focus-visible:ring-ring/50 focus-visible:border-ring outline-none transition-all shadow-sm disabled:opacity-50 disabled:cursor-not-allowed"
                                         placeholder="Strategy name"
                                     />
                                 </div>
@@ -270,7 +267,7 @@ export default function EditStrategyPage() {
                                         onChange={e => setStrategy(s => s ? { ...s, description: e.target.value } : s)}
                                         disabled={isPublished}
                                         rows={2}
-                                        className="w-full px-3 py-2 text-xs rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-950 dark:text-slate-100 focus:border-blue-300 dark:focus:border-blue-800 focus:ring-2 focus:ring-blue-500/10 outline-none transition-all shadow-sm resize-none disabled:opacity-50 disabled:cursor-not-allowed leading-relaxed"
+                                        className="w-full px-3 py-2 text-xs rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-950 dark:text-slate-100 focus-visible:ring-[3px] focus-visible:ring-ring/50 focus-visible:border-ring outline-none transition-all shadow-sm resize-none disabled:opacity-50 disabled:cursor-not-allowed leading-relaxed"
                                         placeholder="What does this strategy do?"
                                     />
                                 </div>
@@ -292,7 +289,7 @@ export default function EditStrategyPage() {
                                         if (isDirty) await handleSave();
                                         router.push(`/strategies/${strategyId}/backtest`);
                                     }}
-                                    className="w-full h-10 text-xs font-bold uppercase tracking-wider rounded-xl bg-blue-600 dark:bg-blue-700 hover:bg-blue-700 dark:hover:bg-blue-800 text-white shadow-sm shadow-blue-200 dark:shadow-blue-900/20 active:scale-95 transition-all"
+                                    className="w-full h-10 text-xs font-bold uppercase tracking-wider rounded-xl bg-primary hover:bg-primary/90 text-primary-foreground shadow-sm active:scale-95 transition-all"
                                 >
                                     <Play size={14} className="mr-2" />
                                     Backtest
@@ -301,7 +298,7 @@ export default function EditStrategyPage() {
                                 <Button
                                     onClick={() => router.push(`/strategies/${strategyId}/optimize`)}
                                     variant="outline"
-                                    className="w-full h-10 text-xs font-bold uppercase tracking-wider rounded-xl border border-purple-200 dark:border-purple-900/50 text-purple-700 dark:text-purple-400 hover:bg-purple-50 dark:hover:bg-purple-900/20 dark:bg-card hover:border-purple-300 dark:hover:border-purple-800 active:scale-95 transition-all"
+                                    className="w-full h-10 text-xs font-bold uppercase tracking-wider rounded-xl border border-primary/30 text-primary hover:bg-primary/10 dark:bg-card active:scale-95 transition-all"
                                 >
                                     <Zap size={14} className="mr-2" />
                                     Optimize
@@ -342,18 +339,18 @@ export default function EditStrategyPage() {
                                         setOptimizationConfig(lines.length <= 12 ? e.target.value : lines.slice(0, 12).join('\n'));
                                     }}
                                     disabled={isPublished}
-                                    className="w-full h-48 p-3 text-xs font-mono bg-white dark:bg-slate-950 border border-gray-200 dark:border-slate-800 text-gray-800 dark:text-slate-200 rounded-xl focus:border-blue-300 dark:focus:border-blue-800 focus:ring-2 focus:ring-blue-500/10 outline-none transition-all resize-none leading-relaxed shadow-sm disabled:opacity-50"
+                                    className="w-full h-48 p-3 text-xs font-mono bg-white dark:bg-slate-950 border border-gray-200 dark:border-slate-800 text-gray-800 dark:text-slate-200 rounded-xl focus-visible:ring-[3px] focus-visible:ring-ring/50 focus-visible:border-ring outline-none transition-all resize-none leading-relaxed shadow-sm disabled:opacity-50"
                                     placeholder={'fast_window: [10, 30]\nslow_window: [40, 60]'}
                                     spellCheck={false}
                                 />
                             </div>
 
                             {/* Tips */}
-                            <div className="p-3 bg-blue-50/60 dark:bg-blue-900/10 border border-blue-100 dark:border-blue-900/30 rounded-xl space-y-1.5">
-                                <div className="flex items-center gap-1.5 text-blue-700 dark:text-blue-400 font-bold text-[10px] uppercase tracking-wider">
+                            <div className="p-3 bg-primary/5 dark:bg-primary/10 border border-primary/10 dark:border-primary/20 rounded-xl space-y-1.5">
+                                <div className="flex items-center gap-1.5 text-primary font-bold text-[10px] uppercase tracking-wider">
                                     <Activity size={11} /> Tips
                                 </div>
-                                <p className="text-[10px] text-blue-600/70 dark:text-blue-400/60 leading-relaxed">
+                                <p className="text-[10px] text-primary/70 leading-relaxed">
                                     Class-level numeric assignments are auto-detected as parameters. Use <span className="font-mono">param = value</span> at the class body level.
                                 </p>
                             </div>
@@ -365,13 +362,13 @@ export default function EditStrategyPage() {
                             <div className="flex p-1 bg-gray-100 dark:bg-slate-950 rounded-xl gap-1 border border-gray-200/50 dark:border-slate-800">
                                 <button
                                     onClick={() => setThemeMode('light')}
-                                    className={`flex-1 flex items-center justify-center gap-1.5 h-8 rounded-lg text-[10px] font-bold uppercase tracking-wider transition-all ${themeMode === 'light' ? 'bg-white dark:bg-slate-800 text-blue-600 dark:text-blue-400 shadow-sm' : 'text-gray-400 dark:text-slate-500 hover:text-gray-600 dark:hover:text-slate-300'}`}
+                                    className={`flex-1 flex items-center justify-center gap-1.5 h-8 rounded-lg text-[10px] font-bold uppercase tracking-wider transition-all ${themeMode === 'light' ? 'bg-white dark:bg-slate-800 text-primary shadow-sm' : 'text-gray-400 dark:text-slate-500 hover:bg-accent hover:text-accent-foreground'}`}
                                 >
                                     <Sun size={11} /> Light
                                 </button>
                                 <button
                                     onClick={() => setThemeMode('dark')}
-                                    className={`flex-1 flex items-center justify-center gap-1.5 h-8 rounded-lg text-[10px] font-bold uppercase tracking-wider transition-all ${themeMode === 'dark' ? 'bg-slate-800 text-blue-400 shadow-sm' : 'text-gray-400 dark:text-slate-500 hover:text-gray-600 dark:hover:text-slate-300'}`}
+                                    className={`flex-1 flex items-center justify-center gap-1.5 h-8 rounded-lg text-[10px] font-bold uppercase tracking-wider transition-all ${themeMode === 'dark' ? 'bg-slate-800 text-primary shadow-sm' : 'text-gray-400 dark:text-slate-500 hover:bg-accent hover:text-accent-foreground'}`}
                                 >
                                     <Moon size={11} /> Dark
                                 </button>
@@ -411,6 +408,6 @@ export default function EditStrategyPage() {
                     </DialogFooter>
                 </DialogContent>
             </Dialog>
-        </DashboardLayout>
+        </WorkspaceShell>
     );
 }

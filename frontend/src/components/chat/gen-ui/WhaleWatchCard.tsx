@@ -46,12 +46,12 @@ const WhaleWatchCard: React.FC<WhaleWatchCardProps> = ({ date, whales }) => {
                         initial={{ opacity: 0, x: -10 }}
                         animate={{ opacity: 1, x: 0 }}
                         transition={{ delay: idx * 0.1 }}
-                        className="p-4 rounded-2xl bg-gray-50 dark:bg-gray-900/40 border border-gray-100 dark:border-gray-800/50 hover:border-blue-500/30 transition-all group"
+                        className="p-4 rounded-2xl bg-gray-50 dark:bg-gray-900/40 border border-gray-100 dark:border-gray-800/50 hover:border-primary/30 transition-all group"
                     >
                         <div className="flex justify-between items-center mb-3">
                             <div className="flex items-center gap-2">
                                 <span className="text-xs font-medium text-gray-500 dark:text-gray-400 tracking-tight">#0{idx + 1}</span>
-                                <span className="text-sm font-semibold text-gray-900 dark:text-white group-hover:text-blue-500 transition-colors tracking-tight">
+                                <span className="text-sm font-semibold text-gray-900 dark:text-white group-hover:text-primary transition-colors tracking-tight">
                                     Broker {whale.broker_id}
                                 </span>
                             </div>
@@ -78,7 +78,7 @@ const WhaleWatchCard: React.FC<WhaleWatchCardProps> = ({ date, whales }) => {
             </div>
 
             <div className="mt-6 flex justify-center">
-                <button className="text-xs font-medium text-gray-400 hover:text-blue-500 transition-colors flex items-center gap-2 tracking-tight">
+                <button className="text-xs font-medium text-gray-400 hover:text-primary transition-colors flex items-center gap-2 tracking-tight">
                     Explore deeper trends <ArrowUpRight size={14} />
                 </button>
             </div>

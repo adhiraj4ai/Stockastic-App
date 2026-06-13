@@ -124,9 +124,9 @@ export default function SectorRotationPage() {
         <DashboardLayout
             title="Sector Rotation Study"
             subtitle="Analyze how aggregate broker accumulation predicts sector outperformance against the broad market."
-            headerContent={<Compass className="text-blue-500 dark:text-indigo-400" size={32} />}
+            headerContent={<Compass className="text-primary" size={32} />}
         >
-            <div className="max-w-[1200px] mx-auto space-y-10 pb-12">
+            <div className="space-y-10 pb-12">
                 
                 {studyData ? (
                     <>
@@ -214,7 +214,7 @@ export default function SectorRotationPage() {
                                     <div key={idx} className="bg-white dark:bg-card border border-border dark:border-slate-800 rounded-2xl p-5 shadow-sm hover:shadow-md transition-shadow relative overflow-hidden group">
                                         
                                         {/* Highlight Bar */}
-                                        <div className="absolute left-0 top-0 bottom-0 w-1 bg-gradient-to-b from-blue-500 to-indigo-500"></div>
+                                        <div className="absolute left-0 top-0 bottom-0 w-1 bg-gradient-to-b from-primary to-primary/70"></div>
 
                                         <div className="flex justify-between items-start mb-4">
                                             <div>
@@ -311,7 +311,7 @@ export default function SectorRotationPage() {
                                 </thead>
                                 <tbody className="divide-y divide-slate-100 dark:divide-white/5">
                                     {rawSectors.map((sector) => (
-                                        <tr key={sector.sector} className="hover:bg-slate-50 dark:hover:bg-slate-800/30 transition-colors">
+                                        <tr key={sector.sector} className="hover:bg-accent transition-colors">
                                             <td className="px-6 py-4 font-bold text-slate-800 dark:text-slate-200">
                                                 {sector.sector}
                                             </td>

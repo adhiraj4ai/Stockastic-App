@@ -30,6 +30,8 @@ import os
 os.environ.setdefault('NUMBA_CACHE_DIR', '/tmp/numba_cache')
 
 from ..services.optimization_service import SafeTa
+from ..services.backtest_harness import build_strategy_scope, resolve_code, load_price_df
+from ..services.backtest_harness.fees import nepse_commission, DEFAULT_SPREAD
 
 from ..models import (
     DailyStockPrice, Strategy, Company, StrategyExperiment,
@@ -64,6 +66,39 @@ class StrategyViewSet(viewsets.ModelViewSet):
 
     def perform_create(self, serializer):
         serializer.save(user=self.request.user)
+
+    @action(detail=False, methods=['get'], url_path='components')
+    def components(self, request):
+        """Catalog of composable strategy components (param schemas) for the builder."""
+        from ..services.strategy_framework import registry_schema
+        return Response(registry_schema())
+
+    @action(detail=False, methods=['get'], url_path='scan')
+    def scan(self, request):
+        """Scan all strategies on a symbol across timeframes (and optional parameter
+        ranges) and rank them to find the best. ?symbol=NABIL&optimize=1&timeframes=3y,max"""
+        from ..services.strategy_scan import scan_symbol, DEFAULT_TIMEFRAMES
+        symbol = (request.query_params.get('symbol') or '').upper()
+        if not symbol:
+            return Response({'error': 'symbol query param required'}, status=status.HTTP_400_BAD_REQUEST)
+        optimize = request.query_params.get('optimize') in ('1', 'true', 'True')
+        tfs = request.query_params.get('timeframes')
+        timeframes = tuple(t.strip() for t in tfs.split(',')) if tfs else DEFAULT_TIMEFRAMES
+        return Response(scan_symbol(symbol, timeframes=timeframes, optimize=optimize))
+
+    @action(detail=False, methods=['post'], url_path='render_spec')
+    def render_spec(self, request):
+        """Validate a composition spec and render the equivalent code + plain-English
+        summary (live builder preview)."""
+        from ..services.strategy_framework import spec_to_code, spec_to_sentence, SpecError
+        spec = request.data.get('spec')
+        try:
+            return Response({'valid': True, 'code': spec_to_code(spec),
+                             'sentence': spec_to_sentence(spec), 'error': None})
+        except SpecError as e:
+            return Response({'valid': False, 'code': '', 'sentence': '', 'error': str(e)})
+        except Exception as e:  # noqa: BLE001
+            return Response({'valid': False, 'code': '', 'sentence': '', 'error': f'{type(e).__name__}: {e}'})
 
     @action(detail=True, methods=['post'])
     def publish(self, request, pk=None):
@@ -181,8 +216,10 @@ class StrategyViewSet(viewsets.ModelViewSet):
         code = request.data.get('code', strategy.code)
         symbol = request.data.get('symbol', 'NABIL')
         sector = request.data.get('sector', None)
-        start_date = request.data.get('start_date', None)
-        end_date = request.data.get('end_date', None)
+        # Empty strings (the 'All' period) must become a concrete full range — a blank
+        # date string crashes experiment persistence with a date ValidationError.
+        start_date = request.data.get('start_date') or '2000-01-01'
+        end_date = request.data.get('end_date') or timezone.now().date().isoformat()
         strategy_params = request.data.get('parameters', {})
         initial_balance = float(request.data.get('initial_balance', request.data.get('cash', 1000000)))
 
@@ -420,6 +457,81 @@ class StrategyViewSet(viewsets.ModelViewSet):
             import traceback
             traceback.print_exc()
             return Response({'error': f'Optimization failed: {str(e)}'}, status=500)
+
+    @action(detail=True, methods=['post'], url_path='optimize_spec')
+    def optimize_spec(self, request, pk=None):
+        """Optimize a COMPOSED strategy by searching its spec's registry parameter ranges.
+
+        Unlike `optimize_multi_period` (regex/class-attr param injection — only works for raw
+        custom code), this tunes the same spec parameters the builder and backtest pages show,
+        so backtest, optimize, and code stay consistent. Recompiles the spec per trial.
+
+        Body: {symbol, spec?, param_ranges?, n_trials?, timeframes?, objective?, publish?}.
+        With publish=true, replaces the strategy's spec with the best one and re-renders code.
+        """
+        from ..services.strategy_scan import optimize_spec as run_optimize_spec
+        from ..services.strategy_framework import spec_to_code, SpecError
+
+        strategy = self.get_object()
+        spec = request.data.get('spec') or strategy.spec
+        if not spec:
+            return Response({'error': 'This strategy has no spec; use optimize_multi_period for custom code.'}, status=400)
+
+        symbol = (request.data.get('symbol') or strategy.ticker or '').upper()
+        if not symbol:
+            return Response({'error': 'symbol is required'}, status=400)
+
+        # Publish-only: a tuned spec is handed back to be saved without re-optimizing.
+        if request.data.get('publish') and request.data.get('spec') and int(request.data.get('n_trials', 1)) == 0:
+            try:
+                strategy.code = spec_to_code(spec)
+            except SpecError as e:
+                return Response({'error': f'Tuned spec failed to render: {e}'}, status=500)
+            strategy.spec = spec
+            strategy.save(update_fields=['code', 'spec'])
+            return Response({'published': True, 'code': strategy.code, 'spec': spec})
+
+        objective = request.data.get('objective', 'balanced')
+        n_trials = int(request.data.get('n_trials', 40))
+        param_ranges = request.data.get('param_ranges') or None
+        tfs = request.data.get('timeframes')
+        timeframes = tuple(tfs) if tfs else ('3y', 'max')
+
+        try:
+            result = run_optimize_spec(
+                spec, symbol, param_ranges=param_ranges, n_trials=n_trials,
+                timeframes=timeframes, objective=objective,
+            )
+        except Exception as e:  # noqa: BLE001
+            import traceback
+            traceback.print_exc()
+            return Response({'error': f'Optimization failed: {e}'}, status=500)
+
+        if not result.get('best'):
+            return Response({**result, 'published': False,
+                             'message': 'No trial produced a tradable result.'})
+
+        # Record the best result on the strategy for at-a-glance display.
+        strategy.best_params = result['best']['params']
+        strategy.best_score = result['best']['score']
+        strategy.best_objective = objective
+
+        # Optionally publish the tuned spec as the strategy's new source of truth.
+        if request.data.get('publish'):
+            best_spec = result['best']['spec']
+            try:
+                strategy.code = spec_to_code(best_spec)
+            except SpecError as e:
+                return Response({'error': f'Tuned spec failed to render: {e}'}, status=500)
+            strategy.spec = best_spec
+            strategy.save(update_fields=['code', 'spec', 'best_params', 'best_score', 'best_objective'])
+            result['published'] = True
+            result['code'] = strategy.code
+        else:
+            strategy.save(update_fields=['best_params', 'best_score', 'best_objective'])
+            result['published'] = False
+
+        return Response(result)
 
     @action(detail=True, methods=['post'])
     def publish_optimized(self, request, pk=None):
@@ -756,147 +868,23 @@ class StrategyViewSet(viewsets.ModelViewSet):
         return None # Placeholder, implement based on full _get_signal if needed
 
     def _get_bt_local_scope(self, symbol, params=None):
-        """Build the execution scope for strategy code."""
-        import sys
-        ta_adapter = SafeTa(talib)
-        # Register our talib-based adapter as 'pandas_ta' so that
-        # strategy code with `import pandas_ta as ta` uses talib under the hood.
-        sys.modules['pandas_ta'] = ta_adapter  # type: ignore[assignment]
+        """Build the execution scope for strategy code.
 
-        scope = {
-            # backtesting.py core
-            'Strategy': BTStrategy,
-            'Backtest': Backtest,
-            'crossover': crossover,
-            'resample_apply': resample_apply,
-            'SMA': SMA,
-            # TA — single `ta` variable covers both old pandas_ta and talib usage
-            'ta': ta_adapter,
-            'talib': talib,
-            # Data science
-            'np': np,
-            'pd': pd,
-            # Context
-            'symbol': symbol,
-        }
-        if params:
-            scope.update(params)
-        return scope
+        Delegates to the shared backtest harness so the backtest API and live
+        signal generation cannot drift apart.
+        """
+        return build_strategy_scope(symbol, params=params)
 
     def _run_single_backtest(self, code, symbol, start_date, end_date, params=None, cash=1000000):
-        if code == 'broker_accumulation_v1':
-            code = """
-from backtesting import Strategy
-import numpy as np
-import pandas as pd
-from stocks.models import DailyCumulativeAccumulation
-
-class BrokerAccumulationStrategy(Strategy):
-    def init(self):
-        ticker = symbol
-        qs = DailyCumulativeAccumulation.objects.filter(symbol=ticker).values('transaction_date', 'cumulative_net')
-        if not qs:
-            self.acc = self.I(lambda x: np.zeros(len(x)), self.data.Close)
-            return
-        df = pd.DataFrame(list(qs))
-        df['transaction_date'] = pd.to_datetime(df['transaction_date'])
-        daily = df.groupby('transaction_date')['cumulative_net'].sum()
-        self.acc = self.I(lambda x: daily.reindex(pd.Series(x).index).ffill().fillna(0).values, self.data.Close)
-
-    def next(self):
-        if len(self.acc) < 2: return
-        if self.acc[-1] > 0 and self.acc[-2] <= 0:
-            if not self.position: self.buy()
-        elif self.acc[-1] < 0 and self.acc[-2] >= 0:
-            if self.position: self.position.close()
-"""
-        elif code == 'ichimoku_accumulation_v1' or (isinstance(code, str) and code.startswith('ichimoku_accumulation_v1')):
-            code = """
-from backtesting import Strategy
-import pandas as pd
-import numpy as np
-import pandas_ta as ta
-from stocks.models import DailyCumulativeAccumulation
-
-class IchimokuAccumulation(Strategy):
-    def init(self):
-        close = pd.Series(self.data.Close)
-        high = pd.Series(self.data.High)
-        low = pd.Series(self.data.Low)
-        # Ichimoku
-        ichimoku_df = ta.ichimoku(high, low, close)[0]
-        self.span_a = self.I(lambda: ichimoku_df.iloc[:, 2].values)
-        self.span_b = self.I(lambda: ichimoku_df.iloc[:, 3].values)
-        
-        # Accumulation
-        qs = DailyCumulativeAccumulation.objects.filter(symbol=symbol).values('transaction_date', 'cumulative_net')
-        if not qs:
-            self.acc = self.I(lambda x: np.zeros(len(x)), self.data.Close)
-            return
-        df = pd.DataFrame(list(qs))
-        df['transaction_date'] = pd.to_datetime(df['transaction_date'])
-        daily = df.groupby('transaction_date')['cumulative_net'].sum()
-        self.acc = self.I(lambda x: daily.reindex(pd.Series(x).index).ffill().fillna(0).values, self.data.Close)
-
-    def next(self):
-        price = self.data.Close[-1]
-        above_cloud = price > self.span_a[-1] and price > self.span_b[-1]
-        accumulating = self.acc[-1] > 0
-        if above_cloud and accumulating:
-            if not self.position: self.buy()
-        elif price < self.span_a[-1] or price < self.span_b[-1]:
-            if self.position: self.position.close()
-"""
-        elif code == 'smart_accumulated_crossover_v1':
-            code = """
-from backtesting import Strategy
-from backtesting.lib import crossover
-import pandas as pd
-import numpy as np
-import pandas_ta as ta
-from stocks.models import DailyCumulativeAccumulation
-
-class SmartAccumulatedCrossover(Strategy):
-    fast = 10
-    slow = 50
-
-    def init(self):
-        qs = DailyCumulativeAccumulation.objects.filter(symbol=symbol).values('transaction_date', 'entity_id', 'cumulative_net')
-        if not qs:
-            self.fast_ma = self.I(lambda x: np.zeros(len(x)), self.data.Close)
-            self.slow_ma = self.I(lambda x: np.zeros(len(x)), self.data.Close)
-            return
-        df = pd.DataFrame(list(qs))
-        df['transaction_date'] = pd.to_datetime(df['transaction_date'])
-        pivot = df.pivot_table(index='transaction_date', columns='entity_id', values='cumulative_net', aggfunc='last').ffill().fillna(0)
-        top = pivot.iloc[-1].sort_values(ascending=False).head(5).index
-        flow = pivot[top].sum(axis=1)
-        line = self.I(lambda x: flow.reindex(pd.Series(x).index).ffill().fillna(0).values, self.data.Close)
-        self.fast_ma = self.I(lambda x: pd.Series(x).rolling(self.fast).mean().values, line)
-        self.slow_ma = self.I(lambda x: pd.Series(x).rolling(self.slow).mean().values, line)
-
-    def next(self):
-        if crossover(self.fast_ma, self.slow_ma):
-            if not self.position: self.buy()
-        elif crossover(self.slow_ma, self.fast_ma):
-            if self.position: self.position.close()
-"""
+        # Special tokens (e.g. broker_accumulation_v1) map to fixed source in the
+        # shared harness — single source of truth for these definitions.
+        code = resolve_code(code)
         try:
-            # Data Fetching
-            queryset = DailyStockPrice.objects.filter(ticker=symbol)
-            if start_date: queryset = queryset.filter(date__gte=start_date)
-            if end_date: queryset = queryset.filter(date__lte=end_date)
-            queryset = queryset.order_by('date')
-            
-            ticks = list(queryset.values('date', 'open', 'high', 'low', 'close', 'volume'))
-            if not ticks or len(ticks) < 20:
+            # Data Fetching — via the shared harness loader so the UI backtest
+            # uses corporate-action-adjusted prices, matching run_backtest.
+            df = load_price_df(symbol, start=start_date, end=end_date)
+            if df is None or len(df) < 20:
                 return {}, "Insufficient data (need at least 20 data points)", {}
-
-            df = pd.DataFrame(ticks)
-            df.rename(columns={'open':'Open','high':'High','low':'Low','close':'Close','volume':'Volume'}, inplace=True)
-            df['date'] = pd.to_datetime(df['date'])
-            df.set_index('date', inplace=True)
-            df = df.astype(float)
 
             # Execution
             local_scope = self._get_bt_local_scope(symbol, params=params)
@@ -911,7 +899,11 @@ class SmartAccumulatedCrossover(Strategy):
             if not strategy_class:
                 return {}, "No Strategy class found. Please ensure your code defines a class inheriting from 'Strategy'.", {}
 
-            bt = Backtest(df, strategy_class, cash=cash, commission=.002, exclusive_orders=True)
+            # Real NEPSE costs (tiered commission + SEBON + DP) + spread, matching
+            # the shared harness so the UI backtest endpoint reports honest numbers.
+            # Prices come from the adjusted harness loader (load_price_df) above.
+            bt = Backtest(df, strategy_class, cash=cash, commission=nepse_commission,
+                          spread=DEFAULT_SPREAD, exclusive_orders=True)
             
             # Inject parameters into bt.run()
             # Only include parameters that are present in the strategy class

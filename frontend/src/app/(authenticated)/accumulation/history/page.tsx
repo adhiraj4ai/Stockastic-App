@@ -110,7 +110,7 @@ function HistoryPageContent() {
                             <select
                                 value={selectedBroker}
                                 onChange={(e) => handleBrokerChange(e.target.value)}
-                                className="bg-transparent border-none text-sm font-semibold text-blue-700 dark:text-indigo-400 outline-none pr-4 min-w-[80px] cursor-pointer"
+                                className="bg-transparent border-none text-sm font-semibold text-primary outline-none pr-4 min-w-[80px] cursor-pointer"
                             >
                                 <option value="">Select ID</option>
                                 {allBrokers.map(b => <option key={b} value={b} className="bg-white dark:bg-card">{b}</option>)}
@@ -121,7 +121,7 @@ function HistoryPageContent() {
                             <CompanySelect
                                 value={selectedSymbol}
                                 onChange={handleSymbolChange}
-                                className="h-11 w-full rounded-xl bg-white dark:bg-card border-slate-200 dark:border-border shadow-sm focus:ring-2 focus:ring-blue-500/20 dark:focus:ring-indigo-500/20 transition-all font-semibold text-sm uppercase"
+                                className="h-11 w-full rounded-xl bg-white dark:bg-card border-slate-200 dark:border-border shadow-sm focus-visible:ring-[3px] focus-visible:ring-ring/50 focus-visible:border-ring transition-all font-semibold text-sm uppercase"
                             />
                         </div>
                     </div>
@@ -150,7 +150,7 @@ function HistoryPageContent() {
                             <p className="font-semibold text-rose-500">{error}</p>
                             <p className="text-xs text-slate-400 dark:text-slate-500 font-bold">Try refreshing or check your connection.</p>
                         </div>
-                        <Button variant="outline" size="sm" onClick={() => window.location.reload()} className="rounded-xl font-semibold text-[10px] tracking-wider px-6 uppercase border-slate-200 dark:border-border hover:bg-slate-100 dark:hover:bg-white/5">Retry Sync</Button>
+                        <Button variant="outline" size="sm" onClick={() => window.location.reload()} className="rounded-xl font-semibold text-[10px] tracking-wider px-6 uppercase border-slate-200 dark:border-border hover:bg-accent hover:text-accent-foreground">Retry Sync</Button>
                     </div>
                 ) : (
                     <>
@@ -164,8 +164,8 @@ function HistoryPageContent() {
                                         <TableHead className="text-right px-6 font-semibold text-[10px] uppercase tracking-wider text-rose-500/60 transition-colors hover:text-rose-500 cursor-help">Sell Qty</TableHead>
                                         <TableHead className="text-right px-6 font-semibold text-[10px] uppercase tracking-wider text-rose-500/40">Sell Rate</TableHead>
                                         <TableHead className="text-right px-6 font-semibold text-[10px] uppercase tracking-wider text-slate-900 dark:text-slate-100">Net Qty</TableHead>
-                                        <TableHead className="text-right px-6 font-semibold text-[10px] uppercase tracking-wider text-blue-500/60 dark:text-indigo-400/60 bg-blue-500/[0.02] dark:bg-indigo-500/[0.02]">Cum. Qty</TableHead>
-                                        <TableHead className="text-right px-6 font-semibold text-[10px] uppercase tracking-wider text-orange-500 transition-colors hover:text-orange-400 cursor-help">WAC</TableHead>
+                                        <TableHead className="text-right px-6 font-semibold text-[10px] uppercase tracking-wider text-primary/60 bg-primary/[0.02]">Cum. Qty</TableHead>
+                                        <TableHead className="text-right px-6 font-semibold text-[10px] uppercase tracking-wider text-primary/60 transition-colors hover:text-primary cursor-help">WAC</TableHead>
                                     </tr>
                                 </thead>
                                 <TableBody>
@@ -189,7 +189,7 @@ function HistoryPageContent() {
                                                         <span className="text-xs font-semibold text-slate-500 dark:text-slate-400 font-mono tracking-tight">{item.date}</span>
                                                         <Link
                                                             href={`/floorsheet?symbol=${selectedSymbol}&broker=${selectedBroker}&date=${item.date}`}
-                                                            className="p-1.5 bg-slate-100 dark:bg-white/[0.05] rounded-lg text-blue-500 dark:text-indigo-400 hover:bg-blue-600 hover:text-white dark:hover:bg-indigo-600 opacity-0 group-hover/date:opacity-100 transition-all flex items-center gap-1.5 shadow-sm"
+                                                            className="p-1.5 bg-slate-100 dark:bg-white/[0.05] rounded-lg text-primary hover:bg-primary/90 hover:text-primary-foreground opacity-0 group-hover/date:opacity-100 transition-all flex items-center gap-1.5 shadow-sm"
                                                         >
                                                             <ExternalLink className="w-3 h-3" />
                                                             <span className="text-[8px] font-semibold uppercase tracking-tighter">View</span>
@@ -227,10 +227,10 @@ function HistoryPageContent() {
                                                         )}
                                                     </div>
                                                 </TableCell>
-                                                <TableCell className="text-right px-6 font-mono font-semibold bg-blue-500/[0.01] dark:bg-indigo-500/[0.01] text-blue-800 dark:text-indigo-400 text-base shadow-inner">
+                                                <TableCell className="text-right px-6 font-mono font-semibold bg-primary/[0.01] text-primary text-base shadow-inner">
                                                     {formatNepaliNumber(item.cumulative_qty)}
                                                 </TableCell>
-                                                <TableCell className="text-right px-6 font-mono font-semibold text-orange-600 dark:text-orange-400 text-sm group-hover:scale-110 transition-transform">
+                                                <TableCell className="text-right px-6 font-mono font-semibold text-primary text-sm group-hover:scale-110 transition-transform">
                                                     {item.wac ? `रू ${formatNepaliCurrency(item.wac, 2)}` : '-'}
                                                 </TableCell>
                                             </TableRow>
@@ -270,7 +270,7 @@ function HistoryPageContent() {
                                             size="sm"
                                             onClick={() => setPage(p => Math.max(1, p - 1))}
                                             disabled={page === 1}
-                                            className="h-9 px-4 rounded-xl font-semibold text-[10px] tracking-wider border-slate-200 dark:border-border hover:bg-slate-100 dark:hover:bg-white/5 transition-all"
+                                            className="h-9 px-4 rounded-xl font-semibold text-[10px] tracking-wider border-slate-200 dark:border-border hover:bg-accent hover:text-accent-foreground transition-all"
                                         >
                                             Previous
                                         </Button>
@@ -279,7 +279,7 @@ function HistoryPageContent() {
                                             size="sm"
                                             onClick={() => setPage(p => Math.min(totalPages, p + 1))}
                                             disabled={page >= totalPages}
-                                            className="h-9 px-4 rounded-xl font-semibold text-[10px] uppercase tracking-wider border-slate-200 dark:border-border hover:bg-slate-100 dark:hover:bg-white/5 transition-all"
+                                            className="h-9 px-4 rounded-xl font-semibold text-[10px] uppercase tracking-wider border-slate-200 dark:border-border hover:bg-accent hover:text-accent-foreground transition-all"
                                         >
                                             Next
                                         </Button>

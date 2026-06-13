@@ -61,31 +61,18 @@ class Command(BaseCommand):
                 sector = "Commercial Banks"
                 
             else:
-                # Random Data for Others
-                fund_indicators = [
-                    {"name": "EPS", "value": str(random.randint(10, 50)), "sector_high": "60", "sector_high_ticker": "SCB", "sector_low": "5", "sector_low_ticker": "NABIL"},
-                    {"name": "P/E Ratio", "value": str(random.randint(15, 40)), "sector_high": "50", "sector_high_ticker": "NICA", "sector_low": "10", "sector_low_ticker": "SCB"},
-                    {"name": "Book Value", "value": str(random.randint(100, 300)), "sector_high": "350", "sector_high_ticker": "NABIL", "sector_low": "80", "sector_low_ticker": "HIDCL"},
-                    {"name": "PBV", "value": str(round(random.uniform(1.5, 5.0), 2)), "sector_high": "6.0", "sector_high_ticker": "NICA", "sector_low": "1.1", "sector_low_ticker": "MLBSL"},
-                    {"name": "ROE", "value": str(round(random.uniform(10, 25), 2)) + "%", "sector_high": "30%", "sector_high_ticker": "NABIL", "sector_low": "5%", "sector_low_ticker": "HIDCL"},
-                    {"name": "Dividend Yield", "value": str(round(random.uniform(2, 8), 2)) + "%", "sector_high": "10%", "sector_high_ticker": "NABIL", "sector_low": "0%", "sector_low_ticker": "NICA"},
-                ]
-                
-                tech_indicators = [
-                    {"name": "RSI (14)", "value": str(random.randint(30, 70)), "sector_high": "85", "sector_high_ticker": "NICA", "sector_low": "20", "sector_low_ticker": "SCB"},
-                    {"name": "MACD", "value": "Bullish", "sector_high": "-", "sector_high_ticker": "-", "sector_low": "-", "sector_low_ticker": "-"},
-                    {"name": "Bollinger Bands", "value": "Middle", "sector_high": "-", "sector_high_ticker": "-", "sector_low": "-", "sector_low_ticker": "-"},
-                    {"name": "Moving Avg (20)", "value": str(random.randint(400, 900)), "sector_high": "-", "sector_high_ticker": "-", "sector_low": "-", "sector_low_ticker": "-"},
-                    {"name": "Moving Avg (200)", "value": str(random.randint(400, 900)), "sector_high": "-", "sector_high_ticker": "-", "sector_low": "-", "sector_low_ticker": "-"},
-                ]
-                market_cap = Decimal(random.randint(5000000000, 100000000000))
-                free_float_mcap = Decimal(random.randint(2000000000, 50000000000))
-                shares_outstanding = Decimal(random.randint(10000000, 100000000))
-                public_shares = Decimal(random.randint(5000000, 50000000))
-                listed_date = start_date + timedelta(days=random.randint(0, 365))
+                # No fabricated metrics for other tickers: derived fundamentals
+                # come from `recalculate_fundamentals` once real reports exist.
+                fund_indicators = []
+                tech_indicators = []
+                market_cap = None
+                free_float_mcap = None
+                shares_outstanding = None
+                public_shares = None
+                listed_date = None
                 sector = "Commercial Banks" if ticker in ['NABIL', 'SCB', 'NICA'] else "Others"
-                
-            
+
+
             # --- Broker Accumulation Data ---
             accumulation_data = {}
             ranges = ['2Y', '1Y', '6M', '3M', '1W', '1D']
@@ -111,29 +98,28 @@ class Command(BaseCommand):
                 range_records.sort(key=lambda x: x['qty'], reverse=True)
                 accumulation_data[time_range] = range_records
 
-            # Create/Update StockFundamental
-            StockFundamental.objects.update_or_create(
-                ticker=ticker,
-                defaults={
-                    "company_name": f"{ticker} Bank Ltd." if ticker in ['NABIL', 'SCB', 'NICA'] else f"{ticker} Company",
-                    "sector": sector,
-                    "market_cap": market_cap,
-                    "paid_up_capital": Decimal(random.randint(1000000000, 20000000000)),
-                    "shares_outstanding": shares_outstanding,
-                    "public_shares": public_shares,
-                    "free_float_market_cap": free_float_mcap,
-                    "listed_date": listed_date,
-                    "fifty_two_week_high": Decimal(random.randint(800, 1500)),
-                    "fifty_two_week_low": Decimal(random.randint(200, 700)),
-                    "eps": Decimal(fund_indicators[0]["value"].replace('%', '').strip()) if ticker != 'NABIL' else Decimal("22.3"), # Fallback or parse
-                    "pe_ratio": Decimal(fund_indicators[1]["value"]) if ticker != 'NABIL' else Decimal("19.81"),
-                    "book_value": Decimal(fund_indicators[2]["value"].replace('%', '').strip()) if ticker != 'NABIL' else Decimal("240"), # Placeholder
-                    "dividend_yield": Decimal(random.uniform(2, 8)),
-                    "fundamental_indicators": fund_indicators,
-                    "technical_indicators": tech_indicators,
-                    "broker_accumulation": accumulation_data
-                }
-            )
+            # Create/Update StockFundamental — only NABIL carries authentic
+            # metric values; derived metrics for the rest stay empty until
+            # financial reports are seeded and recalculated.
+            defaults = {
+                "company_name": f"{ticker} Bank Ltd." if ticker in ['NABIL', 'SCB', 'NICA'] else f"{ticker} Company",
+                "sector": sector,
+                "market_cap": market_cap,
+                "shares_outstanding": shares_outstanding,
+                "public_shares": public_shares,
+                "free_float_market_cap": free_float_mcap,
+                "listed_date": listed_date,
+                "fundamental_indicators": fund_indicators,
+                "technical_indicators": tech_indicators,
+                "broker_accumulation": accumulation_data
+            }
+            if ticker == 'NABIL':
+                defaults.update({
+                    "eps": Decimal("22.3"),
+                    "pe_ratio": Decimal("19.81"),
+                    "book_value": Decimal("240"),
+                })
+            StockFundamental.objects.update_or_create(ticker=ticker, defaults=defaults)
 
         # 2. Seed Stock Prices (Simplify for speed if needed, but keeping logic)
         daily_prices = []

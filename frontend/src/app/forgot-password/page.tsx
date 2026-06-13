@@ -35,7 +35,7 @@ export default function ForgotPasswordPage() {
             <Card className="w-full max-w-md shadow-xl border-none bg-white dark:bg-slate-900 overflow-hidden text-center">
                 <CardHeader className="space-y-2 pb-2 pt-10">
                     <div className="flex justify-center mb-6">
-                        <div className="h-16 w-16 bg-blue-50 dark:bg-blue-900/30 rounded-2xl flex items-center justify-center text-blue-600 dark:text-blue-400 shadow-inner">
+                        <div className="h-16 w-16 bg-primary/10 rounded-2xl flex items-center justify-center text-primary shadow-inner">
                             <Mail size={32} />
                         </div>
                     </div>
@@ -56,7 +56,7 @@ export default function ForgotPasswordPage() {
                             </div>
                             <Button
                                 onClick={() => window.location.href = '/login'}
-                                className="w-full h-12 bg-slate-900 dark:bg-slate-100 hover:bg-black dark:hover:bg-white text-white dark:text-slate-900 font-bold rounded-xl shadow-lg"
+                                className="w-full h-12 bg-primary hover:bg-primary/90 text-primary-foreground font-bold rounded-xl shadow-lg"
                             >
                                 Back to Login
                             </Button>

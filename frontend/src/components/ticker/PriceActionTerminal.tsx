@@ -114,7 +114,7 @@ function OHLCStrip({ day }: { day: PriceActionDay }) {
             <div className={cn(
                 'flex items-center gap-1.5 px-3 py-1.5 rounded-lg border text-xs font-bold',
                 day.volume_desc.toLowerCase().includes('high')
-                    ? 'bg-indigo-50 dark:bg-indigo-900/20 border-indigo-200 dark:border-indigo-800/40 text-indigo-600 dark:text-indigo-400'
+                    ? 'bg-primary/10 border-primary/20 text-primary'
                     : 'bg-slate-50 dark:bg-slate-800/50 border-slate-200 dark:border-slate-700 text-slate-500 dark:text-slate-400'
             )}>
                 <Activity size={11} />
@@ -553,8 +553,8 @@ export function PriceActionTerminal({ symbol, grouping = 1 }: PriceActionTermina
             <div className="flex items-center justify-center min-h-[480px]">
                 <div className="flex flex-col items-center gap-3">
                     <div className="relative w-10 h-10">
-                        <div className="absolute inset-0 rounded-full border-2 border-indigo-200 dark:border-indigo-800" />
-                        <div className="absolute inset-0 rounded-full border-2 border-t-indigo-500 animate-spin" />
+                        <div className="absolute inset-0 rounded-full border-2 border-primary/20 dark:border-primary/30" />
+                        <div className="absolute inset-0 rounded-full border-2 border-t-primary animate-spin" />
                     </div>
                     <p className="text-xs font-bold text-slate-400 tracking-wide">Mapping price structure…</p>
                 </div>
@@ -583,7 +583,7 @@ export function PriceActionTerminal({ symbol, grouping = 1 }: PriceActionTermina
             {/* ── Header ── */}
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
                 <div className="flex items-center gap-3">
-                    <div className="p-2 rounded-xl bg-gradient-to-br from-indigo-50 to-violet-50 dark:from-indigo-900/20 dark:to-violet-900/20 text-indigo-600 dark:text-indigo-400 border border-indigo-100 dark:border-indigo-800">
+                    <div className="p-2 rounded-xl bg-primary/10 dark:bg-primary/10 text-primary border border-primary/20">
                         <CandlestickChart size={18} />
                     </div>
                     <div>
@@ -637,7 +637,7 @@ export function PriceActionTerminal({ symbol, grouping = 1 }: PriceActionTermina
 
                         <button
                             onClick={() => setIsFullscreen(!isFullscreen)}
-                            className="p-1.5 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-400 hover:text-indigo-500 transition-colors"
+                            className="p-1.5 rounded-lg hover:bg-accent hover:text-accent-foreground text-slate-400 transition-colors"
                             title={isFullscreen ? "Exit Fullscreen" : "Enter Fullscreen"}
                         >
                             {isFullscreen ? <Minimize2 size={16} /> : <Maximize2 size={16} />}

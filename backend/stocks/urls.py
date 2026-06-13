@@ -1,7 +1,7 @@
 from django.urls import path, include
 from rest_framework.routers import DefaultRouter
 from .views import (
-    market, portfolio, strategy, broker, pipeline, watchlist, notifications, recommendations, chart, fibonacci, floorsheet, dividends, risk, sector_rotation, price_forecast, price_action, volume_profile, signal_alerts
+    market, portfolio, strategy, broker, pipeline, watchlist, notifications, recommendations, chart, fibonacci, floorsheet, dividends, risk, sector_rotation, price_forecast, price_action, volume_profile, signal_alerts, opportunity, plan, ticker_verdict, entry_statuses
 )
 
 
@@ -12,6 +12,7 @@ router.register(r'transactions', portfolio.PortfolioTransactionViewSet, basename
 router.register(r'portfolio-performance', portfolio.PortfolioPerformanceView, basename='portfolio-performance')
 router.register(r'portfolio-targets', portfolio.PortfolioTargetViewSet, basename='portfolio-targets')
 router.register(r'trade-plans', portfolio.TradePlanViewSet, basename='trade-plans')
+router.register(r'portfolio-action-drafts', portfolio.PortfolioActionDraftViewSet, basename='portfolio-action-drafts')
 router.register(r'strategies', strategy.StrategyViewSet, basename='strategies')
 router.register(r'portfolio/dividends', dividends.DividendView, basename='portfolio-dividends')
 router.register(r'portfolio/risk-radar', risk.RiskRadarView, basename='portfolio-risk-radar')
@@ -93,4 +94,18 @@ urlpatterns = [
 
     # Signal Alerts (New)
     path('signal-alerts/', signal_alerts.SignalAlertsView.as_view(), name='signal_alerts'),
+
+    # Opportunity Engine
+    path('opportunities/', opportunity.opportunities, name='opportunities'),
+
+    # Daily trading plan
+    path('plan/today/', plan.PlanTodayView.as_view(), name='plan_today'),
+    path('plan/generate/', plan.PlanGenerateView.as_view(), name='plan_generate'),
+    path('plan/', plan.PlanHistoryView.as_view(), name='plan_history'),
+
+    # Entry Statuses
+    path('entry-statuses/', entry_statuses.EntryStatusesView.as_view(), name='entry_statuses'),
+
+    # Ticker Verdict
+    path('ticker-verdict/<str:symbol>/', ticker_verdict.TickerVerdictView.as_view(), name='ticker_verdict'),
 ]

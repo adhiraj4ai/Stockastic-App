@@ -132,21 +132,11 @@ function MatchingTradesContent() {
     };
 
     return (
-        <DashboardLayout title="Matching Transactions">
-            <div className="p-4 md:p-6 max-w-[1600px] mx-auto space-y-6">
+        <DashboardLayout title="Matching Transactions" subtitle="Internal trades where the buying and selling broker are strictly identical (Qty > 1,000).">
+            <div className="p-4 md:p-6 space-y-6">
 
                 {/* Header & Controls */}
                 <div className="flex flex-col md:flex-row gap-4 justify-between items-start md:items-center">
-                    <div>
-                        <h1 className="text-2xl font-bold text-slate-900 dark:text-slate-100 flex items-center gap-2">
-                            <GitMerge className="w-6 h-6 text-fuchsia-600" />
-                            Matching Transactions
-                        </h1>
-                        <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">
-                            Internal trades where the buying and selling broker are strictly identical (Qty &gt; 1,000).
-                        </p>
-                    </div>
-
                     <div className="flex flex-wrap gap-2 items-center bg-white dark:bg-card p-2 rounded-xl border border-slate-200 dark:border-slate-800 shadow-sm">
                         <Filter className="w-4 h-4 text-slate-400 ml-2" />
                         <Input
@@ -233,7 +223,7 @@ function MatchingTradesContent() {
                                                 const isBroker = broker && String(tx.buyer_id) === String(broker);
 
                                                 return (
-                                                    <tr key={tx.id || idx} className="hover:bg-slate-50/50 dark:hover:bg-slate-800/50 transition-colors">
+                                                    <tr key={tx.id || idx} className="hover:bg-accent transition-colors">
                                                         <td className="px-6 py-3 font-mono text-xs text-slate-500 dark:text-slate-400">
                                                             {tx.contract_no}
                                                         </td>

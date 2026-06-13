@@ -22,6 +22,11 @@ STUDY_YEARS = 2
 # ---------------------------------------------------------------------------
 
 def _load_price_df_sector(symbols=None, start_date=None):
+    # Corporate-action adjusted (close/volume) so sector momentum doesn't read
+    # bonus ex-date drops as price moves — consistent with the backtest harness.
+    from stocks.services.backtest_harness.adjustments import apply_adjustments_long
+    from stocks.services.backtest_harness.runner import fetch_actions_map
+
     qs = DailyStockPrice.objects.filter(date__gte=start_date)
     if symbols:
         qs = qs.filter(ticker__in=symbols)
@@ -32,6 +37,8 @@ def _load_price_df_sector(symbols=None, start_date=None):
     df['close'] = pd.to_numeric(df['close'], errors='coerce')
     df['volume'] = pd.to_numeric(df['volume'], errors='coerce')
     df['date'] = pd.to_datetime(df['date'])
+    df = apply_adjustments_long(df, fetch_actions_map(df['ticker'].unique()),
+                                price_cols=('close',))
     df.sort_values(['ticker', 'date'], inplace=True)
     df.reset_index(drop=True, inplace=True)
     return df

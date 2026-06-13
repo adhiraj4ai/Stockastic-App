@@ -170,12 +170,12 @@ export default function SignalDashboard({ symbol }: { symbol: string }) {
 
     return (
         <div className="glass-card-light rounded-2xl border border-slate-200 dark:border-slate-800/50 p-6 relative group overflow-hidden shadow-sm">
-            <div className="absolute inset-0 bg-gradient-to-br from-blue-500/5 to-purple-500/5 opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
+            <div className="absolute inset-0 bg-gradient-to-br from-primary/5 to-primary/5 opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
             <div className="relative z-10">
                 <div className="flex justify-between items-center mb-6">
                     <h2 className="text-xl font-semibold text-slate-800 dark:text-slate-100">Daily Strategy Signals</h2>
                     <div className="flex gap-4 items-center">
-                        <div className="px-4 py-2 bg-blue-50 dark:bg-card text-blue-600 dark:text-blue-400 rounded-lg border border-blue-100 dark:border-slate-800">
+                        <div className="px-4 py-2 bg-primary/10 dark:bg-card text-primary rounded-lg border border-primary/20 dark:border-slate-800">
                             Consensus: <span className="font-bold">{consensus}</span>
                         </div>
                         <div className="text-sm text-slate-400 dark:text-slate-500">
@@ -201,7 +201,7 @@ export default function SignalDashboard({ symbol }: { symbol: string }) {
                             </thead>
                             <tbody className="divide-y divide-slate-50 dark:divide-slate-800 bg-white/20 dark:bg-card">
                                 {signals.map((sig) => (
-                                    <tr key={sig.id} className="hover:bg-slate-50/50 dark:hover:bg-slate-800/50 transition-colors">
+                                    <tr key={sig.id} className="hover:bg-accent hover:text-accent-foreground transition-colors">
                                         <td className="p-3">
                                             <div className="font-medium text-slate-700 dark:text-slate-200">{sig.strategy_name}</div>
                                             <div className="text-xs text-slate-500 dark:text-slate-400 truncate max-w-[200px]">{sig.strategy_description}</div>
@@ -239,7 +239,7 @@ export default function SignalDashboard({ symbol }: { symbol: string }) {
                                                     }
                                                     
                                                     return formatted.map(({ key, value }) => (
-                                                        <div key={key} className="group/chip flex items-center gap-1.5 px-2 py-0.5 rounded-md bg-slate-50 dark:bg-card border border-slate-200 dark:border-slate-800 hover:border-blue-300 dark:hover:border-blue-700 transition-all shadow-sm">
+                                                        <div key={key} className="group/chip flex items-center gap-1.5 px-2 py-0.5 rounded-md bg-slate-50 dark:bg-card border border-slate-200 dark:border-slate-800 hover:border-primary/40 transition-all shadow-sm">
                                                             <span className="text-[9px] font-bold text-slate-400 dark:text-slate-500">{key}</span>
                                                             <span className="text-[11px] font-bold text-slate-700 dark:text-slate-300 font-mono">{value}</span>
                                                         </div>

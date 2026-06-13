@@ -231,7 +231,7 @@ export default function JobDetailPage() {
         return (
             <DashboardLayout>
                 <div className="flex items-center justify-center min-h-[60vh]">
-                    <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
+                    <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
                 </div>
             </DashboardLayout>
         );
@@ -255,7 +255,7 @@ export default function JobDetailPage() {
             case 'SUCCESS':
                 return <Badge className="bg-emerald-500/10 text-emerald-600 border-emerald-200/50 px-3 py-1 rounded-full text-[10px] font-bold tracking-wider">SUCCESS</Badge>;
             case 'RUNNING':
-                return <Badge className="bg-blue-500/10 text-blue-600 border-blue-200/50 px-3 py-1 rounded-full text-[10px] font-bold tracking-wider animate-pulse">RUNNING</Badge>;
+                return <Badge className="bg-primary/10 text-primary border-primary/20 px-3 py-1 rounded-full text-[10px] font-bold tracking-wider animate-pulse">RUNNING</Badge>;
             case 'FAILED':
                 return <Badge className="bg-red-500/10 text-red-600 border-red-200/50 px-3 py-1 rounded-full text-[10px] font-bold tracking-wider">FAILED</Badge>;
             default:
@@ -276,7 +276,7 @@ export default function JobDetailPage() {
                 variant="ghost"
                 size="sm"
                 onClick={() => router.back()}
-                className="h-8 w-8 p-0 text-slate-500 hover:text-slate-800 hover:bg-slate-100 rounded-full transition-colors"
+                className="h-8 w-8 p-0 text-slate-500 hover:bg-accent hover:text-accent-foreground rounded-full transition-colors"
                 title="Back to Monitoring"
             >
                 <ChevronLeft className="w-5 h-5" />
@@ -323,7 +323,7 @@ export default function JobDetailPage() {
                                 className={`text-[10px] h-7 px-3 font-bold tracking-wider uppercase flex items-center gap-1.5 transition-all
                                     ${job.is_published
                                         ? "bg-slate-50 text-slate-500 border-slate-200 hover:bg-slate-100 hover:text-slate-700"
-                                        : "bg-blue-600 text-white hover:bg-blue-700 shadow-sm"}`}
+                                        : "bg-primary text-primary-foreground hover:bg-primary/90 shadow-sm"}`}
                             >
                                 {job.is_published ? (
                                     <>

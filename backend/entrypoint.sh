@@ -30,8 +30,7 @@ except Exception as e:
     sys.exit(1)
 END
 
-echo "📦 [MIGRATIONS] Making migrations..."
-python manage.py makemigrations --no-input
+# Migrations are generated in dev and tracked in git; boot only applies them.
 
 echo "💾 [DATABASE] Running migrations..."
 python manage.py migrate --no-input

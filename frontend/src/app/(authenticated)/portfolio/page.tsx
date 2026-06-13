@@ -4,7 +4,6 @@ import React, { useEffect, useState, useMemo } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import api from '@/lib/api';
 import DashboardLayout from '@/components/DashboardLayout';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from '@/components/ui/dialog';
 import {
@@ -41,6 +40,7 @@ import { Settings } from 'lucide-react';
 import { PortfolioTable, PortfolioItem } from '@/components/PortfolioTable';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { PortfolioPerformance } from '@/components/PortfolioPerformance';
+import { SectionCard, KpiCard, SentimentBadge, FadeIn, KpiSkeleton, CardSkeleton } from '@/components/portfolio/ui';
 
 interface WatchlistItem {
     id: number;
@@ -399,7 +399,7 @@ function PortfolioContent() {
                                 <select
                                     value={selectedAccount}
                                     onChange={(e) => setSelectedAccount(e.target.value)}
-                                    className="appearance-none bg-white dark:bg-card border border-gray-300 dark:border-slate-700 text-gray-700 dark:text-slate-300 py-2.5 pl-4 pr-10 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 font-medium shadow-sm cursor-pointer"
+                                    className="appearance-none bg-card border border-border text-foreground py-2.5 pl-4 pr-10 rounded-xl focus:outline-none focus-visible:ring-[3px] focus-visible:ring-ring/50 focus-visible:border-ring text-sm font-medium shadow-sm cursor-pointer"
                                 >
                                     <option value="all">All Accounts</option>
                                     <option disabled>──────────</option>
@@ -416,9 +416,9 @@ function PortfolioContent() {
                             <button
                                 onClick={() => setIsAccountSettingsOpen(true)}
                                 disabled={selectedAccount === 'all'}
-                                className={`p-2.5 bg-white dark:bg-card border border-gray-300 dark:border-slate-700 rounded-lg shadow-sm transition-all ${selectedAccount === 'all'
+                                className={`p-2.5 bg-card border border-border rounded-xl shadow-sm transition-all ${selectedAccount === 'all'
                                     ? 'opacity-50 cursor-not-allowed text-gray-400'
-                                    : 'hover:bg-gray-50 dark:hover:bg-slate-800 text-gray-500 dark:text-slate-400 hover:text-blue-600 dark:hover:text-blue-400'
+                                    : 'hover:bg-muted text-muted-foreground hover:text-primary'
                                     }`}
                                 title={selectedAccount === 'all' ? "Select an account to manage settings" : "Account Settings"}
                             >
@@ -427,7 +427,7 @@ function PortfolioContent() {
 
                             <button
                                 onClick={() => setIsCreateAccountOpen(true)}
-                                className="bg-white dark:bg-card border border-gray-300 dark:border-slate-700 hover:bg-gray-50 dark:hover:bg-slate-800 text-gray-700 dark:text-slate-300 p-2.5 rounded-lg shadow-sm transition-all"
+                                className="bg-card border border-border hover:bg-muted text-foreground p-2.5 rounded-xl shadow-sm transition-all"
                                 title="Create New Portfolio Account"
                             >
                                 <FolderPlus className="h-5 w-5" />
@@ -437,7 +437,7 @@ function PortfolioContent() {
                             <button
                                 onClick={() => router.push(`/portfolio/optimize?account=${selectedAccount}`)}
                                 disabled={displayedItems.length === 0}
-                                className="flex items-center gap-2 bg-green-600 dark:bg-green-700 hover:bg-green-700 dark:hover:bg-green-800 text-white px-5 py-2.5 rounded-lg font-medium transition-all shadow-lg active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed"
+                                className="flex items-center gap-2 bg-primary hover:bg-primary/90 text-primary-foreground px-5 py-2.5 rounded-xl text-sm font-semibold transition-all shadow-sm hover:shadow-md active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed"
                                 title="Advanced Portfolio Optimization"
                             >
                                 <Wand2 className="h-5 w-5" />
@@ -450,143 +450,102 @@ function PortfolioContent() {
 
                 {/* Summary Cards - Only for Holdings */}
                 {activeTab === 'holdings' && (
-                    <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-                        <Card>
-                            <CardHeader className="flex flex-row items-center justify-between pb-2 px-5 pt-4">
-                                <CardTitle className="text-[12px] font-medium text-muted-foreground flex items-center">
-                                    Capital deployed
-                                    <InfoTooltip content="Total initial investment across all active holdings in the selected account." />
-                                </CardTitle>
-                                <Wallet className="h-4 w-4 text-muted-foreground" />
-                            </CardHeader>
-                            <CardContent className="px-5 pb-4">
-                                <div className="text-2xl font-semibold text-foreground tabular-nums">
-                                    {formatRupees(totalInvestment)}
-                                </div>
-                                <div className="text-xs text-muted-foreground mt-1">
-                                    Across {displayedItems.length} holdings
-                                </div>
-                            </CardContent>
-                        </Card>
-
-                        <Card>
-                            <CardHeader className="flex flex-row items-center justify-between pb-2 px-5 pt-4">
-                                <CardTitle className="text-[12px] font-medium text-muted-foreground flex items-center">
-                                    Portfolio value
-                                    <InfoTooltip content="Current market valuation of all holdings based on real-time price feeds." />
-                                </CardTitle>
-                                <DollarSign className="h-4 w-4 text-muted-foreground" />
-                            </CardHeader>
-                            <CardContent className="px-5 pb-4">
-                                <div className="text-2xl font-semibold text-foreground tabular-nums">
-                                    {formatRupees(totalCurrentValue)}
-                                </div>
-                                <div className="text-xs text-muted-foreground mt-1">
-                                    Real-time valuation
-                                </div>
-                            </CardContent>
-                        </Card>
-
-                        <Card>
-                            <CardHeader className="flex flex-row items-center justify-between pb-2 px-5 pt-4">
-                                <CardTitle className="text-[12px] font-medium text-muted-foreground flex items-center">
-                                    Total returns
-                                    <InfoTooltip content="Net unrealized profit or loss since inception, including reinvested capital." />
-                                </CardTitle>
-                                {totalGainLoss >= 0 ? <TrendingUp className="h-4 w-4 text-emerald-600 dark:text-emerald-400" /> : <TrendingDown className="h-4 w-4 text-rose-600 dark:text-rose-400" />}
-                            </CardHeader>
-                            <CardContent className="px-5 pb-4">
-                                <div className={`text-2xl font-semibold tabular-nums ${totalGainLoss >= 0 ? 'text-emerald-600 dark:text-emerald-400' : 'text-rose-600 dark:text-rose-400'}`}>
-                                    {formatRupees(Math.abs(totalGainLoss))}
-                                </div>
-                                <div className="flex items-center gap-2 mt-1">
-                                    <span className={`text-xs font-medium tabular-nums ${totalGainLoss >= 0 ? 'text-emerald-600 dark:text-emerald-400' : 'text-rose-600 dark:text-rose-400'}`}>
-                                        {totalGainLoss >= 0 ? '+' : '-'}{Math.abs(totalGainLossPercent).toFixed(2)}%
+                    loading && displayedItems.length === 0 ? (
+                        <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+                            {[0, 1, 2, 3].map(i => <KpiSkeleton key={i} />)}
+                        </div>
+                    ) : (
+                        <FadeIn className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+                            <KpiCard
+                                accent="blue"
+                                icon={Wallet}
+                                label="Capital Deployed"
+                                info="Total initial investment across all active holdings in the selected account."
+                                value={formatRupees(totalInvestment)}
+                                sub={<SentimentBadge tone="neutral">{displayedItems.length} holdings</SentimentBadge>}
+                            />
+                            <KpiCard
+                                accent="emerald"
+                                icon={DollarSign}
+                                label="Portfolio Value"
+                                info="Current market valuation of all holdings based on real-time price feeds."
+                                value={formatRupees(totalCurrentValue)}
+                                sub={<SentimentBadge tone="neutral">Real-time valuation</SentimentBadge>}
+                            />
+                            <KpiCard
+                                accent="emerald"
+                                icon={totalGainLoss >= 0 ? TrendingUp : TrendingDown}
+                                label="Total Returns"
+                                info="Net unrealized profit or loss since inception, including reinvested capital."
+                                value={formatRupees(Math.abs(totalGainLoss))}
+                                valueClassName={totalGainLoss >= 0 ? 'text-emerald-600 dark:text-emerald-400' : 'text-rose-600 dark:text-rose-400'}
+                                sub={
+                                    <span className="flex items-center gap-2">
+                                        <SentimentBadge tone={totalGainLoss >= 0 ? 'up' : 'down'}>
+                                            {totalGainLoss >= 0 ? '+' : '−'}{Math.abs(totalGainLossPercent).toFixed(2)}%
+                                        </SentimentBadge>
+                                        {bestPerformer && (
+                                            <span className="text-[11px] text-muted-foreground">
+                                                Top: <span className="text-foreground">{bestPerformer.ticker}</span>
+                                            </span>
+                                        )}
                                     </span>
-                                    {bestPerformer && (
-                                        <span className="text-[11px] text-muted-foreground">
-                                            Top: <span className="text-foreground">{bestPerformer.ticker}</span>
-                                        </span>
-                                    )}
-                                </div>
-                            </CardContent>
-                        </Card>
-
-                        <Card>
-                            <CardHeader className="flex flex-row items-center justify-between pb-2 px-5 pt-4">
-                                <CardTitle className="text-[12px] font-medium text-muted-foreground flex items-center">
-                                    Session swing
-                                    <InfoTooltip content="Intraday profit or loss change for the current market session." />
-                                </CardTitle>
-                                <Zap className="h-4 w-4 text-muted-foreground" />
-                            </CardHeader>
-                            <CardContent className="px-5 pb-4">
-                                <div className={`text-2xl font-semibold tabular-nums ${totalDayGainLoss >= 0 ? 'text-emerald-600 dark:text-emerald-400' : 'text-rose-600 dark:text-rose-400'}`}>
-                                    {formatRupees(Math.abs(totalDayGainLoss))}
-                                </div>
-                                <div className="text-xs text-muted-foreground mt-1">
-                                    Intraday movement
-                                </div>
-                            </CardContent>
-                        </Card>
-                    </div>
+                                }
+                            />
+                            <KpiCard
+                                accent="amber"
+                                icon={Zap}
+                                label="Session Swing"
+                                info="Intraday profit or loss change for the current market session."
+                                value={formatRupees(Math.abs(totalDayGainLoss))}
+                                valueClassName={totalDayGainLoss >= 0 ? 'text-emerald-600 dark:text-emerald-400' : 'text-rose-600 dark:text-rose-400'}
+                                sub={<SentimentBadge tone={totalDayGainLoss >= 0 ? 'up' : 'down'}>Intraday movement</SentimentBadge>}
+                            />
+                        </FadeIn>
+                    )
                 )}
-
-                {activeTab === 'holdings' && (
-                    <div className="mt-8">
-                        <RiskRadar accountId={selectedAccount} />
-                    </div>
-                )}
-
 
                 {/* Holdings Table - MOVED UP - Only for Holdings */}
                 {activeTab === 'holdings' && (
-                    <Card className="shadow-lg border-blue-50/50 dark:border-slate-800 dark:bg-card">
-                        <CardHeader className="py-4 px-6 border-b border-gray-50 dark:border-slate-800">
-                            <CardTitle className="flex flex-col md:flex-row md:items-center justify-start gap-6">
-                                <div className="flex items-center gap-2 text-slate-800 dark:text-slate-100">
-                                    <Grid3X3 className="h-5 w-5 text-gray-400 dark:text-slate-500" />
-                                    <span className="font-bold">Strategic Holdings</span>
-                                    <InfoTooltip content="Real-time list of all active positions, tracking entry costs, current value, and profit metrics." />
-                                    <div className="flex items-center gap-1.5 ml-2">
-                                        <Badge className="bg-emerald-50 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-400 border-emerald-100 dark:border-emerald-800 hover:bg-emerald-50 text-[10px] px-2 py-0 h-5 font-semibold">
-                                            #{stats.profit} Profit
-                                        </Badge>
-                                        <Badge className="bg-rose-50 dark:bg-rose-900/30 text-rose-700 dark:text-rose-400 border-rose-100 dark:border-rose-800 hover:bg-rose-50 text-[10px] px-2 py-0 h-5 font-semibold">
-                                            #{stats.loss} Loss
-                                        </Badge>
-                                    </div>
+                    <FadeIn delay={0.05}>
+                    <SectionCard
+                        accent="emerald"
+                        icon={Grid3X3}
+                        title="Strategic Holdings"
+                        info="Real-time list of all active positions, tracking entry costs, current value, and profit metrics."
+                        badges={<>
+                            <SentimentBadge tone="up">#{stats.profit} Profit</SentimentBadge>
+                            <SentimentBadge tone="down">#{stats.loss} Loss</SentimentBadge>
+                        </>}
+                        actions={<>
+                            {selectedAccount !== 'all' && (
+                                <div className="flex items-center gap-3">
+                                    <span className="text-muted-foreground text-xs font-normal">
+                                        (Account: {accounts.find(a => a.id.toString() == selectedAccount)?.name}
+                                        {accounts.find(a => a.id.toString() == selectedAccount)?.account_type === 'PAPER' ? ' - Paper Trading' : ''})
+                                    </span>
+                                    <button
+                                        onClick={() => {
+                                            setDefaultModalAccount(selectedAccount);
+                                            setPromoteTicker('');
+                                            setIsModalOpen(true);
+                                        }}
+                                        className="flex items-center gap-1.5 bg-primary hover:bg-primary/90 text-primary-foreground px-3 py-1 rounded-lg text-[10px] font-bold transition-all shadow-sm active:scale-95"
+                                    >
+                                        <Plus className="h-3 w-3" />
+                                        Add Transaction
+                                    </button>
                                 </div>
-
-                                <div className="flex flex-wrap items-center gap-4">
-                                    {selectedAccount !== 'all' && (
-                                        <div className="flex items-center gap-3">
-                                            <span className="text-gray-400 dark:text-slate-500 text-sm font-normal">
-                                                (Account: {accounts.find(a => a.id.toString() == selectedAccount)?.name}
-                                                {accounts.find(a => a.id.toString() == selectedAccount)?.account_type === 'PAPER' ? ' - Paper Trading' : ''})
-                                            </span>
-                                            <button
-                                                onClick={() => {
-                                                    setDefaultModalAccount(selectedAccount);
-                                                    setPromoteTicker('');
-                                                    setIsModalOpen(true);
-                                                }}
-                                                className="flex items-center gap-1.5 bg-blue-600 hover:bg-blue-700 text-white px-3 py-1 rounded-md text-[10px] font-bold transition-all shadow-sm active:scale-95"
-                                            >
-                                                <Plus className="h-3 w-3" />
-                                                Add Transaction
-                                            </button>
-                                        </div>
-                                    )}
-
-                                    {loading && <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-gray-900 dark:border-border"></div>}
-                                </div>
-                            </CardTitle>
-                        </CardHeader>
-                        <CardContent className="p-0">
-                            {displayedItems.length === 0 && !loading ? (
-                                <div className="text-center py-10 text-gray-500 dark:text-gray-400 flex flex-col items-center gap-2">
-                                    <Wallet className="h-10 w-10 text-gray-200 dark:text-gray-700" />
+                            )}
+                            {loading && <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-foreground"></div>}
+                        </>}
+                        bodyClassName="p-0"
+                    >
+                            {loading && displayedItems.length === 0 ? (
+                                <div className="p-4"><CardSkeleton rows={8} /></div>
+                            ) : displayedItems.length === 0 && !loading ? (
+                                <div className="text-center py-12 text-muted-foreground flex flex-col items-center gap-2">
+                                    <Wallet className="h-10 w-10 text-muted" />
                                     <p>No stocks in portfolio. Add a transaction to get started.</p>
                                 </div>
                             ) : (
@@ -601,13 +560,13 @@ function PortfolioContent() {
 
                                             return (
                                                 <div key={acc.id} className="space-y-3">
-                                                    <div className="flex flex-wrap items-center justify-between gap-3 border-l-4 border-blue-500 pl-3 pr-2">
+                                                    <div className="flex flex-wrap items-center justify-between gap-3 rounded-lg bg-primary/5 px-3 py-2">
                                                         <div className="flex items-center gap-3">
-                                                            <h3 className="text-lg font-bold text-slate-800 dark:text-slate-200">{acc.name}</h3>
+                                                            <h3 className="text-[11px] font-bold uppercase tracking-wider text-primary">{acc.name}</h3>
                                                             <Badge variant="outline" className="text-xs font-mono">
                                                                 {formatRupees(accTotalValue)}
                                                             </Badge>
-                                                            <span className={`text-xs font-bold ${accTotalGain >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                                                            <span className={`text-xs font-bold tabular-nums ${accTotalGain >= 0 ? 'text-emerald-600 dark:text-emerald-400' : 'text-rose-600 dark:text-rose-400'}`}>
                                                                 {accTotalGain >= 0 ? '+' : ''}{formatRupees(accTotalGain)}
                                                             </span>
                                                         </div>
@@ -617,13 +576,13 @@ function PortfolioContent() {
                                                                 setPromoteTicker('');
                                                                 setIsModalOpen(true);
                                                             }}
-                                                            className="flex items-center gap-1.5 bg-slate-900 dark:bg-slate-800 hover:bg-slate-800 dark:hover:bg-slate-700 text-white px-3 py-1 rounded-md text-[10px] font-bold transition-all shadow-sm active:scale-95"
+                                                            className="flex items-center gap-1.5 bg-primary hover:bg-primary/90 text-primary-foreground px-3 py-1 rounded-md text-[10px] font-bold transition-all shadow-sm active:scale-95"
                                                         >
                                                             <Plus className="h-3 w-3" />
                                                             Add Transaction
                                                         </button>
                                                     </div>
-                                                    <div className="rounded-xl border border-gray-100 dark:border-slate-800 overflow-hidden shadow-sm">
+                                                    <div className="rounded-xl border border-border overflow-hidden">
                                                         <PortfolioTable
                                                             items={accountItems}
                                                             currentPage={1} // Grouped view doesn't support pagination per table easily yet, showing all maybe better? Or just pass 1 for SN
@@ -695,15 +654,15 @@ function PortfolioContent() {
 
                             {/* Pagination Controls */}
                             {totalPages > 1 && (
-                                <div className="flex flex-col sm:flex-row items-center justify-between gap-4 py-6 px-6 border-t border-gray-50">
-                                    <div className="text-xs font-semibold">
-                                        Displaying <span className="text-gray-900">{(currentPage - 1) * pageSize + 1} - {Math.min(currentPage * pageSize, sortedAndFilteredItems.length)}</span> of <span className="text-gray-900">{sortedAndFilteredItems.length}</span> holdings
+                                <div className="flex flex-col sm:flex-row items-center justify-between gap-4 py-4 px-6 border-t border-border">
+                                    <div className="text-xs text-muted-foreground">
+                                        Displaying <span className="text-foreground font-semibold">{(currentPage - 1) * pageSize + 1} - {Math.min(currentPage * pageSize, sortedAndFilteredItems.length)}</span> of <span className="text-foreground font-semibold">{sortedAndFilteredItems.length}</span> holdings
                                     </div>
                                     <div className="flex items-center gap-2">
                                         <button
                                             onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
                                             disabled={currentPage === 1}
-                                            className="p-2 rounded-lg border border-gray-100 hover:bg-gray-50 disabled:opacity-30 disabled:hover:bg-transparent transition-all"
+                                            className="p-2 rounded-lg border border-border hover:bg-muted disabled:opacity-30 disabled:hover:bg-transparent transition-all"
                                         >
                                             <ChevronLeft size={16} />
                                         </button>
@@ -713,7 +672,7 @@ function PortfolioContent() {
                                                 <button
                                                     key={i}
                                                     onClick={() => setCurrentPage(i + 1)}
-                                                    className={`h-8 w-8 rounded-lg text-xs font-bold transition-all ${currentPage === i + 1 ? 'bg-blue-600 text-white shadow-lg shadow-blue-500/30' : 'text-gray-500 hover:bg-gray-100'}`}
+                                                    className={`h-8 w-8 rounded-lg text-xs font-bold transition-all ${currentPage === i + 1 ? 'bg-primary text-primary-foreground shadow-sm' : 'text-muted-foreground hover:bg-muted'}`}
                                                 >
                                                     {i + 1}
                                                 </button>
@@ -723,15 +682,15 @@ function PortfolioContent() {
                                         <button
                                             onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
                                             disabled={currentPage === totalPages}
-                                            className="p-2 rounded-lg border border-gray-100 hover:bg-gray-50 disabled:opacity-30 disabled:hover:bg-transparent transition-all"
+                                            className="p-2 rounded-lg border border-border hover:bg-muted disabled:opacity-30 disabled:hover:bg-transparent transition-all"
                                         >
                                             <ChevronRight size={16} />
                                         </button>
                                     </div>
                                 </div>
                             )}
-                        </CardContent>
-                    </Card>
+                    </SectionCard>
+                    </FadeIn>
                 )}
 
                 {/* Account Settings Dialog */}
@@ -750,156 +709,165 @@ function PortfolioContent() {
                     }}
                 />
 
-                {/* Visual Analytics & Heatmap Section - Only for Holdings */}
-                {activeTab === 'holdings' && displayedItems.length > 0 && (
-                    <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
-                        {/* Sector Analysis */}
-                        <Card className="lg:col-span-8 shadow-sm dark:bg-card dark:border-slate-800">
-                            <CardHeader className="flex flex-row items-center justify-between">
-                                <CardTitle className="text-lg flex items-center dark:text-slate-100">
-                                    <BarIcon className="h-5 w-5 text-blue-500 mr-2" />
-                                    Portfolio Visualizer
-                                    <InfoTooltip content="Graphical deep-dive into your asset allocation, sector diversification, and performance contribution." />
-                                </CardTitle>
-                            </CardHeader>
-                            <CardContent>
-                                <div className="grid grid-cols-1 md:grid-cols-2 gap-8 h-[300px]">
-                                    {/* Pie Chart: Allocation */}
-                                    <div className="relative">
-                                        <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
-                                            <span className="text-xs text-gray-400 dark:text-slate-500 font-bold">Diversification</span>
-                                            <span className="text-lg font-semibold text-gray-800 dark:text-slate-200">{sectorData.length} Sectors</span>
-                                        </div>
-                                        <ResponsiveContainer width="100%" height="100%">
-                                            <PieChart>
-                                                <Pie
-                                                    data={sectorData}
-                                                    cx="50%"
-                                                    cy="50%"
-                                                    innerRadius={60}
-                                                    outerRadius={80}
-                                                    paddingAngle={5}
-                                                    dataKey="value"
-                                                >
-                                                    {sectorData.map((entry, index) => (
-                                                        <Cell key={`cell-${index}`} fill={CHART_COLORS[index % CHART_COLORS.length]} stroke="rgba(255,255,255,0.2)" />
-                                                    ))}
-                                                </Pie>
-                                                <RechartsTooltip />
-                                            </PieChart>
-                                        </ResponsiveContainer>
+                {/* Risk Radar + Sector Allocation - Only for Holdings */}
+                {activeTab === 'holdings' && (
+                    <FadeIn delay={0.1} className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                        <div className={displayedItems.length > 0 ? '' : 'lg:col-span-2'}>
+                            <RiskRadar accountId={selectedAccount} />
+                        </div>
+                        {displayedItems.length > 0 && (
+                            <SectionCard
+                                accent="indigo"
+                                icon={PieIcon}
+                                title="Sector Allocation"
+                                info="Graphical deep-dive into your asset allocation and sector diversification."
+                                badges={<SentimentBadge tone="neutral">{sectorData.length} sectors</SentimentBadge>}
+                            >
+                                <div className="relative h-[260px]">
+                                    <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
+                                        <span className="text-[10px] uppercase tracking-wider text-muted-foreground font-semibold">Diversification</span>
+                                        <span className="text-lg font-semibold text-foreground">{sectorData.length} Sectors</span>
                                     </div>
-
-                                    {/* Bar Chart: Performance by Sector */}
                                     <ResponsiveContainer width="100%" height="100%">
-                                        <BarChart data={sectorData} layout="vertical" margin={{ left: 20, right: 20 }}>
-                                            <XAxis type="number" hide />
-                                            <YAxis
-                                                dataKey="name"
-                                                type="category"
-                                                axisLine={false}
-                                                tickLine={false}
-                                                tick={{ fontSize: 13, fontWeight: 700, fill: '#6B7280' }}
-                                                width={80}
-                                            />
-                                            <RechartsTooltip
-                                                cursor={{ fill: 'rgba(255, 255, 255, 0.05)' }}
-                                                contentStyle={{ borderRadius: '8px', border: 'none', boxShadow: '0 4px 12px rgba(0,0,0,0.1)', backgroundColor: 'rgba(0,0,0,0.8)' }}
-                                            />
-                                            <Bar
-                                                dataKey="pnl"
-                                                radius={[0, 4, 4, 0]}
-                                                barSize={20}
+                                        <PieChart>
+                                            <Pie
+                                                data={sectorData}
+                                                cx="50%"
+                                                cy="50%"
+                                                innerRadius={60}
+                                                outerRadius={80}
+                                                paddingAngle={5}
+                                                dataKey="value"
                                             >
                                                 {sectorData.map((entry, index) => (
-                                                    <Cell
-                                                        key={`cell-${index}`}
-                                                        fill={entry.pnl >= 0 ? '#10B981' : '#EF4444'}
-                                                    />
+                                                    <Cell key={`cell-${index}`} fill={CHART_COLORS[index % CHART_COLORS.length]} stroke="rgba(255,255,255,0.2)" />
                                                 ))}
-                                            </Bar>
-                                        </BarChart>
+                                            </Pie>
+                                            <RechartsTooltip />
+                                        </PieChart>
                                     </ResponsiveContainer>
                                 </div>
-
-                                {/* Custom Legend */}
-                                <div className="flex flex-wrap gap-4 mt-6 pt-6 border-t border-gray-50 dark:border-slate-800">
+                                <div className="flex flex-wrap gap-x-4 gap-y-2 mt-4 pt-4 border-t border-border">
                                     {sectorData.map((s, i) => (
                                         <div key={s.name} className="flex items-center gap-2">
                                             <div className="h-2 w-2 rounded-full" style={{ backgroundColor: CHART_COLORS[i % CHART_COLORS.length] }} />
-                                            <span className="text-sm font-bold text-gray-500 dark:text-slate-400 uppercase tracking-tighter">
+                                            <span className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
                                                 {s.name} ({((s.value / totalCurrentValue) * 100).toFixed(0)}%)
                                             </span>
                                         </div>
                                     ))}
                                 </div>
-                            </CardContent>
-                        </Card>
+                            </SectionCard>
+                        )}
+                    </FadeIn>
+                )}
 
-                        {/* Performance Heatmap (Grid) */}
-                        <Card className="lg:col-span-4 shadow-sm overflow-hidden dark:bg-card dark:border-slate-800">
-                            <CardHeader>
-                                <CardTitle className="text-lg flex items-center gap-2 dark:text-slate-100">
-                                    <PieIcon className="h-5 w-5 text-purple-500" />
-                                    PnL Heatmap
-                                </CardTitle>
-                            </CardHeader>
-                            <CardContent>
-                                <div className="grid grid-cols-4 sm:grid-cols-5 gap-2">
-                                    {displayedItems.map((item) => {
-                                        const pnlP = item.gain_loss_percent;
-                                        let bgColor = 'bg-gray-100 dark:bg-slate-800';
-                                        if (pnlP > 20) bgColor = 'bg-green-600 dark:bg-green-700';
-                                        else if (pnlP > 10) bgColor = 'bg-green-500 dark:bg-green-600';
-                                        else if (pnlP > 0) bgColor = 'bg-green-400 dark:bg-green-500';
-                                        else if (pnlP > -10) bgColor = 'bg-red-400 dark:bg-red-500';
-                                        else if (pnlP > -20) bgColor = 'bg-red-500 dark:bg-red-600';
-                                        else bgColor = 'bg-red-600 dark:bg-red-700';
+                {/* P&L by Sector + P&L Heatmap - Only for Holdings */}
+                {activeTab === 'holdings' && displayedItems.length > 0 && (
+                    <FadeIn delay={0.15} className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                        <SectionCard
+                            accent="indigo"
+                            icon={BarIcon}
+                            title="P&L by Sector"
+                            info="Performance contribution of each sector to overall profit and loss."
+                        >
+                            <div className="h-[260px]">
+                                <ResponsiveContainer width="100%" height="100%">
+                                    <BarChart data={sectorData} layout="vertical" margin={{ left: 20, right: 20 }}>
+                                        <XAxis type="number" hide />
+                                        <YAxis
+                                            dataKey="name"
+                                            type="category"
+                                            axisLine={false}
+                                            tickLine={false}
+                                            tick={{ fontSize: 11, fontWeight: 600, fill: '#6B7280' }}
+                                            width={80}
+                                        />
+                                        <RechartsTooltip
+                                            cursor={{ fill: 'rgba(255, 255, 255, 0.05)' }}
+                                            contentStyle={{ borderRadius: '8px', border: 'none', boxShadow: '0 4px 12px rgba(0,0,0,0.1)', backgroundColor: 'rgba(0,0,0,0.8)' }}
+                                        />
+                                        <Bar
+                                            dataKey="pnl"
+                                            radius={[0, 4, 4, 0]}
+                                            barSize={20}
+                                        >
+                                            {sectorData.map((entry, index) => (
+                                                <Cell
+                                                    key={`cell-${index}`}
+                                                    fill={entry.pnl >= 0 ? '#10B981' : '#F43F5E'}
+                                                />
+                                            ))}
+                                        </Bar>
+                                    </BarChart>
+                                </ResponsiveContainer>
+                            </div>
+                        </SectionCard>
 
-                                        return (
-                                            <div
-                                                key={item.id}
-                                                className={`aspect-square ${bgColor} rounded-md flex flex-col items-center justify-center text-white shadow-inner group relative cursor-help transition-transform hover:scale-105 hover:z-20`}
-                                            >
-                                                <span className="text-sm font-semibold">{item.ticker}</span>
-                                                <span className="text-xs font-bold opacity-80">{Number(pnlP).toFixed(0)}%</span>
+                        <SectionCard
+                            accent="emerald"
+                            icon={Activity}
+                            title="P&L Heatmap"
+                            info="Each tile is a holding, colored by unrealized gain or loss intensity."
+                        >
+                            <div className="grid grid-cols-4 sm:grid-cols-5 gap-2">
+                                {displayedItems.map((item) => {
+                                    const pnlP = item.gain_loss_percent;
+                                    let bgColor = 'bg-gray-100 dark:bg-slate-800';
+                                    if (pnlP > 20) bgColor = 'bg-emerald-600 dark:bg-emerald-700';
+                                    else if (pnlP > 10) bgColor = 'bg-emerald-500 dark:bg-emerald-600';
+                                    else if (pnlP > 0) bgColor = 'bg-emerald-400 dark:bg-emerald-500';
+                                    else if (pnlP > -10) bgColor = 'bg-rose-400 dark:bg-rose-500';
+                                    else if (pnlP > -20) bgColor = 'bg-rose-500 dark:bg-rose-600';
+                                    else bgColor = 'bg-rose-600 dark:bg-rose-700';
 
-                                                {/* Tooltip on Hover */}
-                                                <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 w-32 bg-gray-900 dark:bg-slate-950 text-white p-2 rounded text-xs opacity-0 group-hover:opacity-100 pointer-events-none transition-opacity shadow-sm z-30">
-                                                    <p className="font-semibold border-b border-gray-700 dark:border-slate-800 pb-1 mb-1">{item.ticker}</p>
-                                                    <p className="flex justify-between">Profit: <span className="font-mono">{formatRupees(item.gain_loss)}</span></p>
-                                                    <p className="flex justify-between">Value: <span className="font-mono">{formatRupees(item.current_value)}</span></p>
-                                                </div>
+                                    return (
+                                        <div
+                                            key={item.id}
+                                            className={`aspect-square ${bgColor} rounded-xl flex flex-col items-center justify-center text-white shadow-inner group relative cursor-help transition-transform hover:scale-105 hover:z-20`}
+                                        >
+                                            <span className="text-sm font-semibold">{item.ticker}</span>
+                                            <span className="text-xs font-bold opacity-80 tabular-nums">{Number(pnlP).toFixed(0)}%</span>
+
+                                            {/* Tooltip on Hover */}
+                                            <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 w-32 bg-gray-900 dark:bg-slate-950 text-white p-2 rounded-lg text-xs opacity-0 group-hover:opacity-100 pointer-events-none transition-opacity shadow-sm z-30">
+                                                <p className="font-semibold border-b border-gray-700 dark:border-slate-800 pb-1 mb-1">{item.ticker}</p>
+                                                <p className="flex justify-between">Profit: <span className="font-mono">{formatRupees(item.gain_loss)}</span></p>
+                                                <p className="flex justify-between">Value: <span className="font-mono">{formatRupees(item.current_value)}</span></p>
                                             </div>
-                                        );
-                                    })}
+                                        </div>
+                                    );
+                                })}
+                            </div>
+                            <div className="mt-5 flex items-center justify-between text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
+                                <span>Bearish</span>
+                                <div className="flex gap-1">
+                                    <div className="h-2 w-2 rounded-sm bg-rose-600" />
+                                    <div className="h-2 w-2 rounded-sm bg-rose-500" />
+                                    <div className="h-2 w-2 rounded-sm bg-rose-400" />
+                                    <div className="h-2 w-2 rounded-sm bg-emerald-400" />
+                                    <div className="h-2 w-2 rounded-sm bg-emerald-500" />
+                                    <div className="h-2 w-2 rounded-sm bg-emerald-600" />
                                 </div>
-                                <div className="mt-6 flex items-center justify-between text-xs font-semibold uppercase tracking-wider text-gray-400 dark:text-slate-500">
-                                    <span>Bearish</span>
-                                    <div className="flex gap-1">
-                                        {[1, 2, 3, 4, 5, 6].map(i => <div key={i} className={`h-2 w-2 rounded-sm ${i <= 3 ? 'bg-red-' + (i * 200) : 'bg-green-' + ((7 - i) * 200)}`} />)}
-                                    </div>
-                                    <span>Bullish</span>
-                                </div>
-                            </CardContent>
-                        </Card>
-                    </div>
+                                <span>Bullish</span>
+                            </div>
+                        </SectionCard>
+                    </FadeIn>
                 )}
 
                 {/* Risk Management Section - MOVED DOWN - Only for Holdings */}
                 {activeTab === 'holdings' && displayedItems.length > 0 && (
-                    <Card className="bg-slate-50/50 dark:bg-card border-slate-200 dark:border-slate-800 border-dashed">
-                        <CardHeader className="pb-3">
-                            <CardTitle className="flex items-center gap-2 text-lg text-slate-700 dark:text-slate-200">
-                                <ShieldAlert className="h-5 w-5 text-slate-500 dark:text-slate-400" />
-                                Portfolio Health Scan
-                            </CardTitle>
-                        </CardHeader>
-                        <CardContent>
+                    <FadeIn delay={0.2}>
+                    <SectionCard
+                        accent="rose"
+                        icon={ShieldAlert}
+                        title="Portfolio Health"
+                        info="Automated scan for sector concentration, oversized positions, and volatility hotspots."
+                    >
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
                                 {/* Sector Concentration Risk List */}
                                 <div>
-                                    <h4 className="text-xs font-semibold mb-4 tracking-[0.2em] flex items-center gap-2 dark:text-slate-400">
+                                    <h4 className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground mb-4 flex items-center gap-2">
                                         Allocation Alerts
                                     </h4>
                                     <div className="space-y-2">
@@ -915,21 +883,21 @@ function PortfolioContent() {
                                                 const percent = (value / totalCurrentValue) * 100;
                                                 return (
                                                     <div key={sector}>
-                                                        <div className="flex justify-between text-xs mb-1.5 p-2 bg-white dark:bg-card rounded border border-border dark:border-slate-800">
-                                                            <span className="font-bold text-slate-600 dark:text-slate-300">{sector}</span>
+                                                        <div className="flex justify-between items-center text-xs mb-1.5 p-2 bg-muted/30 rounded-lg border border-border">
+                                                            <span className="font-semibold text-foreground">{sector}</span>
                                                             <div className="flex items-center gap-2">
-                                                                <span className={`text-xs font-semibold ${percent > 40 ? "text-red-500" : "text-slate-400"}`}>
+                                                                <span className={`text-xs font-semibold tabular-nums ${percent > 40 ? "text-rose-500" : "text-muted-foreground"}`}>
                                                                     {percent.toFixed(1)}%
                                                                 </span>
-                                                                <div className="w-16 h-1 bg-slate-100 dark:bg-slate-800 rounded-full overflow-hidden">
+                                                                <div className="w-16 h-1.5 bg-muted rounded-full overflow-hidden">
                                                                     <div
-                                                                        className={`h-full rounded-full ${percent > 40 ? 'bg-red-500' : 'bg-blue-400'}`}
+                                                                        className={`h-full rounded-full ${percent > 40 ? 'bg-gradient-to-r from-rose-500 to-rose-400' : percent > 25 ? 'bg-gradient-to-r from-amber-400 to-amber-500' : 'bg-emerald-500/70'}`}
                                                                         style={{ width: `${percent}%` }}
                                                                     />
                                                                 </div>
                                                             </div>
                                                         </div>
-                                                        {percent > 40 && <p className="text-xs font-bold text-red-500 pl-2">⚠️ Diversification alert: Overexposed to {sector}.</p>}
+                                                        {percent > 40 && <p className="text-xs font-semibold text-rose-500 pl-2">⚠️ Diversification alert: Overexposed to {sector}.</p>}
                                                     </div>
                                                 );
                                             })}
@@ -939,21 +907,21 @@ function PortfolioContent() {
                                 {/* Concentration & Volatility Risks */}
                                 <div className="space-y-6">
                                     <div>
-                                        <h4 className="text-xs font-semibold tracking-[0.2em] dark:text-slate-400">Holdings Concentration</h4>
+                                        <h4 className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground mb-3">Holdings Concentration</h4>
                                         <ul className="space-y-2">
                                             {displayedItems
                                                 .filter(item => (Number(item.current_value) / totalCurrentValue) > 0.20)
                                                 .map(item => (
-                                                    <li key={item.ticker} className="flex items-center justify-between text-xs bg-red-50/50 dark:bg-red-900/20 p-2.5 rounded-lg border border-red-100 dark:border-red-900/50 text-red-800 dark:text-red-400">
+                                                    <li key={item.ticker} className="flex items-center justify-between text-xs bg-rose-500/10 p-2.5 rounded-lg border border-rose-500/25 text-rose-600 dark:text-rose-400">
                                                         <span className="flex items-center gap-2 font-bold uppercase tracking-tight">
                                                             <ShieldAlert className="h-3.5 w-3.5" />
                                                             {item.ticker} Oversized
                                                         </span>
-                                                        <span className="font-semibold bg-red-100 dark:bg-red-900/50 px-2 py-0.5 rounded-full">{((Number(item.current_value) / totalCurrentValue) * 100).toFixed(1)}%</span>
+                                                        <span className="font-semibold tabular-nums bg-rose-500/15 px-2 py-0.5 rounded-full">{((Number(item.current_value) / totalCurrentValue) * 100).toFixed(1)}%</span>
                                                     </li>
                                                 ))}
                                             {displayedItems.every(item => (Number(item.current_value) / totalCurrentValue) <= 0.20) && (
-                                                <li className="text-xs font-bold text-emerald-600 dark:text-emerald-400 bg-emerald-50/50 dark:bg-emerald-900/20 p-3 rounded-lg border border-emerald-100 dark:border-emerald-900/50 flex items-center gap-2">
+                                                <li className="text-xs font-semibold text-emerald-600 dark:text-emerald-400 bg-emerald-500/10 p-3 rounded-lg border border-emerald-500/25 flex items-center gap-2">
                                                     <CheckCircle2 className="h-4 w-4" />
                                                     Portfolio capital is healthy and well-distributed.
                                                 </li>
@@ -962,67 +930,69 @@ function PortfolioContent() {
                                     </div>
 
                                     <div>
-                                        <h4 className="text-xs font-semibold text-slate-400 mb-4 uppercase tracking-[0.2em]">Volatility Monitoring</h4>
+                                        <h4 className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground mb-3">Volatility Monitoring</h4>
                                         <div className="flex flex-wrap gap-2">
                                             {displayedItems
                                                 .filter(item => (item.volatility || 0) > 40)
                                                 .sort((a, b) => (b.volatility || 0) - (a.volatility || 0))
                                                 .map(item => (
-                                                    <div key={item.ticker} className="flex items-center gap-1.5 bg-white dark:bg-card text-slate-700 dark:text-slate-300 px-3 py-1.5 rounded-lg text-xs font-semibold border border-slate-200 dark:border-slate-800 shadow-sm">
+                                                    <div key={item.ticker} className="flex items-center gap-1.5 bg-muted/40 text-foreground px-3 py-1.5 rounded-full text-xs font-semibold border border-border">
                                                         <Activity className="h-3 w-3" />
-                                                        {item.ticker} <span className="text-slate-400 opacity-60">/</span> {item.volatility?.toFixed(1)}% VOL
+                                                        {item.ticker} <span className="text-muted-foreground opacity-60">/</span> {item.volatility?.toFixed(1)}% VOL
                                                     </div>
                                                 ))}
                                             {!displayedItems.some(i => (i.volatility || 0) > 40) && (
-                                                <span className="text-xs text-slate-400 dark:text-slate-500 italic">Position stability confirmed across all holdings.</span>
+                                                <span className="text-xs text-muted-foreground italic">Position stability confirmed across all holdings.</span>
                                             )}
                                         </div>
                                     </div>
                                 </div>
                             </div>
-                        </CardContent>
-                    </Card>
+                    </SectionCard>
+                    </FadeIn>
                 )}
 
                 {/* Strategic Watchlist Section - Only for Watchlist tab */}
                 {activeTab === 'watchlist' && (
-                    <Card className="shadow-lg border-blue-50/50 dark:border-slate-800 dark:bg-card">
-                        <CardHeader className="border-b border-gray-50 dark:border-slate-800 pb-2">
-                            <CardTitle className="text-xl font-semibold text-slate-900 dark:text-slate-100 tracking-tight flex items-center justify-between">
-                                <div className="flex items-center gap-3">
+                    <FadeIn>
+                    <SectionCard
+                        accent="indigo"
+                        icon={Eye}
+                        title="Strategic Watchlist"
+                        badges={<SentimentBadge tone="neutral">{sortedAndFilteredWatchlist.length} tickers</SentimentBadge>}
+                        actions={<>
                                     <button
                                         onClick={() => {
                                             setSelectedWatchlistItem(null);
                                             setWatchlistForm({ ticker: '', target_price: '', stop_loss_price: '', alert_enabled: false, notes: '' });
                                             setIsWatchlistModalOpen(true);
                                         }}
-                                        className="h-9 px-4 flex items-center gap-2 bg-gray-900 dark:bg-slate-800 text-white rounded-md text-[11px] font-semibold hover:bg-black dark:hover:bg-slate-700 transition-all uppercase tracking-wider shadow-md whitespace-nowrap"
+                                        className="h-9 px-4 flex items-center gap-2 bg-primary text-primary-foreground rounded-md text-[11px] font-semibold hover:bg-primary/90 transition-all uppercase tracking-wider shadow-md whitespace-nowrap"
                                     >
                                         <Plus size={14} /> Add
                                     </button>
-                                </div>
-                            </CardTitle>
-                        </CardHeader>
-                        <CardContent className="pt-0 p-0">
+                        </>}
+                        bodyClassName="p-0"
+                    >
                             {paginatedWatchlist.length === 0 ? (
-                                <div className="text-center py-20 text-gray-500 dark:text-gray-400 flex flex-col items-center gap-2">
-                                    <Eye className="h-10 w-10 text-gray-200 dark:text-gray-800" />
+                                <div className="text-center py-20 text-muted-foreground flex flex-col items-center gap-2">
+                                    <Eye className="h-10 w-10 text-muted" />
                                     <p className="text-sm font-medium italic">Your watchlist is empty. Add tickers to monitor entry levels.</p>
                                 </div>
                             ) : (
                                 <div className="overflow-x-auto">
                                     <Table>
                                         <TableHeader>
-                                            <TableRow className="bg-gray-50/50 dark:bg-slate-800/50 hover:bg-gray-50/50 dark:hover:bg-slate-800/50">
-                                                <TableHead className="font-bold text-gray-900 dark:text-slate-100 px-6">Ticker</TableHead>
-                                                <TableHead className="text-right font-bold text-gray-900 dark:text-slate-100">LTP (रू)</TableHead>
-                                                <TableHead className="text-right font-bold text-gray-900 dark:text-slate-100">Day Change</TableHead>
-                                                <TableHead className="text-center font-bold text-gray-900 dark:text-slate-100">Health</TableHead>
-                                                <TableHead className="text-right font-bold text-gray-900 dark:text-slate-100">Smart Money / RVOL</TableHead>
-                                                <TableHead className="text-center font-bold text-gray-900 dark:text-slate-100">52W Range</TableHead>
-                                                <TableHead className="text-right font-bold text-gray-900 dark:text-slate-100">Strategy Sync</TableHead>
-                                                <TableHead className="text-right font-bold text-gray-900 dark:text-slate-100">R:R / Upside</TableHead>
-                                                <TableHead className="text-right font-bold text-gray-900 dark:text-slate-100">Timeline</TableHead>
+                                            <TableRow className="bg-muted/40 hover:bg-muted/40 border-border">
+                                                <TableHead className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground px-6">Ticker</TableHead>
+                                                <TableHead className="text-right text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">LTP (रू)</TableHead>
+                                                <TableHead className="text-right text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">Day Change</TableHead>
+                                                <TableHead className="text-center text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">Health</TableHead>
+                                                <TableHead className="text-right text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">Smart Money / RVOL</TableHead>
+                                                <TableHead className="text-center text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">52W Range</TableHead>
+                                                <TableHead className="text-right text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">Strategy Sync</TableHead>
+                                                <TableHead className="text-right text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">R:R / Upside</TableHead>
+                                                <TableHead className="text-right text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">Timeline</TableHead>
                                                 <TableHead className="w-[80px] pr-6"></TableHead>
                                             </TableRow>
                                         </TableHeader>
@@ -1037,14 +1007,14 @@ function PortfolioContent() {
                                                     : null;
 
                                                 return (
-                                                    <TableRow key={item.id} className="hover:bg-blue-50/30 dark:hover:bg-slate-800/30 border-b border-gray-50 dark:border-slate-800 last:border-0 group transition-all">
+                                                    <TableRow key={item.id} className="hover:bg-accent border-b border-gray-50 dark:border-slate-800 last:border-0 group transition-all">
                                                         <TableCell className="py-4 px-6 relative">
                                                             <div className="flex flex-col">
                                                                 <div className="flex items-center gap-2">
                                                                     <StockLink ticker={item.ticker} className="font-semibold text-slate-900 dark:text-slate-100 text-sm" />
                                                                     <button
                                                                         onClick={() => toggleWatchlistAlert(item)}
-                                                                        className={`p-1 rounded-full transition-all ${item.alert_enabled ? 'text-blue-600 bg-blue-50 dark:bg-blue-900/30' : 'text-slate-300 dark:text-slate-700 hover:text-blue-400'}`}
+                                                                        className={`p-1 rounded-full transition-all ${item.alert_enabled ? 'text-primary bg-primary/10' : 'text-slate-300 dark:text-slate-700 hover:text-primary'}`}
                                                                         title={item.alert_enabled ? 'Disable Price Alerts' : 'Enable Price Alerts'}
                                                                     >
                                                                         <Bell size={12} className={item.alert_enabled ? 'fill-current' : ''} />
@@ -1064,11 +1034,11 @@ function PortfolioContent() {
                                                         </TableCell>
                                                         <TableCell className="text-right py-4">
                                                             <div className={`flex flex-col items-end`}>
-                                                                <div className={`font-semibold flex items-center gap-1 ${isPos ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'}`}>
+                                                                <div className={`font-semibold flex items-center gap-1 ${isPos ? 'text-emerald-600 dark:text-emerald-400' : 'text-rose-600 dark:text-rose-400'}`}>
                                                                     {isPos ? <TrendingUp size={12} /> : <TrendingDown size={12} />}
                                                                     {isPos ? '+' : ''}{dayChange.toFixed(1)}
                                                                 </div>
-                                                                <div className={`text-[10px] font-semibold uppercase tracking-tighter px-1 rounded ${isPos ? 'bg-green-50 dark:bg-green-900/30 text-green-700 dark:text-green-400' : 'bg-red-50 dark:bg-red-900/30 text-red-700 dark:text-red-400'}`}>
+                                                                <div className={`text-[10px] font-semibold uppercase tracking-tighter px-1 rounded ${isPos ? 'bg-emerald-500/10 dark:bg-emerald-500/10 text-emerald-700 dark:text-emerald-400' : 'bg-rose-500/10 dark:bg-rose-500/10 text-rose-700 dark:text-rose-400'}`}>
                                                                     {item.day_change_percent}%
                                                                 </div>
                                                             </div>
@@ -1079,9 +1049,9 @@ function PortfolioContent() {
                                                                     <TooltipTrigger asChild>
                                                                         <Badge
                                                                             variant="secondary"
-                                                                            className={`font-bold transition-all px-2 py-0.5 text-[10px] ${item.health_score >= 70 ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-400' :
-                                                                                item.health_score >= 40 ? 'bg-amber-100 text-amber-700 dark:bg-amber-900/40 dark:text-amber-400' :
-                                                                                    'bg-red-100 text-red-700 dark:bg-red-900/40 dark:text-red-400'
+                                                                            className={`font-bold transition-all px-2 py-0.5 text-[10px] ${item.health_score >= 70 ? 'bg-emerald-500/10 text-emerald-700 dark:text-emerald-400' :
+                                                                                item.health_score >= 40 ? 'bg-amber-500/10 text-amber-700 dark:text-amber-400' :
+                                                                                    'bg-rose-500/10 text-rose-700 dark:text-rose-400'
                                                                                 }`}
                                                                         >
                                                                             {item.health_score}
@@ -1117,7 +1087,7 @@ function PortfolioContent() {
                                                                 {item.is_accumulating && (
                                                                     <Tooltip>
                                                                         <TooltipTrigger asChild>
-                                                                            <Badge className="bg-purple-100 text-purple-700 dark:bg-purple-900/40 dark:text-purple-400 text-[8px] font-semibold uppercase tracking-wider px-1.5 py-0 border-none cursor-help">
+                                                                            <Badge className="bg-primary/10 text-primary text-[8px] font-semibold uppercase tracking-wider px-1.5 py-0 border-none cursor-help">
                                                                                 <Zap size={8} className="mr-1 inline" /> Institutional Interest
                                                                             </Badge>
                                                                         </TooltipTrigger>
@@ -1131,7 +1101,7 @@ function PortfolioContent() {
                                                                 )}
                                                                 {item.rvol !== undefined && item.rvol !== null ? (
                                                                     <div className="flex flex-col items-end">
-                                                                        <div className={`font-semibold text-sm ${item.rvol > 2 ? 'text-purple-600 dark:text-purple-400' : item.rvol > 1 ? 'text-blue-600 dark:text-blue-400' : 'text-slate-500 dark:text-slate-400'}`}>
+                                                                        <div className={`font-semibold text-sm ${item.rvol > 2 ? 'text-primary' : item.rvol > 1 ? 'text-primary' : 'text-slate-500 dark:text-slate-400'}`}>
                                                                             {item.rvol.toFixed(1)}x
                                                                         </div>
                                                                         <div className="text-[9px] font-bold text-slate-400 uppercase">VOL Intensity</div>
@@ -1150,14 +1120,14 @@ function PortfolioContent() {
                                                                     </div>
                                                                     <div className="relative w-full h-1.5 bg-slate-100 dark:bg-slate-800 rounded-full overflow-hidden border border-border dark:border-slate-700/50">
                                                                         <div
-                                                                            className="absolute top-0 h-full bg-blue-500/50 dark:bg-blue-400/50"
+                                                                            className="absolute top-0 h-full bg-primary/50"
                                                                             style={{
                                                                                 left: '0',
                                                                                 width: `${((Number(item.current_price) - item.fifty_two_week_low) / (item.fifty_two_week_high - item.fifty_two_week_low)) * 100}%`
                                                                             }}
                                                                         />
                                                                         <div
-                                                                            className="absolute top-0 h-full w-1 bg-blue-600 dark:bg-blue-300 shadow-[0_0_5px_rgba(37,99,235,0.5)]"
+                                                                            className="absolute top-0 h-full w-1 bg-primary shadow-[0_0_5px_rgba(5,150,105,0.5)]"
                                                                             style={{
                                                                                 left: `${((Number(item.current_price) - item.fifty_two_week_low) / (item.fifty_two_week_high - item.fifty_two_week_low)) * 100}%`,
                                                                                 transform: 'translateX(-50%)'
@@ -1173,7 +1143,7 @@ function PortfolioContent() {
                                                             <div className="flex flex-col items-end gap-1">
                                                                 <div className="flex items-center gap-1.5">
                                                                     {(item.buy_signal_count || 0) >= 2 && (item.rvol || 0) > 1.5 && (
-                                                                        <Badge className="bg-blue-600 text-white text-[8px] font-semibold uppercase px-1.5 py-0 animate-pulse border-none">
+                                                                        <Badge className="bg-primary text-primary-foreground text-[8px] font-semibold uppercase px-1.5 py-0 animate-pulse border-none">
                                                                             High Conviction
                                                                         </Badge>
                                                                     )}
@@ -1200,8 +1170,8 @@ function PortfolioContent() {
                                                                             <Badge
                                                                                 variant="outline"
                                                                                 className={`
-                                                                            ${item.signals.summary === 'BUY' ? 'bg-green-50 dark:bg-green-900/30 text-green-700 dark:text-green-400 border-green-200 dark:border-green-800' : ''}
-                                                                            ${item.signals.summary === 'SELL' ? 'bg-red-50 dark:bg-red-900/30 text-red-700 dark:text-red-400 border-red-200 dark:border-red-800' : ''}
+                                                                            ${item.signals.summary === 'BUY' ? 'bg-emerald-500/10 dark:bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 border-emerald-500/25 dark:border-emerald-500/25' : ''}
+                                                                            ${item.signals.summary === 'SELL' ? 'bg-rose-500/10 dark:bg-rose-500/10 text-rose-700 dark:text-rose-400 border-rose-500/25 dark:border-rose-500/25' : ''}
                                                                             ${item.signals.summary === 'HOLD' ? 'bg-slate-50 dark:bg-slate-800 text-slate-700 dark:text-slate-400 border-slate-200 dark:border-slate-700' : ''}
                                                                             ${item.signals.summary === 'NEUTRAL' ? 'bg-gray-50 dark:bg-slate-800 text-gray-500 dark:text-gray-400 border-gray-200 dark:border-slate-700' : ''}
                                                                             ${item.signals.summary === 'MIXED' ? 'bg-yellow-50 dark:bg-yellow-900/30 text-yellow-700 dark:text-yellow-400 border-yellow-200 dark:border-yellow-800' : ''}
@@ -1218,7 +1188,7 @@ function PortfolioContent() {
                                                         <TableCell className="text-right py-4">
                                                             <div className="flex flex-col items-end">
                                                                 {item.upside_percent !== undefined && (
-                                                                    <div className={`text-xs font-semibold ${item.upside_percent > 0 ? 'text-emerald-600 dark:text-emerald-400' : 'text-red-500'}`}>
+                                                                    <div className={`text-xs font-semibold ${item.upside_percent > 0 ? 'text-emerald-600 dark:text-emerald-400' : 'text-rose-500'}`}>
                                                                         {item.upside_percent > 0 ? '+' : ''}{item.upside_percent.toFixed(1)}% Upside
                                                                     </div>
                                                                 )}
@@ -1258,14 +1228,14 @@ function PortfolioContent() {
                                                                 </button>
                                                                 <button
                                                                     onClick={() => handleEditWatchlist(item)}
-                                                                    className="p-2 text-slate-400 dark:text-slate-500 hover:text-blue-600 dark:hover:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900/20 rounded-lg transition-colors"
+                                                                    className="p-2 text-slate-400 dark:text-slate-500 hover:text-primary hover:bg-primary/5 rounded-lg transition-colors"
                                                                     title="Edit Strategy"
                                                                 >
                                                                     <Edit2 size={16} />
                                                                 </button>
                                                                 <button
                                                                     onClick={() => removeWatchlistItem(item.id)}
-                                                                    className="p-2 text-slate-400 dark:text-slate-500 hover:text-red-500 dark:hover:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition-colors"
+                                                                    className="p-2 text-slate-400 dark:text-slate-500 hover:text-rose-500 dark:hover:text-rose-400 hover:bg-rose-500/10 dark:hover:bg-rose-500/10 rounded-lg transition-colors"
                                                                     title="Remove surveillance"
                                                                 >
                                                                     <Trash2 size={16} />
@@ -1282,33 +1252,33 @@ function PortfolioContent() {
 
                             {/* Watchlist Pagination */}
                             {watchlistTotalPages > 1 && (
-                                <div className="flex items-center justify-between mt-8 pt-6 border-t border-gray-50 dark:border-slate-800 pb-4 px-6">
-                                    <div className="text-[10px] font-semibold text-gray-400 dark:text-slate-500 uppercase tracking-[0.2em]">
-                                        Monitoring <span className="text-gray-900 dark:text-slate-100">{sortedAndFilteredWatchlist.length}</span> key tickers
+                                <div className="flex items-center justify-between mt-8 pt-6 border-t border-border pb-4 px-6">
+                                    <div className="text-xs text-muted-foreground">
+                                        Monitoring <span className="text-foreground font-semibold">{sortedAndFilteredWatchlist.length}</span> key tickers
                                     </div>
                                     <div className="flex items-center gap-2">
                                         <button
                                             onClick={() => setWatchlistCurrentPage(p => Math.max(1, p - 1))}
                                             disabled={watchlistCurrentPage === 1}
-                                            className="p-2 rounded-lg border border-gray-100 dark:border-slate-800 hover:bg-gray-50 dark:hover:bg-slate-800 disabled:opacity-20 transition-all font-semibold text-gray-600 dark:text-slate-400"
+                                            className="p-2 rounded-lg border border-border hover:bg-muted disabled:opacity-30 disabled:hover:bg-transparent transition-all"
                                         >
                                             <ChevronLeft size={16} />
                                         </button>
-                                        <span className="text-xs font-semibold px-4 py-2 bg-gray-900 dark:bg-slate-800 text-white rounded-lg shadow-lg">
+                                        <span className="text-xs font-semibold px-4 py-2 bg-primary text-primary-foreground rounded-lg shadow-sm">
                                             {watchlistCurrentPage} / {watchlistTotalPages}
                                         </span>
                                         <button
                                             onClick={() => setWatchlistCurrentPage(p => Math.min(watchlistTotalPages, p + 1))}
                                             disabled={watchlistCurrentPage === watchlistTotalPages}
-                                            className="p-2 rounded-lg border border-gray-100 dark:border-slate-800 hover:bg-gray-50 dark:hover:bg-slate-800 disabled:opacity-20 transition-all font-semibold text-gray-600 dark:text-slate-400"
+                                            className="p-2 rounded-lg border border-border hover:bg-muted disabled:opacity-30 disabled:hover:bg-transparent transition-all"
                                         >
                                             <ChevronRight size={16} />
                                         </button>
                                     </div>
                                 </div>
                             )}
-                        </CardContent>
-                    </Card>
+                    </SectionCard>
+                    </FadeIn>
                 )}
 
                 {/* Account Creation Dialog */}
@@ -1346,8 +1316,8 @@ function PortfolioContent() {
                     <DialogContent className="sm:max-w-[425px] overflow-hidden p-0 border-none shadow-sm dark:bg-slate-950">
                         <DialogHeader className="p-6 pb-0">
                             <DialogTitle className="text-2xl font-semibold text-slate-900 dark:text-slate-100 tracking-tight flex items-center gap-2">
-                                <div className="p-2 bg-blue-50 dark:bg-blue-900/30 rounded-lg">
-                                    <Eye className="h-5 w-5 text-blue-600 dark:text-blue-400" />
+                                <div className="p-2 bg-primary/10 rounded-lg">
+                                    <Eye className="h-5 w-5 text-primary" />
                                 </div>
                                 {selectedWatchlistItem ? 'Edit Watchlist Item' : 'Add to Watchlist'}
                             </DialogTitle>
@@ -1364,7 +1334,7 @@ function PortfolioContent() {
                                     <CompanySelect
                                         value={watchlistForm.ticker}
                                         onChange={(val) => setWatchlistForm({ ...watchlistForm, ticker: val })}
-                                        className="h-12 bg-white dark:bg-card border-blue-100 dark:border-slate-800 font-medium text-lg"
+                                        className="h-12 bg-white dark:bg-card border-border dark:border-slate-800 font-medium text-lg"
                                     />
                                 )}
                             </div>
@@ -1373,13 +1343,13 @@ function PortfolioContent() {
                                 <div className="space-y-2">
                                     <label className="text-[10px] font-semibold text-slate-400 dark:text-slate-500 tracking-wider ml-1">Target Price (रू)</label>
                                     <div className="relative">
-                                        <Target className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-blue-500 dark:text-blue-400" />
+                                        <Target className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-primary" />
                                         <Input
                                             placeholder="0.00"
                                             type="number"
                                             value={watchlistForm.target_price}
                                             onChange={(e) => setWatchlistForm({ ...watchlistForm, target_price: e.target.value })}
-                                            className="pl-10 h-12 bg-white dark:bg-card border-blue-50 dark:border-slate-800 font-semibold text-slate-900 dark:text-slate-100 text-lg focus:ring-2 focus:ring-blue-100 dark:focus:ring-blue-900/30 placeholder:text-slate-300 dark:placeholder:text-slate-700"
+                                            className="pl-10 h-12 bg-white dark:bg-card border-slate-100 dark:border-slate-800 font-semibold text-slate-900 dark:text-slate-100 text-lg focus-visible:ring-[3px] focus-visible:ring-ring/50 focus-visible:border-ring placeholder:text-slate-300 dark:placeholder:text-slate-700"
                                         />
                                     </div>
                                 </div>
@@ -1392,23 +1362,23 @@ function PortfolioContent() {
                                             type="number"
                                             value={watchlistForm.stop_loss_price}
                                             onChange={(e) => setWatchlistForm({ ...watchlistForm, stop_loss_price: e.target.value })}
-                                            className="pl-10 h-12 bg-white dark:bg-card border-blue-50 dark:border-slate-800 font-semibold text-slate-900 dark:text-slate-100 text-lg focus:ring-2 focus:ring-red-100 dark:focus:ring-red-900/30 placeholder:text-slate-300 dark:placeholder:text-slate-700"
+                                            className="pl-10 h-12 bg-white dark:bg-card border-slate-100 dark:border-slate-800 font-semibold text-slate-900 dark:text-slate-100 text-lg placeholder:text-slate-300 dark:placeholder:text-slate-700"
                                         />
                                     </div>
                                 </div>
                             </div>
 
-                            <div className="flex items-center justify-between p-4 bg-blue-50/30 dark:bg-blue-900/10 rounded-xl border border-blue-100/50 dark:border-blue-900/30">
+                            <div className="flex items-center justify-between p-4 bg-primary/5 rounded-xl border border-primary/10">
                                 <div className="flex flex-col">
                                     <span className="text-xs font-semibold text-slate-900 dark:text-slate-100 uppercase tracking-wide flex items-center gap-2">
-                                        <Bell className="h-3.5 w-3.5 text-blue-500" /> Price Alerts
+                                        <Bell className="h-3.5 w-3.5 text-primary" /> Price Alerts
                                     </span>
                                     <span className="text-[10px] font-bold text-slate-500">Notify when target/SL hits</span>
                                 </div>
                                 <button
                                     type="button"
                                     onClick={() => setWatchlistForm({ ...watchlistForm, alert_enabled: !watchlistForm.alert_enabled })}
-                                    className={`w-12 h-6 rounded-full transition-all relative ${watchlistForm.alert_enabled ? 'bg-blue-600' : 'bg-slate-300 dark:bg-slate-700'}`}
+                                    className={`w-12 h-6 rounded-full transition-all relative ${watchlistForm.alert_enabled ? 'bg-primary' : 'bg-slate-300 dark:bg-slate-700'}`}
                                 >
                                     <div className={`absolute top-1 w-4 h-4 bg-white rounded-full transition-all ${watchlistForm.alert_enabled ? 'left-7' : 'left-1'}`} />
                                 </button>
@@ -1420,7 +1390,7 @@ function PortfolioContent() {
                                     placeholder="Enter your investment thesis or entry notes..."
                                     value={watchlistForm.notes}
                                     onChange={(e) => setWatchlistForm({ ...watchlistForm, notes: e.target.value })}
-                                    className="w-full min-h-[100px] p-3 rounded-xl border border-blue-50 dark:border-slate-800 bg-white dark:bg-card font-bold text-sm text-slate-900 dark:text-slate-100 placeholder:text-slate-300 dark:placeholder:text-slate-700 focus:ring-2 focus:ring-blue-100 dark:focus:ring-blue-900/30 focus:outline-none transition-all"
+                                    className="w-full min-h-[100px] p-3 rounded-xl border border-slate-100 dark:border-slate-800 bg-white dark:bg-card font-bold text-sm text-slate-900 dark:text-slate-100 placeholder:text-slate-300 dark:placeholder:text-slate-700 focus-visible:ring-[3px] focus-visible:ring-ring/50 focus-visible:border-ring focus:outline-none transition-all"
                                 />
                             </div>
                         </div>
@@ -1435,7 +1405,7 @@ function PortfolioContent() {
                                 </button>
                                 <button
                                     onClick={selectedWatchlistItem ? updateWatchlistItem : addWatchlistItem}
-                                    className="flex-[2] h-12 rounded-xl bg-slate-900 dark:bg-slate-800 text-white text-[11px] font-semibold uppercase tracking-wider hover:bg-black dark:hover:bg-slate-700 transition-all shadow-lg flex items-center justify-center gap-2 group"
+                                    className="flex-[2] h-12 rounded-xl bg-primary text-primary-foreground text-[11px] font-semibold uppercase tracking-wider hover:bg-primary/90 transition-all shadow-lg flex items-center justify-center gap-2 group"
                                 >
                                     {selectedWatchlistItem ? (
                                         <>Update <Target size={14} className="group-hover:scale-125 transition-transform" /></>

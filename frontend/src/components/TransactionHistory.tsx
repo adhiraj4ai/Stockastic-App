@@ -280,7 +280,7 @@ export function TransactionHistory({ selectedAccount, onEdit }: TransactionHisto
                             columns as any
                         );
                     }}
-                    className="h-9 px-3 flex items-center gap-2 text-xs font-bold text-blue-600 dark:text-blue-400 border border-blue-200 dark:border-blue-800 rounded-md bg-blue-50/50 dark:bg-blue-900/20 hover:bg-blue-100 dark:hover:bg-blue-900/40 transition-all ml-auto"
+                    className="h-9 px-3 flex items-center gap-2 text-xs font-bold text-primary border border-primary/30 rounded-md bg-primary/5 hover:bg-primary/10 transition-all ml-auto"
                 >
                     <Download size={14} /> Export CSV
                 </button>
@@ -326,7 +326,7 @@ export function TransactionHistory({ selectedAccount, onEdit }: TransactionHisto
                                     {paginated.map((txn, idx) => {
                                         const config = txnTypeConfig[txn.transaction_type] || { label: txn.transaction_type, color: 'bg-gray-100 text-gray-700', icon: null };
                                         return (
-                                            <TableRow key={txn.id} className="hover:bg-slate-50/80 dark:hover:bg-slate-800/50 transition-colors">
+                                            <TableRow key={txn.id} className="hover:bg-accent hover:text-accent-foreground transition-colors">
                                                 <TableCell className="text-center text-gray-400 dark:text-gray-500 text-sm font-bold px-4">
                                                     {(currentPage - 1) * pageSize + idx + 1}
                                                 </TableCell>
@@ -360,7 +360,7 @@ export function TransactionHistory({ selectedAccount, onEdit }: TransactionHisto
                                                             <TooltipTrigger asChild>
                                                                 <button
                                                                     onClick={(e) => { e.stopPropagation(); onEdit?.(txn); }}
-                                                                    className="p-1.5 text-gray-300 dark:text-slate-600 hover:text-blue-600 dark:hover:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900/20 rounded-lg transition-all"
+                                                                    className="p-1.5 text-gray-300 dark:text-slate-600 hover:text-primary hover:bg-primary/10 rounded-lg transition-all"
                                                                 >
                                                                     <Edit2 size={14} />
                                                                 </button>
@@ -398,7 +398,7 @@ export function TransactionHistory({ selectedAccount, onEdit }: TransactionHisto
                                 <button
                                     onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
                                     disabled={currentPage === 1}
-                                    className="p-2 rounded-lg border border-gray-100 dark:border-slate-700 hover:bg-gray-50 dark:hover:bg-slate-800 disabled:opacity-30 transition-all"
+                                    className="p-2 rounded-lg border border-gray-100 dark:border-slate-700 hover:bg-accent hover:text-accent-foreground disabled:opacity-30 transition-all"
                                 >
                                     <ChevronLeft size={16} />
                                 </button>
@@ -418,7 +418,7 @@ export function TransactionHistory({ selectedAccount, onEdit }: TransactionHisto
                                             <button
                                                 key={pageNum}
                                                 onClick={() => setCurrentPage(pageNum)}
-                                                className={`h-8 w-8 rounded-lg text-xs font-bold transition-all ${currentPage === pageNum ? 'bg-blue-600 text-white shadow-lg shadow-blue-500/30' : 'text-gray-500 dark:text-slate-400 hover:bg-gray-100 dark:hover:bg-slate-800'}`}
+                                                className={`h-8 w-8 rounded-lg text-xs font-bold transition-all ${currentPage === pageNum ? 'bg-primary text-primary-foreground shadow-lg shadow-primary/30' : 'text-gray-500 dark:text-slate-400 hover:bg-accent hover:text-accent-foreground'}`}
                                             >
                                                 {pageNum}
                                             </button>
@@ -428,7 +428,7 @@ export function TransactionHistory({ selectedAccount, onEdit }: TransactionHisto
                                 <button
                                     onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
                                     disabled={currentPage === totalPages}
-                                    className="p-2 rounded-lg border border-gray-100 dark:border-slate-700 hover:bg-gray-50 dark:hover:bg-slate-800 disabled:opacity-30 transition-all"
+                                    className="p-2 rounded-lg border border-gray-100 dark:border-slate-700 hover:bg-accent hover:text-accent-foreground disabled:opacity-30 transition-all"
                                 >
                                     <ChevronRight size={16} />
                                 </button>

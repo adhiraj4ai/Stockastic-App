@@ -28,6 +28,7 @@ from backtesting import Strategy
 from backtesting.lib import crossover
 from backtesting.test import SMA
 import pandas as pd
+import numpy as np
 
 def RSI(array, n):
     return ta.rsi(pd.Series(array), length=n)
@@ -39,31 +40,44 @@ def BBANDS(array, n, std):
     return bands.iloc[:, 0].values, bands.iloc[:, 1].values, bands.iloc[:, 2].values
 
 class RsiBollingerReversion(Strategy):
+    # Buy oversold dips (close below the lower band AND RSI oversold) but ONLY in a
+    # long-term uptrend (buy-the-dip, not catch-a-falling-knife); ATR stop; take profit
+    # on mean reversion to the upper band / overbought RSI.
     rsi_period = 14
     bb_period = 20
     bb_std = 2.0
-    rsi_lower = 30
+    rsi_lower = 40
     rsi_upper = 70
-    
+    trend_ema = 200
+    atr_period = 14
+    atr_mult = 3.0
+
     def init(self):
-        # Calculate RSI
-        self.rsi = self.I(ta.rsi, pd.Series(self.data.Close), self.rsi_period)
-        
-        # Calculate Bollinger Bands (using pandas_ta directly or helper)
-        # We need to wrap it in self.I to make it an indicator
-        self.bb_lower = self.I(lambda x: ta.bbands(pd.Series(x), length=self.bb_period, std=self.bb_std).iloc[:, 0], self.data.Close)
-        self.bb_upper = self.I(lambda x: ta.bbands(pd.Series(x), length=self.bb_period, std=self.bb_std).iloc[:, 2], self.data.Close)
+        C, H, L = pd.Series(self.data.Close), pd.Series(self.data.High), pd.Series(self.data.Low)
+        bb = ta.bbands(C, length=self.bb_period, std=self.bb_std)
+        self.rsi = self.I(lambda: ta.rsi(C, self.rsi_period).values)
+        self.bb_lower = self.I(lambda: bb.iloc[:, 0].values)
+        self.bb_upper = self.I(lambda: bb.iloc[:, 2].values)
+        self.ema_trend = self.I(lambda: ta.ema(C, self.trend_ema).values)
+        self.atr = self.I(lambda: ta.atr(H, L, C, self.atr_period).values)
 
     def next(self):
-        # Entry: Price < Lower Band AND RSI < 30 (Oversold overlap)
-        if self.data.Close[-1] < self.bb_lower[-1] and self.rsi[-1] < self.rsi_lower:
-            if not self.position:
-                self.buy()
-        
-        # Exit: RSI > 70 (Overbought) OR Price > Upper Band
-        elif self.rsi[-1] > self.rsi_upper or self.data.Close[-1] > self.bb_upper[-1]:
-            if self.position:
-                self.position.close()
+        price = self.data.Close[-1]
+        if self.position and not np.isnan(self.atr[-1]):
+            new_sl = price - self.atr_mult * self.atr[-1]
+            for trade in self.trades:
+                if trade.sl is None or new_sl > trade.sl:
+                    trade.sl = new_sl
+
+        # Either a lower-band tag or an RSI dip qualifies (the strict AND of both was
+        # too rare to trade); the long-term uptrend filter keeps it buying dips not crashes.
+        oversold = price < self.bb_lower[-1] or self.rsi[-1] < self.rsi_lower
+        if oversold and price > self.ema_trend[-1] and not self.position:
+            stop = price - self.atr_mult * self.atr[-1]
+            if stop < price:
+                self.buy(sl=stop)
+        elif (self.rsi[-1] > self.rsi_upper or price > self.bb_upper[-1]) and self.position:
+            self.position.close()
 """
 
 # -----------------------------------------------------------------------------
@@ -78,38 +92,37 @@ import pandas as pd
 import numpy as np
 
 class GoldenCrossPullback(Strategy):
+    # Buy pullbacks to the 50SMA inside a golden-cross uptrend (50>200). ATR trailing
+    # stop instead of the old fixed 20% take-profit (which capped winners); exit on a
+    # close below the 200SMA.
     n_fast = 50
     n_slow = 200
-    pullback_percent = 0.05 # 5% pullback from recent high
-    
+    near_pct = 0.02
+    atr_period = 14
+    atr_mult = 3.0
+
     def init(self):
+        H, L, C = pd.Series(self.data.High), pd.Series(self.data.Low), pd.Series(self.data.Close)
         self.sma_fast = self.I(SMA, self.data.Close, self.n_fast)
         self.sma_slow = self.I(SMA, self.data.Close, self.n_slow)
+        self.atr = self.I(lambda: ta.atr(H, L, C, self.atr_period).values)
 
     def next(self):
         price = self.data.Close[-1]
-        
-        # Condition 1: Long Term Uptrend (50SMA > 200SMA)
+        if self.position and not np.isnan(self.atr[-1]):
+            new_sl = price - self.atr_mult * self.atr[-1]
+            for trade in self.trades:
+                if trade.sl is None or new_sl > trade.sl:
+                    trade.sl = new_sl
+
         is_uptrend = self.sma_fast[-1] > self.sma_slow[-1]
-        
-        # Condition 2: Deep Pullback? (Price is close to 50SMA support)
-        # Buy if price is within 1% of 50SMA
-        near_support = abs(price - self.sma_fast[-1]) / price < 0.015
-        
-        if is_uptrend and near_support and price > self.sma_fast[-1]: # Support hold check implies price is still above or just touching
-             if not self.position:
-                 self.buy()
-        
-        # Exit: Trend Reversal or Target
-        # Stop Loss: Close below 200 SMA
-        if price < self.sma_slow[-1]:
-             if self.position:
-                 self.position.close()
-        
-        # Take Profit: 20% gain (simple rule)
-        # Real implementation would use ATR for dynamic targets
-        if self.position and (price - self.trades[0].entry_price) / self.trades[0].entry_price > 0.20:
-             self.position.close()
+        near_support = abs(price - self.sma_fast[-1]) / price < self.near_pct
+        if is_uptrend and near_support and price > self.sma_fast[-1] and not self.position:
+            stop = price - self.atr_mult * self.atr[-1]
+            if stop < price:
+                self.buy(sl=stop)
+        elif price < self.sma_slow[-1] and self.position:
+            self.position.close()
 """
 
 # -----------------------------------------------------------------------------
@@ -122,37 +135,38 @@ import pandas as pd
 import numpy as np
 
 class VolumeBreakout(Strategy):
+    # N-day-high breakout confirmed by a volume spike, inside a long-term uptrend;
+    # ATR trailing stop (replaces the old fixed 5%-below-entry stop), exit on trend break.
     lookback = 20
     vol_multiplier = 2.0
-    
+    trend_ema = 200
+    atr_period = 14
+    atr_mult = 3.0
+
     def init(self):
-        # Calculate Rolling Max High
-        self.high_rolling = self.I(lambda x: pd.Series(x).rolling(self.lookback).max(), self.data.High)
-        
-        # Calculate Average Volume
-        self.vol_avg = self.I(lambda x: pd.Series(x).rolling(self.lookback).mean(), self.data.Volume)
+        H, L, C, V = (pd.Series(self.data.High), pd.Series(self.data.Low),
+                      pd.Series(self.data.Close), pd.Series(self.data.Volume))
+        self.high_rolling = self.I(lambda: H.rolling(self.lookback).max().values)
+        self.vol_avg = self.I(lambda: V.rolling(self.lookback).mean().values)
+        self.ema_trend = self.I(lambda: ta.ema(C, self.trend_ema).values)
+        self.atr = self.I(lambda: ta.atr(H, L, C, self.atr_period).values)
 
     def next(self):
         price = self.data.Close[-1]
-        vol = self.data.Volume[-1]
-        
-        # Breakout Condition:
-        # 1. Price closes above the 20-day High (of previous days usually, but here we compare to rolling)
-        # 2. Volume is 2x average volume
-        
-        is_breakout = price >= self.high_rolling[-2] # Breakout of PREVIOUS N days high
-        is_vol_spike = vol > (self.vol_avg[-1] * self.vol_multiplier)
-        
-        if is_breakout and is_vol_spike:
-            if not self.position:
-                self.buy()
-                
-        # Exit: Trailing Stop or simple reversion
-        # Lets use a simple 10% Trailing Stop logic simulation or just close if price drops below 20SMA
-        # For simplicity in this Snippet: Close if price drops 5% below entry
-        if self.position:
-             if price < self.trades[0].entry_price * 0.95:
-                 self.position.close()
+        if self.position and not np.isnan(self.atr[-1]):
+            new_sl = price - self.atr_mult * self.atr[-1]
+            for trade in self.trades:
+                if trade.sl is None or new_sl > trade.sl:
+                    trade.sl = new_sl
+
+        breakout = price >= self.high_rolling[-2]
+        vol_spike = self.data.Volume[-1] > self.vol_avg[-1] * self.vol_multiplier
+        if breakout and vol_spike and price > self.ema_trend[-1] and not self.position:
+            stop = price - self.atr_mult * self.atr[-1]
+            if stop < price:
+                self.buy(sl=stop)
+        elif price < self.ema_trend[-1] and self.position:
+            self.position.close()
 """
 
 # -----------------------------------------------------------------------------
@@ -290,39 +304,43 @@ class DualThrust(Strategy):
 CODE_INSIDE_BAR = """
 from backtesting import Strategy
 import pandas as pd
+import numpy as np
 
 class InsideBarMomentum(Strategy):
+    # Inside-bar breakout: the PREVIOUS bar was an inside bar (contained by its
+    # mother bar); enter when the CURRENT bar breaks the mother-bar high in a
+    # long-term uptrend. (The original tested the breakout on the inside bar itself,
+    # where Close < mother_high by definition — so it never traded.)
+    trend_ema = 200
     atr_period = 14
-    
+    atr_mult = 2.5
+
     def init(self):
-        # Used for stop loss sizing
-        pass # Pure price action often doesn't need indicators in init
+        H, L, C = pd.Series(self.data.High), pd.Series(self.data.Low), pd.Series(self.data.Close)
+        self.ema_trend = self.I(lambda: ta.ema(C, self.trend_ema).values)
+        self.atr = self.I(lambda: ta.atr(H, L, C, self.atr_period).values)
 
     def next(self):
-        if len(self.data) < 3: return
-        
-        # Definitions
-        # Bar -1 is the "Inside Bar"
-        # Bar -2 is the "Mother Bar"
-        
-        mother_high = self.data.High[-2]
-        mother_low = self.data.Low[-2]
-        
-        inside_high = self.data.High[-1]
-        inside_low = self.data.Low[-1]
-        
-        # Check if it was an Inside Bar
-        is_inside_bar = (inside_high < mother_high) and (inside_low > mother_low)
-        
-        # Trigger: Current price breaks the Mother Bar High
-        if is_inside_bar and self.data.Close[-1] > mother_high:
-            if not self.position:
-                self.buy()
-        
-        # Exit: Stop loss below mother bar low
-        if self.position:
-            if self.data.Close[-1] < mother_low:
-                self.position.close()
+        if len(self.data) < 4:
+            return
+        price = self.data.Close[-1]
+        if self.position and not np.isnan(self.atr[-1]):
+            new_sl = price - self.atr_mult * self.atr[-1]
+            for trade in self.trades:
+                if trade.sl is None or new_sl > trade.sl:
+                    trade.sl = new_sl
+
+        # mother = bar[-3], inside = bar[-2], breakout = current bar[-1]
+        mother_high, mother_low = self.data.High[-3], self.data.Low[-3]
+        inside_high, inside_low = self.data.High[-2], self.data.Low[-2]
+        is_inside = inside_high < mother_high and inside_low > mother_low
+
+        if is_inside and price > mother_high and price > self.ema_trend[-1] and not self.position:
+            stop = min(inside_low, price - self.atr_mult * self.atr[-1])
+            if stop < price:
+                self.buy(sl=stop)
+        elif price < self.ema_trend[-1] and self.position:
+            self.position.close()
 """
 
 # -----------------------------------------------------------------------------
@@ -377,30 +395,38 @@ class HeikinAshiTrend(Strategy):
 CODE_TURTLE = """
 from backtesting import Strategy
 import pandas as pd
+import numpy as np
 
 class TurtleTrading(Strategy):
+    # Donchian channel breakout, filtered to long-term uptrends, with an ATR
+    # trailing stop on top of the classic N-day-low exit.
     entry_window = 20
     exit_window = 10
-    
+    trend_ema = 200
+    atr_period = 14
+    atr_mult = 3.0
+
     def init(self):
-        # Donchian Channels
-        # High of last N days
-        self.H = self.I(lambda x: pd.Series(x).rolling(self.entry_window).max(), self.data.High)
-        # Low of last M days
-        self.L = self.I(lambda x: pd.Series(x).rolling(self.exit_window).min(), self.data.Low)
-        
+        H, L, C = pd.Series(self.data.High), pd.Series(self.data.Low), pd.Series(self.data.Close)
+        self.H = self.I(lambda: H.rolling(self.entry_window).max().values)
+        self.L = self.I(lambda: L.rolling(self.exit_window).min().values)
+        self.ema_trend = self.I(lambda: ta.ema(C, self.trend_ema).values)
+        self.atr = self.I(lambda: ta.atr(H, L, C, self.atr_period).values)
+
     def next(self):
-        prev_20_high = self.H[-2]
-        
-        if self.data.Close[-1] > prev_20_high:
-            if not self.position:
-                self.buy()
-        
-        # Exit: Price drops below 10-day Low
-        prev_10_low = self.L[-2]
-        if self.data.Close[-1] < prev_10_low:
-            if self.position:
-                self.position.close()
+        price = self.data.Close[-1]
+        if self.position and not np.isnan(self.atr[-1]):
+            new_sl = price - self.atr_mult * self.atr[-1]
+            for trade in self.trades:
+                if trade.sl is None or new_sl > trade.sl:
+                    trade.sl = new_sl
+
+        if price > self.H[-2] and price > self.ema_trend[-1] and not self.position:
+            stop = price - self.atr_mult * self.atr[-1]
+            if stop < price:
+                self.buy(sl=stop)
+        elif price < self.L[-2] and self.position:
+            self.position.close()
 """
 
 # -----------------------------------------------------------------------------
@@ -413,24 +439,35 @@ import pandas as pd
 import numpy as np
 
 class SupertrendStrategy(Strategy):
+    # Supertrend trend-follower: enter on bullish flip inside a long-term uptrend,
+    # ride the trend with the Supertrend line as a trailing stop.
     period = 10
     multiplier = 3.0
-    
-    def init(self):
-        def get_st_dir(high, low, close):
-            df = pd.DataFrame({'High': high, 'Low': low, 'Close': close})
-            st = ta.supertrend(df['High'], df['Low'], df['Close'], length=self.period, multiplier=self.multiplier)
-            return st.iloc[:, 1].values # 1 = Uptrend, -1 = Downtrend
+    trend_ema = 200
 
-        self.st_dir = self.I(get_st_dir, self.data.High, self.data.Low, self.data.Close)
+    def init(self):
+        H, L, C = pd.Series(self.data.High), pd.Series(self.data.Low), pd.Series(self.data.Close)
+        st = ta.supertrend(H, L, C, length=self.period, multiplier=self.multiplier)
+        self.st_dir = self.I(lambda: st.iloc[:, 1].values)   # 1 up, -1 down
+        self.st_line = self.I(lambda: st.iloc[:, 0].values)  # trailing line
+        self.ema_trend = self.I(lambda: ta.ema(C, self.trend_ema).values)
 
     def next(self):
-        if self.st_dir[-1] == 1:
-            if not self.position:
-                self.buy()
-        elif self.st_dir[-1] == -1:
-            if self.position:
-                self.position.close()
+        price = self.data.Close[-1]
+        # Trail the protective stop up to the Supertrend line.
+        if self.position and not np.isnan(self.st_line[-1]):
+            for trade in self.trades:
+                if trade.sl is None or self.st_line[-1] > trade.sl:
+                    trade.sl = self.st_line[-1]
+
+        flipped_up = self.st_dir[-2] == -1 and self.st_dir[-1] == 1
+        in_uptrend = price > self.ema_trend[-1]
+        if flipped_up and in_uptrend and not self.position:
+            stop = self.st_line[-1]
+            if not np.isnan(stop) and stop < price:
+                self.buy(sl=stop)
+        elif self.st_dir[-1] == -1 and self.position:
+            self.position.close()
 """
 
 # -----------------------------------------------------------------------------
@@ -444,29 +481,38 @@ import pandas as pd
 import numpy as np
 
 class VWAPPullback(Strategy):
+    # Reclaim of the rolling VWAP (close crosses back above it) while in a long-term
+    # uptrend; ATR trailing stop, exit on a trend break.
+    trend_ema = 200
+    atr_period = 14
+    atr_mult = 3.0
+
     def init(self):
-        # Calculate VWAP
-        def get_vwap(high, low, close, volume):
-            # VWAP requires DatetimeIndex
-            idx = self.data.index
-            return ta.vwap(pd.Series(high, index=idx), pd.Series(low, index=idx), pd.Series(close, index=idx), pd.Series(volume, index=idx)).values
-            
-        self.vwap = self.I(get_vwap, self.data.High, self.data.Low, self.data.Close, self.data.Volume)
-        self.sma_50 = self.I(SMA, self.data.Close, 50)
+        H, L, C, V = (pd.Series(self.data.High), pd.Series(self.data.Low),
+                      pd.Series(self.data.Close), pd.Series(self.data.Volume))
+        idx = self.data.index
+        self.vwap = self.I(lambda: ta.vwap(pd.Series(self.data.High, index=idx),
+                                           pd.Series(self.data.Low, index=idx),
+                                           pd.Series(self.data.Close, index=idx),
+                                           pd.Series(self.data.Volume, index=idx)).values)
+        self.ema_trend = self.I(lambda: ta.ema(C, self.trend_ema).values)
+        self.atr = self.I(lambda: ta.atr(H, L, C, self.atr_period).values)
 
     def next(self):
         price = self.data.Close[-1]
-        vwap_val = self.vwap[-1]
-        
-        if price > self.sma_50[-1]:
-            # Buy if price dips below VWAP but closes above it (rejection of value area) Or simple version: Buy when price crosses above VWAP
-            if self.data.Close[-2] < self.vwap[-2] and self.data.Close[-1] > vwap_val:
-                if not self.position:
-                    self.buy()
-        
-        if self.position:
-            if price < vwap_val * 0.95:
-                self.position.close()
+        if self.position and not np.isnan(self.atr[-1]):
+            new_sl = price - self.atr_mult * self.atr[-1]
+            for trade in self.trades:
+                if trade.sl is None or new_sl > trade.sl:
+                    trade.sl = new_sl
+
+        reclaim = self.data.Close[-2] < self.vwap[-2] and price > self.vwap[-1]
+        if reclaim and price > self.ema_trend[-1] and not self.position:
+            stop = price - self.atr_mult * self.atr[-1]
+            if stop < price:
+                self.buy(sl=stop)
+        elif price < self.ema_trend[-1] and self.position:
+            self.position.close()
 """
 
 # -----------------------------------------------------------------------------
@@ -484,62 +530,51 @@ from stocks.models import DailyCumulativeAccumulation
 # Global symbol variable is injected by views.py: 'symbol'
 
 class SmartMoneyAccumulation(Strategy):
+    # Follow the top brokers' cumulative net position: go long while their flow line
+    # is above its MA AND price is in a long-term uptrend; ATR trailing stop.
     top_n_brokers = 5
-    
-    def init(self):
-        # Fetch detailed accumulation data for this symbol
-        # This runs ONCE at the start of backtest
-        
-        ticker = symbol # 'symbol' is available in global scope of this script execution
-        
-        # Get data sorted by date
-        qs = DailyCumulativeAccumulation.objects.filter(symbol=ticker).values('transaction_date', 'entity_id', 'cumulative_net')
-        if not qs:
-            # Fallback if no data: Array of zeros
-            self.acc_indicator = self.I(lambda x: np.zeros(len(x)), self.data.Close)
-            return
+    acc_ma = 20
+    trend_ema = 200
+    atr_period = 14
+    atr_mult = 3.0
 
+    def init(self):
+        H, L, C = pd.Series(self.data.High), pd.Series(self.data.Low), pd.Series(self.data.Close)
+        self.ema_trend = self.I(lambda: ta.ema(C, self.trend_ema).values)
+        self.atr = self.I(lambda: ta.atr(H, L, C, self.atr_period).values)
+
+        dates = self.data.index  # real DatetimeIndex — align accumulation onto price bars
+        qs = DailyCumulativeAccumulation.objects.filter(symbol=symbol).values(
+            'transaction_date', 'entity_id', 'cumulative_net')
+        if not qs:
+            self.smart_cum = self.I(lambda: np.zeros(len(dates)))
+            self.smart_ma = self.I(lambda: np.zeros(len(dates)))
+            return
         acc_df = pd.DataFrame(list(qs))
         acc_df['transaction_date'] = pd.to_datetime(acc_df['transaction_date'])
-        
-        # Reindex to match the price data dates
-        price_dates = pd.Series(self.data.Close).index
-        
-        # Pivot to get: Index=Date, Cols=Brokers, Values=CumulativeNet
-        pivot_df = acc_df.pivot_table(index='transaction_date', columns='entity_id', values='cumulative_net', aggfunc='last').ffill().fillna(0)
-        
-        # Align with price data dates
-        pivot_df = pivot_df.reindex(price_dates).ffill().fillna(0)
-        
-        # Identify "Smart Money"? 
-        # Find top 5 brokers with highest cumulative sum at the end
-        total_acc = pivot_df.iloc[-1].sort_values(ascending=False)
-        top_buyers = total_acc.head(self.top_n_brokers).index
-        
-        # Calculate daily net flow of ONLY top buyers (diff of cumulative)
-        smart_money_cum = pivot_df[top_buyers].sum(axis=1)
-        
-        # Register indicator
-        self.smart_money_cum = self.I(lambda x: smart_money_cum.values, self.data.Close)
+        pivot = acc_df.pivot_table(index='transaction_date', columns='entity_id',
+                                   values='cumulative_net', aggfunc='last').ffill().fillna(0)
+        pivot = pivot.reindex(dates).ffill().fillna(0)
+        top = pivot.iloc[-1].sort_values(ascending=False).head(self.top_n_brokers).index
+        line = pivot[top].sum(axis=1)
+        self.smart_cum = self.I(lambda: line.values)
+        self.smart_ma = self.I(lambda: line.rolling(self.acc_ma).mean().values)
 
     def next(self):
-        # Buy if Smart Money is Accumulating Aggressively
-        # i.e., Smart Money Cumulative Line is ABOVE its 20-day MA
-        
-        # Calculate MA of Indicator manually
-        period = 20
-        if len(self.smart_money_cum) < period: return
-        
-        sma_acc = pd.Series(self.smart_money_cum).rolling(period).mean().iloc[-1]
-        current_acc = self.smart_money_cum[-1]
-        
-        if current_acc > sma_acc:
-             if not self.position:
-                 self.buy()
-        
-        elif current_acc < sma_acc:
-             if self.position:
-                 self.position.close()
+        price = self.data.Close[-1]
+        if self.position and not np.isnan(self.atr[-1]):
+            new_sl = price - self.atr_mult * self.atr[-1]
+            for trade in self.trades:
+                if trade.sl is None or new_sl > trade.sl:
+                    trade.sl = new_sl
+
+        accumulating = self.smart_cum[-1] > self.smart_ma[-1]
+        if accumulating and price > self.ema_trend[-1] and not self.position:
+            stop = price - self.atr_mult * self.atr[-1]
+            if stop < price:
+                self.buy(sl=stop)
+        elif self.smart_cum[-1] < self.smart_ma[-1] and self.position:
+            self.position.close()
 """
 
 # -----------------------------------------------------------------------------
@@ -553,42 +588,48 @@ import numpy as np
 from stocks.models import DailyCumulativeAccumulation
 
 class AccumulationDivergence(Strategy):
-    def init(self):
-        ticker = symbol 
-        qs = DailyCumulativeAccumulation.objects.filter(symbol=ticker).values('transaction_date', 'cumulative_net')
-        if not qs:
-            self.buying_pressure = self.I(lambda x: np.zeros(len(x)), self.data.Close)
-            return
+    # Contrarian: buy bullish divergence (price falling while broker accumulation
+    # rises — smart money absorbing supply). No trend filter (it is a reversal
+    # signal by design); risk controlled with an ATR stop.
+    lookback = 10
+    atr_period = 14
+    atr_mult = 3.0
 
+    def init(self):
+        H, L, C = pd.Series(self.data.High), pd.Series(self.data.Low), pd.Series(self.data.Close)
+        self.atr = self.I(lambda: ta.atr(H, L, C, self.atr_period).values)
+
+        dates = self.data.index
+        qs = DailyCumulativeAccumulation.objects.filter(symbol=symbol).values(
+            'transaction_date', 'cumulative_net')
+        if not qs:
+            self.buying_pressure = self.I(lambda: np.zeros(len(dates)))
+            return
         acc_df = pd.DataFrame(list(qs))
         acc_df['transaction_date'] = pd.to_datetime(acc_df['transaction_date'])
-        
-        # Total Cumulative Net across all reporting brokers
         daily_cum = acc_df.groupby('transaction_date')['cumulative_net'].sum()
-        
-        def get_acc_line(dates_idx):
-            return daily_cum.reindex(dates_idx).ffill().fillna(0).values
-
-        self.buying_pressure = self.I(lambda x: get_acc_line(pd.Series(x).index), self.data.Close)
+        line = daily_cum.reindex(dates).ffill().fillna(0)
+        self.buying_pressure = self.I(lambda: line.values)
 
     def next(self):
-        # Divergence Logic
-        # Price is LOWER than 10 days ago
-        # Buying Pressure is HIGHER than 10 days ago (Smart money absorbing supply)
-        lookback = 10
-        if len(self.data) < lookback: return
-        
-        price_change = self.data.Close[-1] - self.data.Close[-lookback]
-        acc_change = self.buying_pressure[-1] - self.buying_pressure[-lookback]
-        
-        if price_change < 0 and acc_change > 0:
-            if not self.position:
-                self.buy()
-                
-        # Exit
-        if price_change > 0 and acc_change < 0:
-            if self.position:
-                self.position.close()
+        price = self.data.Close[-1]
+        if self.position and not np.isnan(self.atr[-1]):
+            new_sl = price - self.atr_mult * self.atr[-1]
+            for trade in self.trades:
+                if trade.sl is None or new_sl > trade.sl:
+                    trade.sl = new_sl
+
+        if len(self.data) < self.lookback:
+            return
+        price_change = self.data.Close[-1] - self.data.Close[-self.lookback]
+        acc_change = self.buying_pressure[-1] - self.buying_pressure[-self.lookback]
+
+        if price_change < 0 and acc_change > 0 and not self.position:
+            stop = price - self.atr_mult * self.atr[-1]
+            if stop < price:
+                self.buy(sl=stop)
+        elif price_change > 0 and acc_change < 0 and self.position:
+            self.position.close()
 """
 
 # -----------------------------------------------------------------------------
@@ -602,55 +643,53 @@ import numpy as np
 from stocks.models import DailyCumulativeAccumulation
 
 class InstitutionalBreakout(Strategy):
-    def init(self):
-        ticker = symbol 
-        qs = DailyCumulativeAccumulation.objects.filter(symbol=ticker).values('transaction_date', 'entity_id', 'cumulative_net')
-        if not qs:
-            self.buy_vol = self.I(lambda x: np.zeros(len(x)), self.data.Close)
-            return
+    # Price breaks the prior N-day high WITH a broker buy-flow spike, inside a
+    # long-term uptrend; ATR trailing stop, exit on trend break.
+    lookback = 20
+    vol_mult = 1.5
+    trend_ema = 200
+    atr_period = 14
+    atr_mult = 3.0
 
+    def init(self):
+        H, L, C = pd.Series(self.data.High), pd.Series(self.data.Low), pd.Series(self.data.Close)
+        self.ema_trend = self.I(lambda: ta.ema(C, self.trend_ema).values)
+        self.atr = self.I(lambda: ta.atr(H, L, C, self.atr_period).values)
+        # Prior-N-day high (shifted so today's bar is excluded).
+        self.high_n = self.I(lambda: H.rolling(self.lookback).max().shift(1).values)
+
+        dates = self.data.index
+        qs = DailyCumulativeAccumulation.objects.filter(symbol=symbol).values(
+            'transaction_date', 'entity_id', 'cumulative_net')
+        if not qs:
+            self.buy_vol = self.I(lambda: np.zeros(len(dates)))
+            self.avg_buy_vol = self.I(lambda: np.zeros(len(dates)))
+            return
         acc_df = pd.DataFrame(list(qs))
         acc_df['transaction_date'] = pd.to_datetime(acc_df['transaction_date'])
-        
-        # Calculate daily flow from cumulative
-        daily_flow = acc_df.pivot_table(index='transaction_date', columns='entity_id', values='cumulative_net').sum(axis=1).diff().fillna(0)
-        
-        def get_buy_vol(dates_idx):
-            return daily_flow.reindex(dates_idx).fillna(0).values
-
-        self.buy_vol = self.I(lambda x: get_buy_vol(pd.Series(x).index), self.data.Close)
-        
-        # Calculate Rolling Average of Buy Vol
-        self.avg_buy_vol = self.I(lambda x: pd.Series(x).rolling(20).mean().values, self.buy_vol)
+        flow = (acc_df.pivot_table(index='transaction_date', columns='entity_id',
+                                   values='cumulative_net', aggfunc='last')
+                .sum(axis=1).diff().fillna(0))
+        flow = flow.reindex(dates).fillna(0)
+        self.buy_vol = self.I(lambda: flow.values)
+        self.avg_buy_vol = self.I(lambda: flow.rolling(self.lookback).mean().values)
 
     def next(self):
-        # 1. Price Breakout (20 day high)
-        # 2. Institutional Volume Spike (Buy Vol > 1.5 * Avg Buy Vol)
-        
-        # Need to calculate 20 day high manually or use helper?
-        # Lets rely on simple High[-1] check vs Rolling max
-        
-        # Note: In 'next', indicators are already arrays. 
-        # self.data.High is an array if we access via [-N:] slices but simplified here.
-        # We need self.I for indicators usually.
-        pass # Logic handled in next step directly
+        price = self.data.Close[-1]
+        if self.position and not np.isnan(self.atr[-1]):
+            new_sl = price - self.atr_mult * self.atr[-1]
+            for trade in self.trades:
+                if trade.sl is None or new_sl > trade.sl:
+                    trade.sl = new_sl
 
-        # Check Breakout
-        # We can simulate rolling max by checking previous candles
-        # Efficient way:
-        highs = self.data.High[-21:-1] # Last 20 days excluding today
-        if len(highs) < 20: return
-        max_h = max(highs)
-        
-        price_breakout = self.data.Close[-1] > max_h
-        vol_spike = self.buy_vol[-1] > (self.avg_buy_vol[-1] * 1.5)
-        
-        if price_breakout and vol_spike:
-            if not self.position:
-                self.buy()
-        
-        if self.position and self.data.Close[-1] < self.data.Close[-1] * 0.95:
-             self.position.close()
+        breakout = not np.isnan(self.high_n[-1]) and price > self.high_n[-1]
+        vol_spike = self.buy_vol[-1] > self.avg_buy_vol[-1] * self.vol_mult
+        if breakout and vol_spike and price > self.ema_trend[-1] and not self.position:
+            stop = price - self.atr_mult * self.atr[-1]
+            if stop < price:
+                self.buy(sl=stop)
+        elif price < self.ema_trend[-1] and self.position:
+            self.position.close()
 """
 
 # -----------------------------------------------------------------------------
@@ -665,52 +704,53 @@ from stocks.models import DailyCumulativeAccumulation
 import numpy as np
 
 class AccumulationSqueeze(Strategy):
-    def init(self):
-        ticker = symbol 
-        # Broker Buying Intensity
-        qs = DailyCumulativeAccumulation.objects.filter(symbol=ticker).values('transaction_date', 'cumulative_net')
-        if not qs:
-            self.buying_pressure = self.I(lambda x: np.zeros(len(x)), self.data.Close)
-            return
+    # Coiled volatility (tight Bollinger bands) + hidden accumulation (broker buying
+    # intensity in its recent top quartile) inside a long-term uptrend. ATR trailing
+    # stop; exit on trend break.
+    squeeze_pct = 0.10
+    acc_quantile = 0.70
+    trend_ema = 200
+    atr_period = 14
+    atr_mult = 3.0
 
+    def init(self):
+        H, L, C = pd.Series(self.data.High), pd.Series(self.data.Low), pd.Series(self.data.Close)
+        self.ema_trend = self.I(lambda: ta.ema(C, self.trend_ema).values)
+        self.atr = self.I(lambda: ta.atr(H, L, C, self.atr_period).values)
+        bb = ta.bbands(C, length=20, std=2.0)
+        self.bb_width = self.I(lambda: (bb.iloc[:, 2] - bb.iloc[:, 0]).values)
+
+        dates = self.data.index
+        qs = DailyCumulativeAccumulation.objects.filter(symbol=symbol).values(
+            'transaction_date', 'cumulative_net')
+        if not qs:
+            self.buying_pressure = self.I(lambda: np.zeros(len(dates)))
+            return
         acc_df = pd.DataFrame(list(qs))
         acc_df['transaction_date'] = pd.to_datetime(acc_df['transaction_date'])
-        
-        # Buying Intensity = Diff of total cumulative
-        total_cum = acc_df.groupby('transaction_date')['cumulative_net'].sum()
-        daily_intensity = total_cum.diff().fillna(0)
-        
-        def get_buy_intensity(dates_idx):
-            return daily_intensity.reindex(dates_idx).fillna(0).values
-
-        self.buying_pressure = self.I(lambda x: get_buy_intensity(pd.Series(x).index), self.data.Close)
-        
-        # Bollinger Band Width
-        self.bb_width = self.I(lambda x: (ta.bbands(pd.Series(x), length=20, std=2.0).iloc[:, 2] - ta.bbands(pd.Series(x), length=20, std=2.0).iloc[:, 0]).values, self.data.Close)
+        intensity = acc_df.groupby('transaction_date')['cumulative_net'].sum().diff().fillna(0)
+        intensity = intensity.reindex(dates).fillna(0).astype(float)
+        self.buying_pressure = self.I(lambda: intensity.values)
 
     def next(self):
-        # 1. Volatility Squeeze (BB Width is historically low < 5%)
-        # 2. Hidden Accumulation (Buying Pressure in top quartile)
-        
         price = self.data.Close[-1]
-        width_ratio = self.bb_width[-1] / price # relative width
-        
-        is_squeeze = width_ratio < 0.05 # 5% band width is quite tight
-        
-        # Check if accumulation is high relative to recent history
-        if len(self.buying_pressure) < 50: return
-        recent_acc = pd.Series(self.buying_pressure[-50:])
-        high_acc = self.buying_pressure[-1] > recent_acc.quantile(0.80)
-        
-        if is_squeeze and high_acc:
-            if not self.position:
-                self.buy()
-                
-        # Exit on sharp move or stop
-        # Standard deviation expansion or 5% target
-        if self.position:
-             if price > self.position.entry_price * 1.10 or price < self.position.entry_price * 0.95:
-                 self.position.close()
+        if self.position and not np.isnan(self.atr[-1]):
+            new_sl = price - self.atr_mult * self.atr[-1]
+            for trade in self.trades:
+                if trade.sl is None or new_sl > trade.sl:
+                    trade.sl = new_sl
+
+        if len(self.buying_pressure) < 50:
+            return
+        is_squeeze = (self.bb_width[-1] / price) < self.squeeze_pct
+        recent = pd.Series(self.buying_pressure[-50:])
+        high_acc = self.buying_pressure[-1] > recent.quantile(self.acc_quantile)
+        if is_squeeze and high_acc and price > self.ema_trend[-1] and not self.position:
+            stop = price - self.atr_mult * self.atr[-1]
+            if stop < price:
+                self.buy(sl=stop)
+        elif price < self.ema_trend[-1] and self.position:
+            self.position.close()
 """
 
 # -----------------------------------------------------------------------------
@@ -725,38 +765,50 @@ import numpy as np
 from stocks.models import DailyCumulativeAccumulation
 
 class SmartMoneyTrend(Strategy):
-    def init(self):
-        ticker = symbol 
-        qs = DailyCumulativeAccumulation.objects.filter(symbol=ticker).values('transaction_date', 'entity_id', 'cumulative_net')
-        if not qs:
-             self.smart_line = self.I(lambda x: np.zeros(len(x)), self.data.Close)
-             return
+    # Trade the TREND OF OWNERSHIP: fast/slow MA crossover of the top brokers'
+    # cumulative flow line, gated by a long-term price uptrend; ATR trailing stop.
+    top_n_brokers = 5
+    fast = 10
+    slow = 50
+    trend_ema = 200
+    atr_period = 14
+    atr_mult = 3.0
 
+    def init(self):
+        H, L, C = pd.Series(self.data.High), pd.Series(self.data.Low), pd.Series(self.data.Close)
+        self.ema_trend = self.I(lambda: ta.ema(C, self.trend_ema).values)
+        self.atr = self.I(lambda: ta.atr(H, L, C, self.atr_period).values)
+
+        dates = self.data.index
+        qs = DailyCumulativeAccumulation.objects.filter(symbol=symbol).values(
+            'transaction_date', 'entity_id', 'cumulative_net')
+        if not qs:
+            self.acc_fast = self.I(lambda: np.zeros(len(dates)))
+            self.acc_slow = self.I(lambda: np.zeros(len(dates)))
+            return
         acc_df = pd.DataFrame(list(qs))
         acc_df['transaction_date'] = pd.to_datetime(acc_df['transaction_date'])
-        
-        pivot = acc_df.pivot_table(index='transaction_date', columns='entity_id', values='cumulative_net', aggfunc='last').ffill().fillna(0)
-        top_buyers = pivot.iloc[-1].sort_values(ascending=False).head(5).index
-        flow = pivot[top_buyers].sum(axis=1) # Cumulative Flow Line
-        
-        def get_flow_line(dates_idx):
-            return flow.reindex(dates_idx).ffill().fillna(0).values
-
-        self.smart_line = self.I(lambda x: get_flow_line(pd.Series(x).index), self.data.Close)
-        
-        # MAs of the Flow Line
-        self.acc_fast = self.I(lambda x: pd.Series(self.smart_line).rolling(10).mean().values, self.data.Close)
-        self.acc_slow = self.I(lambda x: pd.Series(self.smart_line).rolling(50).mean().values, self.data.Close)
+        pivot = acc_df.pivot_table(index='transaction_date', columns='entity_id',
+                                   values='cumulative_net', aggfunc='last').ffill().fillna(0)
+        top = pivot.iloc[-1].sort_values(ascending=False).head(self.top_n_brokers).index
+        flow = pivot[top].sum(axis=1).reindex(dates).ffill().fillna(0)
+        self.acc_fast = self.I(lambda: flow.rolling(self.fast).mean().values)
+        self.acc_slow = self.I(lambda: flow.rolling(self.slow).mean().values)
 
     def next(self):
-        # Trade the Trend of OWNERSHIP, not Price
-        if crossover(self.acc_fast, self.acc_slow):
-            if not self.position:
-                self.buy()
-        
-        elif crossover(self.acc_slow, self.acc_fast):
-            if self.position:
-                 self.position.close()
+        price = self.data.Close[-1]
+        if self.position and not np.isnan(self.atr[-1]):
+            new_sl = price - self.atr_mult * self.atr[-1]
+            for trade in self.trades:
+                if trade.sl is None or new_sl > trade.sl:
+                    trade.sl = new_sl
+
+        if crossover(self.acc_fast, self.acc_slow) and price > self.ema_trend[-1] and not self.position:
+            stop = price - self.atr_mult * self.atr[-1]
+            if stop < price:
+                self.buy(sl=stop)
+        elif crossover(self.acc_slow, self.acc_fast) and self.position:
+            self.position.close()
 """
 
 # -----------------------------------------------------------------------------
@@ -768,34 +820,28 @@ from backtesting import Strategy
 import pandas as pd
 
 class ParabolicSAR(Strategy):
+    # Parabolic SAR flips, but only taken long inside a long-term uptrend (cuts the
+    # whipsaw churn of raw SAR). SAR itself is the trailing exit.
+    trend_ema = 200
+
     def init(self):
-        # Calculate PSAR
-        # pandas_ta psar returns DataFrame with 2 cols: PSARl_... and PSARs_... (Long and Short)
-        # We simplify to get the consolidated PSAR value line assuming it stitches them or we inspect cols
-        
+        H, L, C = pd.Series(self.data.High), pd.Series(self.data.Low), pd.Series(self.data.Close)
+
         def get_psar(high, low, close):
-            df = pd.DataFrame({'High': high, 'Low': low, 'Close': close})
-            # ta.psar returns 'PSARl_0.02_0.2' and 'PSARs_0.02_0.2'
-            # We construct a single series
-            res = ta.psar(df['High'], df['Low'], df['Close'])
-            # Combine long and short columns filling NaNs
-            combined = res.iloc[:, 0].fillna(res.iloc[:, 1])
-            return combined.values
+            res = ta.psar(pd.Series(high), pd.Series(low), pd.Series(close))
+            return res.iloc[:, 0].fillna(res.iloc[:, 1]).values
 
         self.psar = self.I(get_psar, self.data.High, self.data.Low, self.data.Close)
+        self.ema_trend = self.I(lambda: ta.ema(C, self.trend_ema).values)
 
     def next(self):
         price = self.data.Close[-1]
-        
-        # Buy when Price crosses ABOVE PSAR
-        if self.data.Close[-2] < self.psar[-2] and price > self.psar[-1]:
-             if not self.position:
-                 self.buy()
-        
-        # Sell when Price crosses BELOW PSAR
-        elif self.data.Close[-2] > self.psar[-2] and price < self.psar[-1]:
-             if self.position:
-                 self.position.close()
+        flipped_up = self.data.Close[-2] < self.psar[-2] and price > self.psar[-1]
+        if flipped_up and price > self.ema_trend[-1] and not self.position:
+            if self.psar[-1] < price:
+                self.buy(sl=self.psar[-1])
+        elif self.data.Close[-2] > self.psar[-2] and price < self.psar[-1] and self.position:
+            self.position.close()
 """
 
 # -----------------------------------------------------------------------------
@@ -808,35 +854,38 @@ import pandas as pd
 import numpy as np
 
 class IchimokuCloud(Strategy):
+    # Long while price holds above the Ichimoku cloud, gated by a long-term uptrend to
+    # cut churn; ATR trailing stop, exit only when price loses the cloud BOTTOM (the
+    # asymmetric entry-top/exit-bottom band avoids oscillating around a single line).
+    # (Original used tenkan/kijun (iloc 2/3) as the spans — the spans are iloc 0/1.)
+    trend_ema = 200
+    atr_period = 14
+    atr_mult = 3.0
+
     def init(self):
-        # Calculate Ichimoku
-        def get_ichimoku(high, low, close):
-            # ta.ichimoku returns (ichimoku_df, span_df)
-            # Default params 9, 26, 52, 26, 26
-            isa, isb = ta.ichimoku(high, low, close)[0].iloc[:, 2], ta.ichimoku(high, low, close)[0].iloc[:, 3]
-            # span A, span B. 
-            # Note: pandas_ta usually shifts the cloud forward. We need to be careful with indexing.
-            # But Backtesting.py works with 'current' available data.
-            return isa, isb
-            
-        # We simplify to "Price above both Spans"
-        self.span_a = self.I(lambda h,l,c: ta.ichimoku(pd.Series(h),pd.Series(l),pd.Series(c))[0].iloc[:, 2].values, self.data.High, self.data.Low, self.data.Close)
-        self.span_b = self.I(lambda h,l,c: ta.ichimoku(pd.Series(h),pd.Series(l),pd.Series(c))[0].iloc[:, 3].values, self.data.High, self.data.Low, self.data.Close)
+        H, L, C = pd.Series(self.data.High), pd.Series(self.data.Low), pd.Series(self.data.Close)
+        ich = ta.ichimoku(H, L, C)[0]
+        self.span_a = self.I(lambda: ich.iloc[:, 0].values)
+        self.span_b = self.I(lambda: ich.iloc[:, 1].values)
+        self.ema_trend = self.I(lambda: ta.ema(C, self.trend_ema).values)
+        self.atr = self.I(lambda: ta.atr(H, L, C, self.atr_period).values)
 
     def next(self):
         price = self.data.Close[-1]
-        
-        # Buy: Price is ABOVE the Cloud (SpanA and SpanB)
-        above_cloud = price > self.span_a[-1] and price > self.span_b[-1]
-        
-        if above_cloud:
-             if not self.position:
-                 self.buy()
-                 
-        # Exit: Price enters cloud or drops below
-        elif price < self.span_a[-1] or price < self.span_b[-1]:
-             if self.position:
-                 self.position.close()
+        if self.position and not np.isnan(self.atr[-1]):
+            new_sl = price - self.atr_mult * self.atr[-1]
+            for trade in self.trades:
+                if trade.sl is None or new_sl > trade.sl:
+                    trade.sl = new_sl
+
+        cloud_top = max(self.span_a[-1], self.span_b[-1])
+        cloud_bot = min(self.span_a[-1], self.span_b[-1])
+        if price > cloud_top and price > self.ema_trend[-1] and not self.position:
+            stop = price - self.atr_mult * self.atr[-1]
+            if stop < price:
+                self.buy(sl=stop)
+        elif price < cloud_bot and self.position:
+            self.position.close()
 """
 
 # -----------------------------------------------------------------------------
@@ -849,35 +898,38 @@ import pandas as pd
 import numpy as np
 
 class ADXTrend(Strategy):
+    # Trade strong, directional up-trends (ADX above threshold, +DI over -DI) inside a
+    # long-term uptrend; ATR trailing stop, exit when direction flips bearish.
+    adx_len = 14
+    adx_threshold = 25
+    trend_ema = 200
+    atr_period = 14
+    atr_mult = 3.0
+
     def init(self):
-        # ADX, DI+, DI-
-        def get_adx_vars(high, low, close):
-            # Returns [ADX, DMP, DMN]
-            df = ta.adx(high, low, close, length=14)
-            return df.iloc[:, 0].values, df.iloc[:, 1].values, df.iloc[:, 2].values
-            
-        # Register indicators. self.I only returns 1 array even if function returns tuple... wait.
-        # self.I stores result in self.indicators. 
-        # Correct way to unpack:
-        
-        # We fetch them individually explicitly for safety
-        self.adx = self.I(lambda h,l,c: ta.adx(pd.Series(h, index=self.data.index), pd.Series(l, index=self.data.index), pd.Series(c, index=self.data.index)).iloc[:, 0].values, self.data.High, self.data.Low, self.data.Close)
-        self.dmp = self.I(lambda h,l,c: ta.adx(pd.Series(h, index=self.data.index), pd.Series(l, index=self.data.index), pd.Series(c, index=self.data.index)).iloc[:, 1].values, self.data.High, self.data.Low, self.data.Close)
-        self.dmn = self.I(lambda h,l,c: ta.adx(pd.Series(h, index=self.data.index), pd.Series(l, index=self.data.index), pd.Series(c, index=self.data.index)).iloc[:, 2].values, self.data.High, self.data.Low, self.data.Close)
+        H, L, C = pd.Series(self.data.High), pd.Series(self.data.Low), pd.Series(self.data.Close)
+        adx = ta.adx(H, L, C, length=self.adx_len)
+        self.adx = self.I(lambda: adx.iloc[:, 0].values)
+        self.dmp = self.I(lambda: adx.iloc[:, 1].values)
+        self.dmn = self.I(lambda: adx.iloc[:, 2].values)
+        self.ema_trend = self.I(lambda: ta.ema(C, self.trend_ema).values)
+        self.atr = self.I(lambda: ta.atr(H, L, C, self.atr_period).values)
 
     def next(self):
-        # Buy: ADX > 25 (Strong Trend) AND DI+ > DI- (Bullish)
-        strong_trend = self.adx[-1] > 25
-        bullish = self.dmp[-1] > self.dmn[-1]
-        
-        if strong_trend and bullish:
-            if not self.position:
-                self.buy()
-        
-        # Exit: DI- crosses above DI+ (Bearish turn)
-        if self.dmn[-1] > self.dmp[-1]:
-             if self.position:
-                 self.position.close()
+        price = self.data.Close[-1]
+        if self.position and not np.isnan(self.atr[-1]):
+            new_sl = price - self.atr_mult * self.atr[-1]
+            for trade in self.trades:
+                if trade.sl is None or new_sl > trade.sl:
+                    trade.sl = new_sl
+
+        strong_bull = self.adx[-1] > self.adx_threshold and self.dmp[-1] > self.dmn[-1]
+        if strong_bull and price > self.ema_trend[-1] and not self.position:
+            stop = price - self.atr_mult * self.atr[-1]
+            if stop < price:
+                self.buy(sl=stop)
+        elif self.dmn[-1] > self.dmp[-1] and self.position:
+            self.position.close()
 """
 
 # -----------------------------------------------------------------------------
@@ -890,52 +942,42 @@ import pandas as pd
 import numpy as np
 
 class FibonacciGoldenZone(Strategy):
+    # Buy pullbacks into the 50-61.8% "golden zone" of the recent swing, but only in a
+    # long-term uptrend (a retracement to buy, not a downtrend); ATR trailing stop, take
+    # profit on a push back above the swing high.
     lookback = 50
-    
+    trend_ema = 200
+    atr_period = 14
+    atr_mult = 3.0
+
     def init(self):
-        pass # Pure price calculation
+        H, L, C = pd.Series(self.data.High), pd.Series(self.data.Low), pd.Series(self.data.Close)
+        self.swing_high = self.I(lambda: H.rolling(self.lookback).max().values)
+        self.swing_low = self.I(lambda: L.rolling(self.lookback).min().values)
+        self.ema_trend = self.I(lambda: ta.ema(C, self.trend_ema).values)
+        self.atr = self.I(lambda: ta.atr(H, L, C, self.atr_period).values)
 
     def next(self):
-        if len(self.data) < self.lookback: return
-        
-        # Identify recent High and Low in window
-        highs = self.data.High[-self.lookback:]
-        lows = self.data.Low[-self.lookback:]
-        
-        recent_high = max(highs)
-        recent_low = min(lows)
-        
-        diff = recent_high - recent_low
-        if diff == 0: return
-
-        # 61.8% Retracement Level from High
-        # Typically means price went up from Low to High, then dropped back down 61.8% of that move?
-        # Or Retracement FROM the move?
-        # Golden Zone usually: Pullback to 0.618 level of the Up Swing.
-        # Level = Low + 0.382 * Diff (since it retraced 61.8% from top, it is at 38.2% from bottom?)
-        # Let's say we look for a pullback to the 0.5 - 0.618 zone relative to swing.
-        
-        fib_618 = recent_low + 0.618 * diff
-        fib_500 = recent_low + 0.500 * diff
-        
+        if len(self.data) < self.lookback:
+            return
         price = self.data.Close[-1]
-        
-        # Buy if price is in the Golden Zone (between 50% and 61.8%)
-        in_zone = fib_500 <= price <= fib_618
-        
-        # And we need to confirm we are 'pulling back' not 'crashing'
-        # Maybe check if we are above the recent low
-        
-        if in_zone:
-            if not self.position:
-                self.buy()
-                
-        # Exit: Target recent High
-        if self.position:
-             if price > recent_high:
-                 self.position.close()
-             elif price < recent_low: # Stop Loss
-                 self.position.close()
+        if self.position and not np.isnan(self.atr[-1]):
+            new_sl = price - self.atr_mult * self.atr[-1]
+            for trade in self.trades:
+                if trade.sl is None or new_sl > trade.sl:
+                    trade.sl = new_sl
+
+        hi, lo = self.swing_high[-1], self.swing_low[-1]
+        diff = hi - lo
+        if diff <= 0:
+            return
+        in_zone = (lo + 0.5 * diff) <= price <= (lo + 0.618 * diff)
+        if in_zone and price > self.ema_trend[-1] and not self.position:
+            stop = price - self.atr_mult * self.atr[-1]
+            if stop < price:
+                self.buy(sl=stop)
+        elif price > hi and self.position:
+            self.position.close()
 """
 
 # -----------------------------------------------------------------------------
@@ -945,31 +987,37 @@ class FibonacciGoldenZone(Strategy):
 CODE_STOCH_RSI = """
 from backtesting import Strategy
 import pandas as pd
+import numpy as np
 
 class StochasticRSICross(Strategy):
+    # StochRSI K-over-D cross from oversold, taken as a dip-buy in a long-term uptrend;
+    # ATR trailing stop, exit on a bearish K/D cross from overbought.
+    oversold = 20
+    overbought = 80
+    trend_ema = 200
+    atr_period = 14
+    atr_mult = 6.0
+
     def init(self):
-        # Stoch RSI k, d
-        def get_stochrsi(close):
-            # ta.stochrsi returns 2 columns: STOCHRSI_k, STOCHRSI_d
-            res = ta.stochrsi(close, length=14, rsi_length=14, k=3, d=3)
-            return res.iloc[:, 0], res.iloc[:, 1]
-            
-        self.k = self.I(lambda c: ta.stochrsi(pd.Series(c)).iloc[:, 0].values, self.data.Close)
-        self.d = self.I(lambda c: ta.stochrsi(pd.Series(c)).iloc[:, 1].values, self.data.Close)
+        C, H, L = pd.Series(self.data.Close), pd.Series(self.data.High), pd.Series(self.data.Low)
+        sr = ta.stochrsi(C)
+        self.k = self.I(lambda: sr.iloc[:, 0].values)
+        self.d = self.I(lambda: sr.iloc[:, 1].values)
+        self.ema_trend = self.I(lambda: ta.ema(C, self.trend_ema).values)
+        self.atr = self.I(lambda: ta.atr(H, L, C, self.atr_period).values)
 
     def next(self):
-        # K Crossing above D in Oversold territory (< 20)
-        
-        if self.k[-2] < self.d[-2] and self.k[-1] > self.d[-1]:
-            if self.k[-1] < 20: # Oversold
-                if not self.position:
-                    self.buy()
-        
-        # Exit when K crosses below D (Overbought > 80)
-        elif self.k[-2] > self.d[-2] and self.k[-1] < self.d[-1]:
-             if self.k[-1] > 80:
-                 if self.position:
-                     self.position.close()
+        price = self.data.Close[-1]
+        # Pure oversold reversal cross (no trend filter — it starves the countertrend
+        # dip-buys that are its edge), exit on the overbought cross. FIXED catastrophic
+        # ATR stop at entry (not trailed — trailing ejects reversion trades early).
+        bull_cross = self.k[-2] < self.d[-2] and self.k[-1] > self.d[-1] and self.k[-1] < self.oversold
+        if bull_cross and not self.position and not np.isnan(self.atr[-1]):
+            stop = price - self.atr_mult * self.atr[-1]
+            if stop < price:
+                self.buy(sl=stop)
+        elif self.k[-2] > self.d[-2] and self.k[-1] < self.d[-1] and self.k[-1] > self.overbought and self.position:
+            self.position.close()
 """
 
 # -----------------------------------------------------------------------------
@@ -1017,28 +1065,36 @@ import pandas as pd
 import numpy as np
 
 class ForceIndexImpulse(Strategy):
+    # Volume-momentum: enter when the Elder Force Index turns positive in a
+    # long-term uptrend; protect with an ATR trailing stop.
+    efi_period = 13
+    trend_ema = 200
+    atr_period = 14
+    atr_mult = 3.0
+
     def init(self):
-        # Force Index (13 period usually for trend, 2 period for impulse)
-        # We use 13 period EMA of Force Index to detect trend changes
-        
-        # ta.efi (Elder Force Index)
-        def get_efi(c, v):
-            return ta.efi(pd.Series(c, index=self.data.index), pd.Series(v, index=self.data.index), length=13).values
-            
-        self.efi = self.I(get_efi, self.data.Close, self.data.Volume)
-        self.zero = self.I(lambda x: np.zeros(len(x)), self.data.Close)
+        H, L = pd.Series(self.data.High), pd.Series(self.data.Low)
+        C, V = pd.Series(self.data.Close), pd.Series(self.data.Volume)
+        self.efi = self.I(lambda: ta.efi(C, V, length=self.efi_period).values)
+        self.ema_trend = self.I(lambda: ta.ema(C, self.trend_ema).values)
+        self.atr = self.I(lambda: ta.atr(H, L, C, self.atr_period).values)
 
     def next(self):
-        # Buy: Force Index Crosses Above Zero (Bulls taking dominance)
-        
-        if self.efi[-2] < 0 and self.efi[-1] > 0:
-            if not self.position:
-                self.buy()
-                
-        # Sell: Force Index Crosses Below Zero
-        elif self.efi[-2] > 0 and self.efi[-1] < 0:
-            if self.position:
-                self.position.close()
+        price = self.data.Close[-1]
+        if self.position and not np.isnan(self.atr[-1]):
+            new_sl = price - self.atr_mult * self.atr[-1]
+            for trade in self.trades:
+                if trade.sl is None or new_sl > trade.sl:
+                    trade.sl = new_sl
+
+        crossed_up = self.efi[-2] < 0 and self.efi[-1] > 0
+        if crossed_up and price > self.ema_trend[-1] and not self.position:
+            stop = price - self.atr_mult * self.atr[-1]
+            if stop < price:
+                self.buy(sl=stop)
+        # Let winners run: exit only on a long-term trend break (ATR stop handles the rest).
+        elif price < self.ema_trend[-1] and self.position:
+            self.position.close()
 """
 
 # -----------------------------------------------------------------------------
@@ -1048,27 +1104,39 @@ class ForceIndexImpulse(Strategy):
 CODE_CMF = """
 from backtesting import Strategy
 import pandas as pd
+import numpy as np
 
-class CMFDivergence(Strategy):
+class CMFAccumulation(Strategy):
+    # Buy confirmed accumulation (CMF crossing up through a positive threshold)
+    # within a long-term uptrend; ATR trailing stop, exit when flow turns negative.
+    cmf_period = 20
+    cmf_entry = 0.05
+    trend_ema = 200
+    atr_period = 14
+    atr_mult = 3.0
+
     def init(self):
-        # Chaikin Money Flow
-        def get_cmf(high, low, close, volume):
-            return ta.cmf(pd.Series(high), pd.Series(low), pd.Series(close), pd.Series(volume), length=20).values
-        
-        self.cmf = self.I(get_cmf, self.data.High, self.data.Low, self.data.Close, self.data.Volume)
-        self.zero = self.I(lambda x: pd.Series([0]*len(x)), self.data.Close)
+        H, L = pd.Series(self.data.High), pd.Series(self.data.Low)
+        C, V = pd.Series(self.data.Close), pd.Series(self.data.Volume)
+        self.cmf = self.I(lambda: ta.cmf(H, L, C, V, length=self.cmf_period).values)
+        self.ema_trend = self.I(lambda: ta.ema(C, self.trend_ema).values)
+        self.atr = self.I(lambda: ta.atr(H, L, C, self.atr_period).values)
 
     def next(self):
-        # Regular CMF Strategy: Buy when CMF > 0 (Buying Pressure), Sell when CMF < 0
-        
-        # Improvement: Buy when CMF crosses above 0.1 (Significant Accumulation)
-        if self.cmf[-2] < 0.1 and self.cmf[-1] > 0.1:
-            if not self.position:
-                self.buy()
-        
-        elif self.cmf[-1] < 0:
-            if self.position:
-                self.position.close()
+        price = self.data.Close[-1]
+        if self.position and not np.isnan(self.atr[-1]):
+            new_sl = price - self.atr_mult * self.atr[-1]
+            for trade in self.trades:
+                if trade.sl is None or new_sl > trade.sl:
+                    trade.sl = new_sl
+
+        crossed_up = self.cmf[-2] < self.cmf_entry and self.cmf[-1] >= self.cmf_entry
+        if crossed_up and price > self.ema_trend[-1] and not self.position:
+            stop = price - self.atr_mult * self.atr[-1]
+            if stop < price:
+                self.buy(sl=stop)
+        elif self.cmf[-1] < 0 and self.position:
+            self.position.close()
 """
 
 # -----------------------------------------------------------------------------
@@ -1078,31 +1146,45 @@ class CMFDivergence(Strategy):
 CODE_KELTNER = """
 from backtesting import Strategy
 import pandas as pd
+import numpy as np
 
 class KeltnerBreakout(Strategy):
+    # Keltner trend-pullback: in a long-term uptrend with a rising channel, buy when
+    # price reclaims the channel basis after a dip (continuation, not chasing a spike).
+    # ATR trailing stop; exit on a long-term trend break.
+    kc_period = 20
+    kc_scalar = 2.0
+    trend_ema = 200
+    atr_period = 14
+    atr_mult = 3.0
+
     def init(self):
-        # Keltner Channels (EMA based, ATR width)
-        def get_kc(high, low, close):
-            kc = ta.kc(pd.Series(high, index=self.data.index), pd.Series(low, index=self.data.index), pd.Series(close, index=self.data.index))
-            # Returns KCLe, KCBe, KCUe
-            return kc.iloc[:, 0].values, kc.iloc[:, 2].values # Lower, Upper
-            
-        self.kc_lower, self.kc_upper = self.I(get_kc, self.data.High, self.data.Low, self.data.Close)
+        H, L, C = pd.Series(self.data.High), pd.Series(self.data.Low), pd.Series(self.data.Close)
+        kc = ta.kc(H, L, C, length=self.kc_period, scalar=self.kc_scalar)
+        self.kc_basis = self.I(lambda: kc.iloc[:, 1].values)
+        self.kc_upper = self.I(lambda: kc.iloc[:, 2].values)
+        self.ema_trend = self.I(lambda: ta.ema(C, self.trend_ema).values)
+        self.atr = self.I(lambda: ta.atr(H, L, C, self.atr_period).values)
 
     def next(self):
-        # Trend Following: Price Closes ABOVE Upper Channel -> Buy
-        
-        if self.data.Close[-1] > self.kc_upper[-1]:
-            if not self.position:
-                self.buy()
-        
-        # Exit: Price closes CLOSE to Middle? Or Touch Lower?
-        # Let's say Price drops below Lower Channel or Reverts to Mean?
-        # Revert to mean (Touch EMA/Mid) is common target.
-        # Here we use Lower Channel stop.
-        elif self.data.Close[-1] < self.kc_lower[-1]:
-            if self.position:
-                self.position.close()
+        price = self.data.Close[-1]
+        if self.position and not np.isnan(self.atr[-1]):
+            new_sl = price - self.atr_mult * self.atr[-1]
+            for trade in self.trades:
+                if trade.sl is None or new_sl > trade.sl:
+                    trade.sl = new_sl
+
+        # Pullback continuation: price reclaims the basis from below while the channel
+        # is rising and we're in a long-term uptrend.
+        reclaim = self.data.Close[-2] <= self.kc_basis[-2] and price > self.kc_basis[-1]
+        channel_rising = self.kc_basis[-1] > self.kc_basis[-5]
+        if reclaim and channel_rising and price > self.ema_trend[-1] and not self.position:
+            stop = price - self.atr_mult * self.atr[-1]
+            if stop < price:
+                self.buy(sl=stop)
+        # Let winners run: exit only on a long-term trend break (ATR stop handles the rest).
+        elif price < self.ema_trend[-1] and self.position:
+            self.position.close()
 """
 
 # -----------------------------------------------------------------------------
@@ -1112,22 +1194,35 @@ class KeltnerBreakout(Strategy):
 CODE_MFI = """
 from backtesting import Strategy
 import pandas as pd
+import numpy as np
 
 class MFIReversal(Strategy):
+    # Buy money-flow oversold dips in a long-term uptrend; ride with an ATR trailing
+    # stop and exit on a trend break rather than bailing the instant MFI is overbought
+    # (the old MFI>80 exit capped winners and left it too defensive to beat B&H).
+    mfi_period = 14
+    mfi_oversold = 20
+    mfi_overbought = 80
+    atr_period = 14
+    atr_mult = 6.0
+
     def init(self):
-        self.mfi = self.I(lambda h,l,c,v: ta.mfi(pd.Series(h), pd.Series(l), pd.Series(c), pd.Series(v), length=14).values, self.data.High, self.data.Low, self.data.Close, self.data.Volume)
+        H, L, C, V = (pd.Series(self.data.High), pd.Series(self.data.Low),
+                      pd.Series(self.data.Close), pd.Series(self.data.Volume))
+        self.mfi = self.I(lambda: ta.mfi(H, L, C, V, length=self.mfi_period).values)
+        self.atr = self.I(lambda: ta.atr(H, L, C, self.atr_period).values)
 
     def next(self):
-        # MFI < 20 is Oversold (Buy Signal)
-        # MFI > 80 is Overbought (Sell Signal)
-        
-        if self.mfi[-1] < 20:
-            if not self.position:
-                self.buy()
-        
-        elif self.mfi[-1] > 80:
-            if self.position:
-                self.position.close()
+        price = self.data.Close[-1]
+        # Mean-reversion: buy oversold money flow, sell into overbought strength. Uses a
+        # FIXED catastrophic ATR stop set at entry (NOT a trailing stop — a ratcheting
+        # stop ejects reversion trades before the bounce); the reversion exit does the work.
+        if self.mfi[-1] < self.mfi_oversold and not self.position and not np.isnan(self.atr[-1]):
+            stop = price - self.atr_mult * self.atr[-1]
+            if stop < price:
+                self.buy(sl=stop)
+        elif self.mfi[-1] > self.mfi_overbought and self.position:
+            self.position.close()
 """
 
 
@@ -1138,28 +1233,40 @@ class MFIReversal(Strategy):
 CODE_OBV = """
 from backtesting import Strategy
 import pandas as pd
+import numpy as np
 
 class OBVTrend(Strategy):
+    # Volume-trend confirmation: OBV above its MA while price is in a long-term uptrend;
+    # ATR trailing stop, exit on a trend break (holding through OBV's noise lets winners
+    # run, rather than bailing on every OBV dip below its MA).
+    obv_ma_period = 20
+    trend_ema = 200
+    atr_period = 14
+    atr_mult = 3.0
+
     def init(self):
-        # OBV
-        self.obv = self.I(lambda c, v: ta.obv(pd.Series(c), pd.Series(v)).values, self.data.Close, self.data.Volume)
-        # OBV MA for Trend Confirmation
-        self.obv_ma = self.I(lambda x: ta.sma(pd.Series(x), length=20).values, self.obv)
+        C, V = pd.Series(self.data.Close), pd.Series(self.data.Volume)
+        H, L = pd.Series(self.data.High), pd.Series(self.data.Low)
+        obv = ta.obv(C, V)
+        self.obv = self.I(lambda: obv.values)
+        self.obv_ma = self.I(lambda: obv.rolling(self.obv_ma_period).mean().values)
+        self.ema_trend = self.I(lambda: ta.ema(C, self.trend_ema).values)
+        self.atr = self.I(lambda: ta.atr(H, L, C, self.atr_period).values)
 
     def next(self):
-        # Buy: OBV is above its 20-day MA (Volume Trend is Up)
-        # AND Price is above its 20-day MA
-        
-        price_ma = pd.Series(self.data.Close).rolling(20).mean().iloc[-1]
-        
-        if self.obv[-1] > self.obv_ma[-1] and self.data.Close[-1] > price_ma:
-            if not self.position:
-                self.buy()
-                
-        # Exit: OBV drops below MA
-        elif self.obv[-1] < self.obv_ma[-1]:
-            if self.position:
-                self.position.close()
+        price = self.data.Close[-1]
+        if self.position and not np.isnan(self.atr[-1]):
+            new_sl = price - self.atr_mult * self.atr[-1]
+            for trade in self.trades:
+                if trade.sl is None or new_sl > trade.sl:
+                    trade.sl = new_sl
+
+        if self.obv[-1] > self.obv_ma[-1] and price > self.ema_trend[-1] and not self.position:
+            stop = price - self.atr_mult * self.atr[-1]
+            if stop < price:
+                self.buy(sl=stop)
+        elif price < self.ema_trend[-1] and self.position:
+            self.position.close()
 """
 
 # -----------------------------------------------------------------------------
@@ -1170,32 +1277,42 @@ CODE_AROON = """
 from backtesting import Strategy
 import pandas as pd
 
+import numpy as np
+
 class AroonTrend(Strategy):
+    # Early-trend detection: enter when Aroon Up crosses above Aroon Down with
+    # strong upside (Up > threshold) in a long-term uptrend; ATR trailing stop.
+    aroon_period = 14
+    aroon_strong = 70
+    trend_ema = 200
+    atr_period = 14
+    atr_mult = 3.0
+
     def init(self):
-        # Aroon Up and Down
-        def get_aroon(high, low):
-            # ta.aroon returns Table with AROONDa_14, AROOND_14, AROONU_14
-            # We want Aroon Up and Down
-            # Note: pandas_ta usually returns AROOND (Down) and AROONU (Up)
-            res = ta.aroon(high, low, length=14)
-            return res.iloc[:, 0], res.iloc[:, 1] # AROOND, AROONU usually
-            
-        # Register carefully. We'll use simple lambda wrapper if needed or just extract
-        # Let's inspect columns assumed: 0 is Down, 1 is Up
-        self.aroon_down = self.I(lambda h,l: ta.aroon(pd.Series(h), pd.Series(l)).iloc[:, 0].values, self.data.High, self.data.Low)
-        self.aroon_up = self.I(lambda h,l: ta.aroon(pd.Series(h), pd.Series(l)).iloc[:, 1].values, self.data.High, self.data.Low)
+        H, L, C = pd.Series(self.data.High), pd.Series(self.data.Low), pd.Series(self.data.Close)
+        ar = ta.aroon(H, L, length=self.aroon_period)
+        self.aroon_down = self.I(lambda: ar.iloc[:, 0].values)
+        self.aroon_up = self.I(lambda: ar.iloc[:, 1].values)
+        self.ema_trend = self.I(lambda: ta.ema(C, self.trend_ema).values)
+        self.atr = self.I(lambda: ta.atr(H, L, C, self.atr_period).values)
 
     def next(self):
-        # Buy: Aroon Up crosses above Aroon Down
-        
-        if self.aroon_up[-2] < self.aroon_down[-2] and self.aroon_up[-1] > self.aroon_down[-1]:
-            if not self.position:
-                self.buy()
-        
-        # Exit: Aroon Up drops below 50 or crosses below Down
-        elif self.aroon_up[-1] < self.aroon_down[-1]:
-            if self.position:
-                self.position.close()
+        price = self.data.Close[-1]
+        if self.position and not np.isnan(self.atr[-1]):
+            new_sl = price - self.atr_mult * self.atr[-1]
+            for trade in self.trades:
+                if trade.sl is None or new_sl > trade.sl:
+                    trade.sl = new_sl
+
+        cross_up = (self.aroon_up[-2] < self.aroon_down[-2]
+                    and self.aroon_up[-1] > self.aroon_down[-1])
+        strong = self.aroon_up[-1] > self.aroon_strong
+        if cross_up and strong and price > self.ema_trend[-1] and not self.position:
+            stop = price - self.atr_mult * self.atr[-1]
+            if stop < price:
+                self.buy(sl=stop)
+        elif self.aroon_down[-1] > self.aroon_up[-1] and self.position:
+            self.position.close()
 """
 
 # -----------------------------------------------------------------------------
@@ -1208,30 +1325,37 @@ import pandas as pd
 import numpy as np
 
 class CoppockCurve(Strategy):
+    # Long-term momentum: enter when the Coppock Curve crosses up through zero in a
+    # long-term uptrend; ATR trailing stop, exit when momentum turns negative.
+    cop_length = 10
+    cop_fast = 11
+    cop_slow = 14
+    trend_ema = 200
+    atr_period = 14
+    atr_mult = 3.0
+
     def init(self):
-        # Coppock Curve: WMA[10] of (ROC[14] + ROC[11])
-        def get_coppock(close):
-            res = ta.coppock(pd.Series(close, index=self.data.index))
-            return res.values
-            
-        self.coppock = self.I(get_coppock, self.data.Close)
-        self.zero = self.I(lambda x: np.zeros(len(x)), self.data.Close)
+        H, L, C = pd.Series(self.data.High), pd.Series(self.data.Low), pd.Series(self.data.Close)
+        self.coppock = self.I(lambda: ta.coppock(C, length=self.cop_length,
+                                                 fast=self.cop_fast, slow=self.cop_slow).values)
+        self.ema_trend = self.I(lambda: ta.ema(C, self.trend_ema).values)
+        self.atr = self.I(lambda: ta.atr(H, L, C, self.atr_period).values)
 
     def next(self):
-        # Buy: Coppock turns UP from below zero
-        # i.e. Previous < 0, Current < 0, but Current > Previous
-        # Or simpler: Crosses above Zero?
-        # Classic is: Curve turns up.
-        
-        if self.coppock[-2] < 0 and self.coppock[-1] < 0:
-            if self.coppock[-1] > self.coppock[-2]: # Turning up
-                if not self.position:
-                    self.buy()
-                    
-        # Exit: Curve turns down
-        if self.coppock[-1] < self.coppock[-2]:
-            if self.position:
-                self.position.close()
+        price = self.data.Close[-1]
+        if self.position and not np.isnan(self.atr[-1]):
+            new_sl = price - self.atr_mult * self.atr[-1]
+            for trade in self.trades:
+                if trade.sl is None or new_sl > trade.sl:
+                    trade.sl = new_sl
+
+        crossed_up = self.coppock[-2] < 0 and self.coppock[-1] > 0
+        if crossed_up and price > self.ema_trend[-1] and not self.position:
+            stop = price - self.atr_mult * self.atr[-1]
+            if stop < price:
+                self.buy(sl=stop)
+        elif self.coppock[-1] < 0 and self.position:
+            self.position.close()
 """
 
 # -----------------------------------------------------------------------------
@@ -1284,34 +1408,37 @@ import pandas as pd
 import numpy as np
 
 class WilliamsAlligatorV2(Strategy):
+    # Alligator "eating" (Lips>Teeth>Jaw) + 5-day-high fractal breakout, gated by a
+    # long-term uptrend; ATR trailing stop, exit when the Alligator sleeps (Lips<Teeth).
+    trend_ema = 200
+    atr_period = 14
+    atr_mult = 3.0
+
     def init(self):
-        # Alligator: Jaw (13,8), Teeth (8,5), Lips (5,3)
-        # Using simple SMMA approximation or EMA for improved responsiveness v2
-        
-        # Using EMA for v2 (Modern approach)
-        self.jaw = self.I(lambda x: ta.ema(pd.Series(x, index=self.data.index), length=13).shift(8).bfill().values, self.data.Close)
-        self.teeth = self.I(lambda x: ta.ema(pd.Series(x, index=self.data.index), length=8).shift(5).bfill().values, self.data.Close)
-        self.lips = self.I(lambda x: ta.ema(pd.Series(x, index=self.data.index), length=5).shift(3).bfill().values, self.data.Close)
-        
-        # Fractals (5 bar high)
-        # We will simply look for "Breakout of 5-day High" as a proxy for fractal trigger
-        self.recent_high = self.I(lambda x: pd.Series(x).rolling(5).max().shift(1).values, self.data.High)
+        H, L, C = pd.Series(self.data.High), pd.Series(self.data.Low), pd.Series(self.data.Close)
+        self.jaw = self.I(lambda: ta.ema(C, length=13).shift(8).bfill().values)
+        self.teeth = self.I(lambda: ta.ema(C, length=8).shift(5).bfill().values)
+        self.lips = self.I(lambda: ta.ema(C, length=5).shift(3).bfill().values)
+        self.recent_high = self.I(lambda: H.rolling(5).max().shift(1).values)
+        self.ema_trend = self.I(lambda: ta.ema(C, self.trend_ema).values)
+        self.atr = self.I(lambda: ta.atr(H, L, C, self.atr_period).values)
 
     def next(self):
-        # Alligator "Eating" (Uptrend): Lips > Teeth > Jaw
-        is_uptrend = self.lips[-1] > self.teeth[-1] and self.teeth[-1] > self.jaw[-1]
-        
-        # Buy Trigger: Price breaks above recent 5-day high (Fractal logic simplified)
-        breakout = self.data.Close[-1] > self.recent_high[-1]
-        
-        if not self.position:
-            if is_uptrend and breakout:
-                self.buy()
-        
-        else:
-            # Exit: Lips cross below Teeth (Alligator goes to sleep)
-            if self.lips[-1] < self.teeth[-1]:
-                self.position.close()
+        price = self.data.Close[-1]
+        if self.position and not np.isnan(self.atr[-1]):
+            new_sl = price - self.atr_mult * self.atr[-1]
+            for trade in self.trades:
+                if trade.sl is None or new_sl > trade.sl:
+                    trade.sl = new_sl
+
+        eating = self.lips[-1] > self.teeth[-1] > self.jaw[-1]
+        breakout = price > self.recent_high[-1]
+        if eating and breakout and price > self.ema_trend[-1] and not self.position:
+            stop = price - self.atr_mult * self.atr[-1]
+            if stop < price:
+                self.buy(sl=stop)
+        elif self.lips[-1] < self.teeth[-1] and self.position:
+            self.position.close()
 """
 
 # -----------------------------------------------------------------------------
@@ -1324,25 +1451,30 @@ import pandas as pd
 import numpy as np
 
 class TurtleSoup(Strategy):
+    # "Turtle Soup" false-breakout reversal: price undercuts the prior 20-day low then
+    # closes back above it (a failed breakdown / stop hunt). Contrarian by design (no
+    # trend filter); fixed-risk trade with an ATR stop under the trap low and a 2R target.
+    lookback = 20
+    atr_period = 14
+    atr_mult = 1.0
+    reward_risk = 2.0
+
     def init(self):
-        # 20-Day Low
-        self.low_20 = self.I(lambda x: pd.Series(x).rolling(20).min().shift(1).values, self.data.Low)
-        
+        H, L, C = pd.Series(self.data.High), pd.Series(self.data.Low), pd.Series(self.data.Close)
+        self.low_n = self.I(lambda: L.rolling(self.lookback).min().shift(1).values)
+        self.atr = self.I(lambda: ta.atr(H, L, C, self.atr_period).values)
+
     def next(self):
-        # Setup: Current Low Undercut the 20-day Low
-        undercut = self.data.Low[-1] < self.low_20[-1]
-        
-        # Trigger: Close Reclaimed the 20-day Low (False Breakout)
-        reclaim = self.data.Close[-1] > self.low_20[-1]
-        
-        if not self.position:
-            if undercut and reclaim:
-                self.buy()
-        
-        else:
-            # Exit: 10 day hold
-            if len(self.trades) > 0 and (self.data.index[-1] - self.trades[0].entry_time).days > 10:
-                 self.position.close()
+        if np.isnan(self.atr[-1]) or np.isnan(self.low_n[-1]):
+            return
+        price = self.data.Close[-1]
+        undercut = self.data.Low[-1] < self.low_n[-1]
+        reclaim = price > self.low_n[-1]
+        if undercut and reclaim and not self.position:
+            stop = self.data.Low[-1] - self.atr_mult * self.atr[-1]
+            if stop < price:
+                target = price + self.reward_risk * (price - stop)
+                self.buy(sl=stop, tp=target)
 """
 
 # -----------------------------------------------------------------------------
@@ -1355,33 +1487,33 @@ import pandas as pd
 import numpy as np
 
 class GoldenCrossADX(Strategy):
+    # 50>200 golden-cross uptrend confirmed by ADX strength; hold until the death cross.
+    # A wide catastrophic ATR stop only (NOT a tight trail) — this is a long-hold trend
+    # strategy and a tight trail just churns it out of multi-year winners.
+    fast = 50
+    slow = 200
+    adx_len = 14
+    adx_threshold = 25
+    atr_period = 14
+    atr_mult = 6.0
+
     def init(self):
-        self.sma_50 = self.I(lambda x: ta.sma(pd.Series(x), length=50).values, self.data.Close)
-        self.sma_200 = self.I(lambda x: ta.sma(pd.Series(x), length=200).values, self.data.Close)
-        
-        # ADX Filter
-        def get_adx(high, low, close):
-             # Returns ADX column only (index 0)
-             res = ta.adx(pd.Series(high, index=self.data.index), pd.Series(low, index=self.data.index), pd.Series(close, index=self.data.index), length=14)
-             return res.iloc[:, 0].values
-             
-        self.adx = self.I(get_adx, self.data.High, self.data.Low, self.data.Close)
+        H, L, C = pd.Series(self.data.High), pd.Series(self.data.Low), pd.Series(self.data.Close)
+        self.sma_50 = self.I(lambda: ta.sma(C, self.fast).values)
+        self.sma_200 = self.I(lambda: ta.sma(C, self.slow).values)
+        self.adx = self.I(lambda: ta.adx(H, L, C, length=self.adx_len).iloc[:, 0].values)
+        self.atr = self.I(lambda: ta.atr(H, L, C, self.atr_period).values)
 
     def next(self):
-        # Logic: 50 cross over 200 AND ADX > 25
-        # We check crossover manually or simply 'is above' with recent transition check?
-        # Simple: If 50 > 200 AND ADX > 25.
-        
+        price = self.data.Close[-1]
         uptrend = self.sma_50[-1] > self.sma_200[-1]
-        strong = self.adx[-1] > 25
-        
-        if not self.position:
-            if uptrend and strong:
-                self.buy()
-        else:
-            # Exit: Death Cross (50 crosses below 200)
-            if self.sma_50[-1] < self.sma_200[-1]:
-                self.position.close()
+        strong = self.adx[-1] > self.adx_threshold
+        if uptrend and strong and not self.position:
+            stop = price - self.atr_mult * self.atr[-1]
+            if stop < price:
+                self.buy(sl=stop)
+        elif self.sma_50[-1] < self.sma_200[-1] and self.position:
+            self.position.close()
 """
 
 # -----------------------------------------------------------------------------
@@ -1394,33 +1526,29 @@ import pandas as pd
 import numpy as np
 
 class MACD_SAR(Strategy):
+    # MACD bullish crossover with price above the Parabolic SAR, gated by a long-term
+    # uptrend (cuts countertrend entries that sank the original). SAR is the trailing exit.
+    trend_ema = 200
+
     def init(self):
-        # MACD
-        def get_macd(close):
-            # Returns MACD, Histogram, Signal
-            m = ta.macd(pd.Series(close, index=self.data.index))
-            return m.iloc[:, 0].values, m.iloc[:, 2].values # MACD, Signal
-            
-        self.macd, self.signal = self.I(get_macd, self.data.Close)
-        
-        # Parabolic SAR (0.02, 0.02, 0.2)
-        def get_sar(high, low, close):
-            return ta.psar(pd.Series(high, index=self.data.index), pd.Series(low, index=self.data.index), pd.Series(close, index=self.data.index)).iloc[:, 0].values
-            
-        self.sar = self.I(get_sar, self.data.High, self.data.Low, self.data.Close)
+        H, L, C = pd.Series(self.data.High), pd.Series(self.data.Low), pd.Series(self.data.Close)
+        macd = ta.macd(C)
+        self.macd = self.I(lambda: macd.iloc[:, 0].values)
+        self.signal = self.I(lambda: macd.iloc[:, 2].values)
+        self.sar = self.I(lambda: ta.psar(H, L, C).iloc[:, 0]
+                          .fillna(ta.psar(H, L, C).iloc[:, 1]).values)
+        self.ema_trend = self.I(lambda: ta.ema(C, self.trend_ema).values)
 
     def next(self):
-        # Entry: MACD > Signal (Bullish crossover) AND Price > SAR (Uptrend)
+        price = self.data.Close[-1]
         macd_cross = self.macd[-2] < self.signal[-2] and self.macd[-1] > self.signal[-1]
-        price_above_sar = self.data.Close[-1] > self.sar[-1]
-        
-        if not self.position:
-            if macd_cross and price_above_sar:
-                self.buy()
-        else:
-            # Exit: Price crosses BELOW SAR (Trailing Stop Hit)
-            if self.data.Close[-1] < self.sar[-1]:
-                self.position.close()
+        above_sar = price > self.sar[-1]
+        if macd_cross and above_sar and price > self.ema_trend[-1] and not self.position:
+            stop = self.sar[-1]
+            if not np.isnan(stop) and stop < price:
+                self.buy(sl=stop)
+        elif price < self.sar[-1] and self.position:
+            self.position.close()
 """
 
 # -----------------------------------------------------------------------------
@@ -1488,42 +1616,37 @@ import pandas as pd
 import numpy as np
 
 class NR7Breakout(Strategy):
+    # NR7 volatility-contraction breakout (prior bar's range the narrowest of 7) taken
+    # long in a long-term uptrend; ATR trailing stop replaces the tight fixed 2%/5%
+    # stop+target so winners can run.
+    trend_ema = 200
+    atr_period = 14
+    atr_mult = 2.5
+
     def init(self):
-        # Calculate Range of each bar
-        def get_range(high, low):
-            return (pd.Series(high) - pd.Series(low)).values
-            
-        self.daily_range = self.I(get_range, self.data.High, self.data.Low)
+        H, L, C = pd.Series(self.data.High), pd.Series(self.data.Low), pd.Series(self.data.Close)
+        self.daily_range = self.I(lambda: (H - L).values)
+        self.ema_trend = self.I(lambda: ta.ema(C, self.trend_ema).values)
+        self.atr = self.I(lambda: ta.atr(H, L, C, self.atr_period).values)
 
     def next(self):
-        if len(self.daily_range) < 8: return
-        
-        # NR7: Today's range (last completed bar) is the smallest of the last 7 bars.
-        # But we are in 'next', so [-1] is the current closing bar.
-        
-        # Check if YESTERDAY (Bar -2) was an NR7 day relative to its preceding 6 days
-        # Ranges involved: [-8] to [-2]
-        
-        prev_range = self.daily_range[-2]
-        prev_past_6 = self.daily_range[-8:-2]
-        
-        was_nr7 = prev_range < min(prev_past_6)
-        
-        if was_nr7:
-            # If yesterday was NR7, we buy if Price breaks its High
-            buy_trigger = self.data.High[-2]
-            
-            if self.data.Close[-1] > buy_trigger:
-                if not self.position:
-                    self.buy()
-                    
-        # Exit: Stop Loss 2%
-        if self.position:
-             # Stop Loss 2% and Take Profit 5%
-             if self.position.pl_pct < -0.02:
-                 self.position.close()
-             elif self.position.pl_pct > 0.05:
-                 self.position.close()
+        if len(self.daily_range) < 8:
+            return
+        price = self.data.Close[-1]
+        if self.position and not np.isnan(self.atr[-1]):
+            new_sl = price - self.atr_mult * self.atr[-1]
+            for trade in self.trades:
+                if trade.sl is None or new_sl > trade.sl:
+                    trade.sl = new_sl
+
+        was_nr7 = self.daily_range[-2] < min(self.daily_range[-8:-2])
+        breakout = price > self.data.High[-2]
+        if was_nr7 and breakout and price > self.ema_trend[-1] and not self.position:
+            stop = price - self.atr_mult * self.atr[-1]
+            if stop < price:
+                self.buy(sl=stop)
+        elif price < self.ema_trend[-1] and self.position:
+            self.position.close()
 """
 
 # -----------------------------------------------------------------------------
@@ -1536,35 +1659,123 @@ import pandas as pd
 import numpy as np
 
 class ZScoreReversion(Strategy):
+    # Statistical dip-buy: enter when price is z_entry std below its rolling mean, but
+    # only in a long-term uptrend; ATR stop; exit on reversion past z_exit (set above the
+    # mean so winners ride a little further than a flat snap-back to zero).
     window = 20
     z_entry = -2.0
-    z_exit = 0.0
-    
+    z_exit = 1.0
+    trend_ema = 200
+    atr_period = 14
+    atr_mult = 3.0
+
     def init(self):
-        # Calculate Z-Score
-        def get_zscore(close):
-            series = pd.Series(close)
-            # Rolling Mean and Std
-            mean = series.rolling(self.window).mean()
-            std = series.rolling(self.window).std()
-            z = (series - mean) / std
-            return z.values
-            
-        self.z_score = self.I(get_zscore, self.data.Close)
+        C, H, L = pd.Series(self.data.Close), pd.Series(self.data.High), pd.Series(self.data.Low)
+
+        def get_zscore():
+            mean = C.rolling(self.window).mean()
+            std = C.rolling(self.window).std()
+            return ((C - mean) / std).values
+
+        self.z_score = self.I(get_zscore)
+        self.ema_trend = self.I(lambda: ta.ema(C, self.trend_ema).values)
+        self.atr = self.I(lambda: ta.atr(H, L, C, self.atr_period).values)
 
     def next(self):
-        # Buy: Z-Score < -2.0 (Statistically Oversold)
-        if self.z_score[-1] < self.z_entry:
-            if not self.position:
-                self.buy()
-                
-        # Exit: Z-Score > 0 (Reverted to Mean)
-        if self.z_score[-1] > self.z_exit:
-            if self.position:
-                self.position.close()
+        price = self.data.Close[-1]
+        if self.position and not np.isnan(self.atr[-1]):
+            new_sl = price - self.atr_mult * self.atr[-1]
+            for trade in self.trades:
+                if trade.sl is None or new_sl > trade.sl:
+                    trade.sl = new_sl
+
+        if self.z_score[-1] < self.z_entry and price > self.ema_trend[-1] and not self.position:
+            stop = price - self.atr_mult * self.atr[-1]
+            if stop < price:
+                self.buy(sl=stop)
+        elif self.z_score[-1] > self.z_exit and self.position:
+            self.position.close()
+"""
+
+CODE_SMA_CROSS = """
+from backtesting import Strategy
+from backtesting.test import SMA
+import pandas as pd
+import numpy as np
+
+class SmaCross(Strategy):
+    # Long-only fast/slow SMA crossover gated by a long-term uptrend, with an ATR
+    # trailing stop. (The original went SHORT on the death cross — catastrophic in a
+    # bull market — and had no risk management.)
+    n1 = 20
+    n2 = 50
+    trend_ema = 200
+    atr_period = 14
+    atr_mult = 3.0
+
+    def init(self):
+        H, L, C = pd.Series(self.data.High), pd.Series(self.data.Low), pd.Series(self.data.Close)
+        self.sma1 = self.I(SMA, self.data.Close, self.n1)
+        self.sma2 = self.I(SMA, self.data.Close, self.n2)
+        self.ema_trend = self.I(lambda: ta.ema(C, self.trend_ema).values)
+        self.atr = self.I(lambda: ta.atr(H, L, C, self.atr_period).values)
+
+    def next(self):
+        price = self.data.Close[-1]
+        if self.position and not np.isnan(self.atr[-1]):
+            new_sl = price - self.atr_mult * self.atr[-1]
+            for trade in self.trades:
+                if trade.sl is None or new_sl > trade.sl:
+                    trade.sl = new_sl
+
+        bull_cross = self.sma1[-2] <= self.sma2[-2] and self.sma1[-1] > self.sma2[-1]
+        if bull_cross and price > self.ema_trend[-1] and not self.position:
+            stop = price - self.atr_mult * self.atr[-1]
+            if stop < price:
+                self.buy(sl=stop)
+        elif self.sma1[-1] < self.sma2[-1] and self.position:
+            self.position.close()
+"""
+
+# -----------------------------------------------------------------------------
+# Composition ports: strategies re-expressed via the composable strategy framework
+# (stocks.services.strategy_framework). Each matched or beat its hand-written version
+# on the 24-symbol basket while collapsing ~40 lines to ~3. Defined here (overriding
+# the constants above) so seeding persists the ported form.
+# -----------------------------------------------------------------------------
+CODE_TURTLE = """
+from stocks.services.strategy_framework import build_strategy, alphas, regimes, stops
+Strategy = build_strategy(alpha=alphas.DonchianBreakout(entry_window=20, exit_window=10),
+                          regime=regimes.AboveEMA(200), stop=stops.AtrTrail(multiplier=3.0),
+                          name="TurtleTrading")
+"""
+
+CODE_ICHIMOKU = """
+from stocks.services.strategy_framework import build_strategy, alphas, regimes, stops
+Strategy = build_strategy(alpha=alphas.IchimokuCloud(), regime=regimes.AboveEMA(200),
+                          stop=stops.AtrTrail(multiplier=3.0), name="IchimokuCloudTrend")
+"""
+
+CODE_MACD_SAR = """
+from stocks.services.strategy_framework import build_strategy, alphas, regimes, stops, exits
+Strategy = build_strategy(alpha=alphas.MacdCross(), regime=regimes.AboveEMA(200),
+                          stop=stops.AtrTrail(multiplier=3.0), exit=exits.TrendBreak(200),
+                          name="MacdTrend")
+"""
+
+CODE_ZSCORE = """
+from stocks.services.strategy_framework import build_strategy, alphas, regimes, stops
+Strategy = build_strategy(alpha=alphas.ZScoreReversion(window=20, z_entry=-2.0, z_exit=1.0),
+                          regime=regimes.AboveEMA(200), stop=stops.FixedAtr(multiplier=6.0),
+                          name="ZScoreReversion")
 """
 
 strategies = [
+    {
+        "name": "SMA Crossover",
+        "description": "Long-only fast/slow SMA crossover filtered by a long-term uptrend, with an ATR trailing stop for risk management.",
+        "code": CODE_SMA_CROSS
+    },
     {
         "name": "RSI & Bollinger Mean Reversion",
         "description": "A classic mean reversion strategy mainly for ranging markets. Buys when oversold (RSI < 30) at lower Bollinger Band. Sells when overbought. Win Rate Target: 65%+",
@@ -1771,6 +1982,45 @@ strategies = [
         "code": CODE_ZSCORE
     },
 ]
+
+# -----------------------------------------------------------------------------
+# Composition ports (stocks.services.strategy_framework). Each entry below was
+# validated to match-or-beat its hand-written version on the 24-symbol basket
+# (parity-gated — strategies where the hand version was better, incl. the big
+# winners like Dual Thrust / Three White Soldiers, are intentionally NOT ported).
+# Applied as a post-pass over `strategies` so seeding persists the ported form.
+# -----------------------------------------------------------------------------
+def _FW(body):
+    return ("from stocks.services.strategy_framework import build_strategy, alphas, regimes, stops, exits\n"
+            "Strategy = " + body)
+
+PORTED = {
+ "Supertrend Follower": _FW("build_strategy(alpha=alphas.SupertrendFlip(10,3.0), regime=regimes.AboveEMA(200), stop=stops.AtrTrail(3), name='Supertrend')"),
+ "Turtle Trading (Channel Breakout)": _FW("build_strategy(alpha=alphas.DonchianBreakout(20,10), regime=regimes.AboveEMA(200), stop=stops.AtrTrail(3), name='Turtle')"),
+ "Parabolic SAR (Momentum)": _FW("build_strategy(alpha=alphas.ParabolicSarFlip(), regime=regimes.AboveEMA(200), stop=stops.AtrTrail(3), name='ParabolicSar')"),
+ "Ichimoku Cloud Trend": _FW("build_strategy(alpha=alphas.IchimokuCloud(), regime=regimes.AboveEMA(200), stop=stops.AtrTrail(3), name='IchimokuTrend')"),
+ "ADX Trend Strength": _FW("build_strategy(alpha=alphas.AdxDi(14,25), regime=regimes.AboveEMA(200), stop=stops.AtrTrail(3), name='AdxTrend')"),
+ "Keltner Channel Breakout": _FW("build_strategy(alpha=alphas.KeltnerReclaim(), regime=regimes.AboveEMA(200), stop=stops.AtrTrail(3), exit=exits.TrendBreak(200), name='Keltner')"),
+ "Aroon Trend Strength": _FW("build_strategy(alpha=alphas.AroonCross(14,70), regime=regimes.AboveEMA(200), stop=stops.AtrTrail(3), name='Aroon')"),
+ "Coppock Curve (Long Term)": _FW("build_strategy(alpha=alphas.CoppockTurn(), regime=regimes.AboveEMA(200), stop=stops.AtrTrail(3), name='Coppock')"),
+ "Chaikin Money Flow Divergence": _FW("build_strategy(alpha=alphas.CmfCross(20,0.05), regime=regimes.AboveEMA(200), stop=stops.AtrTrail(3), name='Cmf')"),
+ "On-Balance Volume (OBV) Trend": _FW("build_strategy(alpha=alphas.ObvAboveMA(20), regime=regimes.AboveEMA(200), stop=stops.AtrTrail(3), exit=exits.TrendBreak(200), name='Obv')"),
+ "Williams Alligator v2": _FW("build_strategy(alpha=alphas.AlligatorBreakout(), regime=regimes.AboveEMA(200), stop=stops.AtrTrail(3), name='Alligator')"),
+ "Inside Bar Momentum": _FW("build_strategy(alpha=alphas.InsideBarBreakout(), regime=regimes.AboveEMA(200), stop=stops.AtrTrail(2.5), exit=exits.TrendBreak(200), name='InsideBar')"),
+ "RSI & Bollinger Mean Reversion": _FW("build_strategy(alpha=alphas.RsiOversold(14,40,70), regime=regimes.AboveEMA(200), stop=stops.FixedAtr(6), name='RsiDip')"),
+ "RSI-2 Mean Reversion": _FW("build_strategy(alpha=alphas.Rsi2Connors(2,10,200,5), stop=stops.FixedAtr(6), name='Rsi2')"),
+ "Money Flow Index Reversal": _FW("build_strategy(alpha=alphas.MfiOversold(14), stop=stops.FixedAtr(6), name='Mfi')"),
+ "Fibonacci Golden Zone": _FW("build_strategy(alpha=alphas.FibGoldenZone(50), regime=regimes.AboveEMA(200), stop=stops.FixedAtr(6), name='Fib')"),
+ "Turtle Soup Reversal": _FW("build_strategy(alpha=alphas.TurtleSoupReversal(20), stop=stops.FixedAtr(1.0), rr=2.0, name='TurtleSoup')"),
+ "Smart Money Accumulation": _FW("build_strategy(alpha=alphas.AccumulationAboveMA(symbol=symbol, top_n=5, ma=20), regime=regimes.AboveEMA(200), stop=stops.AtrTrail(3), name='SmartMoney')"),
+ "Accumulation Divergence": _FW("build_strategy(alpha=alphas.AccumulationDivergence(symbol=symbol, lookback=10), stop=stops.FixedAtr(6), name='AccDiv')"),
+ "Broker Accumulation (Institutional)": _FW("build_strategy(alpha=alphas.AccumulationAboveMA(symbol=symbol, top_n=20, ma=20), regime=regimes.AboveEMA(200), stop=stops.AtrTrail(3), name='BrokerAcc')"),
+}
+
+for _s in strategies:
+    if _s["name"] in PORTED:
+        _s["code"] = PORTED[_s["name"]]
+
 
 def seed():
     # Get a default user (usually superuser or first user)

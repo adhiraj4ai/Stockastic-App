@@ -35,6 +35,7 @@ from asgiref.sync import sync_to_async
 from claude_agent_sdk import (
     AssistantMessage,
     ResultMessage,
+    StreamEvent,
     SystemMessage,
     TextBlock,
     ThinkingBlock,
@@ -88,6 +89,7 @@ async def stream_chat(
 
     _user_context.reset_cards()
     blocks: list[dict] = []  # full structured transcript to persist
+    seen_subagents: set[str] = set()  # parent_tool_use_ids we've announced
     final_session_id: str | None = session.sdk_session_id or None
     usage_total = {
         "input_tokens": 0,
@@ -102,6 +104,33 @@ async def stream_chat(
         async for msg in run_chat_session(
             user=user, sdk_session_id=session.sdk_session_id, prompt=prompt
         ):
+            # Token-level deltas: incrementally stream assistant text/thinking as it
+            # is generated. The final AssistantMessage (below) carries the same content
+            # in whole — we persist from there but DON'T re-yield it, to avoid doubling.
+            if isinstance(msg, StreamEvent):
+                ev = msg.event or {}
+                etype = ev.get("type")
+                parent = getattr(msg, "parent_tool_use_id", None)
+                sub = "subagent" if parent else None
+
+                if etype == "message_start" and parent and parent not in seen_subagents:
+                    seen_subagents.add(parent)
+                    payload = {
+                        "kind": "subagent_start",
+                        "parent": parent,
+                        "model": (ev.get("message") or {}).get("model"),
+                    }
+                    blocks.append(payload)
+                    yield _sse("subagent_start", payload)
+
+                elif etype == "content_block_delta":
+                    delta = ev.get("delta") or {}
+                    if delta.get("type") == "text_delta" and delta.get("text"):
+                        yield _sse("text", {"kind": "text", "subagent": sub, "text": delta["text"]})
+                    elif delta.get("type") == "thinking_delta" and delta.get("thinking"):
+                        yield _sse("thinking", {"kind": "thinking", "subagent": sub, "text": delta["thinking"]})
+                continue
+
             if isinstance(msg, AssistantMessage):
                 if msg.session_id:
                     final_session_id = msg.session_id
@@ -111,10 +140,8 @@ async def stream_chat(
                         usage_total[k] += int(msg.usage.get(k, 0) or 0)
 
                 subagent_marker = "subagent" if _is_subagent(msg) else None
-                if _is_subagent(msg) and not any(
-                    b.get("kind") == "subagent_start" and b.get("parent") == msg.parent_tool_use_id
-                    for b in blocks
-                ):
+                if _is_subagent(msg) and msg.parent_tool_use_id not in seen_subagents:
+                    seen_subagents.add(msg.parent_tool_use_id)
                     payload = {
                         "kind": "subagent_start",
                         "parent": msg.parent_tool_use_id,
@@ -124,23 +151,13 @@ async def stream_chat(
                     yield _sse("subagent_start", payload)
 
                 for block in msg.content:
+                    # Text/thinking already streamed live via StreamEvent deltas; here we
+                    # only record them for persistence (so reloads show the full turn).
                     if isinstance(block, TextBlock):
-                        payload = {
-                            "kind": "text",
-                            "subagent": subagent_marker,
-                            "text": block.text,
-                        }
-                        blocks.append(payload)
-                        yield _sse("text", payload)
+                        blocks.append({"kind": "text", "subagent": subagent_marker, "text": block.text})
 
                     elif isinstance(block, ThinkingBlock):
-                        payload = {
-                            "kind": "thinking",
-                            "subagent": subagent_marker,
-                            "text": block.thinking,
-                        }
-                        blocks.append(payload)
-                        yield _sse("thinking", payload)
+                        blocks.append({"kind": "thinking", "subagent": subagent_marker, "text": block.thinking})
 
                     elif isinstance(block, ToolUseBlock):
                         # Drain any cards left over from a prior tool — shouldn't
@@ -230,8 +247,11 @@ async def stream_chat(
         yield _sse("assistant_end", {})
 
     except Exception as exc:  # pylint: disable=broad-except
-        log.exception("chat stream failed")
-        yield _sse("error", {"message": str(exc)})
+        import uuid as _uuid
+        error_id = _uuid.uuid4().hex[:8]
+        log.exception("chat stream error [%s]", error_id)
+        # Generic client-facing message; details stay server-side under error_id.
+        yield _sse("error", {"message": f"An internal error occurred (ref {error_id})."})
 
     # Persist the assistant turn — collect joined text for the .text column.
     joined_text = "\n".join(
@@ -240,7 +260,7 @@ async def stream_chat(
 
     @sync_to_async
     def _persist():
-        ChatMessage.objects.create(
+        msg = ChatMessage.objects.create(
             session=session,
             role=ChatMessage.ROLE_ASSISTANT,
             text=joined_text,
@@ -256,10 +276,16 @@ async def stream_chat(
         else:
             # Touch updated_at so the session moves to the top of the sidebar.
             session.save(update_fields=["updated_at"])
+        return str(msg.id)
 
+    persisted_message_id = None
     try:
-        await _persist()
+        persisted_message_id = await _persist()
     except Exception:  # pylint: disable=broad-except
         log.exception("failed to persist assistant turn")
 
-    yield _sse("done", {"session_id": str(session.id), "sdk_session_id": final_session_id})
+    yield _sse("done", {
+        "session_id": str(session.id),
+        "sdk_session_id": final_session_id,
+        "message_id": persisted_message_id,
+    })

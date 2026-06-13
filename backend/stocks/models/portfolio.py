@@ -52,6 +52,7 @@ class TransactionType(models.TextChoices):
     BUY_TO_COVER = 'BUY_TO_COVER', 'Buy to Cover'
     BONUS = 'BONUS', 'Bonus Share'
     DIVIDEND = 'DIVIDEND', 'Cash Dividend'
+    RIGHTS = 'RIGHTS', 'Rights Share'
 
 class TransactionReason(models.TextChoices):
     STOP_LOSS = 'STOP_LOSS', 'Stop Loss'
@@ -189,3 +190,48 @@ class TradePlanLeg(models.Model):
 
     def __str__(self):
         return f"Plan {self.plan_id} Leg {self.leg_number} ({self.status})"
+
+
+class PortfolioActionDraft(models.Model):
+    """A proposed portfolio action awaiting explicit user confirmation.
+
+    Created by the chat portfolio-manager's propose_* tools. `payload` is the
+    self-contained, exact execution contract consumed by
+    stocks.services.portfolio_drafts.confirm_draft — the executor never
+    re-derives anything from the model.
+    """
+
+    class Kind(models.TextChoices):
+        TRADE = 'TRADE', 'Trade'
+        EXITS = 'EXITS', 'Exits'
+        REBALANCE = 'REBALANCE', 'Rebalance'
+        TRADE_PLAN = 'TRADE_PLAN', 'Trade Plan'
+
+    class Status(models.TextChoices):
+        PENDING = 'PENDING', 'Pending'
+        CONFIRMED = 'CONFIRMED', 'Confirmed'
+        CANCELLED = 'CANCELLED', 'Cancelled'
+        EXPIRED = 'EXPIRED', 'Expired'
+
+    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='action_drafts')
+    account = models.ForeignKey(PortfolioAccount, on_delete=models.SET_NULL, null=True, blank=True)
+    kind = models.CharField(max_length=12, choices=Kind.choices)
+    status = models.CharField(max_length=10, choices=Status.choices, default=Status.PENDING)
+    title = models.CharField(max_length=255, default='')
+    payload = models.JSONField(default=dict)
+    preview = models.JSONField(default=dict)
+    result = models.JSONField(default=dict, blank=True)
+    expires_at = models.DateTimeField()
+    created_at = models.DateTimeField(auto_now_add=True)
+    confirmed_at = models.DateTimeField(null=True, blank=True)
+
+    class Meta:
+        ordering = ['-created_at']
+
+    @property
+    def is_expired(self):
+        from django.utils import timezone
+        return timezone.now() >= self.expires_at
+
+    def __str__(self):
+        return f"{self.user.username} - {self.kind} - {self.status}"

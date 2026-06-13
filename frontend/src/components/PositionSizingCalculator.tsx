@@ -97,7 +97,7 @@ export function PositionSizingCalculator({
             case 'MEDIUM':
                 return <Info className="h-4 w-4 text-yellow-500" />;
             default:
-                return <Info className="h-4 w-4 text-blue-500" />;
+                return <Info className="h-4 w-4 text-primary" />;
         }
     };
 
@@ -120,7 +120,7 @@ export function PositionSizingCalculator({
             <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
                 <DialogHeader>
                     <DialogTitle className="flex items-center gap-2 text-2xl">
-                        <Calculator className="h-6 w-6 text-blue-500" />
+                        <Calculator className="h-6 w-6 text-primary" />
                         Position Sizing Calculator
                     </DialogTitle>
                     <DialogDescription>
@@ -208,7 +208,7 @@ export function PositionSizingCalculator({
                                     size="sm"
                                     onClick={() => setRiskPercentage(preset.value.toString())}
                                     className={`${parseFloat(riskPercentage) === preset.value
-                                            ? 'bg-blue-50 dark:bg-blue-900/30 border-blue-500 text-blue-700 dark:text-blue-400'
+                                            ? 'bg-primary/10 border-primary/30 text-primary'
                                             : ''
                                         }`}
                                 >
@@ -234,12 +234,12 @@ export function PositionSizingCalculator({
                     {result && !error && (
                         <div className="space-y-4 border-t pt-4">
                             {/* Main Result */}
-                            <div className="bg-gradient-to-br from-blue-50 to-purple-50 dark:from-blue-900/20 dark:to-purple-900/20 rounded-xl p-6 border-2 border-blue-200 dark:border-blue-800">
+                            <div className="bg-primary/5 dark:bg-primary/10 rounded-xl p-6 border-2 border-primary/20">
                                 <div className="text-center">
                                     <p className="text-sm font-semibold text-gray-600 dark:text-gray-400 tracking-tight mb-2">
                                         Recommended position size
                                     </p>
-                                    <div className="text-5xl font-bold text-blue-600 dark:text-blue-400 mb-2">
+                                    <div className="text-5xl font-bold text-primary mb-2">
                                         {result.max_shares.toLocaleString()}
                                     </div>
                                     <p className="text-lg font-bold text-gray-700 dark:text-gray-300">shares</p>
@@ -319,7 +319,7 @@ export function PositionSizingCalculator({
                                                     ? 'bg-red-50 dark:bg-red-900/20 border-red-200 dark:border-red-800'
                                                     : warning.severity === 'MEDIUM'
                                                         ? 'bg-yellow-50 dark:bg-yellow-900/20 border-yellow-200 dark:border-yellow-800'
-                                                        : 'bg-blue-50 dark:bg-blue-900/20 border-blue-200 dark:border-blue-800'
+                                                        : 'bg-primary/5 dark:bg-primary/10 border-primary/20'
                                                 }`}
                                         >
                                             {getSeverityIcon(warning.severity)}
@@ -337,7 +337,7 @@ export function PositionSizingCalculator({
                             Cancel
                         </Button>
                         {onApply && result && result.max_shares > 0 && (
-                            <Button onClick={handleApply} className="bg-blue-600 hover:bg-blue-700 text-white">
+                            <Button onClick={handleApply} className="bg-primary hover:bg-primary/90 text-primary-foreground">
                                 <CheckCircle2 className="h-4 w-4 mr-2" />
                                 Apply {result.max_shares} Shares
                             </Button>

@@ -19,7 +19,7 @@ export function FundamentalCore({ metrics }: FundamentalCoreProps) {
         <Card className="bg-white dark:bg-card border-slate-200 dark:border-slate-700 shadow-sm overflow-hidden">
             <div className="px-6 py-4 border-b border-border dark:border-slate-800 flex items-center justify-between bg-slate-50/30 dark:bg-slate-800/20">
                 <CardTitle className="text-[10px] font-medium text-slate-500 dark:text-slate-400 flex items-center gap-2 tracking-tight">
-                    <Activity size={14} className="text-blue-500" />
+                    <Activity size={14} className="text-primary" />
                     Fundamental DNA & ratios
                 </CardTitle>
                 <div className="text-[9px] font-medium text-slate-300 tracking-tight">Q4 2025</div>

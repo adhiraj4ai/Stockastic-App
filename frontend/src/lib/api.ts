@@ -1,5 +1,6 @@
 import axios from 'axios';
 import Cookies from 'js-cookie';
+import type { SavedAnalysis, SavedAnalysisDraft } from '@/components/chat/types';
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
 const ML_SERVICE_URL = process.env.NEXT_PUBLIC_ML_SERVICE_URL || 'http://localhost:8001';
@@ -184,6 +185,26 @@ export const chatApi = {
             }
         }
     }
+};
+
+export const savedApi = {
+    list: (params: Record<string, string> = {}) => {
+        const qs = new URLSearchParams(params).toString();
+        return api.get<SavedAnalysis[]>(`/api/chat/saved/${qs ? `?${qs}` : ''}`);
+    },
+    get: (id: string) => api.get<SavedAnalysis>(`/api/chat/saved/${id}/`),
+    create: (payload: Partial<SavedAnalysisDraft>) =>
+        api.post<SavedAnalysis>('/api/chat/saved/', payload),
+    update: (id: string, payload: Partial<SavedAnalysis>) =>
+        api.patch<SavedAnalysis>(`/api/chat/saved/${id}/`, payload),
+    remove: (id: string) => api.delete(`/api/chat/saved/${id}/`),
+    suggest: (q: string) =>
+        api.get<SavedAnalysis[]>(`/api/chat/saved/suggest/?q=${encodeURIComponent(q)}`),
+    draft: (sessionId: string, messageId?: string) =>
+        api.post<SavedAnalysisDraft>(
+            `/api/chat/sessions/${sessionId}/bookmark_draft/`,
+            messageId ? { message_id: messageId } : {},
+        ),
 };
 
 export default api;

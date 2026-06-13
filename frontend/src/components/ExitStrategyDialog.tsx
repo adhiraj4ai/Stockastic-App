@@ -158,7 +158,7 @@ export function ExitStrategyDialog({ open, onOpenChange, portfolioItem, onSave, 
                             <div className="flex items-center justify-between w-full relative">
                                 {/* Left: Title & Badge */}
                                 <div className="flex items-center gap-4">
-                                    <div className="p-2 bg-blue-600 dark:bg-blue-500 rounded-xl text-white shadow-lg shadow-blue-500/20">
+                                    <div className="p-2 bg-primary rounded-xl text-primary-foreground shadow-lg shadow-primary/20">
                                         <Target className="h-5 w-5" />
                                     </div>
                                     <div className="flex flex-col items-start gap-1">
@@ -170,7 +170,7 @@ export function ExitStrategyDialog({ open, onOpenChange, portfolioItem, onSave, 
                                                 UNDERWATER
                                             </Badge>
                                         ) : (
-                                            <Badge variant="outline" className="border-blue-200 dark:border-blue-800 text-blue-600 dark:text-blue-400 bg-blue-50/50 dark:bg-blue-900/30 text-[10px]">STRATEGIC VIEW</Badge>
+                                            <Badge variant="outline" className="border-primary/30 text-primary bg-primary/10 text-[10px]">STRATEGIC VIEW</Badge>
                                         )}
                                     </div>
                                 </div>
@@ -179,7 +179,7 @@ export function ExitStrategyDialog({ open, onOpenChange, portfolioItem, onSave, 
                                 <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 hidden md:flex items-center gap-8">
                                     <div className="flex flex-col items-center">
                                         <span className="text-[10px] font-bold text-slate-400 dark:text-slate-500 tracking-wider">LTP</span>
-                                        <span className="text-xl font-bold text-blue-600 dark:text-blue-400 tabular-nums">Rs. {currentPrice}</span>
+                                        <span className="text-xl font-bold text-slate-800 dark:text-slate-200 tabular-nums">Rs. {currentPrice}</span>
                                     </div>
                                     <div className="w-[1px] h-8 bg-slate-200 dark:bg-slate-700" />
                                     <div className="flex flex-col items-center">
@@ -233,7 +233,7 @@ export function ExitStrategyDialog({ open, onOpenChange, portfolioItem, onSave, 
                                             onClick={() => setIsHistoryOpen(!isHistoryOpen)}
                                         >
                                             <div className="flex items-center gap-2">
-                                                <BookOpen className="h-4 w-4 text-blue-600 dark:text-blue-400" />
+                                                <BookOpen className="h-4 w-4 text-primary" />
                                                 <span className="text-[11px] font-bold text-slate-500 dark:text-slate-400">Stock Transaction History</span>
                                             </div>
                                             <div className="flex items-center gap-3">
@@ -259,7 +259,7 @@ export function ExitStrategyDialog({ open, onOpenChange, portfolioItem, onSave, 
                                                     </thead>
                                                     <tbody className="divide-y divide-gray-50 dark:divide-gray-800/50">
                                                         {[...transactions].sort((a, b) => new Date(b.transaction_date).getTime() - new Date(a.transaction_date).getTime()).map((t, i) => (
-                                                            <tr key={i} className="hover:bg-blue-50/30 dark:hover:bg-slate-800/50 transition-colors border-b border-slate-50 dark:border-slate-800 last:border-0">
+                                                            <tr key={i} className="hover:bg-accent transition-colors border-b border-slate-50 dark:border-slate-800 last:border-0">
                                                                 <td className="px-4 py-2.5 text-gray-500 dark:text-slate-400 tabular-nums">
                                                                     {new Date(t.transaction_date).toLocaleDateString()}
                                                                 </td>
@@ -280,7 +280,7 @@ export function ExitStrategyDialog({ open, onOpenChange, portfolioItem, onSave, 
                                                                     <div className="flex items-center justify-end gap-2">
                                                                         <button
                                                                             onClick={() => setTransactionToEdit(t)}
-                                                                            className="p-1 text-slate-400 hover:text-blue-600 hover:bg-blue-50 rounded transition-colors"
+                                                                            className="p-1 text-slate-400 hover:text-primary hover:bg-primary/10 rounded transition-colors"
                                                                             title="Edit Transaction"
                                                                         >
                                                                             <Pencil className="h-3.5 w-3.5" />
@@ -323,7 +323,7 @@ export function ExitStrategyDialog({ open, onOpenChange, portfolioItem, onSave, 
 
                                         <div>
                                             <div className="flex items-center gap-2 mb-1.5">
-                                                <div className="h-4 w-1 bg-blue-500 dark:bg-blue-400 rounded-full" />
+                                                <div className="h-4 w-1 bg-primary rounded-full" />
                                                 <Label className="text-[11px] font-bold text-slate-400 dark:text-slate-500">Suggested AI Game Plans</Label>
                                             </div>
                                             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
@@ -333,16 +333,16 @@ export function ExitStrategyDialog({ open, onOpenChange, portfolioItem, onSave, 
                                                         onClick={() => handleApplyStrategy(key)}
                                                         className={`flex-1 p-4 rounded-2xl cursor-pointer transition-all duration-300 group relative min-w-0
                                                         ${selectedStrategy === key
-                                                                ? 'bg-blue-50/50 dark:bg-blue-900/40 shadow-lg shadow-blue-500/10 border-2 border-blue-500'
-                                                                : 'bg-slate-50/50 dark:bg-slate-800/50 hover:bg-slate-100 dark:hover:bg-slate-800 border-2 border-transparent'}`}
+                                                                ? 'bg-primary/10 shadow-lg shadow-primary/10 border-2 border-primary'
+                                                                : 'bg-slate-50/50 dark:bg-slate-800/50 hover:bg-accent hover:text-accent-foreground border-2 border-transparent'}`}
                                                     >
                                                         {selectedStrategy === key && (
-                                                            <div className="absolute top-[-8px] left-1/2 -translate-x-1/2 bg-blue-500 text-white text-[8px] font-medium px-2 py-0.5 rounded-full">
+                                                            <div className="absolute top-[-8px] left-1/2 -translate-x-1/2 bg-primary text-primary-foreground text-[8px] font-medium px-2 py-0.5 rounded-full">
                                                                 Suggested
                                                             </div>
                                                         )}
                                                         <div className="flex justify-between items-center mb-2">
-                                                            <span className={`font-medium text-xs ${selectedStrategy === key ? 'text-blue-700 dark:text-blue-400' : 'text-slate-600 dark:text-slate-300'}`}>
+                                                            <span className={`font-medium text-xs ${selectedStrategy === key ? 'text-primary' : 'text-slate-600 dark:text-slate-300'}`}>
                                                                 {option.name}
                                                             </span>
                                                             {key === 'atr_conservative' && <Shield className="h-3.5 w-3.5 text-blue-600" />}
@@ -370,8 +370,8 @@ export function ExitStrategyDialog({ open, onOpenChange, portfolioItem, onSave, 
                                     <div className="lg:col-span-7 space-y-4">
                                         <div className="p-0 bg-transparent space-y-3">
                                             <div className="flex items-center gap-2 px-1">
-                                                <Zap className="h-4 w-4 text-blue-600 dark:text-blue-400 fill-blue-600 dark:fill-blue-400" />
-                                                <Label className="text-[11px] font-bold text-blue-600 dark:text-blue-400 block">Execution Parameters</Label>
+                                                <Zap className="h-4 w-4 text-primary fill-primary" />
+                                                <Label className="text-[11px] font-bold text-primary block">Execution Parameters</Label>
                                             </div>
 
                                             <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
@@ -384,7 +384,7 @@ export function ExitStrategyDialog({ open, onOpenChange, portfolioItem, onSave, 
                                                             value={tp}
                                                             onChange={(e) => { setTp(e.target.value); setSelectedStrategy('MANUAL'); }}
                                                             placeholder="Price"
-                                                            className="pl-9 text-sm font-bold h-10 bg-white dark:bg-card border-slate-200 dark:border-slate-700 rounded-xl shadow-sm focus-visible:ring-blue-500/20"
+                                                            className="pl-9 text-sm font-bold h-10 bg-white dark:bg-card border-slate-200 dark:border-slate-700 rounded-xl shadow-sm focus-visible:ring-[3px] focus-visible:ring-ring/50 focus-visible:border-ring"
                                                         />
                                                     </div>
                                                 </div>
@@ -427,7 +427,7 @@ export function ExitStrategyDialog({ open, onOpenChange, portfolioItem, onSave, 
                                                             type="number"
                                                             value={sl}
                                                             onChange={(e) => { setSl(e.target.value); setSelectedStrategy('MANUAL'); }}
-                                                            className="pl-9 text-sm font-bold h-10 bg-white dark:bg-card border-slate-200 dark:border-slate-700 rounded-xl shadow-sm focus-visible:ring-red-500/20"
+                                                            className="pl-9 text-sm font-bold h-10 bg-white dark:bg-card border-slate-200 dark:border-slate-700 rounded-xl shadow-sm focus-visible:ring-[3px] focus-visible:ring-ring/50 focus-visible:border-ring"
                                                         />
                                                     </div>
                                                 </div>
@@ -455,11 +455,11 @@ export function ExitStrategyDialog({ open, onOpenChange, portfolioItem, onSave, 
                                                 <div className="flex flex-col">
                                                     <span className="text-[10px] text-slate-400 font-bold">Risk/Reward</span>
                                                     <div className="flex items-center gap-2 mt-0.5">
-                                                        <BarChart3 className="h-3.5 w-3.5 text-blue-600" />
-                                                        <span className="text-base font-bold text-blue-700 dark:text-blue-400">{calculateRiskReward() || 'N/A'}</span>
+                                                        <BarChart3 className="h-3.5 w-3.5 text-primary" />
+                                                        <span className="text-base font-bold text-primary">{calculateRiskReward() || 'N/A'}</span>
                                                     </div>
                                                 </div>
-                                                <Badge variant="outline" className="h-7 border-blue-100 bg-blue-50/50 text-blue-600 text-[10px] font-bold flex items-center gap-1">
+                                                <Badge variant="outline" className="h-7 border-primary/20 bg-primary/10 text-primary text-[10px] font-bold flex items-center gap-1">
                                                     <Info className="h-3 w-3" />
                                                     STK SCORE: STABLE
                                                 </Badge>
@@ -502,7 +502,7 @@ export function ExitStrategyDialog({ open, onOpenChange, portfolioItem, onSave, 
                         <Button
                             onClick={handleSave}
                             disabled={saving || loading}
-                            className="bg-blue-600 hover:bg-blue-700 dark:bg-blue-500 dark:hover:bg-blue-600 text-white px-6 h-9 rounded-lg font-bold shadow-md shadow-blue-500/10 transition-all hover:scale-[1.01] active:scale-[0.99]"
+                            className="bg-primary hover:bg-primary/90 text-primary-foreground px-6 h-9 rounded-lg font-bold shadow-md shadow-primary/10 transition-all hover:scale-[1.01] active:scale-[0.99]"
                         >
                             {saving ? <Loader2 className="h-3.5 w-3.5 animate-spin mr-2" /> : <Save className="h-3.5 w-3.5 mr-2" />}
                             <span className="tracking-tight text-[11px]">Commit Strategy</span>

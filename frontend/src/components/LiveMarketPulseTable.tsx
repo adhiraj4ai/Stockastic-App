@@ -84,12 +84,12 @@ export function LiveMarketPulseTable({ stocks }: LiveMarketPulseTableProps) {
                         return (
                             <TableRow 
                                 key={stock.ticker}
-                                className="cursor-pointer group hover:bg-blue-50/30 dark:hover:bg-blue-900/10 transition-colors border-slate-50 dark:border-slate-800/50 h-11"
+                                className="cursor-pointer group hover:bg-accent transition-colors border-slate-50 dark:border-slate-800/50 h-11"
                                 onClick={() => router.push(`/ticker/${stock.ticker}`)}
                             >
                                 <TableCell className="py-1.5 px-4">
                                     <div className="flex flex-col">
-                                        <span className="font-semibold text-[13px] text-slate-900 dark:text-white group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors leading-none">
+                                        <span className="font-semibold text-[13px] text-slate-900 dark:text-white group-hover:text-primary transition-colors leading-none">
                                             {stock.ticker}
                                         </span>
                                         <span className="text-[9px] text-slate-400 font-bold truncate max-w-[70px] mt-0.5 uppercase tracking-tighter">

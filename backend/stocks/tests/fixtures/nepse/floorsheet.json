@@ -1,0 +1,18 @@
+[
+  {
+    "contractId": 202606100001,
+    "stockSymbol": "NABIL",
+    "buyerMemberId": 58,
+    "sellerMemberId": 12,
+    "contractQuantity": 100,
+    "contractRate": 510.0,
+    "contractAmount": 51000.0,
+    "businessDate": "2026-06-10",
+    "tradeTime": "2026-06-10T11:30:00",
+    "tradeBookId": 999,
+    "stockId": 131,
+    "buyerBrokerName": "Broker 58",
+    "sellerBrokerName": "Broker 12",
+    "securityName": "Nabil Bank Limited"
+  }
+]

@@ -4,6 +4,7 @@ from rest_framework import serializers
 from ..models.portfolio import (
     PortfolioAccount, PortfolioItem, PortfolioTransaction,
     WatchlistItem, PortfolioTarget, TradePlan, TradePlanLeg,
+    PortfolioActionDraft,
 )
 from ..models.market import DailyStockPrice, Company
 
@@ -151,3 +152,13 @@ class TradePlanSerializer(serializers.ModelSerializer):
     def update(self, instance, validated_data):
         validated_data.pop('legs', None)
         return super().update(instance, validated_data)
+
+
+class PortfolioActionDraftSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = PortfolioActionDraft
+        fields = [
+            'id', 'user', 'account', 'kind', 'status', 'title',
+            'payload', 'preview', 'result', 'expires_at', 'created_at', 'confirmed_at',
+        ]
+        read_only_fields = fields

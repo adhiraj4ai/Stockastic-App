@@ -1,4 +1,4 @@
-"""AgentDefinitions for the four Stockastic subagents, loaded from YAML prompts."""
+"""AgentDefinitions for the six Stockastic subagents, loaded from YAML prompts."""
 
 from __future__ import annotations
 
@@ -41,6 +41,12 @@ MARKET_ANALYST = AgentDefinition(
         tool_id("get_sector_breakdown"),
         tool_id("get_broker_trades_for_stock"),
         tool_id("search_stocks"),
+        tool_id("get_tomorrows_plan"),
+        tool_id("get_upcoming_catalysts"),
+        tool_id("remember_about_user"),
+        tool_id("forget_about_user"),
+        tool_id("search_saved_analyses"),
+        tool_id("get_saved_analysis"),
     ],
     model="sonnet",
     effort="medium",
@@ -70,6 +76,13 @@ STOCK_ANALYST = AgentDefinition(
         tool_id("get_accumulation"),
         tool_id("compare_stocks"),
         tool_id("search_stocks"),
+        tool_id("scan_strategies_for_symbol"),
+        tool_id("get_ticker_verdict"),
+        tool_id("get_upcoming_catalysts"),
+        tool_id("remember_about_user"),
+        tool_id("forget_about_user"),
+        tool_id("search_saved_analyses"),
+        tool_id("get_saved_analysis"),
     ],
     model="sonnet",
     effort="high",
@@ -97,8 +110,27 @@ BUY_SELL_STRATEGIST = AgentDefinition(
         tool_id("get_strategy_performance"),
         tool_id("get_strategy_experiments"),
         tool_id("get_closed_signals"),
+        tool_id("list_strategy_components"),
+        tool_id("describe_strategy"),
+        tool_id("backtest_strategy"),
+        tool_id("strategy_signal_today"),
+        tool_id("draft_strategy"),
+        tool_id("scan_strategies_for_symbol"),
         tool_id("screen_stocks"),
         tool_id("search_stocks"),
+        tool_id("get_top_opportunities"),
+        tool_id("explain_opportunity"),
+        tool_id("get_tomorrows_plan"),
+        tool_id("get_my_actions"),
+        tool_id("get_ticker_verdict"),
+        tool_id("get_upcoming_catalysts"),
+        tool_id("add_to_watchlist"),
+        tool_id("remove_from_watchlist"),
+        tool_id("get_chat_action_record"),
+        tool_id("remember_about_user"),
+        tool_id("forget_about_user"),
+        tool_id("search_saved_analyses"),
+        tool_id("get_saved_analysis"),
     ],
     model="opus",
     effort="high",
@@ -129,6 +161,94 @@ PORTFOLIO_ADVISOR = AgentDefinition(
         tool_id("get_sector_allocation"),
         tool_id("get_rebalance_targets"),
         tool_id("get_recent_alerts"),
+        tool_id("get_my_actions"),
+        tool_id("add_to_watchlist"),
+        tool_id("remove_from_watchlist"),
+        tool_id("remember_about_user"),
+        tool_id("forget_about_user"),
+        tool_id("search_saved_analyses"),
+        tool_id("get_saved_analysis"),
+    ],
+    model="sonnet",
+    effort="medium",
+)
+
+
+PORTFOLIO_MANAGER = AgentDefinition(
+    description=(
+        "Actively MANAGES the user's portfolio: proposes confirmable actions — "
+        "record buy/sell trades, set stops/targets, optimize allocation + rebalance, "
+        "and build staged multi-leg trade plans — optimizing for win rate and returns "
+        "with risk discipline. Every action is a proposal the user confirms; nothing "
+        "executes automatically. Use when the user wants to ACT on their portfolio: "
+        "'rebalance me', 'trim my losers', 'set stops', 'buy/sell N of X', "
+        "'optimize my portfolio', 'build me a plan'. For pure analysis with no action, "
+        "use portfolio-advisor instead."
+    ),
+    prompt=_system("portfolio_manager"),
+    initialPrompt=_initial("portfolio_manager"),
+    tools=[
+        tool_id("propose_trade"),
+        tool_id("propose_exits"),
+        tool_id("propose_rebalance"),
+        tool_id("propose_trade_plan"),
+        tool_id("get_portfolio_overview"),
+        tool_id("get_holdings"),
+        tool_id("get_watchlist"),
+        tool_id("get_risk_profile"),
+        tool_id("get_sector_allocation"),
+        tool_id("get_rebalance_targets"),
+        tool_id("get_realized_pnl"),
+        tool_id("get_portfolio_accounts"),
+        tool_id("get_signals_for_ticker"),
+        tool_id("get_signal_track_record"),
+        tool_id("get_strategy_performance"),
+        tool_id("calc_position_size"),
+        tool_id("get_stock_quote"),
+        tool_id("get_my_actions"),
+        tool_id("add_to_watchlist"),
+        tool_id("remove_from_watchlist"),
+        tool_id("get_chat_action_record"),
+        tool_id("remember_about_user"),
+        tool_id("forget_about_user"),
+    ],
+    model="opus",
+    effort="high",
+    maxTurns=8,
+)
+
+
+BROKER_INTELLIGENCE = AgentDefinition(
+    description=(
+        "Broker-flow intelligence specialist. Answers who is accumulating or distributing "
+        "a stock, smart-money broker activity, per-broker holdings/favorites/history, "
+        "institutional clustering signals (Navigator), positions held below broker cost, "
+        "broker-to-broker share transfers, and accumulation-based price projections. "
+        "Use for any question about brokers, 'who is buying/accumulating', smart money "
+        "positioning, or broker IDs."
+    ),
+    prompt=_system("broker_intelligence"),
+    initialPrompt=_initial("broker_intelligence"),
+    tools=[
+        tool_id("get_accumulation_flows"),
+        tool_id("get_smart_money_flows"),
+        tool_id("get_broker_trends"),
+        tool_id("get_broker_focus_ranking"),
+        tool_id("get_broker_favorites"),
+        tool_id("get_navigator_signals"),
+        tool_id("get_below_cost_positions"),
+        tool_id("get_accumulation_history"),
+        tool_id("get_share_transfers"),
+        tool_id("get_broker_portfolio"),
+        tool_id("get_accumulation_forecast"),
+        tool_id("get_accumulation"),
+        tool_id("get_floorsheet_whales"),
+        tool_id("get_broker_trades_for_stock"),
+        tool_id("search_stocks"),
+        tool_id("remember_about_user"),
+        tool_id("forget_about_user"),
+        tool_id("search_saved_analyses"),
+        tool_id("get_saved_analysis"),
     ],
     model="sonnet",
     effort="medium",
@@ -140,4 +260,6 @@ AGENTS = {
     "stock-analyst": STOCK_ANALYST,
     "buy-sell-strategist": BUY_SELL_STRATEGIST,
     "portfolio-advisor": PORTFOLIO_ADVISOR,
+    "portfolio-manager": PORTFOLIO_MANAGER,
+    "broker-intelligence": BROKER_INTELLIGENCE,
 }

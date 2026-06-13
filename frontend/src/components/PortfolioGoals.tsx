@@ -88,7 +88,7 @@ export function PortfolioGoals({ selectedAccount }: { selectedAccount: string })
         }
     };
 
-    if (loading && !metrics) return <div className="flex justify-center p-12"><Loader2 className="animate-spin text-blue-500" /></div>;
+    if (loading && !metrics) return <div className="flex justify-center p-12"><Loader2 className="animate-spin text-primary" /></div>;
     if (!metrics) return null;
 
     const currentMetrics = view === 'SECTOR' ? metrics.sector_metrics : metrics.tag_metrics;
@@ -106,20 +106,20 @@ export function PortfolioGoals({ selectedAccount }: { selectedAccount: string })
             <CardHeader className="border-b border-slate-50 dark:border-slate-800 py-4">
                 <div className="flex items-center justify-between">
                     <CardTitle className="flex items-center gap-2 text-lg">
-                        <Target className="h-5 w-5 text-blue-500" />
+                        <Target className="h-5 w-5 text-primary" />
                         Strategic Allocation Goals
                     </CardTitle>
                     <div className="flex items-center gap-4">
                         <div className="flex bg-slate-100 dark:bg-card p-1 rounded-lg">
                             <button 
                                 onClick={() => setView('SECTOR')}
-                                className={`px-3 py-1.5 text-xs font-bold tracking-tight rounded-md transition-all ${view === 'SECTOR' ? 'bg-white dark:bg-slate-800 text-blue-600 shadow-sm' : 'text-slate-500'}`}
+                                className={`px-3 py-1.5 text-xs font-bold tracking-tight rounded-md transition-all ${view === 'SECTOR' ? 'bg-white dark:bg-slate-800 text-primary shadow-sm' : 'text-slate-500'}`}
                             >
                                 Sectors
                             </button>
                             <button 
                                 onClick={() => setView('TAG')}
-                                className={`px-3 py-1.5 text-xs font-bold tracking-tight rounded-md transition-all ${view === 'TAG' ? 'bg-white dark:bg-slate-800 text-blue-600 shadow-sm' : 'text-slate-500'}`}
+                                className={`px-3 py-1.5 text-xs font-bold tracking-tight rounded-md transition-all ${view === 'TAG' ? 'bg-white dark:bg-slate-800 text-primary shadow-sm' : 'text-slate-500'}`}
                             >
                                 Tags
                             </button>
@@ -127,14 +127,14 @@ export function PortfolioGoals({ selectedAccount }: { selectedAccount: string })
 
                         <Dialog open={isManageOpen} onOpenChange={setIsManageOpen}>
                             <DialogTrigger asChild>
-                                <button className="p-2 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg transition-all text-slate-500 hover:text-blue-600">
+                                <button className="p-2 hover:bg-accent hover:text-accent-foreground rounded-lg transition-all text-slate-500">
                                     <Settings className="h-5 w-5" />
                                 </button>
                             </DialogTrigger>
                             <DialogContent className="max-w-md bg-white dark:bg-slate-950 border-slate-200 dark:border-slate-800">
                                 <DialogHeader>
                                     <DialogTitle className="flex items-center gap-2">
-                                        <Edit2 className="h-4 w-4 text-blue-500" />
+                                        <Edit2 className="h-4 w-4 text-primary" />
                                         Manage {view === 'SECTOR' ? 'Sector' : 'Tag'} Targets
                                     </DialogTitle>
                                 </DialogHeader>
@@ -155,7 +155,7 @@ export function PortfolioGoals({ selectedAccount }: { selectedAccount: string })
                                         />
                                         <button 
                                             onClick={handleSaveTarget}
-                                            className="p-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-all"
+                                            className="p-2 bg-primary hover:bg-primary/90 text-primary-foreground rounded-lg transition-all"
                                         >
                                             <Plus size={18} />
                                         </button>
@@ -166,7 +166,7 @@ export function PortfolioGoals({ selectedAccount }: { selectedAccount: string })
                                             <div key={t.id} className="flex items-center justify-between p-2 bg-slate-50 dark:bg-card rounded-lg border border-border dark:border-slate-800">
                                                 <div className="flex flex-col">
                                                     <span className="text-xs font-bold text-slate-700 dark:text-slate-300 tracking-tight">{t.category_name}</span>
-                                                    <span className="text-[10px] font-bold text-blue-600 dark:text-blue-400 tracking-tight">Target: {t.target_percentage}%</span>
+                                                    <span className="text-[10px] font-bold text-primary tracking-tight">Target: {t.target_percentage}%</span>
                                                 </div>
                                                 <button 
                                                     onClick={() => t.id && handleDeleteTarget(t.id)}
@@ -235,7 +235,7 @@ export function PortfolioGoals({ selectedAccount }: { selectedAccount: string })
                                 </div>
                                 
                                 {currentMetrics.map((m, idx) => (
-                                    <div key={m.category} className="group flex flex-col gap-2 p-3 bg-white dark:bg-card rounded-xl border border-border dark:border-slate-800 hover:border-blue-200 dark:hover:border-blue-900/50 transition-all">
+                                    <div key={m.category} className="group flex flex-col gap-2 p-3 bg-white dark:bg-card rounded-xl border border-border dark:border-slate-800 hover:border-primary/30 transition-all">
                                         <div className="flex items-center justify-between">
                                             <div className="flex items-center gap-2">
                                                 <div className="w-2 h-2 rounded-full" style={{ backgroundColor: COLORS[idx % COLORS.length] }}></div>
@@ -244,7 +244,7 @@ export function PortfolioGoals({ selectedAccount }: { selectedAccount: string })
                                             <div className="flex items-center gap-2">
                                                 {m.target_percentage > 0 && m.recommended_action === 'INCREASE' && <Badge className="bg-emerald-50 text-emerald-700 border-emerald-100 dark:bg-emerald-900/20 dark:text-emerald-400 dark:border-emerald-800 text-[10px] font-semibold tracking-tight">Underweight</Badge>}
                                                 {m.target_percentage > 0 && m.recommended_action === 'TRIM' && <Badge className="bg-rose-50 text-rose-700 border-rose-100 dark:bg-rose-900/20 dark:text-rose-400 dark:border-rose-800 text-[10px] font-semibold tracking-tight">Overweight</Badge>}
-                                                {m.target_percentage > 0 && m.recommended_action === 'HOLD' && <Badge className="bg-blue-50 text-blue-700 border-blue-100 dark:bg-blue-900/20 dark:text-blue-400 dark:border-blue-800 text-[10px] font-semibold tracking-tight">Neutral</Badge>}
+                                                {m.target_percentage > 0 && m.recommended_action === 'HOLD' && <Badge className="bg-primary/10 text-primary border-primary/20 dark:bg-primary/10 dark:text-primary dark:border-primary/20 text-[10px] font-semibold tracking-tight">Neutral</Badge>}
                                                 {m.target_percentage === 0 && <span className="text-[9px] font-medium text-slate-400 tracking-tighter">No target set</span>}
                                             </div>
                                         </div>
@@ -265,11 +265,11 @@ export function PortfolioGoals({ selectedAccount }: { selectedAccount: string })
                                             <div>
                                                 <div className="flex justify-between text-[9px] font-medium text-slate-400 tracking-tight mb-1">
                                                     <span>Target</span>
-                                                    <span className="text-blue-600 dark:text-blue-400 font-semibold">{m.target_percentage || 0}%</span>
+                                                    <span className="text-primary font-semibold">{m.target_percentage || 0}%</span>
                                                 </div>
                                                 <div className="h-1.5 w-full bg-slate-100 dark:bg-slate-800 rounded-full overflow-hidden">
-                                                    <div 
-                                                        className="h-full bg-blue-500 dark:bg-blue-600 transition-all duration-500"
+                                                    <div
+                                                        className="h-full bg-primary transition-all duration-500"
                                                         style={{ width: `${m.target_percentage || 0}%` }}
                                                     ></div>
                                                 </div>

@@ -67,6 +67,17 @@ class _SystemMessage:
     pass
 
 
+class _StreamEvent:
+    """Fake StreamEvent for token-level delta testing.
+
+    streaming.py checks isinstance(msg, StreamEvent) and reads msg.event
+    (a dict with "type" and "delta" keys) plus msg.parent_tool_use_id.
+    """
+    def __init__(self, event: dict, parent_tool_use_id: str = ""):
+        self.event = event
+        self.parent_tool_use_id = parent_tool_use_id
+
+
 _SDK_PATCHES = {
     "AssistantMessage": _AssistantMessage,
     "UserMessage": _UserMessage,
@@ -76,6 +87,7 @@ _SDK_PATCHES = {
     "ToolUseBlock": _ToolUseBlock,
     "ToolResultBlock": _ToolResultBlock,
     "ResultMessage": _ResultMessage,
+    "StreamEvent": _StreamEvent,
 }
 
 
@@ -134,9 +146,13 @@ class TestStreamChatFrameEmission:
         assert frames[0]["event"] == "assistant_start"
 
     def test_text_block_emits_text_frame(self, create_user):
+        """Text is streamed live via StreamEvent content_block_delta, not AssistantMessage."""
         user, session = self._make_session(create_user)
 
         async def mock_run(*, user, sdk_session_id, prompt):
+            # Emit a StreamEvent delta — this is how the real SDK delivers token-level text.
+            yield _StreamEvent({"type": "content_block_delta", "delta": {"type": "text_delta", "text": "NABIL closed at 1250"}})
+            # Follow up with the full AssistantMessage (streaming.py persists from here but doesn't re-yield text).
             yield _AssistantMessage(
                 content=[_TextBlock("NABIL closed at 1250")],
                 session_id="sdk-001",
@@ -156,9 +172,12 @@ class TestStreamChatFrameEmission:
         assert text_frames[0]["data"]["text"] == "NABIL closed at 1250"
 
     def test_thinking_block_emits_thinking_frame(self, create_user):
+        """Thinking is streamed live via StreamEvent thinking_delta, not AssistantMessage."""
         user, session = self._make_session(create_user)
 
         async def mock_run(*, user, sdk_session_id, prompt):
+            # Emit a StreamEvent thinking delta.
+            yield _StreamEvent({"type": "content_block_delta", "delta": {"type": "thinking_delta", "thinking": "Let me analyze the RSI..."}})
             yield _AssistantMessage(
                 content=[_ThinkingBlock("Let me analyze the RSI...")],
                 session_id="sdk-002",
@@ -319,7 +338,12 @@ class TestStreamChatFrameEmission:
         frames = _collect_frames(_run(collect()))
         error_frames = [f for f in frames if f["event"] == "error"]
         assert len(error_frames) == 1
-        assert "Claude SDK unavailable" in error_frames[0]["data"]["message"]
+        # Error message is sanitized — original exception text must NOT leak to the client.
+        msg = error_frames[0]["data"]["message"]
+        assert "Claude SDK unavailable" not in msg
+        assert "internal error" in msg.lower()
+        # A short ref ID should be present so ops can correlate with server logs.
+        assert "ref " in msg
 
     def test_done_frame_is_last(self, create_user):
         user, session = self._make_session(create_user)

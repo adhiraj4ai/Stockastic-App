@@ -281,7 +281,7 @@ export default function RecommendationsPage() {
                                     <div className="hidden sm:flex items-center gap-6">
                                         <div className="flex flex-col">
                                             <span className="text-[9px] font-semibold text-slate-400 uppercase tracking-tighter">Crossover Date</span>
-                                            <span className="text-xs font-bold text-blue-600">{selectedRec.crossover_date}</span>
+                                            <span className="text-xs font-bold text-primary">{selectedRec.crossover_date}</span>
                                         </div>
                                         <div className="flex flex-col">
                                             <span className="text-[9px] font-semibold text-slate-400 dark:text-slate-500 uppercase tracking-tighter">Crossover Price</span>
@@ -306,13 +306,13 @@ export default function RecommendationsPage() {
 
                             <div className="px-6 py-3 bg-slate-50 dark:bg-slate-800 border-t border-slate-200 dark:border-slate-700 flex items-center justify-between shrink-0">
                                 <div className="flex items-center gap-4 py-1">
-                                    <div className="flex items-center gap-2 px-3 py-1 bg-blue-50 dark:bg-blue-900/30 rounded-lg border border-blue-100 dark:border-blue-800">
-                                        <div className="w-2 h-2 rounded-full bg-blue-500" />
-                                        <span className="text-[10px] font-bold text-blue-700 dark:text-blue-400">RSI: {selectedRec.rsi}</span>
+                                    <div className="flex items-center gap-2 px-3 py-1 bg-primary/10 rounded-lg border border-primary/20">
+                                        <div className="w-2 h-2 rounded-full bg-primary" />
+                                        <span className="text-[10px] font-bold text-primary">RSI: {selectedRec.rsi}</span>
                                     </div>
-                                    <div className="flex items-center gap-2 px-3 py-1 bg-purple-50 dark:bg-purple-900/30 rounded-lg border border-purple-100 dark:border-purple-800">
-                                        <div className="w-2 h-2 rounded-full bg-purple-500" />
-                                        <span className="text-[10px] font-bold text-purple-700 dark:text-purple-400">MACD HIST: {selectedRec.macd_hist}</span>
+                                    <div className="flex items-center gap-2 px-3 py-1 bg-primary/10 rounded-lg border border-primary/20">
+                                        <div className="w-2 h-2 rounded-full bg-primary" />
+                                        <span className="text-[10px] font-bold text-primary">MACD HIST: {selectedRec.macd_hist}</span>
                                     </div>
                                 </div>
                                 <p className="text-[10px] text-slate-500 dark:text-slate-400 font-medium hidden md:block">
@@ -355,7 +355,7 @@ export default function RecommendationsPage() {
                                 <div className="space-y-1">
                                     <h2 className="text-2xl font-bold text-slate-900 tracking-tighter">{selectedSymbol}</h2>
                                     <div className="flex items-center gap-2">
-                                        <div className="w-2 h-2 bg-blue-500 rounded-full animate-pulse" />
+                                        <div className="w-2 h-2 bg-primary rounded-full animate-pulse" />
                                         <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Fetching analysis data...</p>
                                     </div>
                                 </div>
@@ -368,7 +368,7 @@ export default function RecommendationsPage() {
                                 variant="ghost"
                                 size="icon"
                                 onClick={() => setHistoryModalOpen(false)}
-                                className="h-9 w-9 text-slate-400 hover:text-slate-900 hover:bg-slate-100 rounded-full transition-colors"
+                                className="h-9 w-9 text-slate-400 hover:bg-accent hover:text-accent-foreground rounded-full transition-colors"
                             >
                                 <X size={20} />
                             </Button>
@@ -381,14 +381,14 @@ export default function RecommendationsPage() {
                                 <TabsList className="grid w-full grid-cols-2 max-w-[400px] h-9 bg-slate-200/50 dark:bg-slate-800/50 p-1 rounded-lg">
                                     <TabsTrigger
                                         value="performance"
-                                        className="text-xs font-semibold data-[state=active]:bg-white dark:data-[state=active]:bg-slate-900 data-[state=active]:text-slate-900 dark:data-[state=active]:text-slate-100 data-[state=active]:shadow-sm rounded-md transition-all"
+                                        className="text-xs font-semibold data-[state=active]:shadow-sm rounded-md transition-all"
                                     >
                                         <TrendingUp size={14} className="mr-2" />
                                         Analysis & Performance
                                     </TabsTrigger>
                                     <TabsTrigger
                                         value="history"
-                                        className="text-xs font-semibold data-[state=active]:bg-white dark:data-[state=active]:bg-slate-900 data-[state=active]:text-slate-900 dark:data-[state=active]:text-slate-100 data-[state=active]:shadow-sm rounded-md transition-all"
+                                        className="text-xs font-semibold data-[state=active]:shadow-sm rounded-md transition-all"
                                     >
                                         <Target size={14} className="mr-2" />
                                         Complete Signal Log
@@ -433,14 +433,14 @@ export default function RecommendationsPage() {
                                                 </TableHeader>
                                                 <TableBody>
                                                     {completedTrades.map((trade: any, i: number) => (
-                                                        <TableRow key={i} className={`hover:bg-slate-50 dark:hover:bg-slate-800/50 border-b border-slate-50 dark:border-slate-800 last:border-0 ${trade.status === 'OPEN' ? 'bg-blue-50/30 dark:bg-blue-900/10' : ''}`}>
+                                                        <TableRow key={i} className={`hover:bg-accent hover:text-accent-foreground border-b border-slate-50 dark:border-slate-800 last:border-0 ${trade.status === 'OPEN' ? 'bg-primary/5' : ''}`}>
                                                             <TableCell className="font-mono text-xs text-slate-600 dark:text-slate-400">
                                                                 {trade.buyDate}
-                                                                {trade.status === 'OPEN' && <Badge className="ml-2 bg-blue-100 dark:bg-blue-900/40 text-blue-700 dark:text-blue-400 text-[9px] h-4 px-1 shadow-none">Active</Badge>}
+                                                                {trade.status === 'OPEN' && <Badge className="ml-2 bg-primary/10 text-primary text-[9px] h-4 px-1 shadow-none">Active</Badge>}
                                                             </TableCell>
                                                             <TableCell className="font-mono text-xs text-slate-600 dark:text-slate-400">
                                                                 {trade.sellDate === 'Present' ? (
-                                                                    <span className="text-blue-600 dark:text-blue-400 font-bold uppercase text-[10px] tracking-wider">LTP (Unrealized)</span>
+                                                                    <span className="text-primary font-bold uppercase text-[10px] tracking-wider">LTP (Unrealized)</span>
                                                                 ) : trade.sellDate}
                                                             </TableCell>
                                                             <TableCell className="font-mono text-sm text-slate-700 dark:text-slate-300 font-medium text-right">
@@ -534,7 +534,7 @@ export default function RecommendationsPage() {
                                                         <TableRow key={i} className="hover:bg-slate-50 dark:hover:bg-slate-800/50 border-b border-border dark:border-slate-800 last:border-0 group h-12">
                                                             <TableCell className="font-mono text-xs text-slate-500 dark:text-slate-400 pl-6">{row.date}</TableCell>
                                                             <TableCell>
-                                                                <span className={`inline-flex items-center px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wide ${row.signal === 'BUY' ? 'bg-blue-50 dark:bg-blue-900/40 text-blue-600 dark:text-blue-400 border border-blue-100 dark:border-blue-800' : 'bg-rose-50 dark:bg-rose-900/40 text-rose-600 dark:text-rose-400 border border-rose-100 dark:border-rose-800'
+                                                                <span className={`inline-flex items-center px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wide ${row.signal === 'BUY' ? 'bg-emerald-50 dark:bg-emerald-900/40 text-emerald-600 dark:text-emerald-400 border border-emerald-100 dark:border-emerald-800' : 'bg-rose-50 dark:bg-rose-900/40 text-rose-600 dark:text-rose-400 border border-rose-100 dark:border-rose-800'
                                                                     }`}>
                                                                     {row.signal}
                                                                 </span>
@@ -546,7 +546,7 @@ export default function RecommendationsPage() {
                                                                 <div className="flex items-center gap-2">
                                                                     <div className="w-12 h-1.5 bg-slate-100 dark:bg-slate-800 rounded-full overflow-hidden">
                                                                         <div
-                                                                            className={`h-full rounded-full ${row.strength > 70 ? 'bg-blue-500' : 'bg-slate-400 dark:bg-slate-600'}`}
+                                                                            className={`h-full rounded-full ${row.strength > 70 ? 'bg-primary' : 'bg-slate-400 dark:bg-slate-600'}`}
                                                                             style={{ width: `${row.strength}%` }}
                                                                         ></div>
                                                                     </div>
@@ -561,12 +561,12 @@ export default function RecommendationsPage() {
 
                                                                         // Colors for different reasoning types or just variety
                                                                         const colors = [
-                                                                            'bg-blue-50 dark:bg-blue-900/30 text-blue-700 dark:text-blue-400 border-blue-200/50 dark:border-blue-800',
+                                                                            'bg-primary/10 text-primary border-primary/20',
                                                                             'bg-emerald-50 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-400 border-emerald-200/50 dark:border-emerald-800',
                                                                             'bg-slate-50 dark:bg-slate-800 text-slate-700 dark:text-slate-300 border-border dark:border-slate-700',
-                                                                            'bg-indigo-50 dark:bg-indigo-900/30 text-indigo-700 dark:text-indigo-400 border-indigo-200/50 dark:border-indigo-800',
-                                                                            'bg-violet-50 dark:bg-violet-900/30 text-violet-700 dark:text-violet-400 border-violet-200/50 dark:border-violet-800',
-                                                                            'bg-sky-50 dark:bg-sky-900/30 text-sky-700 dark:text-sky-400 border-sky-200/50 dark:border-sky-800',
+                                                                            'bg-primary/10 text-primary border-primary/20',
+                                                                            'bg-slate-50 dark:bg-slate-800 text-slate-700 dark:text-slate-300 border-border dark:border-slate-700',
+                                                                            'bg-primary/10 text-primary border-primary/20',
                                                                         ];
                                                                         const colorClass = colors[trimmed.length % colors.length];
 
@@ -608,7 +608,7 @@ export default function RecommendationsPage() {
                                 <select
                                     value={recStrategy}
                                     onChange={(e) => setRecStrategy(e.target.value)}
-                                    className="w-full h-9 rounded-md border border-gray-200 dark:border-slate-800 bg-white dark:bg-card px-3 py-1 text-sm shadow-sm transition-colors focus-visible:outline-none focus:border-blue-500 dark:text-slate-200"
+                                    className="w-full h-9 rounded-md border border-gray-200 dark:border-slate-800 bg-white dark:bg-card px-3 py-1 text-sm shadow-sm transition-colors focus-visible:outline-none focus:border-ring dark:text-slate-200"
                                 >
                                     {STRATEGIES.map(s => <option key={s.id} value={s.id}>{s.name}</option>)}
                                 </select>
@@ -620,7 +620,7 @@ export default function RecommendationsPage() {
                                 <select
                                     value={recSector}
                                     onChange={(e) => setRecSector(e.target.value)}
-                                    className="w-full h-9 rounded-md border border-gray-200 dark:border-slate-800 bg-white dark:bg-card px-3 py-1 text-sm shadow-sm transition-colors focus-visible:outline-none focus:border-blue-500 dark:text-slate-200"
+                                    className="w-full h-9 rounded-md border border-gray-200 dark:border-slate-800 bg-white dark:bg-card px-3 py-1 text-sm shadow-sm transition-colors focus-visible:outline-none focus:border-ring dark:text-slate-200"
                                 >
                                     {SECTORS.map(s => <option key={s} value={s}>{s}</option>)}
                                 </select>
@@ -633,13 +633,13 @@ export default function RecommendationsPage() {
                                     <Search size={12} /> Search Symbol
                                 </label>
                                 <div className="relative group flex items-center">
-                                    <Search size={14} className="absolute left-3.5 text-gray-400 dark:text-slate-500 group-focus-within:text-blue-500 transition-colors z-10" />
+                                    <Search size={14} className="absolute left-3.5 text-gray-400 dark:text-slate-500 group-focus-within:text-primary transition-colors z-10" />
                                     <input
                                         type="text"
                                         placeholder="Search symbol..."
                                         value={searchTerm}
                                         onChange={(e) => setSearchTerm(e.target.value)}
-                                        className="w-full h-10 rounded-xl border border-gray-200 dark:border-slate-800 bg-gray-50/50 dark:bg-card hover:bg-white dark:hover:bg-slate-800 focus:bg-white dark:focus:bg-slate-800 pl-10 pr-10 py-2 text-sm shadow-sm transition-all focus-visible:outline-none focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10 placeholder:text-gray-400/80 dark:text-slate-200"
+                                        className="w-full h-10 rounded-xl border border-gray-200 dark:border-slate-800 bg-gray-50/50 dark:bg-card hover:bg-accent pl-10 pr-10 py-2 text-sm shadow-sm transition-all focus-visible:outline-none focus-visible:ring-[3px] focus-visible:ring-ring/50 focus-visible:border-ring placeholder:text-gray-400/80 dark:text-slate-200"
                                     />
                                     {searchTerm && (
                                         <button
@@ -695,7 +695,7 @@ export default function RecommendationsPage() {
                                     {recommendations
                                         .filter(rec => rec.symbol.toLowerCase().includes(searchTerm.toLowerCase()))
                                         .map((rec) => (
-                                            <TableRow key={rec.symbol} className="hover:bg-gray-50/50 dark:hover:bg-slate-800/50 border-b dark:border-slate-800">
+                                            <TableRow key={rec.symbol} className="hover:bg-accent hover:text-accent-foreground border-b dark:border-slate-800">
                                                 <TableCell className="font-medium text-gray-900 dark:text-slate-100">
                                                     <span>{rec.symbol}</span>
                                                 </TableCell>
@@ -710,7 +710,7 @@ export default function RecommendationsPage() {
                                                 </TableCell>
                                                 <TableCell>
                                                     {rec.crossover_date ? (
-                                                        <span className="text-[11px] font-bold text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-900/30 px-2 py-0.5 rounded w-fit italic">
+                                                        <span className="text-[11px] font-bold text-primary bg-primary/10 px-2 py-0.5 rounded w-fit italic">
                                                             {rec.crossover_date}
                                                         </span>
                                                     ) : (
@@ -743,13 +743,13 @@ export default function RecommendationsPage() {
                                                             <div className="flex items-center gap-3 text-[10px] text-gray-400 dark:text-slate-500 font-medium">
                                                                 {rec.rsi !== undefined && (
                                                                     <span className="flex items-center gap-1">
-                                                                        <span className="w-1 h-1 rounded-full bg-blue-400" />
+                                                                        <span className="w-1 h-1 rounded-full bg-primary" />
                                                                         RSI: {rec.rsi}
                                                                     </span>
                                                                 )}
                                                                 {rec.macd_hist !== undefined && (
                                                                     <span className="flex items-center gap-1">
-                                                                        <span className="w-1 h-1 rounded-full bg-purple-400" />
+                                                                        <span className="w-1 h-1 rounded-full bg-primary" />
                                                                         MACD: {rec.macd_hist}
                                                                     </span>
                                                                 )}
@@ -762,7 +762,7 @@ export default function RecommendationsPage() {
                                                         <Button
                                                             variant="ghost"
                                                             size="sm"
-                                                            className="text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300 font-bold flex items-center gap-1.5 hover:bg-blue-50 dark:hover:bg-blue-900/20"
+                                                            className="text-primary hover:text-primary/80 font-bold flex items-center gap-1.5 hover:bg-primary/10"
                                                             onClick={() => {
                                                                 setSelectedRec(rec);
                                                                 setChartOpen(true);
@@ -775,7 +775,7 @@ export default function RecommendationsPage() {
                                                         <Button
                                                             variant="ghost"
                                                             size="sm"
-                                                            className="text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300 hover:bg-blue-50 dark:hover:bg-blue-900/20"
+                                                            className="text-primary hover:text-primary/80 hover:bg-primary/10"
                                                             onClick={() => handleViewAction(rec.symbol)}
                                                         >
                                                             {recStrategy === 'broker_accumulation' ? 'View History' : 'View Chart'}

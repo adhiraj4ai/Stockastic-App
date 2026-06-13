@@ -1,0 +1,512 @@
+{
+  "regime": {
+    "regime": "RISK_OFF",
+    "breadth": 0.228,
+    "as_of": "2026-06-10"
+  },
+  "opportunities": [
+    {
+      "key": "USER_STRATEGY:15|UPPER",
+      "basis": "backtest",
+      "producer": "USER_STRATEGY:15",
+      "strategy_id": 15,
+      "strategy_name": "Smart Money Accumulation",
+      "symbol": "UPPER",
+      "direction": "BUY",
+      "close": 207.5,
+      "edge": 0.36801356659363726,
+      "ann_return_pct": 36.80135665936373,
+      "num_trades": 26,
+      "win_rate_pct": 42.30769230769231,
+      "sortino": 0.34177787609038873,
+      "win_rate_reportable": false,
+      "pvalue": 0.0034,
+      "trust": "UNCONFIRMED",
+      "live_win_rate": 0.0,
+      "live_resolved": 0,
+      "live_avg_pnl_pct": 0.0,
+      "score": 0.1442613181047058
+    },
+    {
+      "key": "USER_STRATEGY:35|NRIC",
+      "basis": "backtest",
+      "producer": "USER_STRATEGY:35",
+      "strategy_id": 35,
+      "strategy_name": "Turtle Soup Reversal",
+      "symbol": "NRIC",
+      "direction": "BUY",
+      "close": 917.0,
+      "edge": -0.33407034270075364,
+      "ann_return_pct": -33.407034270075364,
+      "num_trades": 57,
+      "win_rate_pct": 17.543859649122805,
+      "sortino": -2.4542786219406465,
+      "win_rate_reportable": true,
+      "pvalue": 1.0,
+      "trust": "UNCONFIRMED",
+      "live_win_rate": 0.0,
+      "live_resolved": 0,
+      "live_avg_pnl_pct": 0.0,
+      "score": -0.08184723396168463
+    }
+  ],
+  "exits": [
+    {
+      "producer": "USER_STRATEGY:3",
+      "strategy_name": "Broker Accumulation (Institutional)",
+      "symbol": "NABIL",
+      "close": 518.0
+    },
+    {
+      "producer": "USER_STRATEGY:3",
+      "strategy_name": "Broker Accumulation (Institutional)",
+      "symbol": "API",
+      "close": 339.9
+    },
+    {
+      "producer": "USER_STRATEGY:3",
+      "strategy_name": "Broker Accumulation (Institutional)",
+      "symbol": "UPPER",
+      "close": 207.5
+    },
+    {
+      "producer": "USER_STRATEGY:3",
+      "strategy_name": "Broker Accumulation (Institutional)",
+      "symbol": "SHIVM",
+      "close": 669.7
+    },
+    {
+      "producer": "USER_STRATEGY:3",
+      "strategy_name": "Broker Accumulation (Institutional)",
+      "symbol": "HIDCL",
+      "close": 270.8
+    },
+    {
+      "producer": "USER_STRATEGY:5",
+      "strategy_name": "Golden Cross Pullback",
+      "symbol": "NABIL",
+      "close": 518.0
+    },
+    {
+      "producer": "USER_STRATEGY:5",
+      "strategy_name": "Golden Cross Pullback",
+      "symbol": "UPPER",
+      "close": 207.5
+    },
+    {
+      "producer": "USER_STRATEGY:5",
+      "strategy_name": "Golden Cross Pullback",
+      "symbol": "NTC",
+      "close": 870.0
+    },
+    {
+      "producer": "USER_STRATEGY:5",
+      "strategy_name": "Golden Cross Pullback",
+      "symbol": "SHIVM",
+      "close": 669.7
+    },
+    {
+      "producer": "USER_STRATEGY:7",
+      "strategy_name": "RSI-2 Mean Reversion",
+      "symbol": "NABIL",
+      "close": 518.0
+    },
+    {
+      "producer": "USER_STRATEGY:7",
+      "strategy_name": "RSI-2 Mean Reversion",
+      "symbol": "API",
+      "close": 339.9
+    },
+    {
+      "producer": "USER_STRATEGY:7",
+      "strategy_name": "RSI-2 Mean Reversion",
+      "symbol": "UPPER",
+      "close": 207.5
+    },
+    {
+      "producer": "USER_STRATEGY:7",
+      "strategy_name": "RSI-2 Mean Reversion",
+      "symbol": "SHIVM",
+      "close": 669.7
+    },
+    {
+      "producer": "USER_STRATEGY:9",
+      "strategy_name": "Dual Thrust Breakout",
+      "symbol": "NRIC",
+      "close": 917.0
+    },
+    {
+      "producer": "USER_STRATEGY:10",
+      "strategy_name": "Inside Bar Momentum",
+      "symbol": "NABIL",
+      "close": 518.0
+    },
+    {
+      "producer": "USER_STRATEGY:10",
+      "strategy_name": "Inside Bar Momentum",
+      "symbol": "API",
+      "close": 339.9
+    },
+    {
+      "producer": "USER_STRATEGY:10",
+      "strategy_name": "Inside Bar Momentum",
+      "symbol": "SHIVM",
+      "close": 669.7
+    },
+    {
+      "producer": "USER_STRATEGY:15",
+      "strategy_name": "Smart Money Accumulation",
+      "symbol": "API",
+      "close": 339.9
+    },
+    {
+      "producer": "USER_STRATEGY:15",
+      "strategy_name": "Smart Money Accumulation",
+      "symbol": "SHIVM",
+      "close": 669.7
+    },
+    {
+      "producer": "USER_STRATEGY:16",
+      "strategy_name": "Accumulation Divergence",
+      "symbol": "NABIL",
+      "close": 518.0
+    },
+    {
+      "producer": "USER_STRATEGY:16",
+      "strategy_name": "Accumulation Divergence",
+      "symbol": "API",
+      "close": 339.9
+    },
+    {
+      "producer": "USER_STRATEGY:16",
+      "strategy_name": "Accumulation Divergence",
+      "symbol": "UPPER",
+      "close": 207.5
+    },
+    {
+      "producer": "USER_STRATEGY:16",
+      "strategy_name": "Accumulation Divergence",
+      "symbol": "NTC",
+      "close": 870.0
+    },
+    {
+      "producer": "USER_STRATEGY:16",
+      "strategy_name": "Accumulation Divergence",
+      "symbol": "NLIC",
+      "close": 770.0
+    },
+    {
+      "producer": "USER_STRATEGY:16",
+      "strategy_name": "Accumulation Divergence",
+      "symbol": "HIDCL",
+      "close": 270.8
+    },
+    {
+      "producer": "USER_STRATEGY:18",
+      "strategy_name": "Accumulation Squeeze",
+      "symbol": "NABIL",
+      "close": 518.0
+    },
+    {
+      "producer": "USER_STRATEGY:20",
+      "strategy_name": "Parabolic SAR (Momentum)",
+      "symbol": "NABIL",
+      "close": 518.0
+    },
+    {
+      "producer": "USER_STRATEGY:20",
+      "strategy_name": "Parabolic SAR (Momentum)",
+      "symbol": "API",
+      "close": 339.9
+    },
+    {
+      "producer": "USER_STRATEGY:20",
+      "strategy_name": "Parabolic SAR (Momentum)",
+      "symbol": "UPPER",
+      "close": 207.5
+    },
+    {
+      "producer": "USER_STRATEGY:20",
+      "strategy_name": "Parabolic SAR (Momentum)",
+      "symbol": "SHIVM",
+      "close": 669.7
+    },
+    {
+      "producer": "USER_STRATEGY:22",
+      "strategy_name": "ADX Trend Strength",
+      "symbol": "SHIVM",
+      "close": 669.7
+    },
+    {
+      "producer": "USER_STRATEGY:22",
+      "strategy_name": "ADX Trend Strength",
+      "symbol": "HIDCL",
+      "close": 270.8
+    },
+    {
+      "producer": "USER_STRATEGY:23",
+      "strategy_name": "Fibonacci Golden Zone",
+      "symbol": "NABIL",
+      "close": 518.0
+    },
+    {
+      "producer": "USER_STRATEGY:23",
+      "strategy_name": "Fibonacci Golden Zone",
+      "symbol": "API",
+      "close": 339.9
+    },
+    {
+      "producer": "USER_STRATEGY:23",
+      "strategy_name": "Fibonacci Golden Zone",
+      "symbol": "UPPER",
+      "close": 207.5
+    },
+    {
+      "producer": "USER_STRATEGY:23",
+      "strategy_name": "Fibonacci Golden Zone",
+      "symbol": "NTC",
+      "close": 870.0
+    },
+    {
+      "producer": "USER_STRATEGY:23",
+      "strategy_name": "Fibonacci Golden Zone",
+      "symbol": "SHIVM",
+      "close": 669.7
+    },
+    {
+      "producer": "USER_STRATEGY:23",
+      "strategy_name": "Fibonacci Golden Zone",
+      "symbol": "NLIC",
+      "close": 770.0
+    },
+    {
+      "producer": "USER_STRATEGY:23",
+      "strategy_name": "Fibonacci Golden Zone",
+      "symbol": "NRIC",
+      "close": 917.0
+    },
+    {
+      "producer": "USER_STRATEGY:23",
+      "strategy_name": "Fibonacci Golden Zone",
+      "symbol": "HIDCL",
+      "close": 270.8
+    },
+    {
+      "producer": "USER_STRATEGY:24",
+      "strategy_name": "Stochastic RSI Cross",
+      "symbol": "NABIL",
+      "close": 518.0
+    },
+    {
+      "producer": "USER_STRATEGY:24",
+      "strategy_name": "Stochastic RSI Cross",
+      "symbol": "UPPER",
+      "close": 207.5
+    },
+    {
+      "producer": "USER_STRATEGY:24",
+      "strategy_name": "Stochastic RSI Cross",
+      "symbol": "NTC",
+      "close": 870.0
+    },
+    {
+      "producer": "USER_STRATEGY:24",
+      "strategy_name": "Stochastic RSI Cross",
+      "symbol": "SHIVM",
+      "close": 669.7
+    },
+    {
+      "producer": "USER_STRATEGY:24",
+      "strategy_name": "Stochastic RSI Cross",
+      "symbol": "NLIC",
+      "close": 770.0
+    },
+    {
+      "producer": "USER_STRATEGY:24",
+      "strategy_name": "Stochastic RSI Cross",
+      "symbol": "NRIC",
+      "close": 917.0
+    },
+    {
+      "producer": "USER_STRATEGY:24",
+      "strategy_name": "Stochastic RSI Cross",
+      "symbol": "HIDCL",
+      "close": 270.8
+    },
+    {
+      "producer": "USER_STRATEGY:26",
+      "strategy_name": "Force Index Impulse",
+      "symbol": "API",
+      "close": 339.9
+    },
+    {
+      "producer": "USER_STRATEGY:26",
+      "strategy_name": "Force Index Impulse",
+      "symbol": "UPPER",
+      "close": 207.5
+    },
+    {
+      "producer": "USER_STRATEGY:26",
+      "strategy_name": "Force Index Impulse",
+      "symbol": "SHIVM",
+      "close": 669.7
+    },
+    {
+      "producer": "USER_STRATEGY:27",
+      "strategy_name": "Chaikin Money Flow Divergence",
+      "symbol": "API",
+      "close": 339.9
+    },
+    {
+      "producer": "USER_STRATEGY:28",
+      "strategy_name": "Keltner Channel Breakout",
+      "symbol": "NABIL",
+      "close": 518.0
+    },
+    {
+      "producer": "USER_STRATEGY:28",
+      "strategy_name": "Keltner Channel Breakout",
+      "symbol": "API",
+      "close": 339.9
+    },
+    {
+      "producer": "USER_STRATEGY:28",
+      "strategy_name": "Keltner Channel Breakout",
+      "symbol": "UPPER",
+      "close": 207.5
+    },
+    {
+      "producer": "USER_STRATEGY:28",
+      "strategy_name": "Keltner Channel Breakout",
+      "symbol": "SHIVM",
+      "close": 669.7
+    },
+    {
+      "producer": "USER_STRATEGY:29",
+      "strategy_name": "Money Flow Index Reversal",
+      "symbol": "NABIL",
+      "close": 518.0
+    },
+    {
+      "producer": "USER_STRATEGY:29",
+      "strategy_name": "Money Flow Index Reversal",
+      "symbol": "NRIC",
+      "close": 917.0
+    },
+    {
+      "producer": "USER_STRATEGY:30",
+      "strategy_name": "On-Balance Volume (OBV) Trend",
+      "symbol": "NABIL",
+      "close": 518.0
+    },
+    {
+      "producer": "USER_STRATEGY:30",
+      "strategy_name": "On-Balance Volume (OBV) Trend",
+      "symbol": "API",
+      "close": 339.9
+    },
+    {
+      "producer": "USER_STRATEGY:30",
+      "strategy_name": "On-Balance Volume (OBV) Trend",
+      "symbol": "UPPER",
+      "close": 207.5
+    },
+    {
+      "producer": "USER_STRATEGY:30",
+      "strategy_name": "On-Balance Volume (OBV) Trend",
+      "symbol": "SHIVM",
+      "close": 669.7
+    },
+    {
+      "producer": "USER_STRATEGY:31",
+      "strategy_name": "Aroon Trend Strength",
+      "symbol": "NABIL",
+      "close": 518.0
+    },
+    {
+      "producer": "USER_STRATEGY:31",
+      "strategy_name": "Aroon Trend Strength",
+      "symbol": "UPPER",
+      "close": 207.5
+    },
+    {
+      "producer": "USER_STRATEGY:31",
+      "strategy_name": "Aroon Trend Strength",
+      "symbol": "SHIVM",
+      "close": 669.7
+    },
+    {
+      "producer": "USER_STRATEGY:32",
+      "strategy_name": "Coppock Curve (Long Term)",
+      "symbol": "NABIL",
+      "close": 518.0
+    },
+    {
+      "producer": "USER_STRATEGY:32",
+      "strategy_name": "Coppock Curve (Long Term)",
+      "symbol": "SHIVM",
+      "close": 669.7
+    },
+    {
+      "producer": "USER_STRATEGY:35",
+      "strategy_name": "Turtle Soup Reversal",
+      "symbol": "NTC",
+      "close": 870.0
+    },
+    {
+      "producer": "USER_STRATEGY:35",
+      "strategy_name": "Turtle Soup Reversal",
+      "symbol": "HIDCL",
+      "close": 270.8
+    },
+    {
+      "producer": "USER_STRATEGY:36",
+      "strategy_name": "Golden Cross + ADX",
+      "symbol": "NABIL",
+      "close": 518.0
+    },
+    {
+      "producer": "USER_STRATEGY:36",
+      "strategy_name": "Golden Cross + ADX",
+      "symbol": "API",
+      "close": 339.9
+    },
+    {
+      "producer": "USER_STRATEGY:36",
+      "strategy_name": "Golden Cross + ADX",
+      "symbol": "UPPER",
+      "close": 207.5
+    },
+    {
+      "producer": "USER_STRATEGY:36",
+      "strategy_name": "Golden Cross + ADX",
+      "symbol": "NTC",
+      "close": 870.0
+    },
+    {
+      "producer": "USER_STRATEGY:36",
+      "strategy_name": "Golden Cross + ADX",
+      "symbol": "SHIVM",
+      "close": 669.7
+    },
+    {
+      "producer": "USER_STRATEGY:39",
+      "strategy_name": "NR7 Volatility Breakout",
+      "symbol": "NABIL",
+      "close": 518.0
+    },
+    {
+      "producer": "USER_STRATEGY:39",
+      "strategy_name": "NR7 Volatility Breakout",
+      "symbol": "API",
+      "close": 339.9
+    },
+    {
+      "producer": "USER_STRATEGY:39",
+      "strategy_name": "NR7 Volatility Breakout",
+      "symbol": "SHIVM",
+      "close": 669.7
+    }
+  ],
+  "skipped": 0
+}

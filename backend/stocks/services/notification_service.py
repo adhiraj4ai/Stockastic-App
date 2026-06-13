@@ -7,22 +7,43 @@ import pandas as pd
 import talib
 import numpy as np
 from ..models import (
-    Notification, PortfolioItem, WatchlistItem, 
+    Notification, PortfolioItem, WatchlistItem,
     DailyStockPrice, Company, DailyCumulativeAccumulation,
     DailyFloorsheet
 )
 
+# Display priority per notification type. Anything not listed is NORMAL.
+# critical/high pop up in the UI; low never pops (bell badge only).
+SEVERITY_MAP = {
+    'STOP_LOSS_HIT': 'critical',
+    'TARGET_REACHED': 'high',
+    'TAKE_PROFIT': 'high',
+    'SIGNIFICANT_GAIN': 'high',
+    'SIGNIFICANT_LOSS': 'high',
+    'SIGNAL_STRONG_BUY': 'high',
+    'SIGNAL_STRONG_SELL': 'high',
+    'WATCHLIST_ENTRY': 'high',
+    'WATCHLIST_BREAKOUT': 'high',
+    'DAILY_PLAN_READY': 'high',
+    'WHALE_ENTRY': 'high',
+    'PRICE_ALERT': 'high',
+    'PORTFOLIO_DIVERSITY': 'low',
+    'BELOW_WACC': 'low',
+}
 
-def create_notification(user, notification_type, title, message, ticker=None, redirect_url=None, 
-                       portfolio_item_id=None, watchlist_item_id=None, metadata=None):
+
+def create_notification(user, notification_type, title, message, ticker=None, redirect_url=None,
+                       portfolio_item_id=None, watchlist_item_id=None, metadata=None, severity=None):
     """
     Helper function to create a notification.
-    If an unread notification of the same type and ticker already exists, 
+    If an unread notification of the same type and ticker already exists,
     updates it and moves it to the top (re-alert).
     """
     from django.utils import timezone
     from datetime import timedelta
-    
+
+    resolved_severity = severity or SEVERITY_MAP.get(str(notification_type), 'normal')
+
     # Identify existing UNREAD notification of same type/ticker
     existing_unread = Notification.objects.filter(
         user=user,
@@ -30,17 +51,18 @@ def create_notification(user, notification_type, title, message, ticker=None, re
         ticker=ticker,
         read=False
     ).first()
-    
+
     if existing_unread:
         # Re-alert: move to top, update content
         existing_unread.title = title
         existing_unread.message = message
         existing_unread.created_at = timezone.now()
+        existing_unread.severity = resolved_severity
         if metadata:
             existing_unread.metadata = metadata
         existing_unread.save()
         return existing_unread
-    
+
     # Check for duplicate READ notifications in the last hour (prevents annoyance after reading)
     one_hour_ago = timezone.now() - timedelta(hours=1)
     if Notification.objects.filter(
@@ -50,7 +72,7 @@ def create_notification(user, notification_type, title, message, ticker=None, re
         created_at__gte=one_hour_ago
     ).exists():
         return None
-    
+
     # Create new
     return Notification.objects.create(
         user=user,
@@ -61,7 +83,8 @@ def create_notification(user, notification_type, title, message, ticker=None, re
         redirect_url=redirect_url,
         portfolio_item_id=portfolio_item_id,
         watchlist_item_id=watchlist_item_id,
-        metadata=metadata or {}
+        metadata=metadata or {},
+        severity=resolved_severity,
     )
 
 
@@ -72,6 +95,15 @@ def get_latest_price(ticker):
         return float(latest.close) if latest else None
     except Exception as e:
         print(f"Error fetching price for {ticker}: {e}")
+        return None
+
+
+def get_latest_day_change(ticker):
+    """Latest session's day-change %, or None."""
+    try:
+        latest = DailyStockPrice.objects.filter(ticker=ticker).order_by('-date').first()
+        return float(latest.diff_percent) if latest and latest.diff_percent is not None else None
+    except Exception:
         return None
 
 
@@ -153,6 +185,15 @@ def check_portfolio_alerts(user):
                     title = f"{item.ticker} Down 10%+"
                     message = f"{item.ticker} has dropped over 10% from your cost price."
                 
+                level, level_type = None, None
+                if n_type == Notification.NotificationType.STOP_LOSS_HIT and item.stop_loss_price:
+                    level, level_type = float(item.stop_loss_price), 'stop'
+                elif n_type == Notification.NotificationType.TARGET_REACHED:
+                    for tp in (item.target_price, item.target_price_2, item.target_price_3):
+                        if tp and price >= float(tp):
+                            level, level_type = float(tp), 'target'
+                            break
+
                 notification = create_notification(
                     user=user,
                     notification_type=n_type,
@@ -165,7 +206,9 @@ def check_portfolio_alerts(user):
                         'price': price,
                         'wacc': wacc_curr,
                         'change_pct': price_change_pct,
-                        'symbol': item.ticker
+                        'symbol': item.ticker,
+                        'level': level,
+                        'level_type': level_type,
                     }
                 )
                 if notification: notifications_created += 1
@@ -255,6 +298,11 @@ def check_watchlist_alerts(user):
                 title = f"{item.ticker} Target Reached" if n_type == Notification.NotificationType.TARGET_REACHED else f"{item.ticker} Below Stop Price"
                 message = f"{item.ticker} is at Rs. {price:.2f}, hitting your watchlist alert."
                 
+                if n_type == Notification.NotificationType.TARGET_REACHED:
+                    level, level_type = (float(item.target_price), 'target') if item.target_price else (None, None)
+                else:
+                    level, level_type = (float(item.stop_loss_price), 'stop') if item.stop_loss_price else (None, None)
+
                 notification = create_notification(
                     user=user,
                     notification_type=n_type,
@@ -266,8 +314,8 @@ def check_watchlist_alerts(user):
                     metadata={
                         'price': price,
                         'symbol': item.ticker,
-                        'target': float(item.target_price) if item.target_price else None,
-                        'stop': float(item.stop_loss_price) if item.stop_loss_price else None
+                        'level': level,
+                        'level_type': level_type,
                     }
                 )
                 if notification: notifications_created += 1
@@ -304,6 +352,51 @@ def check_watchlist_alerts(user):
 
     except Exception as e:
         print(f"Error checking watchlist alerts for user {user.username}: {e}")
+
+    return notifications_created
+
+
+def check_zone_entry_alerts(user):
+    """
+    Notify when an alert-enabled watchlist symbol is IN_ZONE per the latest daily plan.
+    Reads the plan's canonical ATR-based entry_statuses; create_notification dedups so the
+    hourly check won't spam.
+    """
+    from ..models import DailyTradingPlan, Notification, WatchlistItem
+
+    notifications_created = 0
+
+    try:
+        plan = DailyTradingPlan.objects.order_by('-date').first()
+        statuses = (plan.payload.get('entry_statuses') or {}) if plan else {}
+        if not statuses:
+            return 0
+
+        items = WatchlistItem.objects.filter(user=user, alert_enabled=True)
+        for item in items:
+            if statuses.get(item.ticker) != 'IN_ZONE':
+                continue
+
+            notification = create_notification(
+                user=user,
+                notification_type=Notification.NotificationType.WATCHLIST_ENTRY,
+                title=f"{item.ticker} is in its entry zone",
+                message=(f"{item.ticker} closed inside its canonical entry zone "
+                         f"(ATR-based) per the latest plan ({plan.payload.get('as_of')})."),
+                ticker=item.ticker,
+                redirect_url=f'/ticker/{item.ticker}',
+                watchlist_item_id=item.id,
+                metadata={
+                    'price': get_latest_price(item.ticker),
+                    'symbol': item.ticker,
+                    'plan_date': plan.payload.get('as_of'),
+                },
+            )
+            if notification:
+                notifications_created += 1
+
+    except Exception as e:
+        print(f"Error checking zone entry alerts for user {user.username}: {e}")
 
     return notifications_created
 
@@ -371,6 +464,7 @@ def check_active_signal_alerts(user):
         if len(signals) == 1:
             # Single hit: stay specific
             sig = signals[0]
+            price = get_latest_price(sig.symbol)
             notification = create_notification(
                 user=user,
                 notification_type=notif_type,
@@ -379,13 +473,17 @@ def check_active_signal_alerts(user):
                 ticker=sig.symbol,
                 redirect_url='/recommendations',
                 metadata={
-                    'signal_id': sig.id, 
-                    'hit_type': hit_type, 
+                    'signal_id': sig.id,
+                    'hit_type': hit_type,
                     'source': sig.source,
                     'price': price,
                     'symbol': sig.symbol,
-                    'target': float(sig.target_price) if sig.target_price else None,
-                    'stop': float(sig.stop_loss_price) if sig.stop_loss_price else None
+                    'level': (float(sig.target_price) if hit_type == 'WON' and sig.target_price
+                              else float(sig.stop_loss_price) if hit_type == 'LOST' and sig.stop_loss_price
+                              else None),
+                    'level_type': ('target' if hit_type == 'WON' and sig.target_price
+                                   else 'stop' if hit_type == 'LOST' and sig.stop_loss_price
+                                   else None),
                 }
             )
             if notification: notifications_created += 1
@@ -601,6 +699,7 @@ def check_signal_alerts(user):
                     'strategies': strategy_names,
                     'date': str(today),
                     'price': get_latest_price(symbol),
+                    'change_pct': get_latest_day_change(symbol),
                     'symbol': symbol
                 }
             )
@@ -748,7 +847,7 @@ def check_accumulation_trend_alerts(user):
                     'brokers': [b['broker'] for b in brokers],
                     'top_broker': top_broker['broker'] if top_broker else "Unknown",
                     'net_5d': net_5d_val,
-                    'price': row.get('ltp'),
+                    'price': float(top_broker['ltp']) if top_broker and top_broker.get('ltp') is not None else None,
                     'symbol': symbol
                 }
             )
@@ -833,7 +932,10 @@ def check_technical_alerts(user):
             latest_vol = df['volume'].iloc[-1]
             latest_avg_vol = avg_vol_20.iloc[-1] if avg_vol_20 is not None else 0
             latest_close = df['close'].iloc[-1]
-            
+            prev_close = float(df['close'].iloc[-2]) if len(df) >= 2 else None
+            day_change_pct = (((float(latest_close) - prev_close) / prev_close) * 100
+                              if prev_close else None)
+
             # --- VOLUME SPIKE ---
             if latest_vol > (latest_avg_vol * 3) and latest_avg_vol > 0:
                 if not Notification.objects.filter(user=user, ticker=symbol, type=Notification.NotificationType.VOLUME_SPIKE, created_at__gte=one_day_ago).exists():
@@ -842,7 +944,7 @@ def check_technical_alerts(user):
                         title=f"{symbol} - Volume Spike",
                         message=f"Unusual volume detected: {latest_vol:,} which is {latest_vol/latest_avg_vol:.1f}x the 20-day average.",
                         redirect_url=f"/ticker/{symbol}",
-                        metadata={'price': latest_close, 'vol_multiplier': latest_vol/latest_avg_vol, 'symbol': symbol}
+                        metadata={'price': latest_close, 'vol_multiplier': latest_vol/latest_avg_vol, 'change_pct': day_change_pct, 'symbol': symbol}
                     )
                     notifications_created += 1
 
@@ -854,7 +956,7 @@ def check_technical_alerts(user):
                         title=f"{symbol} - RSI Oversold",
                         message=f"{symbol} is currently oversold with an RSI of {latest_rsi:.1f}. Potential reversal area.",
                         redirect_url=f"/ticker/{symbol}",
-                        metadata={'price': latest_close, 'rsi': latest_rsi, 'symbol': symbol}
+                        metadata={'price': latest_close, 'rsi': latest_rsi, 'change_pct': day_change_pct, 'symbol': symbol}
                     )
                     notifications_created += 1
 
@@ -866,7 +968,7 @@ def check_technical_alerts(user):
                         title=f"{symbol} - RSI Overbought",
                         message=f"{symbol} is currently overbought with an RSI of {latest_rsi:.1f}. Caution recommended.",
                         redirect_url=f"/ticker/{symbol}",
-                        metadata={'price': latest_close, 'rsi': latest_rsi, 'symbol': symbol}
+                        metadata={'price': latest_close, 'rsi': latest_rsi, 'change_pct': day_change_pct, 'symbol': symbol}
                     )
                     notifications_created += 1
 
@@ -876,7 +978,7 @@ def check_technical_alerts(user):
                 prev_sma200 = sma_200[-2]
                 curr_sma50 = sma_50[-1]
                 curr_sma200 = sma_200[-1]
-                
+
                 if prev_sma50 <= prev_sma200 and curr_sma50 > curr_sma200:
                     if not Notification.objects.filter(user=user, ticker=symbol, type=Notification.NotificationType.GOLDEN_CROSS, created_at__gte=one_day_ago).exists():
                         create_notification(
@@ -884,7 +986,7 @@ def check_technical_alerts(user):
                             title=f"{symbol} - Golden Cross",
                             message=f"Bullish 50-day SMA crossed above 200-day SMA for {symbol}.",
                             redirect_url=f"/ticker/{symbol}",
-                            metadata={'price': latest_close, 'symbol': symbol}
+                            metadata={'price': latest_close, 'change_pct': day_change_pct, 'symbol': symbol}
                         )
                         notifications_created += 1
 
@@ -959,6 +1061,7 @@ def check_portfolio_management_alerts(user):
         
         for item in items:
             wacc_val = float(item.wacc) if item.wacc else float(item.buy_price)
+            curr_price = get_latest_price(item.ticker)
             weight = (item.quantity * wacc_val) / total_value
             if weight > 0.40: # 40% threshold
                 if not Notification.objects.filter(user=user, ticker=item.ticker, type=Notification.NotificationType.PORTFOLIO_DIVERSITY, created_at__gte=one_week_ago).exists():
@@ -970,10 +1073,8 @@ def check_portfolio_management_alerts(user):
                         metadata={'weight': weight, 'symbol': item.ticker, 'price': curr_price}
                     )
                     notifications_created += 1
-            
+
             # 2. Take Profit Alert (Logic: Gain > 30% or Profit over Rs 100k)
-            # This would require fetching current price for each item
-            curr_price = get_latest_price(item.ticker)
             if curr_price:
                 profit_percent = ((curr_price - wacc_val) / wacc_val) * 100
                 if profit_percent > 30:
@@ -983,7 +1084,7 @@ def check_portfolio_management_alerts(user):
                             title=f"Profit Rocket: {item.ticker}",
                             message=f"You are up {profit_percent:.1f}% on {item.ticker}. Consider locking in some profits!",
                             redirect_url="/portfolio",
-                            metadata={'profit_percent': profit_percent, 'symbol': item.ticker, 'price': curr_price}
+                            metadata={'profit_percent': profit_percent, 'change_pct': profit_percent, 'symbol': item.ticker, 'price': curr_price}
                         )
                         notifications_created += 1
 

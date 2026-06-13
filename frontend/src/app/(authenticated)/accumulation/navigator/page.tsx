@@ -183,7 +183,7 @@ export default function NavigatorPage() {
                                     className={cn(
                                         "px-4 py-1.5 rounded-lg text-xs font-semibold transition-all duration-300 tracking-tighter whitespace-nowrap",
                                         range === t.value
-                                            ? "bg-slate-900 dark:bg-indigo-600 text-white shadow-lg"
+                                            ? "bg-primary/10 text-primary border border-primary/30"
                                             : "text-slate-400 hover:text-slate-600 dark:hover:text-slate-200"
                                     )}
                                 >
@@ -196,7 +196,7 @@ export default function NavigatorPage() {
                             <CompanySelect
                                 value={selectedGraphSymbol}
                                 onChange={(val) => setSelectedGraphSymbol(val)}
-                                className="h-10 w-full rounded-xl bg-white dark:bg-card border-slate-200 dark:border-border shadow-none focus:ring-2 focus:ring-blue-500/20 dark:focus:ring-indigo-500/20 transition-all font-bold text-sm"
+                                className="h-10 w-full rounded-xl bg-white dark:bg-card border-slate-200 dark:border-border shadow-none transition-all font-bold text-sm"
                             />
                         </div>
                     </div>
@@ -204,14 +204,14 @@ export default function NavigatorPage() {
 
             {!selectedGraphSymbol ? (
                 <div className="p-20 text-center flex flex-col items-center gap-4">
-                    <div className="w-16 h-16 bg-blue-50 dark:bg-indigo-900/30 text-blue-400 dark:text-indigo-400 rounded-full flex items-center justify-center">
+                    <div className="w-16 h-16 bg-primary/10 text-primary rounded-full flex items-center justify-center">
                         <Activity className="w-8 h-8" />
                     </div>
                     <p className="text-slate-500 dark:text-slate-400 font-medium">Select a company to analyze accumulators and aggressive traders</p>
                 </div>
             ) : loading ? (
                 <div className="flex flex-col items-center justify-center p-20 space-y-4">
-                    <Loader2 className="w-10 h-10 text-blue-500 dark:text-indigo-400 animate-spin" />
+                    <Loader2 className="w-10 h-10 text-primary animate-spin" />
                     <p className="text-slate-500 dark:text-slate-400 font-medium tracking-wide">Fetching accumulation data...</p>
                 </div>
             ) : (
