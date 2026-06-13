@@ -4,6 +4,7 @@ from django.contrib.auth import get_user_model
 from chat.models import ChatSession, ChatMessage
 from chat.history import (
     Exchange,
+    _truncate_reply,
     recent_exchanges,
     format_exchanges,
     HISTORY_HOPS,
@@ -57,3 +58,27 @@ def test_format_truncates_long_replies():
 
 def test_format_empty_returns_empty_string():
     assert format_exchanges([]) == ""
+
+
+def test_zero_hops_returns_empty(session):
+    _add(session, ChatMessage.ROLE_USER, "q1")
+    _add(session, ChatMessage.ROLE_ASSISTANT, "a1")
+    assert recent_exchanges(session, hops=0) == []
+
+
+def test_consecutive_assistant_messages_skip_extra(session):
+    _add(session, ChatMessage.ROLE_USER, "q1")
+    _add(session, ChatMessage.ROLE_ASSISTANT, "a1")
+    _add(session, ChatMessage.ROLE_ASSISTANT, "a2-orphan")
+    _add(session, ChatMessage.ROLE_USER, "q2")
+    _add(session, ChatMessage.ROLE_ASSISTANT, "a2")
+    result = recent_exchanges(session, hops=10)
+    assert result == [Exchange("q1", "a1"), Exchange("q2", "a2")]
+
+
+def test_truncate_reply_appends_ellipsis_and_strips():
+    exact = "a" * MAX_REPLY_CHARS_IN_HISTORY
+    assert _truncate_reply(exact) == exact
+
+    result = _truncate_reply("a" * 500 + " " * 200)
+    assert result == "a" * 500 + "…"

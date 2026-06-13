@@ -8,7 +8,7 @@ from __future__ import annotations
 
 from typing import NamedTuple
 
-from chat.models import ChatMessage
+from chat.models import ChatMessage, ChatSession
 
 HISTORY_HOPS = 3
 MAX_REPLY_CHARS_IN_HISTORY = 600
@@ -21,12 +21,14 @@ class Exchange(NamedTuple):
     assistant_text: str
 
 
-def recent_exchanges(session, hops: int = HISTORY_HOPS) -> list[Exchange]:
+def recent_exchanges(session: ChatSession, hops: int = HISTORY_HOPS) -> list[Exchange]:
     """Return the last `hops` completed user→assistant exchanges, oldest first.
 
     A trailing user message with no assistant reply yet (the current turn) is
     naturally excluded because it never closes a pair.
     """
+    if hops <= 0:
+        return []
     pairs: list[Exchange] = []
     pending_user: str | None = None
     for message in session.messages.order_by("created_at"):
