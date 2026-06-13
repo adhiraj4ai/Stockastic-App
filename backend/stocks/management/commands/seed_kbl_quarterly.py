@@ -1,0 +1,245 @@
+from django.core.management.base import BaseCommand
+from stocks.models import Company, FinancialReport
+from decimal import Decimal
+
+
+class Command(BaseCommand):
+    help = 'Seeds KBL quarterly financial reports'
+
+    def handle(self, *args, **kwargs):
+        self.stdout.write('Seeding KBL quarterly financial data...')
+
+        # Ensure KBL company exists
+        company, _ = Company.objects.get_or_create(
+            symbol='KBL',
+            defaults={
+                'name': 'Kumari Bank Limited',
+                'sector': 'Commercial Banks',
+                'instrument_type': 'Equity'
+            }
+        )
+
+        # Values provided are in RS in 000'
+        # Mapping: Fiscal Year -> Quarter -> Data
+        quarterly_data = {
+            '082/083': {
+                3: {
+                    'paid_up_capital': 26225861.34,
+                    'retained_earnings': -1989509.17,
+                    'reserves': 17338443.76,
+                    'total_equity': 41574795.92,
+                    'total_assets': 474306833.55,
+                    'deposits': 381666666.91,
+                    'borrowings': 0,
+                    'loans_bfis': 13949786.94,
+                    'loans_customers': 273212562.81,
+                    'investment_securities': 110110825.09,
+                    'interest_income': 21578301.42,
+                    'net_interest_income': 9302222.93,
+                    'total_operating_income': 12813075.71,
+                    'operating_profit': 6504963.63,
+                    'net_profit': 4178048.41,
+                    'distributable_profit': -1989509.17,
+                    'num_shares': 262258613.40,
+                    'eps': 21.24,
+                    'book_value': 158.53,
+                    'roe': 13.40,
+                    'car': 12.82,
+                    'npl': 6.94,
+                    'cost_of_funds': 3.88,
+                    'cd_ratio': 77.14,
+                    'base_rate': 5.35,
+                    'interest_spread': 3.13,
+                },
+                2: {
+                    'paid_up_capital': 26225861.34,
+                    'retained_earnings': -2987186.73,
+                    'reserves': 16405307.46,
+                    'total_equity': 39643982.07,
+                    'total_assets': 452969256.04,
+                    'deposits': 371376928.60,
+                    'borrowings': 0,
+                    'loans_bfis': 13806307.21,
+                    'loans_customers': 265951539.41,
+                    'investment_securities': 106559891.88,
+                    'interest_income': 15175838.26,
+                    'net_interest_income': 6783509.67,
+                    'total_operating_income': 9212934.80,
+                    'operating_profit': 4366510.21,
+                    'net_profit': 2720085.59,
+                    'distributable_profit': -2987186.73,
+                    'num_shares': 262258613.40,
+                    'eps': 20.74,
+                    'book_value': 151.16,
+                    'roe': 13.72,
+                    'car': 12.81,
+                    'npl': 6.92,
+                    'cost_of_funds': 4.04,
+                    'cd_ratio': 76.40,
+                    'base_rate': 5.60,
+                    'interest_spread': 3.27,
+                },
+                1: {
+                    'paid_up_capital': 26225861.34,
+                    'retained_earnings': -3919920.20,
+                    'reserves': 15777006.79,
+                    'total_equity': 38082947.93,
+                    'total_assets': 442370137.04,
+                    'deposits': 360406645.53,
+                    'borrowings': 0,
+                    'loans_bfis': 13942536.85,
+                    'loans_customers': 269418489.20,
+                    'investment_securities': 96251328.26,
+                    'interest_income': 7336110.44,
+                    'net_interest_income': 2912050.99,
+                    'total_operating_income': 4215313.75,
+                    'operating_profit': 1424035.80,
+                    'net_profit': 1056531.17,
+                    'distributable_profit': -3919920.20,
+                    'num_shares': 262258613.40,
+                    'eps': 16.11,
+                    'book_value': 145.21,
+                    'roe': 11.10,
+                    'car': 12.54,
+                    'npl': 6.98,
+                    'cost_of_funds': 4.29,
+                    'cd_ratio': 79.07,
+                    'base_rate': 5.82,
+                    'interest_spread': 3.53,
+                }
+            },
+            '081/082': {
+                4: {
+                    'paid_up_capital': 26225861.34,
+                    'retained_earnings': -2794020.62,
+                    'reserves': 13857925.94,
+                    'total_equity': 37289766.67,
+                    'total_assets': 442496648.62,
+                    'deposits': 364639161.51,
+                    'borrowings': 1410779.69,
+                    'loans_bfis': 14140779.35,
+                    'loans_customers': 260948398.14,
+                    'investment_securities': 80213706.22,
+                    'interest_income': 32290582.11,
+                    'net_interest_income': 11554394.66,
+                    'total_operating_income': 15133052.07,
+                    'operating_profit': 6134491.03,
+                    'net_profit': 2116409.05,
+                    'distributable_profit': -2794020.62,  # Corrected absolute value typo in table (-2,794,020,616.00 -> -2794020.62 thousand)
+                    'num_shares': 262258613.40,
+                    'eps': 8.07,
+                    'book_value': 142.19,
+                    'roe': 5.68,
+                    'car': 12.98,
+                    'npl': 6.42,
+                    'cost_of_funds': 4.74,
+                    'cd_ratio': 75.73,
+                    'base_rate': 6.44,
+                    'interest_spread': 3.59,
+                },
+                3: {
+                    'paid_up_capital': 26225861.34,
+                    'retained_earnings': -6500334.81,
+                    'reserves': 15530733.93,
+                    'total_equity': 35256260.46,
+                    'total_assets': 427245350.05,
+                    'deposits': 350079224.20,
+                    'borrowings': 1380191.80,
+                    'loans_bfis': 13812884.68,
+                    'loans_customers': 264426345.52,
+                    'investment_securities': 83968597.72,
+                    'interest_income': 23775589.03,
+                    'net_interest_income': 7896550.16,
+                    'total_operating_income': 10495926.91,
+                    'operating_profit': 858398.91,
+                    'net_profit': 285823.06,
+                    'distributable_profit': -6500334.81,
+                    'num_shares': 262258613.40,
+                    'eps': 1.45,
+                    'book_value': 134.43,
+                    'roe': 1.08,
+                    'car': 11.82,
+                    'npl': 6.98,
+                    'cost_of_funds': 5.05,
+                    'cd_ratio': 79.84,
+                    'base_rate': 6.78,
+                    'interest_spread': 3.52,
+                }
+            }
+        }
+
+        created_count = 0
+        updated_count = 0
+
+        for fiscal_year, quarters in quarterly_data.items():
+            formatted_fy = fiscal_year.replace('/', '-')
+            for quarter, d in quarters.items():
+                balance_sheet = {
+                    'SUMMARY': {
+                        'placement_bfis': d['loans_bfis'] * 1000,
+                        'loans_customers': d['loans_customers'] * 1000,
+                        'investment_securities': d['investment_securities'] * 1000,
+                        'total_assets': d['total_assets'] * 1000,
+                        'deposits_customers': d['deposits'] * 1000,
+                        'borrowings': d['borrowings'] * 1000,
+                        'paid_up_capital': d['paid_up_capital'] * 1000,
+                        'reserves': d['reserves'] * 1000,
+                        'total_equity': d['total_equity'] * 1000,
+                    }
+                }
+
+                profit_loss = {
+                    'PL': {
+                        'interest_income': d['interest_income'] * 1000,
+                        'net_interest_income': d['net_interest_income'] * 1000,
+                        'net_fee_income': None,
+                        'total_operating_income': d['total_operating_income'] * 1000,
+                        'impairment_charges': None,
+                        'operating_profit': d['operating_profit'] * 1000,
+                        'net_profit': d['net_profit'] * 1000,
+                        'distributable_profit': d['distributable_profit'] * 1000,
+                    },
+                    'RATIOS': {
+                        'eps_annualized': d['eps'],
+                        'npl': d['npl'],
+                        'cost_of_funds': d['cost_of_funds'],
+                        'cd_ratio': d['cd_ratio'],
+                        'base_rate': d['base_rate'],
+                        'spread': d['interest_spread'],
+                        'book_value': d['book_value'],
+                    }
+                }
+
+                # Create or update report
+                report, created = FinancialReport.objects.update_or_create(
+                    ticker='KBL',
+                    fiscal_year=formatted_fy,
+                    report_type='QUARTERLY',
+                    quarter=quarter,
+                    defaults={
+                        'is_audited': False,
+                        'report_template': 'BANK_QUARTERLY',
+                        'balance_sheet': balance_sheet,
+                        'profit_loss': profit_loss,
+                        'key_ratios': None,
+                        'paid_up_capital': Decimal(str(d['paid_up_capital'] * 1000)),
+                        'reserves_and_surplus': Decimal(str(d['reserves'] * 1000)),
+                        'net_profit': Decimal(str(d['net_profit'] * 1000)),
+                        'eps': Decimal(str(d['eps'])),
+                        'book_value': Decimal(str(d['book_value'])),
+                        'return_on_equity': Decimal(str(d['roe'])),
+                    }
+                )
+
+                if created:
+                    created_count += 1
+                    self.stdout.write(self.style.SUCCESS(f'✓ Created report for FY {formatted_fy} Q{quarter}'))
+                else:
+                    updated_count += 1
+                    self.stdout.write(self.style.WARNING(f'⟳ Updated report for FY {formatted_fy} Q{quarter}'))
+
+        self.stdout.write(self.style.SUCCESS(
+            f'\n✓ Successfully processed quarterly reports for KBL'
+        ))
+        self.stdout.write(f'  Created: {created_count}')
+        self.stdout.write(f'  Updated: {updated_count}')
