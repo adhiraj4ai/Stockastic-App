@@ -34,48 +34,38 @@ def _call(tool, args):
 # ─────────────────────────────────────────────────────────────────────────────
 
 
+def _nabil_pick() -> dict:
+    """Return a single NABIL pick dict for use in plan payloads."""
+    return {
+        "symbol": "NABIL", "confluence_score": 81, "direction": "BUY", "catalyst": None,
+        "entry": {"price": 610.0, "zone_low": 598.4, "zone_high": 625.6,
+                  "status": "IN_ZONE", "last_signal_age_days": 1, "latest_close": 610.0},
+        "targets": {"tp1": 640.0, "sl": 585.0},
+        "analog": {"n": 14, "fwd_1d_median_pct": 0.8, "fwd_3d_median_pct": 2.1,
+                   "fwd_5d_median_pct": 3.2, "win_rate_3d": 0.64},
+    }
+
+
+def _nabil_pick_payload() -> dict:
+    """Return a DailyTradingPlan payload with a single NABIL pick."""
+    return {
+        "picks": [_nabil_pick()],
+        "watch": [], "exits": [], "catalysts": [], "market_context": {},
+        "entry_statuses": {"NABIL": "IN_ZONE"},
+    }
+
+
 @pytest.mark.django_db(transaction=True)
 def test_get_tomorrows_plan_with_picks():
     """Plan with one pick: prose must contain the symbol and confluence score."""
     from chat.tools import get_tomorrows_plan
     from stocks.models import DailyTradingPlan
 
-    payload = {
-        "picks": [
-            {
-                "symbol": "NABIL",
-                "confluence_score": 81,
-                "entry": {
-                    "price": 610.0,
-                    "zone_low": 598.4,
-                    "zone_high": 625.6,
-                    "status": "IN_ZONE",
-                    "last_signal_age_days": 1,
-                    "latest_close": 610.0,
-                },
-                "targets": {"tp1": 640.0, "sl": 585.0},
-                "analog": {
-                    "n": 14,
-                    "fwd_1d_median_pct": 0.8,
-                    "fwd_3d_median_pct": 2.1,
-                    "fwd_5d_median_pct": 3.2,
-                    "win_rate_3d": 0.64,
-                },
-                "catalyst": None,
-                "direction": "BUY",
-            }
-        ],
-        "watch": [],
-        "exits": [],
-        "catalysts": [],
-        "market_context": {},
-        "entry_statuses": {"NABIL": "IN_ZONE"},
-    }
     DailyTradingPlan.objects.create(
         date=date(2026, 6, 15),
         regime="RISK_ON",
         breadth=0.58,
-        payload=payload,
+        payload=_nabil_pick_payload(),
     )
 
     result = _call(get_tomorrows_plan, {})
@@ -125,14 +115,9 @@ def test_get_tomorrows_plan_empty_picks():
 # ─────────────────────────────────────────────────────────────────────────────
 
 
-@pytest.mark.django_db(transaction=True)
-def test_get_ticker_verdict_from_cache():
-    """Pre-seeding the Django cache with a fake verdict bypasses build_verdict
-    entirely and exercises the prose-rendering branch."""
-    from django.core.cache import cache
-    from chat.tools import get_ticker_verdict
-
-    fake_verdict = {
+def _nabil_fake_verdict() -> dict:
+    """Return a fully-populated fake verdict for NABIL."""
+    return {
         "symbol": "NABIL",
         "as_of": "2026-06-11",
         "confluence_score": 81,
@@ -156,28 +141,11 @@ def test_get_ticker_verdict_from_cache():
         "analog": {"n": 14, "fwd_3d_median_pct": 2.1, "win_rate_3d": 0.64},
         "catalyst": {"type": "BOOK_CLOSE", "date": "2026-06-18", "days_away": 6, "detail": "test"},
     }
-    cache.set("ticker_verdict:NABIL", fake_verdict, 900)
-
-    try:
-        result = _call(get_ticker_verdict, {"symbol": "NABIL"})
-    finally:
-        cache.delete("ticker_verdict:NABIL")
-
-    assert result["is_error"] is False
-    text = result["content"][0]["text"]
-    assert "NABIL" in text
-    assert "81" in text
-    assert "IN_ZONE" in text
-    assert "CONFIRMED" in text
 
 
-@pytest.mark.django_db(transaction=True)
-def test_get_ticker_verdict_sl_without_tp():
-    """When tp1 is None but sl is set the prose must still render the stop-loss value."""
-    from django.core.cache import cache
-    from chat.tools import get_ticker_verdict
-
-    fake_verdict = {
+def _nosl_fake_verdict() -> dict:
+    """Return a minimal fake verdict for NOSL (no tp1, sl only)."""
+    return {
         "symbol": "NOSL",
         "as_of": "2026-06-11",
         "confluence_score": 55,
@@ -201,8 +169,36 @@ def test_get_ticker_verdict_sl_without_tp():
         "analog": None,
         "catalyst": None,
     }
-    cache.set("ticker_verdict:NOSL", fake_verdict, 900)
 
+
+@pytest.mark.django_db(transaction=True)
+def test_get_ticker_verdict_from_cache():
+    """Pre-seeding the Django cache with a fake verdict bypasses build_verdict
+    entirely and exercises the prose-rendering branch."""
+    from django.core.cache import cache
+    from chat.tools import get_ticker_verdict
+
+    cache.set("ticker_verdict:NABIL", _nabil_fake_verdict(), 900)
+    try:
+        result = _call(get_ticker_verdict, {"symbol": "NABIL"})
+    finally:
+        cache.delete("ticker_verdict:NABIL")
+
+    assert result["is_error"] is False
+    text = result["content"][0]["text"]
+    assert "NABIL" in text
+    assert "81" in text
+    assert "IN_ZONE" in text
+    assert "CONFIRMED" in text
+
+
+@pytest.mark.django_db(transaction=True)
+def test_get_ticker_verdict_sl_without_tp():
+    """When tp1 is None but sl is set the prose must still render the stop-loss value."""
+    from django.core.cache import cache
+    from chat.tools import get_ticker_verdict
+
+    cache.set("ticker_verdict:NOSL", _nosl_fake_verdict(), 900)
     try:
         result = _call(get_ticker_verdict, {"symbol": "NOSL"})
     finally:

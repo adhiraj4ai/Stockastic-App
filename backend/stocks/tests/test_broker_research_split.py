@@ -28,54 +28,40 @@ def test_public_functions_callable():
         assert callable(fn), f"{fn} is not callable"
 
 
-def test_private_helpers_callable():
+def _accumulation_helpers():
+    """Return broker_research accumulation/trend private helper functions."""
     from stocks.services.broker_research import (
-        _build_accumulation_flows_where,
-        _build_accumulation_flows_query,
+        _build_accumulation_flows_where, _build_accumulation_flows_query,
         _compute_history_delta,
-        _build_broker_trends_sql_fragments,
-        _build_broker_trends_params,
+        _build_broker_trends_sql_fragments, _build_broker_trends_params,
         _build_broker_trends_query,
-        _fetch_broker_favorites_raw,
-        _build_broker_favorites_base,
-        _compute_rsi_roc,
-        _build_price_map_for_favorites,
-        _enrich_broker_favorites_with_prices,
-        _fetch_focus_ranking_raw,
-        _rank_stocks_for_date,
-        _compute_focus_daily_rankings,
-        _build_ltp_map,
-        _build_symbol_series,
-        _enrich_focus_ranking_series,
-        _fetch_smart_money_leaderboard,
-        _fetch_smart_money_signals,
-        _compute_smart_money_kpi,
-        _fetch_smart_money_symbol_flows,
-        _fetch_navigator_raw,
-        _classify_navigator_signal,
-        _build_navigator_signal_row,
-        _build_below_cost_where,
-        _build_below_cost_query,
-        _build_broker_portfolio_query,
-        _exec_broker_portfolio,
-        _resolve_share_transfer_dates,
-        _build_share_transfers_filters,
-        _fetch_transfer_net_acc_map,
-        _fetch_transfer_meta_map,
-        _fetch_transfer_stats_and_daily,
-        _build_daily_stats,
-        _build_transfer_summary,
-        _load_forecast_data,
-        _extract_current_state,
-        _compute_study,
-        _import_price_forecast_helpers,
-        _compute_forecast,
+        _fetch_broker_favorites_raw, _build_broker_favorites_base, _compute_rsi_roc,
+        _build_price_map_for_favorites, _enrich_broker_favorites_with_prices,
     )
-    fns = [
+    return [
         _build_accumulation_flows_where, _build_accumulation_flows_query, _compute_history_delta,
         _build_broker_trends_sql_fragments, _build_broker_trends_params, _build_broker_trends_query,
         _fetch_broker_favorites_raw, _build_broker_favorites_base, _compute_rsi_roc,
         _build_price_map_for_favorites, _enrich_broker_favorites_with_prices,
+    ]
+
+
+def _signal_and_transfer_helpers():
+    """Return broker_research signal/transfer private helper functions."""
+    from stocks.services.broker_research import (
+        _fetch_focus_ranking_raw, _rank_stocks_for_date, _compute_focus_daily_rankings,
+        _build_ltp_map, _build_symbol_series, _enrich_focus_ranking_series,
+        _fetch_smart_money_leaderboard, _fetch_smart_money_signals, _compute_smart_money_kpi,
+        _fetch_smart_money_symbol_flows, _fetch_navigator_raw, _classify_navigator_signal,
+        _build_navigator_signal_row, _build_below_cost_where, _build_below_cost_query,
+        _build_broker_portfolio_query, _exec_broker_portfolio,
+        _resolve_share_transfer_dates, _build_share_transfers_filters,
+        _fetch_transfer_net_acc_map, _fetch_transfer_meta_map, _fetch_transfer_stats_and_daily,
+        _build_daily_stats, _build_transfer_summary,
+        _load_forecast_data, _extract_current_state, _compute_study,
+        _import_price_forecast_helpers, _compute_forecast,
+    )
+    return [
         _fetch_focus_ranking_raw, _rank_stocks_for_date, _compute_focus_daily_rankings,
         _build_ltp_map, _build_symbol_series, _enrich_focus_ranking_series,
         _fetch_smart_money_leaderboard, _fetch_smart_money_signals, _compute_smart_money_kpi,
@@ -88,7 +74,10 @@ def test_private_helpers_callable():
         _load_forecast_data, _extract_current_state, _compute_study,
         _import_price_forecast_helpers, _compute_forecast,
     ]
-    for fn in fns:
+
+
+def test_private_helpers_callable():
+    for fn in _accumulation_helpers() + _signal_and_transfer_helpers():
         assert callable(fn), f"{fn} is not callable"
 
 

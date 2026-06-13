@@ -184,22 +184,32 @@ class TestYieldOnHistoricalCostBasis:
     """Bug fix (c) end-to-end: yield denominator uses historical cost, not current portfolio."""
 
     def test_yield_uses_historical_wacc_not_current_portfolio(self, db):
+        """Yield-on-cost uses cost basis at book-close, not the inflated post-dividend basis.
+
+        Scenario: buy 100@500 before book-close, 10% cash dividend declared, then
+        buy 100@1000 after — yield must use the pre-dividend 50,000 cost, not 150,000.
         """
-        Scenario:
-        - User buys 100 shares of TICKER at Rs. 500 (no fees for simplicity).
-        - A cash dividend of 10% is declared with book_close = 2024-03-01.
-        - After the dividend, user buys 100 more at Rs. 1000 (current portfolio
-          cost basis becomes much higher).
-        - Yield-on-cost must use the historical cost basis (100 × 500 = 50,000),
-          NOT the current portfolio basis (100×500 + 100×1000 = 150,000).
-        """
+        u, a, book_close = self._setup_yield_history_user()
+        self._seed_yield_history_transactions(u, a, book_close)
+        result = DividendService.calculate_dividends(u)
+        self._assert_yield_on_historical_cost(result["summary"])
+
+    @staticmethod
+    def _setup_yield_history_user():
         u = User.objects.create(username="yield_hist_user")
         a = PortfolioAccount.objects.create(
             user=u, name="t", account_type=AccountType.PAPER, balance=10_000_000
         )
         book_close = datetime.date(2024, 3, 1)
+        Dividend.objects.create(
+            ticker="TICKER", fiscal_year="2080-81",
+            bonus_percent=Decimal('0'), cash_percent=Decimal('10.00'),
+            total_percent=Decimal('10.00'), book_close_date=book_close,
+        )
+        return u, a, book_close
 
-        # BUY before dividend book-close
+    @staticmethod
+    def _seed_yield_history_transactions(u, a, book_close):
         PortfolioTransaction.objects.create(
             user=u, account=a, ticker="TICKER",
             transaction_type=TransactionType.BUY,
@@ -209,17 +219,6 @@ class TestYieldOnHistoricalCostBasis:
             cgt=Decimal('0'), receivable_amount=Decimal('50000'),
             transaction_date=datetime.datetime(2024, 1, 15, tzinfo=datetime.timezone.utc),
         )
-
-        Dividend.objects.create(
-            ticker="TICKER",
-            fiscal_year="2080-81",
-            bonus_percent=Decimal('0'),
-            cash_percent=Decimal('10.00'),
-            total_percent=Decimal('10.00'),
-            book_close_date=book_close,
-        )
-
-        # BUY after dividend — inflates current portfolio cost basis
         PortfolioTransaction.objects.create(
             user=u, account=a, ticker="TICKER",
             transaction_type=TransactionType.BUY,
@@ -230,18 +229,10 @@ class TestYieldOnHistoricalCostBasis:
             transaction_date=datetime.datetime(2024, 6, 1, tzinfo=datetime.timezone.utc),
         )
 
-        result = DividendService.calculate_dividends(u)
-        summary = result["summary"]
-
-        # Cash dividend: 100 qty × Rs.100 face value × 10% / 100 = Rs.1000 gross
-        # After 5% tax: Rs.950 net
+    @staticmethod
+    def _assert_yield_on_historical_cost(summary):
         assert summary["total_cash_net"] == pytest.approx(950.0, abs=0.01)
-
-        # historical_cost_basis = 100 qty × Rs.500 wacc = Rs.50,000
         assert summary["historical_cost_basis"] == pytest.approx(50000.0, abs=0.01)
-
-        # yield = 950 / 50000 × 100 = 1.9 %
-        # (NOT 950/150000×100 = 0.633% which would use current-portfolio basis)
         assert summary["yield_on_cost"] == pytest.approx(1.9, abs=0.01)
 
     def test_yield_zero_when_no_dividends(self, db):
@@ -309,42 +300,57 @@ class TestEndToEndCGT:
     # Test 1: short-term CGT (held < 1 yr → 7.5%)
     # ------------------------------------------------------------------
 
+    @staticmethod
+    def _assert_short_term_cgt(sell_metrics, wacc):
+        """Assert that sell_metrics reflects a 7.5% (short-term) CGT rate."""
+        gross_profit = (Decimal('1200') - wacc) * Decimal('100')
+        expected_cgt = (gross_profit * Decimal('0.075')).quantize(Decimal('0.01'))
+        long_term_cgt = (gross_profit * Decimal('0.05')).quantize(Decimal('0.01'))
+        assert sell_metrics['cgt'] == pytest.approx(float(expected_cgt), abs=1.0), (
+            f"Short-term CGT should be 7.5% of gross profit {gross_profit:.2f}; "
+            f"got {sell_metrics['cgt']}, expected ~{expected_cgt}"
+        )
+        assert float(sell_metrics['cgt']) > float(long_term_cgt), (
+            "Short-term CGT must exceed the 5% long-term rate — wrong rate applied."
+        )
+
     def test_cgt_short_term_7_5_pct(self, acct):
         """Selling within <1 year of BUY must produce CGT at 7.5%."""
         u, a = acct
         from django.utils import timezone
 
-        # BUY 100 @ 1000 — transaction_date is now (recent, so holding < 1 yr).
         buy_date = timezone.now()
         self._create_buy_txn(u, a, "STSHORT", 100, 1000, buy_date)
-
         item = PortfolioItem.objects.get(user=u, account=a, ticker="STSHORT")
-        wacc = item.wacc  # fee-inclusive
+        wacc = item.wacc
 
-        # SELL 100 @ 1200
         sell_metrics = PortfolioService.process_transaction(
             user=u, account=a, ticker="STSHORT",
             txn_type=TransactionType.SELL,
             quantity=100, rate=1200,
         )
-
-        gross_profit = (Decimal('1200') - wacc) * Decimal('100')
-        expected_cgt = (gross_profit * Decimal('0.075')).quantize(Decimal('0.01'))
-
-        # Allow ±1 due to rounding in calculate_cgt (round to 2 dp).
-        assert sell_metrics['cgt'] == pytest.approx(float(expected_cgt), abs=1.0), (
-            f"Short-term CGT should be 7.5% of gross profit {gross_profit:.2f}; "
-            f"got {sell_metrics['cgt']}, expected ~{expected_cgt}"
-        )
-        # Sanity: must NOT be 5% rate
-        long_term_cgt = (gross_profit * Decimal('0.05')).quantize(Decimal('0.01'))
-        assert float(sell_metrics['cgt']) > float(long_term_cgt), (
-            "Short-term CGT must exceed the 5% long-term rate — wrong rate applied."
-        )
+        self._assert_short_term_cgt(sell_metrics, wacc)
 
     # ------------------------------------------------------------------
     # Test 2: long-term CGT (held ≥ 1 yr → 5%) — core regression guard
     # ------------------------------------------------------------------
+
+    @staticmethod
+    def _assert_long_term_cgt(sell_metrics, wacc):
+        """Assert that sell_metrics reflects a 5% (long-term) CGT rate, not 7.5%."""
+        gross_profit = (Decimal('1200') - wacc) * Decimal('100')
+        expected_cgt_long = (gross_profit * Decimal('0.05')).quantize(Decimal('0.01'))
+        expected_cgt_short = (gross_profit * Decimal('0.075')).quantize(Decimal('0.01'))
+        assert sell_metrics['cgt'] == pytest.approx(float(expected_cgt_long), abs=1.0), (
+            f"LONG-TERM CGT BUG: expected 5% of profit={gross_profit:.2f} "
+            f"→ {expected_cgt_long}, but got {sell_metrics['cgt']} "
+            f"(7.5% would give {expected_cgt_short}).  "
+            f"The holding-period wiring in process_transaction is broken."
+        )
+        assert float(sell_metrics['cgt']) < float(expected_cgt_short), (
+            f"Long-term CGT {sell_metrics['cgt']} >= short-term CGT {expected_cgt_short}; "
+            f"the 5% rate was not applied."
+        )
 
     def test_cgt_long_term_5_pct(self, acct):
         """BUY back-dated >365 days ago: process_transaction SELL must apply 5% CGT,
@@ -352,45 +358,53 @@ class TestEndToEndCGT:
         u, a = acct
         from django.utils import timezone
 
-        # BUY with a recent transaction_date first (so process_transaction builds PortfolioItem).
         buy_date = timezone.now()
         buy_txn = self._create_buy_txn(u, a, "LTLONG", 100, 1000, buy_date)
-
         item = PortfolioItem.objects.get(user=u, account=a, ticker="LTLONG")
         wacc = item.wacc
 
-        # Back-date the BUY row to >365 days ago so the holding-period query
-        # sees a long-term acquisition.  We update() directly to bypass auto_now.
-        old_date = timezone.now() - datetime.timedelta(days=730)  # 2 years ago
+        old_date = timezone.now() - datetime.timedelta(days=730)
         PortfolioTransaction.objects.filter(pk=buy_txn.pk).update(transaction_date=old_date)
 
-        # SELL 100 @ 1200 — process_transaction reads the (now old) BUY date.
         sell_metrics = PortfolioService.process_transaction(
             user=u, account=a, ticker="LTLONG",
             txn_type=TransactionType.SELL,
             quantity=100, rate=1200,
         )
-
-        gross_profit = (Decimal('1200') - wacc) * Decimal('100')
-        expected_cgt_long = (gross_profit * Decimal('0.05')).quantize(Decimal('0.01'))
-        expected_cgt_short = (gross_profit * Decimal('0.075')).quantize(Decimal('0.01'))
-
-        # Core assertion: long-term rate (5%), NOT short-term (7.5%).
-        assert sell_metrics['cgt'] == pytest.approx(float(expected_cgt_long), abs=1.0), (
-            f"LONG-TERM CGT BUG: expected 5% of profit={gross_profit:.2f} "
-            f"→ {expected_cgt_long}, but got {sell_metrics['cgt']} "
-            f"(7.5% would give {expected_cgt_short}).  "
-            f"The holding-period wiring in process_transaction is broken."
-        )
-        # Strict guard: returned CGT must be less than the 7.5% value.
-        assert float(sell_metrics['cgt']) < float(expected_cgt_short), (
-            f"Long-term CGT {sell_metrics['cgt']} >= short-term CGT {expected_cgt_short}; "
-            f"the 5% rate was not applied."
-        )
+        self._assert_long_term_cgt(sell_metrics, wacc)
 
     # ------------------------------------------------------------------
     # Test 3: WACC progression — BUY → BONUS → BUY
     # ------------------------------------------------------------------
+
+    @staticmethod
+    def _apply_bonus_and_check_dilution(u, a, item, wacc_before, cost_before):
+        """Apply 10 bonus shares to WACCTEST and assert dilution."""
+        PortfolioService.process_transaction(
+            user=u, account=a, ticker="WACCTEST",
+            txn_type=TransactionType.BONUS,
+            quantity=10, rate=0,
+        )
+        item.refresh_from_db()
+        wacc_after = item.wacc
+        expected = cost_before / Decimal('110')
+        assert wacc_after == pytest.approx(expected, abs=Decimal('0.02')), (
+            f"After BONUS, WACC should dilute to ~{expected:.4f}, got {wacc_after}"
+        )
+        assert wacc_after < wacc_before, "BONUS must dilute WACC (lower than pre-bonus WACC)"
+        return wacc_after
+
+    @staticmethod
+    def _check_second_buy_wacc(u, a, item, cost_after_bonus, buy2_total_cost, wacc_after_bonus):
+        """Assert WACC after second BUY at 1200 is fee-inclusive average of 160 shares."""
+        item.refresh_from_db()
+        wacc_after = item.wacc
+        expected = (cost_after_bonus + buy2_total_cost) / Decimal('160')
+        assert wacc_after == pytest.approx(expected, abs=Decimal('0.05')), (
+            f"WACC after second BUY should be ~{expected:.4f}, got {wacc_after}. "
+            f"(fee-inclusive: buy2_total_cost={buy2_total_cost})"
+        )
+        assert wacc_after > wacc_after_bonus, "Second BUY at higher price must raise WACC"
 
     def test_wacc_buy_bonus_buy(self, acct):
         """WACC must dilute on BONUS (cost unchanged, qty up) then rise on second BUY."""
@@ -401,99 +415,35 @@ class TestEndToEndCGT:
             calculate_dp_charge,
         )
 
-        # --- Step 1: BUY 100 @ 1000 ---
-        buy1_date = timezone.now()
-        self._create_buy_txn(u, a, "WACCTEST", 100, 1000, buy1_date)
-
+        self._create_buy_txn(u, a, "WACCTEST", 100, 1000, timezone.now())
         item = PortfolioItem.objects.get(user=u, account=a, ticker="WACCTEST")
-        wacc_after_buy1 = item.wacc
-        # WACC = (100*1000 + commission + sebon + dp) / 100
-        # commission on 100k: 100000 * 0.33% = 330
-        # sebon: 100000 * 0.015% = 15
-        # dp: 25
-        # expected: (100000 + 330 + 15 + 25) / 100 = 100370 / 100 = 1003.70
-        assert wacc_after_buy1 == pytest.approx(Decimal('1003.70'), abs=Decimal('0.02')), (
-            f"WACC after first BUY should be ~1003.70, got {wacc_after_buy1}"
+        wacc_buy1 = item.wacc
+        assert wacc_buy1 == pytest.approx(Decimal('1003.70'), abs=Decimal('0.02')), (
+            f"WACC after first BUY should be ~1003.70, got {wacc_buy1}"
         )
-        total_cost_after_buy1 = wacc_after_buy1 * Decimal('100')
+        cost_buy1 = wacc_buy1 * Decimal('100')
 
-        # --- Step 2: BONUS 10 shares (10% bonus on 100) ---
-        # process_transaction for BONUS: wacc = old_total_cost / new_qty
-        PortfolioService.process_transaction(
-            user=u, account=a, ticker="WACCTEST",
-            txn_type=TransactionType.BONUS,
-            quantity=10, rate=0,
-        )
-        item.refresh_from_db()
-        wacc_after_bonus = item.wacc
-        # BONUS dilutes: cost stays, qty increases to 110.
-        # expected_wacc_after_bonus = total_cost_after_buy1 / 110
-        expected_wacc_bonus = total_cost_after_buy1 / Decimal('110')
-        assert wacc_after_bonus == pytest.approx(expected_wacc_bonus, abs=Decimal('0.02')), (
-            f"After BONUS, WACC should dilute to ~{expected_wacc_bonus:.4f}, got {wacc_after_bonus}"
-        )
-        assert wacc_after_bonus < wacc_after_buy1, "BONUS must dilute WACC (lower than pre-bonus WACC)"
-        total_cost_after_bonus = wacc_after_bonus * Decimal('110')
+        wacc_bonus = self._apply_bonus_and_check_dilution(u, a, item, wacc_buy1, cost_buy1)
+        cost_bonus = wacc_bonus * Decimal('110')
 
-        # --- Step 3: BUY 50 @ 1200 ---
-        buy2_date = timezone.now()
-        buy2_amount = Decimal('50') * Decimal('1200')  # 60000
-        buy2_comm = calculate_broker_commission(buy2_amount)   # 60000 * 0.33% = 198
-        buy2_sbn = calculate_sebon_fee(buy2_amount)            # 60000 * 0.015% = 9
-        buy2_dp = calculate_dp_charge()                         # 25
-        buy2_total_cost = buy2_amount + buy2_comm + buy2_sbn + buy2_dp
-
-        self._create_buy_txn(u, a, "WACCTEST", 50, 1200, buy2_date)
-        item.refresh_from_db()
-        wacc_after_buy2 = item.wacc
-        # WACC after second BUY = (total_cost_110 + buy2_total_cost) / 160
-        expected_wacc_buy2 = (total_cost_after_bonus + buy2_total_cost) / Decimal('160')
-        assert wacc_after_buy2 == pytest.approx(expected_wacc_buy2, abs=Decimal('0.05')), (
-            f"WACC after second BUY should be ~{expected_wacc_buy2:.4f}, got {wacc_after_buy2}. "
-            f"(fee-inclusive: buy2_total_cost={buy2_total_cost})"
+        buy2_amount = Decimal('50') * Decimal('1200')
+        buy2_total_cost = (
+            buy2_amount
+            + calculate_broker_commission(buy2_amount)
+            + calculate_sebon_fee(buy2_amount)
+            + calculate_dp_charge()
         )
-        assert wacc_after_buy2 > wacc_after_bonus, "Second BUY at higher price must raise WACC"
+        self._create_buy_txn(u, a, "WACCTEST", 50, 1200, timezone.now())
+        self._check_second_buy_wacc(u, a, item, cost_bonus, buy2_total_cost, wacc_bonus)
 
     # ------------------------------------------------------------------
     # Test 4: Realized P&L nets fees + correct CGT on long-term hold
     # ------------------------------------------------------------------
 
-    def test_realized_pnl_nets_fees_and_cgt_long_term(self, acct):
-        """After a profitable long-term SELL, the returned receivable_amount must equal
-        sell_amount - commission - sebon_fee - dp_charge - cgt, with cgt computed at 5%."""
-        u, a = acct
-        from django.utils import timezone
-
-        # BUY 100 @ 1000
-        buy_date = timezone.now()
-        buy_txn = self._create_buy_txn(u, a, "REALPNL", 100, 1000, buy_date)
-
-        item = PortfolioItem.objects.get(user=u, account=a, ticker="REALPNL")
-        wacc = item.wacc
-
-        # Back-date BUY to 2 years ago → long-term CGT applies
-        old_date = timezone.now() - datetime.timedelta(days=730)
-        PortfolioTransaction.objects.filter(pk=buy_txn.pk).update(transaction_date=old_date)
-
-        # SELL 100 @ 1200
-        sell_metrics = PortfolioService.process_transaction(
-            user=u, account=a, ticker="REALPNL",
-            txn_type=TransactionType.SELL,
-            quantity=100, rate=1200,
-        )
-
-        sell_amount = Decimal('120000')  # 100 * 1200
-        gross_profit = (Decimal('1200') - wacc) * Decimal('100')
-
-        # CGT must be at long-term rate (5%)
-        expected_cgt = (gross_profit * Decimal('0.05')).quantize(Decimal('0.01'))
-        assert sell_metrics['cgt'] == pytest.approx(float(expected_cgt), abs=1.0), (
-            f"CGT should be 5% (long-term) of profit {gross_profit:.2f} = {expected_cgt}; "
-            f"got {sell_metrics['cgt']}"
-        )
-
-        # receivable_amount = sell_amount - commission - sebon_fee - dp_charge - cgt
-        computed_receivable = (
+    @staticmethod
+    def _assert_receivable_nets_all_fees(sell_metrics, sell_amount):
+        """Assert receivable_amount = sell_amount minus all fees and CGT."""
+        computed = (
             sell_amount
             - Decimal(str(sell_metrics['commission']))
             - Decimal(str(sell_metrics['sebon_fee']))
@@ -501,11 +451,39 @@ class TestEndToEndCGT:
             - Decimal(str(sell_metrics['cgt']))
         )
         assert float(sell_metrics['receivable_amount']) == pytest.approx(
-            float(computed_receivable), abs=1.0
+            float(computed), abs=1.0
         ), (
             f"receivable_amount mismatch: "
             f"sell_amount={sell_amount} - comm={sell_metrics['commission']} "
             f"- sebon={sell_metrics['sebon_fee']} - dp={sell_metrics['dp_charge']} "
-            f"- cgt={sell_metrics['cgt']} = {computed_receivable:.2f}; "
+            f"- cgt={sell_metrics['cgt']} = {computed:.2f}; "
             f"got {sell_metrics['receivable_amount']}"
         )
+
+    def test_realized_pnl_nets_fees_and_cgt_long_term(self, acct):
+        """After a profitable long-term SELL, the returned receivable_amount must equal
+        sell_amount - commission - sebon_fee - dp_charge - cgt, with cgt computed at 5%."""
+        u, a = acct
+        from django.utils import timezone
+
+        buy_txn = self._create_buy_txn(u, a, "REALPNL", 100, 1000, timezone.now())
+        item = PortfolioItem.objects.get(user=u, account=a, ticker="REALPNL")
+        wacc = item.wacc
+
+        old_date = timezone.now() - datetime.timedelta(days=730)
+        PortfolioTransaction.objects.filter(pk=buy_txn.pk).update(transaction_date=old_date)
+
+        sell_metrics = PortfolioService.process_transaction(
+            user=u, account=a, ticker="REALPNL",
+            txn_type=TransactionType.SELL,
+            quantity=100, rate=1200,
+        )
+
+        sell_amount = Decimal('120000')
+        gross_profit = (Decimal('1200') - wacc) * Decimal('100')
+        expected_cgt = (gross_profit * Decimal('0.05')).quantize(Decimal('0.01'))
+        assert sell_metrics['cgt'] == pytest.approx(float(expected_cgt), abs=1.0), (
+            f"CGT should be 5% (long-term) of profit {gross_profit:.2f} = {expected_cgt}; "
+            f"got {sell_metrics['cgt']}"
+        )
+        self._assert_receivable_nets_all_fees(sell_metrics, sell_amount)

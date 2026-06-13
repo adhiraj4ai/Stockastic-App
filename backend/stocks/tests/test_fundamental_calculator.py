@@ -57,20 +57,12 @@ class TestFinancialReportSaveNormalization:
         assert obj.fiscal_year == "081-082"
 
 
-@pytest.fixture
-def seeded_ticker(db):
-    ticker = "TBNK"
-    Company.objects.create(symbol=ticker, name="Test Bank", sector="Commercial Banks", status="A")
-    DailyStockPrice.objects.create(ticker=ticker, date=date(2026, 6, 10), close=Decimal("200"))
-
-    # 10M shares (face value 100), latest annual year
+def _seed_latest_annual(ticker):
+    """Create the most recent (080-081) annual FinancialReport for ticker."""
     FinancialReport.objects.create(
-        ticker=ticker,
-        fiscal_year="080-081",
-        report_type=FinancialReport.ReportType.ANNUAL,
-        is_audited=True,
-        cash_dividend=Decimal("5"),
-        bonus_share=Decimal("0"),
+        ticker=ticker, fiscal_year="080-081",
+        report_type=FinancialReport.ReportType.ANNUAL, is_audited=True,
+        cash_dividend=Decimal("5"), bonus_share=Decimal("0"),
         operating_profit=Decimal("150000000"),
         balance_sheet={
             "EQUITY": {"share_capital": 1_000_000_000, "total_equity": 1_500_000_000},
@@ -82,12 +74,13 @@ def seeded_ticker(db):
             "EXPENSES": {"net_profit": 100_000_000},
         },
     )
-    # Previous annual year for YoY growth: EPS 8 vs latest 10 -> +25%
+
+
+def _seed_previous_annual(ticker):
+    """Create the prior (079-080) annual FinancialReport for ticker (YoY baseline)."""
     FinancialReport.objects.create(
-        ticker=ticker,
-        fiscal_year="079-080",
-        report_type=FinancialReport.ReportType.ANNUAL,
-        is_audited=True,
+        ticker=ticker, fiscal_year="079-080",
+        report_type=FinancialReport.ReportType.ANNUAL, is_audited=True,
         balance_sheet={
             "EQUITY": {"share_capital": 1_000_000_000, "total_equity": 1_400_000_000},
             "ASSETS": {"total_assets": 9_000_000_000},
@@ -98,7 +91,16 @@ def seeded_ticker(db):
             "EXPENSES": {"net_profit": 80_000_000},
         },
     )
-    # Quarterlies for QoQ growth and unaudited metrics
+
+
+def _seed_annual_reports(ticker):
+    """Create latest and previous annual FinancialReport rows for ticker."""
+    _seed_latest_annual(ticker)
+    _seed_previous_annual(ticker)
+
+
+def _seed_quarterly_reports(ticker):
+    """Create Q1 and Q4 FinancialReport rows for ticker."""
     FinancialReport.objects.create(
         ticker=ticker,
         fiscal_year="081-082",
@@ -118,6 +120,15 @@ def seeded_ticker(db):
         eps=Decimal("10"),
         book_value=Decimal("150"),
     )
+
+
+@pytest.fixture
+def seeded_ticker(db):
+    ticker = "TBNK"
+    Company.objects.create(symbol=ticker, name="Test Bank", sector="Commercial Banks", status="A")
+    DailyStockPrice.objects.create(ticker=ticker, date=date(2026, 6, 10), close=Decimal("200"))
+    _seed_annual_reports(ticker)
+    _seed_quarterly_reports(ticker)
     return ticker
 
 

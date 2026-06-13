@@ -93,75 +93,79 @@ def _calculate_momentum(df, indicators):
     current_uo = _get_scalar(uo[-1]) if uo is not None and len(uo) > 0 else None
     _add_ind(indicators, 'Momentum', 'Ultimate Osc.', current_uo)
 
+def _add_macd_indicators(df, indicators):
+    """Add MACD line, histogram, and signal to indicators list."""
+    close = df['close'].values
+    macd, macdsignal, macdhist = talib.MACD(close, fastperiod=12, slowperiod=26, signalperiod=9)
+    _add_ind(indicators, 'Trend', 'MACD (12,26,9)', _get_scalar(macd[-1]) if macd is not None and len(macd) > 0 else None)
+    _add_ind(indicators, 'Trend', 'MACD Histogram', _get_scalar(macdhist[-1]) if macdhist is not None and len(macdhist) > 0 else None)
+    _add_ind(indicators, 'Trend', 'MACD Signal', _get_scalar(macdsignal[-1]) if macdsignal is not None and len(macdsignal) > 0 else None)
+
+
+def _add_price_trends(df, indicators):
+    """Add simple 5D, 10D, and 1M price-change trend indicators."""
+    if len(df) < 30:
+        return
+    latest = float(df['close'].iloc[-1])
+    for label, offset in [('5D Trend', 5), ('10D Trend', 10), ('1M Trend', 22)]:
+        if len(df) > offset:
+            prev = float(df['close'].iloc[-(offset + 1)])
+            chg = ((latest - prev) / prev) * 100 if prev != 0 else 0
+            _add_ind(indicators, 'Trend', label, chg, suffix="%")
+
+
+def _add_ichimoku(df, indicators):
+    """Add Ichimoku base/conversion line indicator if enough data is available."""
+    if len(df) < 52:
+        return
+    tenkan = (df['high'].rolling(9).max() + df['low'].rolling(9).min()) / 2
+    kijun = (df['high'].rolling(26).max() + df['low'].rolling(26).min()) / 2
+    conv, base = _get_scalar(tenkan.iloc[-1]), _get_scalar(kijun.iloc[-1])
+    display = (
+        f"{base:.1f} / {conv:.1f}"
+        if (base is not None and not np.isnan(base) and conv is not None and not np.isnan(conv))
+        else "-"
+    )
+    _add_ind(indicators, 'Trend', 'Ichimoku (Base/Conv)', display, base)
+
+
 def _calculate_trend(df, indicators):
-    """Calculate and add trend indicators using talib and manual logic for Ichimoku."""
+    """Calculate and add trend indicators using talib and manual Ichimoku logic."""
     close = df['close'].values
     high = df['high'].values
     low = df['low'].values
 
-    macd, macdsignal, macdhist = talib.MACD(close, fastperiod=12, slowperiod=26, signalperiod=9)
-    current_macd = _get_scalar(macd[-1]) if macd is not None and len(macd) > 0 else None
-    current_macdh = _get_scalar(macdhist[-1]) if macdhist is not None and len(macdhist) > 0 else None
-    current_macds = _get_scalar(macdsignal[-1]) if macdsignal is not None and len(macdsignal) > 0 else None
-    _add_ind(indicators, 'Trend', 'MACD (12,26,9)', current_macd)
-    _add_ind(indicators, 'Trend', 'MACD Histogram', current_macdh)
-    _add_ind(indicators, 'Trend', 'MACD Signal', current_macds)
-    
-    # Simple Price Trends (5D, 10D, 1M)
-    if len(df) >= 30:
-        latest = float(df['close'].iloc[-1])
-        for label, offset in [('5D Trend', 5), ('10D Trend', 10), ('1M Trend', 22)]:
-            if len(df) > offset:
-                prev = float(df['close'].iloc[-(offset+1)])
-                if prev != 0:
-                    chg = ((latest - prev) / prev) * 100
-                    _add_ind(indicators, 'Trend', label, chg, suffix="%")
-                else:
-                    _add_ind(indicators, 'Trend', label, 0, suffix="%")
+    _add_macd_indicators(df, indicators)
+    _add_price_trends(df, indicators)
 
     adx = talib.ADX(high, low, close, timeperiod=14)
-    current_adx = _get_scalar(adx[-1]) if adx is not None and len(adx) > 0 else None
-    _add_ind(indicators, 'Trend', 'ADX (14)', current_adx)
+    _add_ind(indicators, 'Trend', 'ADX (14)', _get_scalar(adx[-1]) if adx is not None and len(adx) > 0 else None)
 
     aroon_down, aroon_up = talib.AROON(high, low, timeperiod=14)
-    current_aroon_u = _get_scalar(aroon_up[-1]) if aroon_up is not None and len(aroon_up) > 0 else None
-    current_aroon_d = _get_scalar(aroon_down[-1]) if aroon_down is not None and len(aroon_down) > 0 else None
-    
-    aroon_display = "-"
-    if (current_aroon_u is not None and not np.isnan(current_aroon_u) and 
-        current_aroon_d is not None and not np.isnan(current_aroon_d)):
-        aroon_display = f"{current_aroon_u:.0f} / {current_aroon_d:.0f}"
-    
-    _add_ind(indicators, 'Trend', 'Aroon Up/Down', aroon_display, current_aroon_u)
+    u = _get_scalar(aroon_up[-1]) if aroon_up is not None and len(aroon_up) > 0 else None
+    d = _get_scalar(aroon_down[-1]) if aroon_down is not None and len(aroon_down) > 0 else None
+    aroon_display = f"{u:.0f} / {d:.0f}" if (u is not None and not np.isnan(u) and d is not None and not np.isnan(d)) else "-"
+    _add_ind(indicators, 'Trend', 'Aroon Up/Down', aroon_display, u)
 
-    # Manual Ichimoku Calculation for Parity
-    # ITS_9, IKS_26
-    if len(df) >= 52:
-        high_9 = df['high'].rolling(window=9).max()
-        low_9 = df['low'].rolling(window=9).min()
-        tenkan_sen = (high_9 + low_9) / 2
-        
-        high_26 = df['high'].rolling(window=26).max()
-        low_26 = df['low'].rolling(window=26).min()
-        kijun_sen = (high_26 + low_26) / 2
-        
-        conv = _get_scalar(tenkan_sen.iloc[-1])
-        base = _get_scalar(kijun_sen.iloc[-1])
-        
-        display = "-"
-        if (base is not None and not np.isnan(base) and 
-            conv is not None and not np.isnan(conv)):
-            display = f"{base:.1f} / {conv:.1f}"
-        
-        _add_ind(indicators, 'Trend', 'Ichimoku (Base/Conv)', display, base)
+    _add_ichimoku(df, indicators)
 
     psar = talib.SAR(high, low, acceleration=0.02, maximum=0.2)
-    current_psar = _get_scalar(psar[-1]) if psar is not None and len(psar) > 0 else None
-    _add_ind(indicators, 'Trend', 'PSAR', current_psar)
+    _add_ind(indicators, 'Trend', 'PSAR', _get_scalar(psar[-1]) if psar is not None and len(psar) > 0 else None)
 
     for length in [50, 200]:
-        val = _get_scalar(talib.SMA(close, timeperiod=length)[-1])
-        _add_ind(indicators, 'Trend', f'{length}-Day SMA', val)
+        _add_ind(indicators, 'Trend', f'{length}-Day SMA', _get_scalar(talib.SMA(close, timeperiod=length)[-1]))
+
+def _add_keltner_channels(close, high, low, indicators):
+    """Compute and add Keltner Channels (EMA ± 2×ATR) to indicators."""
+    ema_20 = talib.EMA(close, timeperiod=20)
+    atr_20 = talib.ATR(high, low, close, timeperiod=20)
+    if not (ema_20 is not None and atr_20 is not None and len(ema_20) > 0 and len(atr_20) > 0):
+        return
+    u_raw = ema_20[-1] + (2 * atr_20[-1])
+    l_raw = ema_20[-1] - (2 * atr_20[-1])
+    display = f"{u_raw:.1f} / {l_raw:.1f}" if not (np.isnan(u_raw) or np.isnan(l_raw)) else "-"
+    _add_ind(indicators, 'Volatility', 'Keltner Channels', display, u_raw)
+
 
 def _calculate_volatility(df, indicators):
     """Calculate and add volatility indicators using talib and manual KC/DC."""
@@ -169,32 +173,17 @@ def _calculate_volatility(df, indicators):
     high = df['high'].values
     low = df['low'].values
 
-    upper, middle, lower = talib.BBANDS(close, timeperiod=20, nbdevup=2, nbdevdn=2, matype=0)
-    # Bollinger %B = (Price - Lower) / (Upper - Lower)
+    upper, _mid, lower = talib.BBANDS(close, timeperiod=20, nbdevup=2, nbdevdn=2, matype=0)
     if upper is not None and len(upper) > 0:
         u, l, c = upper[-1], lower[-1], close[-1]
         bb_p = (c - l) / (u - l) if (u - l) != 0 else 0
         _add_ind(indicators, 'Volatility', 'Bollinger %B', bb_p)
 
     atr = talib.ATR(high, low, close, timeperiod=14)
-    current_atr = _get_scalar(atr[-1]) if atr is not None and len(atr) > 0 else None
-    _add_ind(indicators, 'Volatility', 'ATR (14)', current_atr)
+    _add_ind(indicators, 'Volatility', 'ATR (14)', _get_scalar(atr[-1]) if atr is not None and len(atr) > 0 else None)
 
-    # Manual Keltner Channels
-    ema_20 = talib.EMA(close, timeperiod=20)
-    # Using 2 * ATR(10) or ATR(20) for volatility width
-    atr_20 = talib.ATR(high, low, close, timeperiod=20)
-    if ema_20 is not None and atr_20 is not None and len(ema_20) > 0 and len(atr_20) > 0:
-        u_raw = ema_20[-1] + (2 * atr_20[-1])
-        l_raw = ema_20[-1] - (2 * atr_20[-1])
-        
-        display = "-"
-        if not np.isnan(u_raw) and not np.isnan(l_raw):
-            display = f"{u_raw:.1f} / {l_raw:.1f}"
-            
-        _add_ind(indicators, 'Volatility', 'Keltner Channels', display, u_raw)
+    _add_keltner_channels(close, high, low, indicators)
 
-    # Manual Donchian Channels
     if len(df) >= 20:
         u = df['high'].rolling(window=20).max().iloc[-1]
         l = df['low'].rolling(window=20).min().iloc[-1]
@@ -231,37 +220,30 @@ def _calculate_volume(df, indicators):
     
     _add_ind(indicators, 'Volume', 'CMF (20)', _get_scalar(cmf.iloc[-1]))
 
+def _find_swing_levels(df, current_price):
+    """Return (resistances, supports) lists from 2-year structural swing points."""
+    n = 15
+    df['is_peak'] = df['high'] == df['high'].rolling(window=2 * n + 1, center=True).max()
+    df['is_trough'] = df['low'] == df['low'].rolling(window=2 * n + 1, center=True).min()
+    recent = df.tail(252 * 2)
+    peaks = recent[recent['is_peak']]['high'].unique()
+    troughs = recent[recent['is_trough']]['low'].unique()
+    resistances = sorted(p for p in peaks if p > current_price)
+    supports = sorted((t for t in troughs if t < current_price), reverse=True)
+    return resistances, supports
+
+
 def _calculate_support_resistance(df, indicators):
-    """
-    Calculate support and resistance levels using Structural Swing Points (HH/HL).
-    This identifies local price peaks and troughs as structural barriers.
-    """
+    """Add support and resistance levels from structural swing points and pivot."""
     if len(df) < 50:
         return
-
-    n = 15
-    df['is_peak'] = (df['high'] == df['high'].rolling(window=2*n+1, center=True).max())
-    df['is_trough'] = (df['low'] == df['low'].rolling(window=2*n+1, center=True).min())
-    
-    lookback_period = 252 * 2 
-    recent_df = df.tail(lookback_period)
-    
-    peaks = recent_df[recent_df['is_peak']]['high'].unique()
-    troughs = recent_df[recent_df['is_trough']]['low'].unique()
-    
     current_price = float(df['close'].iloc[-1])
-    
-    resistances = sorted([p for p in peaks if p > current_price])
-    supports = sorted([t for t in troughs if t < current_price], reverse=True)
-    
-    year_window = df.tail(252)
-    p_high = year_window['high'].max()
-    p_low = year_window['low'].min()
-    p_close = year_window['close'].iloc[-1]
-    pivot_p = (p_high + p_low + p_close) / 3
-    
+    resistances, supports = _find_swing_levels(df, current_price)
+
+    year = df.tail(252)
+    pivot_p = (year['high'].max() + year['low'].min() + year['close'].iloc[-1]) / 3
     _add_ind(indicators, 'Support & Resistance', 'Pivot (P)', pivot_p)
-    
+
     for i in range(3):
         if i < len(resistances):
             _add_ind(indicators, 'Support & Resistance', f'Resistance {i+1}', resistances[i])
