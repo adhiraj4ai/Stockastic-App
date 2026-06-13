@@ -2,6 +2,14 @@ import pandas as pd
 import numpy as np
 from datetime import datetime, timedelta
 from .models import DailyStockPrice
+from .constants import (
+    ANNUAL_TRADING_DAYS,
+    DYNAMIC_MAX_WEIGHT_SCALE,
+    MIN_DYNAMIC_MAX_WEIGHT,
+    MAX_DYNAMIC_MAX_WEIGHT,
+    MIN_OPTIMIZATION_DAYS,
+    OPTIMIZATION_HISTORY_DAYS,
+)
 import warnings
 
 # Skfolio (Existing)
@@ -75,7 +83,7 @@ def perform_portfolio_optimization(tickers, current_holdings=None, method='max_s
 
     # Fetch Data
     end_date = datetime.now().date()
-    start_date = end_date - timedelta(days=730)
+    start_date = end_date - timedelta(days=OPTIMIZATION_HISTORY_DAYS)
     prices_qs = DailyStockPrice.objects.filter(
         ticker__in=tickers,
         date__gte=start_date,
@@ -91,8 +99,8 @@ def perform_portfolio_optimization(tickers, current_holdings=None, method='max_s
     try:
         df_pivoted = df.pivot(index='date', columns='ticker', values='close')
         df_pivoted = df_pivoted.ffill().dropna()
-        if df_pivoted.empty or len(df_pivoted) < 20:
-            return {"error": "Insufficient historical data (need 20+ days)"}
+        if df_pivoted.empty or len(df_pivoted) < MIN_OPTIMIZATION_DAYS:
+            return {"error": f"Insufficient historical data (need {MIN_OPTIMIZATION_DAYS}+ days)"}
             
         returns = df_pivoted.pct_change().dropna()
         
@@ -156,8 +164,8 @@ def perform_portfolio_optimization(tickers, current_holdings=None, method='max_s
             
             # Predict metrics (Riskfolio has specific reporting)
             # Simple approximation using historical mean/cov
-            mu = returns.mean() * 252
-            cov = returns.cov() * 252
+            mu = returns.mean() * ANNUAL_TRADING_DAYS
+            cov = returns.cov() * ANNUAL_TRADING_DAYS
             w_arr = np.array([weight_map[t] for t in returns.columns])
             
             exp_ret = np.dot(w_arr, mu)
@@ -179,8 +187,8 @@ def perform_portfolio_optimization(tickers, current_holdings=None, method='max_s
             
             # Calculate metrics
             w_arr = np.array([1.0/n] * n)
-            mu = returns.mean() * 252
-            cov = returns.cov() * 252
+            mu = returns.mean() * ANNUAL_TRADING_DAYS
+            cov = returns.cov() * ANNUAL_TRADING_DAYS
             exp_ret = np.dot(w_arr, mu)
             vol = np.sqrt(np.dot(w_arr.T, np.dot(cov, w_arr)))
             sharpe = exp_ret / vol if vol > 0 else 0
@@ -196,7 +204,7 @@ def perform_portfolio_optimization(tickers, current_holdings=None, method='max_s
             from skfolio.optimization import MeanRisk, ObjectiveFunction, MaximumDiversification, RiskBudgeting
             from skfolio import RiskMeasure
             
-            dynamic_max_weight = max(0.6, min(0.95, 1.3 / len(tickers)))
+            dynamic_max_weight = max(MIN_DYNAMIC_MAX_WEIGHT, min(MAX_DYNAMIC_MAX_WEIGHT, DYNAMIC_MAX_WEIGHT_SCALE / len(tickers)))
             
             if method == 'max_diversification':
                 model = MaximumDiversification(max_weights=dynamic_max_weight)
