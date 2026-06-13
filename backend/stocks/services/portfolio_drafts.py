@@ -45,43 +45,33 @@ def create_draft(*, user, kind, title, payload, preview, account=None):
     )
 
 
-def _execute_trades(user, account, trades):
-    """Run each trade through process_transaction and record a PortfolioTransaction.
+def _process_one_trade(user, account, t):
+    """Process a single trade dict: run PortfolioService, create PortfolioTransaction row."""
+    qty = int(t["quantity"])
+    rate = Decimal(str(t["rate"]))
+    metrics = PortfolioService.process_transaction(
+        user=user, ticker=t["ticker"], txn_type=t["txn_type"],
+        quantity=qty, rate=rate, account=account,
+    )
+    txn = PortfolioTransaction.objects.create(
+        user=user, account=account, ticker=t["ticker"],
+        transaction_type=t["txn_type"], quantity=qty, rate=rate,
+        amount=metrics["amount"], commission=metrics["commission"],
+        sebon_fee=metrics["sebon_fee"], dp_charge=metrics["dp_charge"],
+        cgt=metrics["cgt"], receivable_amount=metrics["receivable_amount"],
+        transaction_date=timezone.now(),
+    )
+    msg = f"{t['txn_type']} {qty} {t['ticker']} @ Rs {rate:,.2f}"
+    return txn.id, msg
 
-    Mirrors stocks.views.portfolio.PortfolioTransactionViewSet.perform_create:
-    process_transaction mutates the holding and returns the fee metrics; the
-    PortfolioTransaction row is then created with those metrics.
-    """
-    txn_ids = []
-    messages = []
+
+def _execute_trades(user, account, trades):
+    """Run each trade through process_transaction and record a PortfolioTransaction."""
+    txn_ids, messages = [], []
     for t in trades:
-        qty = int(t["quantity"])
-        rate = Decimal(str(t["rate"]))
-        metrics = PortfolioService.process_transaction(
-            user=user,
-            ticker=t["ticker"],
-            txn_type=t["txn_type"],
-            quantity=qty,
-            rate=rate,
-            account=account,
-        )
-        txn = PortfolioTransaction.objects.create(
-            user=user,
-            account=account,
-            ticker=t["ticker"],
-            transaction_type=t["txn_type"],
-            quantity=qty,
-            rate=rate,
-            amount=metrics["amount"],
-            commission=metrics["commission"],
-            sebon_fee=metrics["sebon_fee"],
-            dp_charge=metrics["dp_charge"],
-            cgt=metrics["cgt"],
-            receivable_amount=metrics["receivable_amount"],
-            transaction_date=timezone.now(),
-        )
-        txn_ids.append(txn.id)
-        messages.append(f"{t['txn_type']} {qty} {t['ticker']} @ Rs {rate:,.2f}")
+        txn_id, msg = _process_one_trade(user, account, t)
+        txn_ids.append(txn_id)
+        messages.append(msg)
     return txn_ids, messages
 
 
@@ -133,6 +123,45 @@ def _execute_trade_plan(user, payload):
             "message": f"Created trade plan for {plan.ticker} with {plan.legs.count()} leg(s)."}
 
 
+def _guard_draft_status(draft):
+    """Pre-lock validation: raise DraftError or return early if already confirmed."""
+    if draft.status == PortfolioActionDraft.Status.CONFIRMED:
+        return draft.result
+    if draft.status != PortfolioActionDraft.Status.PENDING:
+        raise DraftError(f"Draft is {draft.status} and cannot be confirmed.")
+    if draft.is_expired:
+        draft.status = PortfolioActionDraft.Status.EXPIRED
+        draft.save(update_fields=["status"])
+        raise DraftError("Draft has expired — ask the manager to re-draft at current prices.")
+    return None
+
+
+def _dispatch_kind(locked):
+    """Dispatch execution to the appropriate handler based on draft kind."""
+    user, account, payload, kind = locked.user, locked.account, locked.payload, locked.kind
+    if kind == PortfolioActionDraft.Kind.TRADE:
+        txn_ids, messages = _execute_trades(user, account, payload["trades"])
+        return {"transaction_ids": txn_ids, "message": "; ".join(messages)}
+    if kind == PortfolioActionDraft.Kind.EXITS:
+        return _execute_exits(user, payload)
+    if kind == PortfolioActionDraft.Kind.REBALANCE:
+        return _execute_rebalance(user, account, payload)
+    if kind == PortfolioActionDraft.Kind.TRADE_PLAN:
+        return _execute_trade_plan(user, payload)
+    raise DraftError(f"Unknown draft kind {kind}")
+
+
+def _commit_draft(locked, draft, result):
+    """Persist CONFIRMED status and sync the caller's draft instance."""
+    locked.status = PortfolioActionDraft.Status.CONFIRMED
+    locked.confirmed_at = timezone.now()
+    locked.result = result
+    locked.save(update_fields=["status", "confirmed_at", "result"])
+    draft.status = locked.status
+    draft.confirmed_at = locked.confirmed_at
+    draft.result = locked.result
+
+
 def confirm_draft(draft):
     """Execute a PENDING draft. Idempotent on CONFIRMED. Raises DraftError otherwise.
 
@@ -142,44 +171,17 @@ def confirm_draft(draft):
     same result. Terminal-state and expiry checks happen before the lock (an
     expired draft is marked EXPIRED in its own committed save, then rejected).
     """
-    if draft.status == PortfolioActionDraft.Status.CONFIRMED:
-        return draft.result
-    if draft.status != PortfolioActionDraft.Status.PENDING:
-        raise DraftError(f"Draft is {draft.status} and cannot be confirmed.")
-    if draft.is_expired:
-        draft.status = PortfolioActionDraft.Status.EXPIRED
-        draft.save(update_fields=["status"])
-        raise DraftError("Draft has expired — ask the manager to re-draft at current prices.")
+    early = _guard_draft_status(draft)
+    if early is not None:
+        return early
 
     with transaction.atomic():
         locked = PortfolioActionDraft.objects.select_for_update().get(pk=draft.pk)
-        # Re-check under the lock to close the double-confirm race.
         if locked.status == PortfolioActionDraft.Status.CONFIRMED:
             return locked.result
         if locked.status != PortfolioActionDraft.Status.PENDING:
             raise DraftError(f"Draft is {locked.status} and cannot be confirmed.")
-
-        user, account, payload, kind = locked.user, locked.account, locked.payload, locked.kind
-
-        if kind == PortfolioActionDraft.Kind.TRADE:
-            txn_ids, messages = _execute_trades(user, account, payload["trades"])
-            result = {"transaction_ids": txn_ids, "message": "; ".join(messages)}
-        elif kind == PortfolioActionDraft.Kind.EXITS:
-            result = _execute_exits(user, payload)
-        elif kind == PortfolioActionDraft.Kind.REBALANCE:
-            result = _execute_rebalance(user, account, payload)
-        elif kind == PortfolioActionDraft.Kind.TRADE_PLAN:
-            result = _execute_trade_plan(user, payload)
-        else:
-            raise DraftError(f"Unknown draft kind {kind}")
-
-        locked.status = PortfolioActionDraft.Status.CONFIRMED
-        locked.confirmed_at = timezone.now()
-        locked.result = result
-        locked.save(update_fields=["status", "confirmed_at", "result"])
-        # Keep the passed-in instance consistent for callers that reuse it.
-        draft.status = locked.status
-        draft.confirmed_at = locked.confirmed_at
-        draft.result = locked.result
+        result = _dispatch_kind(locked)
+        _commit_draft(locked, draft, result)
 
     return result

@@ -94,46 +94,37 @@ def _optimize_composed(spec, symbol, start, trials):
     return best
 
 
-def scan_symbol(symbol, strategies=None, timeframes=DEFAULT_TIMEFRAMES, optimize=False,
-                trials=12, min_trades=3):
-    """Scan all strategies on `symbol` across timeframes (and optionally parameter ranges).
+def _scan_strategy(s, symbol, timeframes, optimize, trials, bh_by_tf):
+    """Backtest one strategy across timeframes; return (row, error_or_None)."""
+    cands = []
+    for tf in timeframes:
+        r = run_backtest(s, symbol, start=_tf_start(tf))
+        if r.ok:
+            cands.append((tf, r.metrics))
+            bh_by_tf.setdefault(tf, round(r.metrics["buy_hold_return_pct"], 1))
+    if not cands:
+        return None, {"id": s.id, "name": s.name, "error": "no successful backtest"}
+    tf, m = max(cands, key=lambda c: c[1]["return_pct"])
+    tuned = None
+    if optimize and s.spec:
+        opt = _optimize_composed(s.spec, symbol, _tf_start(tf), trials)
+        if opt and opt["metrics"]["return_pct"] > m["return_pct"]:
+            m, tuned = opt["metrics"], opt["spec"]
+    return _row(s, m, tf, tuned), None
 
-    Returns {symbol, timeframes, optimized, buy_hold_by_tf, count, beating_bh, best,
-             best_risk_adjusted, results (ranked by return desc), errors}.
-    For each strategy the strongest timeframe is kept; `best` is the top return that beats
-    buy-and-hold and trades >= min_trades; `best_risk_adjusted` is the top Sortino.
-    """
-    from ..models.strategy import Strategy
-    symbol = (symbol or "").upper()
-    strategies = strategies if strategies is not None else list(Strategy.objects.all())
-    timeframes = tuple(timeframes)
 
-    rows, errors, bh_by_tf = [], [], {}
-    for s in strategies:
-        cands = []
-        for tf in timeframes:
-            r = run_backtest(s, symbol, start=_tf_start(tf))
-            if r.ok:
-                cands.append((tf, r.metrics))
-                bh_by_tf.setdefault(tf, round(r.metrics["buy_hold_return_pct"], 1))
-        if not cands:
-            errors.append({"id": s.id, "name": s.name, "error": "no successful backtest"})
-            continue
-        tf, m = max(cands, key=lambda c: c[1]["return_pct"])  # best timeframe by return
-        tuned = None
-        if optimize and s.spec:
-            opt = _optimize_composed(s.spec, symbol, _tf_start(tf), trials)
-            if opt and opt["metrics"]["return_pct"] > m["return_pct"]:
-                m, tuned = opt["metrics"], opt["spec"]
-        rows.append(_row(s, m, tf, tuned))
-
+def _pick_best(rows, min_trades):
+    """Select best-return and best-sortino rows from `rows`."""
     ranked = sorted(rows, key=lambda r: r["return_pct"], reverse=True)
     active = [r for r in rows if r["num_trades"] >= min_trades]
     qualified = [r for r in active if r["beats_bh"]]
     best = (sorted(qualified, key=lambda r: r["return_pct"], reverse=True) or ranked or [None])[0]
     reportable_active = [r for r in active if r["win_rate_reportable"]]
     best_ra = max(reportable_active or active, key=lambda r: r["sortino"], default=None)
+    return ranked, best, best_ra
 
+
+def _build_scan_result(symbol, timeframes, optimize, bh_by_tf, rows, errors, ranked, best, best_ra):
     return {
         "symbol": symbol,
         "timeframes": list(timeframes),
@@ -146,6 +137,28 @@ def scan_symbol(symbol, strategies=None, timeframes=DEFAULT_TIMEFRAMES, optimize
         "results": ranked,
         "errors": errors,
     }
+
+
+def scan_symbol(symbol, strategies=None, timeframes=DEFAULT_TIMEFRAMES, optimize=False,
+                trials=12, min_trades=3):
+    """Scan all strategies on `symbol` across timeframes (and optionally parameter ranges).
+
+    Returns {symbol, timeframes, optimized, buy_hold_by_tf, count, beating_bh, best,
+             best_risk_adjusted, results (ranked by return desc), errors}.
+    """
+    from ..models.strategy import Strategy
+    symbol = (symbol or "").upper()
+    strategies = strategies if strategies is not None else list(Strategy.objects.all())
+    timeframes = tuple(timeframes)
+    rows, errors, bh_by_tf = [], [], {}
+    for s in strategies:
+        row, err = _scan_strategy(s, symbol, timeframes, optimize, trials, bh_by_tf)
+        if err:
+            errors.append(err)
+        else:
+            rows.append(row)
+    ranked, best, best_ra = _pick_best(rows, min_trades)
+    return _build_scan_result(symbol, timeframes, optimize, bh_by_tf, rows, errors, ranked, best, best_ra)
 
 
 # ─────────────────────────────────────────────────────────────────────────────
@@ -225,23 +238,18 @@ def _score(m, objective):
     return m["win_rate_pct"] * 2 + m["return_pct"] / 10.0  # balanced
 
 
-def optimize_spec(spec, symbol, param_ranges=None, n_trials=40,
-                  timeframes=("3y", "max"), objective="balanced", min_trades=2):
-    """Random-search a composed spec's parameter ranges on `symbol` across timeframes.
-
-    Returns {best:{params(path->value), spec, metrics, score}, baseline_metrics, space, ...}.
-    `param_ranges` (optional) overrides registry ranges, keyed by the same paths.
-    """
-    from .strategy_framework import spec_to_code
-    spec = _normalize_spec(spec)
-    space = spec_param_space(spec)
-    ranges = param_ranges or {}
-    starts = [_tf_start(tf) for tf in timeframes]
-
+def _make_sampler(space, ranges):
+    """Return a callable sample(path, info) that draws from overridden or registry ranges."""
     def sample(path, info):
         lo, hi = ranges.get(path, [info["min"], info["max"]])[:2]
-        return random.randint(int(lo), int(hi)) if info["type"] == "int" else round(random.uniform(float(lo), float(hi)), 3)
+        if info["type"] == "int":
+            return random.randint(int(lo), int(hi))
+        return round(random.uniform(float(lo), float(hi)), 3)
+    return sample
 
+
+def _make_evaluator(symbol, starts, min_trades):
+    """Return a callable evaluate(code) that backtests code across all starts."""
     def evaluate(code):
         out = []
         for st in starts:
@@ -252,8 +260,12 @@ def optimize_spec(spec, symbol, param_ranges=None, n_trials=40,
             if r.ok and r.metrics["num_trades"] >= min_trades:
                 out.append(r.metrics)
         return out
+    return evaluate
 
-    base = evaluate(spec_to_code(spec))
+
+def _run_spec_trials(spec, space, n_trials, sample, evaluate, objective):
+    """Random-search the spec's param space; return the best candidate dict or None."""
+    from .strategy_framework import spec_to_code
     best = None
     for _ in range(n_trials):
         cand = copy.deepcopy(spec)
@@ -267,8 +279,26 @@ def optimize_spec(spec, symbol, param_ranges=None, n_trials=40,
             best = {
                 "score": round(avg, 2), "spec": cand,
                 "params": {p: (_node_at(cand, p).get("params") or {}).get(p.split(".", 1)[1]) for p in space},
-                "metrics": mets[-1],  # representative (longest timeframe)
+                "metrics": mets[-1],
             }
+    return best
+
+
+def optimize_spec(spec, symbol, param_ranges=None, n_trials=40,
+                  timeframes=("3y", "max"), objective="balanced", min_trades=2):
+    """Random-search a composed spec's parameter ranges on `symbol` across timeframes.
+
+    Returns {best:{params(path->value), spec, metrics, score}, baseline_metrics, space, ...}.
+    `param_ranges` (optional) overrides registry ranges, keyed by the same paths.
+    """
+    from .strategy_framework import spec_to_code
+    spec = _normalize_spec(spec)
+    space = spec_param_space(spec)
+    starts = [_tf_start(tf) for tf in timeframes]
+    evaluate = _make_evaluator(symbol, starts, min_trades)
+    sample = _make_sampler(space, param_ranges or {})
+    base = evaluate(spec_to_code(spec))
+    best = _run_spec_trials(spec, space, n_trials, sample, evaluate, objective)
     return {
         "symbol": symbol, "objective": objective, "timeframes": list(timeframes),
         "space": {k: {"min": v["min"], "max": v["max"], "type": v["type"], "label": v["label"], "default": v["default"]} for k, v in space.items()},
