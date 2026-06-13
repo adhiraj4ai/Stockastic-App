@@ -1,0 +1,1192 @@
+{
+  "ticker": "SBL",
+  "company": {
+    "name": "Siddhartha Bank Limited",
+    "sector": "Commercial Banks",
+    "instrument_type": "Equity"
+  },
+  "reports": [
+    {
+      "ticker": "SBL",
+      "fiscal_year": "072-073",
+      "report_type": "ANNUAL",
+      "quarter": null,
+      "is_audited": true,
+      "report_template": "BANK",
+      "paid_up_capital": 3022880563,
+      "reserves_and_surplus": 2550808123,
+      "net_profit": 1270472755,
+      "eps": 42.03,
+      "book_value": 248.05,
+      "return_on_equity": 16.94,
+      "bonus_share": 39.0,
+      "cash_dividend": 0.0,
+      "dividend_announced_date": null,
+      "dividend_book_close_date": "2017-02-02",
+      "balance_sheet": {
+        "ASSETS": {
+          "cash_equivalent": 3378239325,
+          "due_from_nrb": 3847268039,
+          "placement_bfis": 744730397,
+          "derivative_assets": 24141960,
+          "trading_assets": 29757920,
+          "loans_bfis": 1476505000,
+          "loans_customers": 54748958920,
+          "investment_securities": 10342658056,
+          "current_tax_assets": 83527836,
+          "subsidiaries": 51000000,
+          "investment_property": 154637535,
+          "property_equipment": 618825074,
+          "intangible_assets": 3090526,
+          "other_assets": 621607328,
+          "total_assets": 76124947919
+        },
+        "LIABILITIES": {
+          "due_to_bfis": 8011651778,
+          "due_to_nrb": 60000000,
+          "deposits_customers": 57772706773,
+          "deferred_tax_liabilities": 422621868,
+          "other_liabilities": 1156169566,
+          "debt_securities": 1203520000,
+          "total_liabilities": 68626699985
+        },
+        "EQUITY": {
+          "share_capital": 3022880563,
+          "retained_earnings": 1924589247,
+          "reserves_reserves": 2550808123,
+          "total_equity": 7498277934,
+          "total_liabilities_equity": 76124947919
+        }
+      },
+      "profit_loss": {
+        "INCOME": {
+          "interest_income": 4119478938,
+          "interest_expense": 1989418032,
+          "net_interest_income": 2130060906,
+          "total_operating_income": 2842571707
+        },
+        "EXPENSES": {
+          "personnel_expenses": 387617791,
+          "operating_profit": 1686358582,
+          "net_profit": 1270472755
+        }
+      },
+      "cash_flow": null,
+      "key_ratios": {
+        "Per Share": {
+          "EPS": 42.03,
+          "Book Value": 248.05
+        },
+        "Performance": {
+          "ROE": 16.94
+        },
+        "Dividend": {
+          "Bonus Share %": 39.0,
+          "Cash Dividend %": 0.0
+        }
+      }
+    },
+    {
+      "ticker": "SBL",
+      "fiscal_year": "073-074",
+      "report_type": "ANNUAL",
+      "quarter": null,
+      "is_audited": true,
+      "report_template": "BANK",
+      "paid_up_capital": 6628878942,
+      "reserves_and_surplus": 3052183915,
+      "net_profit": 1402294306,
+      "eps": 21.15,
+      "book_value": 167.74,
+      "return_on_equity": 12.61,
+      "bonus_share": 14.0,
+      "cash_dividend": 0.0,
+      "dividend_announced_date": null,
+      "dividend_book_close_date": "2018-03-04",
+      "balance_sheet": {
+        "ASSETS": {
+          "cash_equivalent": 3879880443,
+          "due_from_nrb": 6672330906,
+          "placement_bfis": 567325000,
+          "derivative_assets": 28637239,
+          "trading_assets": 40991188,
+          "loans_bfis": 2419043662,
+          "loans_customers": 64651159439,
+          "investment_securities": 11971296354,
+          "current_tax_assets": 58671994,
+          "subsidiaries": 51000000,
+          "investment_property": 154637535,
+          "property_equipment": 718726424,
+          "intangible_assets": 12661339,
+          "other_assets": 359741367,
+          "total_assets": 91586102891
+        },
+        "LIABILITIES": {
+          "due_to_bfis": 5901743130,
+          "due_to_nrb": 505714039,
+          "deposits_customers": 71415816169,
+          "deferred_tax_liabilities": 393804733,
+          "other_liabilities": 1046320007,
+          "debt_securities": 1203520000,
+          "total_liabilities": 80466918078
+        },
+        "EQUITY": {
+          "share_capital": 6628878942,
+          "share_premium": 120230167,
+          "retained_earnings": 1317891789,
+          "reserves_reserves": 3052183915,
+          "total_equity": 11119184813,
+          "total_liabilities_equity": 91586102891
+        }
+      },
+      "profit_loss": {
+        "INCOME": {
+          "interest_income": 6625302722,
+          "interest_expense": 3998165438,
+          "net_interest_income": 2627137284,
+          "fee_income": 521610976,
+          "fee_expense": 119939703,
+          "net_fee_income": 401671273,
+          "net_int_fee_income": 3028808556,
+          "trading_income": 145171178,
+          "other_operating_income": 242221782,
+          "total_operating_income": 3416201516
+        },
+        "EXPENSES": {
+          "impairment_charge": 120092789,
+          "personnel_expenses": 763035105,
+          "other_operating_expenses": 385679285,
+          "depreciation": 92955912,
+          "operating_profit": 2054438425,
+          "non_operating_income": 0,
+          "non_operating_expense": 73468715,
+          "pbt": 1980969710,
+          "tax": 578675404,
+          "net_profit": 1402294306
+        },
+        "REGULATORY": {
+          "cd_ratio": 88.4,
+          "core_capital": 11.02,
+          "supplementary_capital": 1.72,
+          "capital_fund": 12.74,
+          "npl_ratio": 1.3,
+          "base_rate": 10.38,
+          "spread": 3.49
+        }
+      },
+      "cash_flow": null,
+      "key_ratios": {
+        "Per Share": {
+          "EPS": 21.15,
+          "Book Value": 167.74
+        },
+        "Performance": {
+          "ROE": 12.61
+        },
+        "Dividend": {
+          "Bonus Share %": 14.0,
+          "Cash Dividend %": 0.0
+        }
+      }
+    },
+    {
+      "ticker": "SBL",
+      "fiscal_year": "074-075",
+      "report_type": "ANNUAL",
+      "quarter": null,
+      "is_audited": true,
+      "report_template": "BANK",
+      "paid_up_capital": 8464385276,
+      "reserves_and_surplus": 3931925480,
+      "net_profit": 1904061504,
+      "eps": 22.49,
+      "book_value": 161.89,
+      "return_on_equity": 13.9,
+      "bonus_share": 5.0,
+      "cash_dividend": 8.16,
+      "dividend_announced_date": null,
+      "dividend_book_close_date": "2018-12-24",
+      "balance_sheet": {
+        "ASSETS": {
+          "cash_equivalent": 4453213255,
+          "due_from_nrb": 6454927243,
+          "placement_bfis": 1611130000,
+          "derivative_assets": 3705756,
+          "trading_assets": 81317739,
+          "loans_bfis": 2841166306,
+          "loans_customers": 83236087535,
+          "investment_securities": 18592942436,
+          "current_tax_assets": 68228757,
+          "subsidiaries": 51000000,
+          "investment_property": 154637535,
+          "property_equipment": 1072322808,
+          "intangible_assets": 12089083,
+          "other_assets": 1236450112,
+          "total_assets": 119869000000
+        },
+        "LIABILITIES": {
+          "due_to_bfis": 7448514711,
+          "due_to_nrb": 692426920,
+          "derivative_liabilities": 73754800,
+          "deposits_customers": 94579591123,
+          "deferred_tax_liabilities": 261913156,
+          "other_liabilities": 1906669561,
+          "debt_securities": 1203520000,
+          "total_liabilities": 106166000000
+        },
+        "EQUITY": {
+          "share_capital": 8464385276,
+          "share_premium": 122091505,
+          "retained_earnings": 1184426033,
+          "reserves_reserves": 3931925480,
+          "total_equity": 13702828293,
+          "total_liabilities_equity": 119869000000
+        }
+      },
+      "profit_loss": {
+        "INCOME": {
+          "interest_income": 10057002594,
+          "interest_expense": 6620744057,
+          "net_interest_income": 3436258538,
+          "fee_income": 779704041,
+          "fee_expense": 127903277,
+          "net_fee_income": 651800764,
+          "net_int_fee_income": 4088059302,
+          "trading_income": 258680709,
+          "other_operating_income": 308497248,
+          "total_operating_income": 4655237259
+        },
+        "EXPENSES": {
+          "impairment_charge": 230393540,
+          "personnel_expenses": 1085844188,
+          "other_operating_expenses": 490920608,
+          "depreciation": 118454070,
+          "operating_profit": 2729624852,
+          "non_operating_income": 400000,
+          "non_operating_expense": 0,
+          "pbt": 2730024852,
+          "tax": 825963348,
+          "net_profit": 1904061504
+        },
+        "REGULATORY": {
+          "cd_ratio": 86.08,
+          "core_capital": 10.99,
+          "supplementary_capital": 1.13,
+          "capital_fund": 12.12,
+          "npl_ratio": 1.09,
+          "base_rate": 11.16,
+          "spread": 3.53
+        }
+      },
+      "cash_flow": null,
+      "key_ratios": {
+        "Per Share": {
+          "EPS": 22.49,
+          "Book Value": 161.89
+        },
+        "Performance": {
+          "ROE": 13.9
+        },
+        "Dividend": {
+          "Bonus Share %": 5.0,
+          "Cash Dividend %": 8.16
+        }
+      }
+    },
+    {
+      "ticker": "SBL",
+      "fiscal_year": "075-076",
+      "report_type": "ANNUAL",
+      "quarter": null,
+      "is_audited": true,
+      "report_template": "BANK",
+      "paid_up_capital": 8887604540,
+      "reserves_and_surplus": 4219938447,
+      "net_profit": 2257688322,
+      "eps": 25.4,
+      "book_value": 169.12,
+      "return_on_equity": 15.02,
+      "bonus_share": 10.0,
+      "cash_dividend": 15.26,
+      "dividend_announced_date": null,
+      "dividend_book_close_date": "2019-10-16",
+      "balance_sheet": {
+        "ASSETS": {
+          "cash_equivalent": 8155811617,
+          "due_from_nrb": 6105971370,
+          "placement_bfis": 1033120216,
+          "derivative_assets": 7254007312,
+          "trading_assets": 80731130,
+          "loans_bfis": 3273145232,
+          "loans_customers": 104876000000,
+          "investment_securities": 17490997054,
+          "current_tax_assets": 154337310,
+          "subsidiaries": 51000000,
+          "investment_property": 123350704,
+          "property_equipment": 1279315069,
+          "intangible_assets": 33939390,
+          "other_assets": 1489738261,
+          "total_assets": 151402000000
+        },
+        "LIABILITIES": {
+          "due_to_bfis": 8404327731,
+          "due_to_nrb": 984061065,
+          "derivative_liabilities": 7129133079,
+          "deposits_customers": 114923000000,
+          "deferred_tax_liabilities": 70374490,
+          "other_liabilities": 1893386521,
+          "debt_securities": 2966079000,
+          "total_liabilities": 136371000000
+        },
+        "EQUITY": {
+          "share_capital": 8887604540,
+          "share_premium": 122091505,
+          "retained_earnings": 1801400742,
+          "reserves_reserves": 4219938447,
+          "total_equity": 15031035234,
+          "total_liabilities_equity": 151402000000
+        }
+      },
+      "profit_loss": {
+        "INCOME": {
+          "interest_income": 12972540680,
+          "interest_expense": 8305212902,
+          "net_interest_income": 4667327777,
+          "fee_income": 1016548229,
+          "fee_expense": 171261922,
+          "net_fee_income": 845286308,
+          "net_int_fee_income": 5512614085,
+          "trading_income": 453355380,
+          "other_operating_income": 120180985,
+          "total_operating_income": 6086150450
+        },
+        "EXPENSES": {
+          "impairment_charge": 188116798,
+          "personnel_expenses": 1689202319,
+          "other_operating_expenses": 783731904,
+          "depreciation": 141395226,
+          "operating_profit": 3283704203,
+          "non_operating_income": 16786100,
+          "non_operating_expense": 1021617,
+          "pbt": 3299468687,
+          "tax": 1041780365,
+          "net_profit": 2257688322
+        },
+        "REGULATORY": {
+          "cd_ratio": 89.65,
+          "core_capital": 10.11,
+          "supplementary_capital": 2.59,
+          "capital_fund": 12.7,
+          "npl_ratio": 0.75,
+          "base_rate": 10.57,
+          "spread": 3.72
+        }
+      },
+      "cash_flow": null,
+      "key_ratios": {
+        "Per Share": {
+          "EPS": 25.4,
+          "Book Value": 169.12
+        },
+        "Performance": {
+          "ROE": 15.02
+        },
+        "Dividend": {
+          "Bonus Share %": 10.0,
+          "Cash Dividend %": 15.26
+        }
+      }
+    },
+    {
+      "ticker": "SBL",
+      "fiscal_year": "076-077",
+      "report_type": "ANNUAL",
+      "quarter": null,
+      "is_audited": true,
+      "report_template": "BANK",
+      "paid_up_capital": 9787767142,
+      "reserves_and_surplus": 4977515481,
+      "net_profit": 2143613715,
+      "eps": 21.9,
+      "book_value": 163.58,
+      "return_on_equity": 13.39,
+      "bonus_share": 12.0,
+      "cash_dividend": 3.0,
+      "dividend_announced_date": null,
+      "dividend_book_close_date": "2021-01-12",
+      "balance_sheet": {
+        "ASSETS": {
+          "cash_equivalent": 5959187692,
+          "due_from_nrb": 9507945122,
+          "placement_bfis": 1067074180,
+          "derivative_assets": 11972844047,
+          "trading_assets": 147021248,
+          "loans_bfis": 4004351952,
+          "loans_customers": 123573000000,
+          "investment_securities": 22502829318,
+          "current_tax_assets": 296973967,
+          "subsidiaries": 51000000,
+          "investment_property": 136607745,
+          "property_equipment": 1422340138,
+          "intangible_assets": 101985674,
+          "other_assets": 1725562617,
+          "total_assets": 182468000000
+        },
+        "LIABILITIES": {
+          "due_to_bfis": 6759236798,
+          "due_to_nrb": 20054195,
+          "derivative_liabilities": 11862128229,
+          "deposits_customers": 139609000000,
+          "deferred_tax_liabilities": 159215541,
+          "other_liabilities": 2884487184,
+          "debt_securities": 5162559000,
+          "total_liabilities": 166457000000
+        },
+        "EQUITY": {
+          "share_capital": 9787767142,
+          "retained_earnings": 1245988052,
+          "reserves_reserves": 4977515481,
+          "total_equity": 16011270676,
+          "total_liabilities_equity": 182468000000
+        }
+      },
+      "profit_loss": {
+        "INCOME": {
+          "interest_income": 15432152273,
+          "interest_expense": 9858014892,
+          "net_interest_income": 5574137381,
+          "fee_income": 1073835829,
+          "fee_expense": 188631886,
+          "net_fee_income": 885203943,
+          "net_int_fee_income": 6459341324,
+          "trading_income": 511718730,
+          "other_operating_income": 161585533,
+          "total_operating_income": 7132645587
+        },
+        "EXPENSES": {
+          "impairment_charge": 686420527,
+          "personnel_expenses": 2156186723,
+          "other_operating_expenses": 925435844,
+          "depreciation": 196950476,
+          "operating_profit": 3167652017,
+          "non_operating_income": 207064,
+          "non_operating_expense": 39281897,
+          "pbt": 3128640105,
+          "tax": 985026390,
+          "net_profit": 2143613715
+        },
+        "REGULATORY": {
+          "cd_ratio": 89.04,
+          "core_capital": 9.26,
+          "supplementary_capital": 3.91,
+          "capital_fund": 13.17,
+          "npl_ratio": 1.38,
+          "base_rate": 9.03,
+          "spread": 4.81
+        }
+      },
+      "cash_flow": null,
+      "key_ratios": {
+        "Per Share": {
+          "EPS": 21.9,
+          "Book Value": 163.58
+        },
+        "Performance": {
+          "ROE": 13.39
+        },
+        "Dividend": {
+          "Bonus Share %": 12.0,
+          "Cash Dividend %": 3.0
+        }
+      }
+    },
+    {
+      "ticker": "SBL",
+      "fiscal_year": "077-078",
+      "report_type": "ANNUAL",
+      "quarter": null,
+      "is_audited": true,
+      "report_template": "BANK",
+      "paid_up_capital": 10962299199,
+      "reserves_and_surplus": 7630878326,
+      "net_profit": 2854828343,
+      "eps": 26.04,
+      "book_value": 186.11,
+      "return_on_equity": 13.99,
+      "bonus_share": 14.25,
+      "cash_dividend": 0.75,
+      "dividend_announced_date": null,
+      "dividend_book_close_date": "2022-01-02",
+      "balance_sheet": {
+        "ASSETS": {
+          "cash_equivalent": 5976055588,
+          "due_from_nrb": 7740641992,
+          "placement_bfis": 3308708365,
+          "derivative_assets": 52423253,
+          "loans_bfis": 6027862003,
+          "loans_customers": 158579000000,
+          "investment_securities": 41825293770,
+          "current_tax_assets": 127218846,
+          "subsidiaries": 51000000,
+          "investment_property": 291042098,
+          "property_equipment": 1451931803,
+          "intangible_assets": 81501245,
+          "other_assets": 3429045936,
+          "total_assets": 228942000000
+        },
+        "LIABILITIES": {
+          "due_to_bfis": 7717011244,
+          "due_to_nrb": 5859906910,
+          "deposits_customers": 180924000000,
+          "deferred_tax_liabilities": 966719229,
+          "other_liabilities": 4909947881,
+          "debt_securities": 8162559000,
+          "total_liabilities": 208540000000
+        },
+        "EQUITY": {
+          "share_capital": 10962299199,
+          "retained_earnings": 1808628800,
+          "reserves_reserves": 7630878326,
+          "total_equity": 20401806326,
+          "total_liabilities_equity": 228942000000
+        }
+      },
+      "profit_loss": {
+        "INCOME": {
+          "interest_income": 14949205421,
+          "interest_expense": 9438998984,
+          "net_interest_income": 5510206437,
+          "fee_income": 1337101297,
+          "fee_expense": 204493070,
+          "net_fee_income": 1132608227,
+          "net_int_fee_income": 6642814664,
+          "trading_income": 777640273,
+          "other_operating_income": 1042360844,
+          "total_operating_income": 8462815781
+        },
+        "EXPENSES": {
+          "impairment_charge": 793069069,
+          "personnel_expenses": 2368241381,
+          "other_operating_expenses": 932137985,
+          "depreciation": 202641830,
+          "operating_profit": 4166725516,
+          "non_operating_income": 540449,
+          "non_operating_expense": 24679,
+          "pbt": 4167241286,
+          "tax": 1312412943,
+          "net_profit": 2854828343
+        },
+        "REGULATORY": {
+          "cd_ratio": 90.6,
+          "core_capital": 8.52,
+          "supplementary_capital": 4.84,
+          "capital_fund": 13.36,
+          "npl_ratio": 1.0,
+          "base_rate": 7.16,
+          "spread": 3.7
+        }
+      },
+      "cash_flow": null,
+      "key_ratios": {
+        "Per Share": {
+          "EPS": 26.04,
+          "Book Value": 186.11
+        },
+        "Performance": {
+          "ROE": 13.99
+        },
+        "Dividend": {
+          "Bonus Share %": 14.25,
+          "Cash Dividend %": 0.75
+        }
+      }
+    },
+    {
+      "ticker": "SBL",
+      "fiscal_year": "078-079",
+      "report_type": "ANNUAL",
+      "quarter": null,
+      "is_audited": true,
+      "report_template": "BANK",
+      "paid_up_capital": 12524426835,
+      "reserves_and_surplus": 7713578776,
+      "net_profit": 2902464042,
+      "eps": 23.17,
+      "book_value": 172.45,
+      "return_on_equity": 13.44,
+      "bonus_share": 12.5,
+      "cash_dividend": 0.66,
+      "dividend_announced_date": null,
+      "dividend_book_close_date": "2022-12-28",
+      "balance_sheet": {
+        "ASSETS": {
+          "cash_equivalent": 7928989024,
+          "due_from_nrb": 5730447535,
+          "placement_bfis": 320313255,
+          "derivative_assets": 19694323,
+          "loans_bfis": 6403394142,
+          "loans_customers": 178587363232,
+          "investment_securities": 57368161732,
+          "current_tax_assets": 221065203,
+          "subsidiaries": 51000000,
+          "investment_property": 213307612,
+          "property_equipment": 3077068355,
+          "intangible_assets": 71490971,
+          "other_assets": 4334727127,
+          "total_assets": 264327023510
+        },
+        "LIABILITIES": {
+          "due_to_bfis": 7234641506,
+          "due_to_nrb": 24965102753,
+          "derivative_liabilities": 19359606,
+          "deposits_customers": 191550643583,
+          "borrowings": 1022800000,
+          "deferred_tax_liabilities": 239223287,
+          "other_liabilities": 6034819684,
+          "debt_securities": 11662559000,
+          "total_liabilities": 242729149419
+        },
+        "EQUITY": {
+          "share_capital": 12524426835,
+          "retained_earnings": 1359868480,
+          "reserves_reserves": 7713578776,
+          "total_equity": 21597874092,
+          "total_liabilities_equity": 264327023510
+        }
+      },
+      "profit_loss": {
+        "INCOME": {
+          "interest_income": 20677563975,
+          "interest_expense": 14080716460,
+          "net_interest_income": 6596847515,
+          "fee_income": 1505592323,
+          "fee_expense": 285888969,
+          "net_fee_income": 1219703354,
+          "net_int_fee_income": 7816550869,
+          "trading_income": 442926681,
+          "other_operating_income": 532489900,
+          "total_operating_income": 8791967450
+        },
+        "EXPENSES": {
+          "impairment_charge": 607471211,
+          "personnel_expenses": 2685015444,
+          "other_operating_expenses": 827855831,
+          "depreciation": 405072283,
+          "operating_profit": 4266552680,
+          "non_operating_income": 8609620,
+          "non_operating_expense": 16694239,
+          "pbt": 4258468061,
+          "tax": 1696816319,
+          "net_profit": 2902464042
+        }
+      },
+      "cash_flow": {
+        "OPERATING": {
+          "interest_received": 13816278117,
+          "fees_received": 1505592323,
+          "dividend_received": 0,
+          "other_receipts": 499642801,
+          "interest_paid": -13467768526,
+          "fees_paid": -285888969,
+          "employee_payments": -2830541110,
+          "other_payments": -844550070,
+          "operating_cash_before_changes": -1607235434,
+          "change_nrb": 2010193457,
+          "change_placements": 2988395110,
+          "change_loans_bfis": -375532139,
+          "change_loans_customers": -20537864943,
+          "change_other_assets": 4251087119,
+          "change_due_bfis": -482369738,
+          "change_due_nrb": 19105843,
+          "change_deposits": 10626634259,
+          "change_borrowings": 1022887225,
+          "change_other_liabilities": 1029887225,
+          "operating_cash_before_tax": 18031190758,
+          "tax_paid": -1634007759,
+          "net_operating_cash": 16455473728
+        },
+        "INVESTING": {
+          "purchase_investments": -17671276109,
+          "sale_investments": 13294531,
+          "purchase_ppe": -1876681451,
+          "sale_ppe": 19255161,
+          "purchase_intangibles": -14609102,
+          "sale_intangibles": 0,
+          "net_investing_cash": -17139296966
+        },
+        "FINANCING": {
+          "issue_debt_securities": -4000000000,
+          "repay_debt_securities": -5000000000,
+          "dividends_paid": -82217244,
+          "other_financing": -168078149,
+          "net_financing_cash": 2636756672
+        },
+        "SUMMARY": {
+          "net_change_cash": 1952933435,
+          "cash_beginning": 5976055588,
+          "cash_ending": 7928989024
+        }
+      },
+      "key_ratios": {
+        "Per Share": {
+          "EPS": 23.17,
+          "Book Value": 172.45
+        },
+        "Performance": {
+          "ROE": 13.44
+        },
+        "Dividend": {
+          "Bonus Share %": 12.5,
+          "Cash Dividend %": 0.66
+        }
+      }
+    },
+    {
+      "ticker": "SBL",
+      "fiscal_year": "079-080",
+      "report_type": "ANNUAL",
+      "quarter": null,
+      "is_audited": true,
+      "report_template": "BANK",
+      "paid_up_capital": 14089980190,
+      "reserves_and_surplus": 10553000339,
+      "net_profit": 3166771347,
+      "eps": 22.48,
+      "book_value": 179.61,
+      "return_on_equity": 12.51,
+      "bonus_share": 0.0,
+      "cash_dividend": 4.21,
+      "dividend_announced_date": null,
+      "dividend_book_close_date": "2023-11-07",
+      "balance_sheet": {
+        "ASSETS": {
+          "cash_equivalent": 11554080479,
+          "due_from_nrb": 9000713492,
+          "placement_bfis": 5011346934,
+          "derivative_assets": 17320155,
+          "loans_bfis": 5170773907,
+          "loans_customers": 184009571040,
+          "investment_securities": 62480476034,
+          "current_tax_assets": 263764947,
+          "subsidiaries": 51000000,
+          "investment_property": 654537489,
+          "property_equipment": 3548089446,
+          "intangible_assets": 166000283,
+          "other_assets": 4050241119,
+          "total_assets": 285977915326
+        },
+        "LIABILITIES": {
+          "due_to_bfis": 11613657572,
+          "due_to_nrb": 288453474,
+          "derivative_liabilities": 23887253,
+          "deposits_customers": 223654669691,
+          "borrowings": 7312480160,
+          "deferred_tax_liabilities": 501929292,
+          "other_liabilities": 5613687917,
+          "debt_securities": 11662559000,
+          "total_liabilities": 260671324359
+        },
+        "EQUITY": {
+          "share_capital": 14089980190,
+          "retained_earnings": 663610438,
+          "reserves_reserves": 10553000339,
+          "total_equity": 25306590967,
+          "total_liabilities_equity": 285977915326
+        }
+      },
+      "profit_loss": {
+        "INCOME": {
+          "interest_income": 27670966196,
+          "interest_expense": 19486423098,
+          "net_interest_income": 8184543098,
+          "fee_income": 1693079336,
+          "fee_expense": 347458421,
+          "net_fee_income": 1345620915,
+          "net_int_fee_income": 9530164013,
+          "trading_income": 191735761,
+          "other_operating_income": 336328302,
+          "total_operating_income": 10058228076
+        },
+        "EXPENSES": {
+          "impairment_charge": 1187561177,
+          "personnel_expenses": 2852235828,
+          "other_operating_expenses": 917442986,
+          "depreciation": 448006336,
+          "operating_profit": 4652981749,
+          "non_operating_income": 13471787,
+          "non_operating_expense": 101194542,
+          "pbt": 4565258995,
+          "tax": 1412442144,
+          "net_profit": 3166771347
+        },
+        "REGULATORY": {
+          "cd_ratio": 84.94,
+          "core_capital": 9.37,
+          "supplementary_capital": 3.1,
+          "capital_fund": 12.47,
+          "npl_ratio": 2.01,
+          "base_rate": 9.91,
+          "spread": 3.99
+        }
+      },
+      "cash_flow": {
+        "OPERATING": {
+          "interest_received": 24015818342,
+          "fees_received": 1693079336,
+          "dividend_received": 0,
+          "other_receipts": 296979153,
+          "interest_paid": -18318104403,
+          "fees_paid": -347458421,
+          "employee_payments": -2134404314,
+          "other_payments": -1018637527,
+          "operating_cash_before_changes": 4187272166,
+          "change_nrb": -3270264958,
+          "change_placements": -4691033679,
+          "change_loans_bfis": 1232620235,
+          "change_loans_customers": -7050998862,
+          "change_other_assets": 291661293,
+          "change_due_bfis": 4379016066,
+          "change_due_nrb": -24676649279,
+          "change_deposits": 32104026108,
+          "change_borrowings": 6289680160,
+          "change_other_liabilities": -923855120,
+          "operating_cash_before_tax": 7871474132,
+          "tax_paid": -1455141889,
+          "net_operating_cash": 6416332242
+        },
+        "INVESTING": {
+          "purchase_investments": -4316902966,
+          "sale_investments": 0,
+          "purchase_ppe": -879857019,
+          "sale_ppe": 2574664,
+          "purchase_intangibles": -136264340,
+          "sale_intangibles": 0,
+          "net_investing_cash": -1616087478
+        },
+        "FINANCING": {
+          "issue_debt_securities": 0,
+          "repay_debt_securities": 0,
+          "dividends_paid": -82397545,
+          "other_financing": -21198093,
+          "net_financing_cash": -1271914333
+        },
+        "SUMMARY": {
+          "net_change_cash": 3528330432,
+          "cash_beginning": 7928989024,
+          "cash_ending": 11554080479
+        }
+      },
+      "key_ratios": {
+        "Per Share": {
+          "EPS": 22.48,
+          "Book Value": 179.61
+        },
+        "Performance": {
+          "ROE": 12.51
+        },
+        "Dividend": {
+          "Bonus Share %": 0.0,
+          "Cash Dividend %": 4.21
+        }
+      }
+    },
+    {
+      "ticker": "SBL",
+      "fiscal_year": "080-081",
+      "report_type": "ANNUAL",
+      "quarter": null,
+      "is_audited": true,
+      "report_template": "BANK",
+      "paid_up_capital": 14089980190,
+      "reserves_and_surplus": 13398951668,
+      "net_profit": 3080028684,
+      "eps": 21.86,
+      "book_value": 199.21,
+      "return_on_equity": 10.97,
+      "bonus_share": 0.0,
+      "cash_dividend": 4.0,
+      "dividend_announced_date": null,
+      "dividend_book_close_date": "2024-12-29",
+      "balance_sheet": {
+        "ASSETS": {
+          "cash_equivalent": 22739728891,
+          "due_from_nrb": 9453753577,
+          "placement_bfis": 6562120179,
+          "derivative_assets": 4976896,
+          "trading_assets": 18998790,
+          "loans_bfis": 5767824492,
+          "loans_customers": 195473382509,
+          "investment_securities": 47978959412,
+          "current_tax_assets": 217840347,
+          "subsidiaries": 51000000,
+          "investment_property": 727570174,
+          "property_equipment": 3495827216,
+          "intangible_assets": 146146602,
+          "other_assets": 4703288420,
+          "total_assets": 297341417505
+        },
+        "LIABILITIES": {
+          "due_to_bfis": 3578162810,
+          "due_to_nrb": 391922787,
+          "derivative_liabilities": 3984885,
+          "deposits_customers": 241329082024,
+          "borrowings": 5964375769,
+          "deferred_tax_liabilities": 669639275,
+          "other_liabilities": 5672397480,
+          "debt_securities": 11662559000,
+          "total_liabilities": 269272124030
+        },
+        "EQUITY": {
+          "share_capital": 14089980190,
+          "retained_earnings": 580361617,
+          "reserves_reserves": 13398951668,
+          "total_equity": 28069293475,
+          "total_liabilities_equity": 297341417505
+        }
+      },
+      "profit_loss": {
+        "INCOME": {
+          "interest_income": 25716027983,
+          "interest_expense": 17785958012,
+          "net_interest_income": 7930069971,
+          "fee_income": 1815388806,
+          "fee_expense": 389054337,
+          "net_fee_income": 1426334469,
+          "net_int_fee_income": 9356404440,
+          "trading_income": 239844593,
+          "other_operating_income": 381052402,
+          "total_operating_income": 9977301435
+        },
+        "EXPENSES": {
+          "impairment_charge": 1051123141,
+          "personnel_expenses": 2977901219,
+          "other_operating_expenses": 985628185,
+          "depreciation": 478149579,
+          "operating_profit": 4484499312,
+          "non_operating_income": 11264646,
+          "non_operating_expense": 19997998,
+          "pbt": 4475765961,
+          "tax": 1428499479,
+          "net_profit": 3080028684
+        },
+        "REGULATORY": {
+          "cd_ratio": 84.63,
+          "core_capital": 9.38,
+          "supplementary_capital": 2.51,
+          "capital_fund": 11.88,
+          "npl_ratio": 2.17,
+          "base_rate": 8.11,
+          "spread": 3.99
+        }
+      },
+      "cash_flow": {
+        "OPERATING": {
+          "interest_received": 22322880174,
+          "fees_received": 1815388806,
+          "dividend_received": 0,
+          "other_receipts": 368521296,
+          "interest_paid": -16617639317,
+          "fees_paid": -389054337,
+          "employee_payments": -2449524894,
+          "other_payments": -1005626182,
+          "operating_cash_before_changes": 40449945546,
+          "change_nrb": -453040085,
+          "change_placements": -1550773245,
+          "change_loans_bfis": -597050585,
+          "change_loans_customers": -12587967294,
+          "change_other_assets": -640704042,
+          "change_due_bfis": -8035494762,
+          "change_due_nrb": 103469313,
+          "change_deposits": 17674412334,
+          "change_borrowings": -1348104391,
+          "change_other_liabilities": -456900134,
+          "operating_cash_before_tax": -3866206135,
+          "tax_paid": 1600954813,
+          "net_operating_cash": -5467160949
+        },
+        "INVESTING": {
+          "purchase_investments": 0,
+          "sale_investments": 15201349607,
+          "purchase_ppe": -403652805,
+          "sale_ppe": 0,
+          "purchase_intangibles": -28829390,
+          "sale_intangibles": 0,
+          "net_investing_cash": 18269803330
+        },
+        "FINANCING": {
+          "issue_debt_securities": 0,
+          "repay_debt_securities": 0,
+          "dividends_paid": -593188166,
+          "other_financing": 30527544,
+          "net_financing_cash": -1730979317
+        },
+        "SUMMARY": {
+          "net_change_cash": 11071663066,
+          "cash_beginning": 11554080479,
+          "cash_ending": 22739728891
+        }
+      },
+      "key_ratios": {
+        "Per Share": {
+          "EPS": 21.86,
+          "Book Value": 199.21
+        },
+        "Performance": {
+          "ROE": 10.97
+        },
+        "Dividend": {
+          "Bonus Share %": 0.0,
+          "Cash Dividend %": 4.0
+        }
+      }
+    },
+    {
+      "ticker": "SBL",
+      "fiscal_year": "081-082",
+      "report_type": "ANNUAL",
+      "quarter": null,
+      "is_audited": true,
+      "report_template": "BANK",
+      "paid_up_capital": 14089980190,
+      "reserves_and_surplus": 15037580047,
+      "net_profit": 3366594282,
+      "eps": 23.89,
+      "book_value": 219.77,
+      "return_on_equity": 10.87,
+      "bonus_share": 5.0,
+      "cash_dividend": 5.53,
+      "dividend_announced_date": null,
+      "dividend_book_close_date": "2025-11-03",
+      "balance_sheet": {
+        "ASSETS": {
+          "cash_equivalent": 30739759143,
+          "due_from_nrb": 14875796713,
+          "placement_bfis": 7405231218,
+          "derivative_assets": 15995407,
+          "trading_assets": 200625,
+          "loans_bfis": 8098097875,
+          "loans_customers": 214456490823,
+          "investment_securities": 54719357052,
+          "current_tax_assets": 222830637,
+          "subsidiaries": 51000000,
+          "investment_property": 725635232,
+          "property_equipment": 3201785434,
+          "intangible_assets": 117948376,
+          "other_assets": 4181218594,
+          "total_assets": 338811347130
+        },
+        "LIABILITIES": {
+          "due_to_bfis": 3092528164,
+          "due_to_nrb": 391922787,
+          "derivative_liabilities": 19709982,
+          "deposits_customers": 280321367829,
+          "borrowings": 5839097142,
+          "deferred_tax_liabilities": 478302259,
+          "other_liabilities": 6040433137,
+          "debt_securities": 11662559000,
+          "total_liabilities": 307845920301
+        },
+        "EQUITY": {
+          "share_capital": 14089980190,
+          "retained_earnings": 1837866593,
+          "reserves_reserves": 15037580047,
+          "total_equity": 30965426830,
+          "total_liabilities_equity": 338811347130
+        }
+      },
+      "profit_loss": {
+        "INCOME": {
+          "interest_income": 22312131883,
+          "interest_expense": 13872271708,
+          "net_interest_income": 8439830175,
+          "fee_income": 2097288147,
+          "fee_expense": 455773418,
+          "net_fee_income": 1641514729,
+          "net_int_fee_income": 10081374904,
+          "trading_income": 424240090,
+          "other_operating_income": 650178566,
+          "total_operating_income": 11155793561
+        },
+        "EXPENSES": {
+          "impairment_charge": 1375321982,
+          "personnel_expenses": 3240211108,
+          "other_operating_expenses": 1065580229,
+          "depreciation": 499833902,
+          "operating_profit": 4974846341,
+          "non_operating_income": 16190574,
+          "non_operating_expense": 7912459,
+          "pbt": 4983124455,
+          "tax": 1642125161,
+          "net_profit": 3366594282
+        },
+        "REGULATORY": {
+          "cd_ratio": 81.14,
+          "core_capital": 9.87,
+          "supplementary_capital": 1.9,
+          "capital_fund": 11.77,
+          "npl_ratio": 2.62,
+          "base_rate": 6.34,
+          "spread": 3.98
+        }
+      },
+      "cash_flow": {
+        "OPERATING": {
+          "interest_received": 19504666879,
+          "fees_received": 2097288147,
+          "dividend_received": 0,
+          "other_receipts": 831130188,
+          "interest_paid": -12700752139,
+          "fees_paid": -455773418,
+          "employee_payments": -2810425203,
+          "other_payments": -1073492688,
+          "operating_cash_before_changes": 5392641765,
+          "change_nrb": -5422043136,
+          "change_placements": -843111039,
+          "change_loans_bfis": -2412006028,
+          "change_loans_customers": -20274762710,
+          "change_other_assets": 511051314,
+          "change_due_bfis": -485634646,
+          "change_deposits": 38992285805,
+          "change_borrowings": -125278627,
+          "change_other_liabilities": -169919741,
+          "operating_cash_before_tax": 15182021124,
+          "tax_paid": -1647115451,
+          "net_operating_cash": 13534905673
+        },
+        "INVESTING": {
+          "purchase_investments": 0,
+          "sale_investments": -6597063851,
+          "purchase_ppe": -166176959,
+          "sale_ppe": 4504821,
+          "purchase_intangibles": -12548363,
+          "sale_intangibles": 0,
+          "net_investing_cash": -3852839339
+        },
+        "FINANCING": {
+          "issue_debt_securities": 1720526,
+          "repay_debt_securities": 0,
+          "dividends_paid": -563599208,
+          "net_financing_cash": -1735118776
+        },
+        "SUMMARY": {
+          "net_change_cash": 7946947558,
+          "cash_beginning": 22739728891,
+          "cash_ending": 30739759143
+        }
+      },
+      "key_ratios": {
+        "Per Share": {
+          "EPS": 23.89,
+          "Book Value": 219.77
+        },
+        "Performance": {
+          "ROE": 10.87
+        },
+        "Dividend": {
+          "Bonus Share %": 5.0,
+          "Cash Dividend %": 5.53
+        }
+      }
+    }
+  ]
+}

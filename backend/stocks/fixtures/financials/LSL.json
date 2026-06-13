@@ -1,0 +1,320 @@
+{
+  "ticker": "LSL",
+  "company": {
+    "name": "Laxmi Sunrise Bank Limited",
+    "sector": "Commercial Banks",
+    "instrument_type": "Equity"
+  },
+  "reports": [
+    {
+      "ticker": "LSL",
+      "fiscal_year": "079-080",
+      "report_type": "ANNUAL",
+      "quarter": null,
+      "is_audited": true,
+      "report_template": "BANK",
+      "paid_up_capital": 21670237860,
+      "reserves_and_surplus": 14826361885,
+      "net_profit": 2285238841,
+      "eps": 10.55,
+      "book_value": 176.39,
+      "return_on_equity": 5.98,
+      "bonus_share": 7.0,
+      "cash_dividend": 0.37,
+      "dividend_announced_date": null,
+      "dividend_book_close_date": "2024-01-04",
+      "balance_sheet": {
+        "ASSETS": {
+          "cash_equivalent": 18187735432,
+          "due_from_nrb": 20677440048,
+          "placement_bfis": 788700000,
+          "derivative_assets": 1899978992,
+          "trading_assets": 68190000,
+          "loans_bfis": 7687484996,
+          "loans_customers": 247870137673,
+          "investment_securities": 53360547659,
+          "current_tax_assets": 189286986,
+          "subsidiaries": 893167928,
+          "investment_property": 1275163202,
+          "property_equipment": 4864929807,
+          "intangible_assets": 523745251,
+          "other_assets": 3379265215,
+          "total_assets": 361665773188
+        },
+        "LIABILITIES": {
+          "due_to_bfis": 4067001556,
+          "derivative_liabilities": 1896707957,
+          "deposits_customers": 296243475431,
+          "borrowings": 5080623999,
+          "deferred_tax_liabilities": 242700360,
+          "other_liabilities": 7910332412,
+          "debt_securities": 8000000000,
+          "total_liabilities": 323440841715
+        },
+        "EQUITY": {
+          "share_capital": 21670237860,
+          "retained_earnings": 1728331728,
+          "reserves_reserves": 14826361885,
+          "total_equity": 38224931473,
+          "total_liabilities_equity": 361665773188
+        }
+      },
+      "profit_loss": {
+        "INCOME": {
+          "interest_income": 19066469766,
+          "interest_expense": 1337978995,
+          "net_interest_income": 5686690771,
+          "fee_income": 1214350589,
+          "fee_expense": 230927297,
+          "net_fee_income": 983423292,
+          "net_int_fee_income": 6670114063,
+          "trading_income": 214107234,
+          "other_operating_income": 504774045,
+          "total_operating_income": 7388995342
+        },
+        "EXPENSES": {
+          "impairment_charge": 1060699532,
+          "personnel_expenses": 1884059366,
+          "other_operating_expenses": 821753267,
+          "depreciation": 346446931,
+          "operating_profit": 3276036247,
+          "non_operating_income": 8374214,
+          "non_operating_expense": 240376287,
+          "pbt": 3044034173,
+          "tax": 758795333,
+          "net_profit": 2285238841
+        },
+        "REGULATORY": {
+          "cd_ratio": 86.27,
+          "core_capital": 10.04,
+          "supplementary_capital": 3.17,
+          "capital_fund": 13.21,
+          "liquidity_crr": 4.19,
+          "npl_ratio": 2.91,
+          "base_rate": 10.75,
+          "spread": 4.42,
+          "total_employees": 2712
+        }
+      },
+      "key_ratios": {
+        "Per Share": {
+          "EPS": 10.55,
+          "Book Value": 176.39
+        },
+        "Performance": {
+          "ROE": 5.98
+        },
+        "Dividend": {
+          "Bonus Share %": 7.0,
+          "Cash Dividend %": 0.37
+        }
+      }
+    },
+    {
+      "ticker": "LSL",
+      "fiscal_year": "080-081",
+      "report_type": "ANNUAL",
+      "quarter": null,
+      "is_audited": true,
+      "report_template": "BANK",
+      "paid_up_capital": 23187154510,
+      "reserves_and_surplus": 16072606961,
+      "net_profit": 2920378979,
+      "eps": 12.59,
+      "book_value": 174.67,
+      "return_on_equity": 7.21,
+      "bonus_share": 5.0,
+      "cash_dividend": 0.26,
+      "dividend_announced_date": null,
+      "dividend_book_close_date": "2025-01-01",
+      "balance_sheet": {
+        "ASSETS": {
+          "cash_equivalent": 15047811674,
+          "due_from_nrb": 15510635414,
+          "placement_bfis": 6185698763,
+          "derivative_assets": 5190188038,
+          "loans_bfis": 79992354863,
+          "loans_customers": 247408112400,
+          "investment_securities": 87110568876,
+          "current_tax_assets": 129712230,
+          "associates": 893167928,
+          "investment_property": 1563131693,
+          "property_equipment": 4562523618,
+          "intangible_assets": 602063672,
+          "other_assets": 3765922817,
+          "total_assets": 395961891988
+        },
+        "LIABILITIES": {
+          "due_to_bfis": 4468970749,
+          "derivative_liabilities": 5179641688,
+          "deposits_customers": 328931512100,
+          "borrowings": 3980636946,
+          "deferred_tax_liabilities": 298015141,
+          "other_liabilities": 5601678617,
+          "debt_securities": 7000000000,
+          "total_liabilities": 355460455242
+        },
+        "EQUITY": {
+          "share_capital": 23187154510,
+          "retained_earnings": 1241675276,
+          "reserves_reserves": 16072606961,
+          "total_equity": 40501436746,
+          "total_liabilities_equity": 395961891988
+        }
+      },
+      "profit_loss": {
+        "INCOME": {
+          "interest_income": 35924613707,
+          "interest_expense": 23560745625,
+          "net_interest_income": 12363868082,
+          "fee_income": 2454502507,
+          "fee_expense": 465648614,
+          "net_fee_income": 1988853893,
+          "net_int_fee_income": 14352721975,
+          "trading_income": 262957924,
+          "other_operating_income": 299303066,
+          "total_operating_income": 11326922881
+        },
+        "EXPENSES": {
+          "impairment_charge": 3588060084,
+          "personnel_expenses": 4950852206,
+          "other_operating_expenses": 1352021726,
+          "depreciation": 622026230,
+          "operating_profit": 4402022720,
+          "non_operating_income": 212172590,
+          "non_operating_expense": 309506933,
+          "pbt": 4304688377,
+          "tax": 1384309398,
+          "net_profit": 2920378979
+        },
+        "REGULATORY": {
+          "cd_ratio": 77.65,
+          "core_capital": 10.14,
+          "supplementary_capital": 2.83,
+          "capital_fund": 12.97,
+          "liquidity_crr": 4.19,
+          "npl_ratio": 4.63,
+          "base_rate": 8.52,
+          "spread": 4.0,
+          "total_employees": 2776
+        }
+      },
+      "key_ratios": {
+        "Per Share": {
+          "EPS": 12.59,
+          "Book Value": 174.67
+        },
+        "Performance": {
+          "ROE": 7.21
+        },
+        "Dividend": {
+          "Bonus Share %": 5.0,
+          "Cash Dividend %": 0.26
+        }
+      }
+    },
+    {
+      "ticker": "LSL",
+      "fiscal_year": "081-082",
+      "report_type": "ANNUAL",
+      "quarter": null,
+      "is_audited": true,
+      "report_template": "BANK",
+      "paid_up_capital": 24346512235,
+      "reserves_and_surplus": 18073240462,
+      "net_profit": 4062044726,
+      "eps": 16.68,
+      "book_value": 186.41,
+      "return_on_equity": 8.95,
+      "bonus_share": 10.0,
+      "cash_dividend": 0.53,
+      "dividend_announced_date": null,
+      "dividend_book_close_date": "2025-12-16",
+      "balance_sheet": {
+        "ASSETS": {
+          "cash_equivalent": 10524785025,
+          "due_from_nrb": 16361433522,
+          "placement_bfis": 8742467021,
+          "derivative_assets": 11138517100,
+          "loans_bfis": 8233947995,
+          "loans_customers": 274963657124,
+          "investment_securities": 98415986685,
+          "current_tax_assets": 87260059,
+          "subsidiaries": 893167928,
+          "associates": 893167928,
+          "investment_property": 2192012100,
+          "property_equipment": 4823056049,
+          "intangible_assets": 592701665,
+          "other_assets": 6618719515,
+          "total_assets": 443587711789
+        },
+        "LIABILITIES": {
+          "due_to_bfis": 5529230355,
+          "derivative_liabilities": 11140480994,
+          "deposits_customers": 367053706312,
+          "borrowings": 548494610,
+          "deferred_tax_liabilities": 562957364,
+          "other_liabilities": 6368731199,
+          "debt_securities": 7000000000,
+          "total_liabilities": 398203600835
+        },
+        "EQUITY": {
+          "share_capital": 24346512235,
+          "retained_earnings": 2964358257,
+          "reserves_reserves": 18073240462,
+          "total_equity": 45384110954,
+          "total_liabilities_equity": 443587711789
+        }
+      },
+      "profit_loss": {
+        "INCOME": {
+          "interest_income": 28929621885,
+          "interest_expense": 18077637572,
+          "net_interest_income": 10851984313,
+          "fee_income": 2707586530,
+          "fee_expense": 518893406,
+          "net_fee_income": 2188693123,
+          "net_int_fee_income": 13040677436,
+          "trading_income": 520241122,
+          "other_operating_income": 599274289,
+          "total_operating_income": 14160192847
+        },
+        "EXPENSES": {
+          "impairment_charge": 1258008935,
+          "personnel_expenses": 4911790309,
+          "other_operating_expenses": 1387833862,
+          "depreciation": 572137016,
+          "operating_profit": 6030422724,
+          "non_operating_income": 100413902,
+          "non_operating_expense": 430814474,
+          "pbt": 5700022152,
+          "tax": 1637977426,
+          "net_profit": 4062044726
+        },
+        "REGULATORY": {
+          "cd_ratio": 77.15,
+          "core_capital": 36.99,
+          "supplementary_capital": 8.85,
+          "capital_fund": 45.84,
+          "npl_ratio": 4.35,
+          "base_rate": 6.5,
+          "branches": 254,
+          "atms": 328
+        }
+      },
+      "key_ratios": {
+        "Per Share": {
+          "EPS": 16.68,
+          "Book Value": 186.41
+        },
+        "Performance": {
+          "ROE": 8.95
+        },
+        "Dividend": {
+          "Bonus Share %": 10.0,
+          "Cash Dividend %": 0.53
+        }
+      }
+    }
+  ]
+}

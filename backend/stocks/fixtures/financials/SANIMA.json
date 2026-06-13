@@ -1,0 +1,1186 @@
+{
+  "ticker": "SANIMA",
+  "company": {
+    "name": "Sanima Bank Limited",
+    "sector": "Commercial Banks",
+    "instrument_type": "Equity"
+  },
+  "reports": [
+    {
+      "ticker": "SANIMA",
+      "fiscal_year": "072-073",
+      "report_type": "ANNUAL",
+      "quarter": null,
+      "is_audited": true,
+      "report_template": "BANK",
+      "paid_up_capital": 4710596500,
+      "reserves_and_surplus": 646029286,
+      "net_profit": 1000428648,
+      "eps": 21.24,
+      "book_value": 113.71,
+      "return_on_equity": 18.68,
+      "bonus_share": 15.0,
+      "cash_dividend": 0.79,
+      "dividend_announced_date": null,
+      "dividend_book_close_date": "2016-09-29",
+      "balance_sheet": {
+        "ASSETS": {
+          "cash_equivalent": 682823728,
+          "due_from_nrb": 2574787981,
+          "placement_bfis": 154973855,
+          "loans_customers": 40455086817,
+          "property_equipment": 654874507,
+          "total_assets": 55890682404
+        },
+        "LIABILITIES": {
+          "deposits_customers": 46344181075,
+          "borrowings": 3281939578,
+          "debt_securities": 370000000,
+          "total_liabilities": 50534056618
+        },
+        "EQUITY": {
+          "share_capital": 4710596500,
+          "reserves_reserves": 646029286,
+          "total_equity": 5356625786,
+          "total_liabilities_equity": 55890682404
+        }
+      },
+      "profit_loss": {
+        "INCOME": {
+          "interest_income": 3263021831,
+          "interest_expense": 1540143649,
+          "net_interest_income": 1722878182,
+          "total_operating_income": 2200422679
+        },
+        "EXPENSES": {
+          "personnel_expenses": 259435476,
+          "operating_profit": 1476838623,
+          "net_profit": 1000428648
+        }
+      },
+      "cash_flow": null,
+      "key_ratios": {
+        "Per Share": {
+          "EPS": 21.24,
+          "Book Value": 113.71
+        },
+        "Performance": {
+          "ROE": 18.68
+        },
+        "Dividend": {
+          "Bonus Share %": 15.0,
+          "Cash Dividend %": 0.79
+        }
+      }
+    },
+    {
+      "ticker": "SANIMA",
+      "fiscal_year": "073-074",
+      "report_type": "ANNUAL",
+      "quarter": null,
+      "is_audited": true,
+      "report_template": "BANK",
+      "paid_up_capital": 6897634000,
+      "reserves_and_surplus": 970036128,
+      "net_profit": 1377062733,
+      "eps": 19.96,
+      "book_value": 132.62,
+      "return_on_equity": 15.05,
+      "bonus_share": 16.0,
+      "cash_dividend": 0.0,
+      "dividend_announced_date": null,
+      "dividend_book_close_date": "2017-09-22",
+      "balance_sheet": {
+        "ASSETS": {
+          "cash_equivalent": 2948780102,
+          "due_from_nrb": 5265301643,
+          "placement_bfis": 982243177,
+          "derivative_assets": 17734529,
+          "trading_assets": 406239582,
+          "loans_bfis": 603938195,
+          "loans_customers": 51038471540,
+          "investment_securities": 6429154180,
+          "current_tax_assets": 17139730,
+          "subsidiaries": 110000000,
+          "property_equipment": 713080633,
+          "intangible_assets": 3315403,
+          "other_assets": 946304967,
+          "total_assets": 69481703681
+        },
+        "LIABILITIES": {
+          "due_to_bfis": 2103519307,
+          "due_to_nrb": 611009105,
+          "deposits_customers": 56161055860,
+          "provisions": 43355931,
+          "deferred_tax_liabilities": 30923343,
+          "other_liabilities": 1013927072,
+          "debt_securities": 370000000,
+          "total_liabilities": 60333790619
+        },
+        "EQUITY": {
+          "share_capital": 6897634000,
+          "retained_earnings": 1280242935,
+          "reserves_reserves": 970036128,
+          "total_equity": 9147913063,
+          "total_liabilities_equity": 69481703681
+        }
+      },
+      "profit_loss": {
+        "INCOME": {
+          "interest_income": 5126693380,
+          "interest_expense": 2818180505,
+          "net_interest_income": 2308512875,
+          "fee_income": 455743812,
+          "fee_expense": 32044769,
+          "net_fee_income": 423699044,
+          "net_int_fee_income": 2732211918,
+          "trading_income": 236999326,
+          "other_operating_income": 10932182,
+          "total_operating_income": 2980143427
+        },
+        "EXPENSES": {
+          "impairment_charge": 134882142,
+          "personnel_expenses": 558087735,
+          "other_operating_expenses": 289913667,
+          "depreciation": 81845041,
+          "operating_profit": 1915414843,
+          "non_operating_income": 41207401,
+          "non_operating_expense": 280973,
+          "pbt": 1956341270,
+          "tax": 579278537,
+          "net_profit": 1377062733
+        },
+        "REGULATORY": {
+          "cd_ratio": 89.03,
+          "core_capital": 14.07,
+          "supplementary_capital": 1.5,
+          "capital_fund": 15.57,
+          "npl_ratio": 0.01,
+          "base_rate": 10.2,
+          "spread": 4.23
+        }
+      },
+      "cash_flow": null,
+      "key_ratios": {
+        "Per Share": {
+          "EPS": 19.96,
+          "Book Value": 132.62
+        },
+        "Performance": {
+          "ROE": 15.05
+        },
+        "Dividend": {
+          "Bonus Share %": 16.0,
+          "Cash Dividend %": 0.0
+        }
+      }
+    },
+    {
+      "ticker": "SANIMA",
+      "fiscal_year": "074-075",
+      "report_type": "ANNUAL",
+      "quarter": null,
+      "is_audited": true,
+      "report_template": "BANK",
+      "paid_up_capital": 8001255440,
+      "reserves_and_surplus": 1649948523,
+      "net_profit": 1697503224,
+      "eps": 21.22,
+      "book_value": 134.83,
+      "return_on_equity": 15.74,
+      "bonus_share": 0.0,
+      "cash_dividend": 14.0,
+      "dividend_announced_date": null,
+      "dividend_book_close_date": "2018-11-30",
+      "balance_sheet": {
+        "ASSETS": {
+          "cash_equivalent": 4530152334,
+          "due_from_nrb": 5608171848,
+          "placement_bfis": 649156510,
+          "trading_assets": 478048147,
+          "loans_bfis": 1645223405,
+          "loans_customers": 67598133761,
+          "investment_securities": 9413443775,
+          "subsidiaries": 250000000,
+          "property_equipment": 881846293,
+          "intangible_assets": 56550539,
+          "deferred_tax_assets": 50151213,
+          "other_assets": 661074779,
+          "total_assets": 91821952603
+        },
+        "LIABILITIES": {
+          "due_to_bfis": 1346959039,
+          "due_to_nrb": 358950008,
+          "derivative_liabilities": 18851134,
+          "deposits_customers": 77849380056,
+          "current_tax_liabilities": 66294857,
+          "provisions": 11817943,
+          "other_liabilities": 1011814065,
+          "debt_securities": 370000000,
+          "total_liabilities": 81034067102
+        },
+        "EQUITY": {
+          "share_capital": 8001255440,
+          "retained_earnings": 1136681538,
+          "reserves_reserves": 1649948523,
+          "total_equity": 10787885501,
+          "total_liabilities_equity": 91821952603
+        }
+      },
+      "profit_loss": {
+        "INCOME": {
+          "interest_income": 8107978846,
+          "interest_expense": 5092454648,
+          "net_interest_income": 3015524197,
+          "fee_income": 706389342,
+          "fee_expense": 50152348,
+          "net_fee_income": 656236994,
+          "net_int_fee_income": 3671761191,
+          "trading_income": 298410710,
+          "other_operating_income": 38961666,
+          "total_operating_income": 4009133567
+        },
+        "EXPENSES": {
+          "impairment_charge": 239217543,
+          "personnel_expenses": 865555664,
+          "other_operating_expenses": 383730300,
+          "depreciation": 105455444,
+          "operating_profit": 2415174616,
+          "non_operating_income": 895458,
+          "non_operating_expense": 734365,
+          "pbt": 2415335708,
+          "tax": 717832484,
+          "net_profit": 1697503224
+        },
+        "REGULATORY": {
+          "cd_ratio": 87.45,
+          "core_capital": 11.14,
+          "supplementary_capital": 1.27,
+          "capital_fund": 12.41,
+          "npl_ratio": 0.03,
+          "base_rate": 9.91,
+          "spread": 4.66
+        }
+      },
+      "cash_flow": null,
+      "key_ratios": {
+        "Per Share": {
+          "EPS": 21.22,
+          "Book Value": 134.83
+        },
+        "Performance": {
+          "ROE": 15.74
+        },
+        "Dividend": {
+          "Bonus Share %": 0.0,
+          "Cash Dividend %": 14.0
+        }
+      }
+    },
+    {
+      "ticker": "SANIMA",
+      "fiscal_year": "075-076",
+      "report_type": "ANNUAL",
+      "quarter": null,
+      "is_audited": true,
+      "report_template": "BANK",
+      "paid_up_capital": 8001255440,
+      "reserves_and_surplus": 2236785982,
+      "net_profit": 2258067506,
+      "eps": 28.22,
+      "book_value": 149.85,
+      "return_on_equity": 18.83,
+      "bonus_share": 10.0,
+      "cash_dividend": 11.05,
+      "dividend_announced_date": null,
+      "dividend_book_close_date": "2019-09-30",
+      "balance_sheet": {
+        "ASSETS": {
+          "cash_equivalent": 4636422437,
+          "due_from_nrb": 2781194462,
+          "placement_bfis": 827701829,
+          "derivative_assets": 85066888,
+          "trading_assets": 484421811,
+          "loans_bfis": 2020420376,
+          "loans_customers": 81418860580,
+          "investment_securities": 13611190018,
+          "subsidiaries": 250000000,
+          "property_equipment": 1150520679,
+          "intangible_assets": 70319347,
+          "deferred_tax_assets": 14774571,
+          "other_assets": 1713594966,
+          "total_assets": 109064000000
+        },
+        "LIABILITIES": {
+          "due_to_bfis": 3694458442,
+          "due_to_nrb": 1018919629,
+          "deposits_customers": 89373729162,
+          "current_tax_liabilities": 24771881,
+          "provisions": 27174446,
+          "other_liabilities": 1211174346,
+          "debt_securities": 1724712000,
+          "total_liabilities": 97074939905
+        },
+        "EQUITY": {
+          "share_capital": 8001255440,
+          "retained_earnings": 1751506637,
+          "reserves_reserves": 2236785982,
+          "total_equity": 11989548059,
+          "total_liabilities_equity": 109064000000
+        }
+      },
+      "profit_loss": {
+        "INCOME": {
+          "interest_income": 10757980831,
+          "interest_expense": 6549283717,
+          "net_interest_income": 4208697114,
+          "fee_income": 785119601,
+          "fee_expense": 73254193,
+          "net_fee_income": 711865408,
+          "net_int_fee_income": 4920562522,
+          "trading_income": 392824856,
+          "other_operating_income": 44231715,
+          "total_operating_income": 5357619093
+        },
+        "EXPENSES": {
+          "impairment_charge": 218238049,
+          "personnel_expenses": 1259767735,
+          "other_operating_expenses": 515552094,
+          "depreciation": 139165799,
+          "operating_profit": 3224895415,
+          "non_operating_income": 2087168,
+          "non_operating_expense": 6826064,
+          "pbt": 3220156519,
+          "tax": 962089013,
+          "net_profit": 2258067506
+        },
+        "REGULATORY": {
+          "cd_ratio": 90.42,
+          "core_capital": 10.63,
+          "supplementary_capital": 2.56,
+          "capital_fund": 13.19,
+          "npl_ratio": 0.08,
+          "base_rate": 9.45,
+          "spread": 4.35
+        }
+      },
+      "cash_flow": null,
+      "key_ratios": {
+        "Per Share": {
+          "EPS": 28.22,
+          "Book Value": 149.85
+        },
+        "Performance": {
+          "ROE": 18.83
+        },
+        "Dividend": {
+          "Bonus Share %": 10.0,
+          "Cash Dividend %": 11.05
+        }
+      }
+    },
+    {
+      "ticker": "SANIMA",
+      "fiscal_year": "076-077",
+      "report_type": "ANNUAL",
+      "quarter": null,
+      "is_audited": true,
+      "report_template": "BANK",
+      "paid_up_capital": 8801380984,
+      "reserves_and_surplus": 2820186217,
+      "net_profit": 1776264524,
+      "eps": 20.18,
+      "book_value": 145.64,
+      "return_on_equity": 13.86,
+      "bonus_share": 10.0,
+      "cash_dividend": 3.6,
+      "dividend_announced_date": null,
+      "dividend_book_close_date": "2020-11-02",
+      "balance_sheet": {
+        "ASSETS": {
+          "cash_equivalent": 5190299845,
+          "due_from_nrb": 5325683135,
+          "placement_bfis": 2827086670,
+          "derivative_assets": 40221461,
+          "trading_assets": 443453005,
+          "loans_bfis": 2844211678,
+          "loans_customers": 90850351390,
+          "investment_securities": 15018419486,
+          "current_tax_assets": 4201081,
+          "subsidiaries": 250000000,
+          "property_equipment": 1177211496,
+          "intangible_assets": 60545750,
+          "deferred_tax_assets": 25565110,
+          "other_assets": 2253731045,
+          "total_assets": 126311000000
+        },
+        "LIABILITIES": {
+          "due_to_bfis": 3275974837,
+          "due_to_nrb": 86292488,
+          "deposits_customers": 107250000000,
+          "provisions": 32428917,
+          "other_liabilities": 1122765289,
+          "debt_securities": 1724712000,
+          "total_liabilities": 113492000000
+        },
+        "EQUITY": {
+          "share_capital": 8801380984,
+          "retained_earnings": 1197037733,
+          "reserves_reserves": 2820186217,
+          "total_equity": 12818604934,
+          "total_liabilities_equity": 126311000000
+        }
+      },
+      "profit_loss": {
+        "INCOME": {
+          "interest_income": 11469725229,
+          "interest_expense": 7280030928,
+          "net_interest_income": 4189694300,
+          "fee_income": 698255710,
+          "fee_expense": 78530474,
+          "net_fee_income": 619725237,
+          "net_int_fee_income": 4809419537,
+          "trading_income": 420657825,
+          "other_operating_income": 59729789,
+          "total_operating_income": 5289807151
+        },
+        "EXPENSES": {
+          "impairment_charge": 797024603,
+          "personnel_expenses": 1234689274,
+          "other_operating_expenses": 572705791,
+          "depreciation": 155534569,
+          "operating_profit": 2529852914,
+          "non_operating_income": 1409962,
+          "non_operating_expense": 1520491,
+          "pbt": 2529742385,
+          "tax": 753477861,
+          "net_profit": 1776264524
+        },
+        "REGULATORY": {
+          "cd_ratio": 85.1,
+          "core_capital": 10.37,
+          "supplementary_capital": 2.63,
+          "capital_fund": 13.0,
+          "npl_ratio": 0.45,
+          "base_rate": 8.62,
+          "spread": 3.47
+        }
+      },
+      "cash_flow": null,
+      "key_ratios": {
+        "Per Share": {
+          "EPS": 20.18,
+          "Book Value": 145.64
+        },
+        "Performance": {
+          "ROE": 13.86
+        },
+        "Dividend": {
+          "Bonus Share %": 10.0,
+          "Cash Dividend %": 3.6
+        }
+      }
+    },
+    {
+      "ticker": "SANIMA",
+      "fiscal_year": "077-078",
+      "report_type": "ANNUAL",
+      "quarter": null,
+      "is_audited": true,
+      "report_template": "BANK",
+      "paid_up_capital": 9681519082,
+      "reserves_and_surplus": 3504694608,
+      "net_profit": 1804341065,
+      "eps": 18.64,
+      "book_value": 154.14,
+      "return_on_equity": 12.09,
+      "bonus_share": 17.0,
+      "cash_dividend": 0.89,
+      "dividend_announced_date": null,
+      "dividend_book_close_date": "2021-10-24",
+      "balance_sheet": {
+        "ASSETS": {
+          "cash_equivalent": 4771140480,
+          "due_from_nrb": 6053731274,
+          "placement_bfis": 1740708397,
+          "derivative_assets": 16016111,
+          "trading_assets": 224408989,
+          "loans_bfis": 4094023666,
+          "loans_customers": 119071000000,
+          "investment_securities": 20922507357,
+          "subsidiaries": 250000000,
+          "property_equipment": 1196388539,
+          "intangible_assets": 48082940,
+          "other_assets": 2362175691,
+          "total_assets": 160751000000
+        },
+        "LIABILITIES": {
+          "due_to_bfis": 4920874273,
+          "due_to_nrb": 3651303839,
+          "deposits_customers": 128426000000,
+          "borrowings": 1787250000,
+          "current_tax_liabilities": 62454562,
+          "provisions": 31374632,
+          "deferred_tax_liabilities": 42066575,
+          "other_liabilities": 2134263725,
+          "debt_securities": 4771716000,
+          "total_liabilities": 145827000000
+        },
+        "EQUITY": {
+          "share_capital": 9681519082,
+          "retained_earnings": 1737199687,
+          "reserves_reserves": 3504694608,
+          "total_equity": 14923413378,
+          "total_liabilities_equity": 160751000000
+        }
+      },
+      "profit_loss": {
+        "INCOME": {
+          "interest_income": 10762830477,
+          "interest_expense": 6237843156,
+          "net_interest_income": 4524987321,
+          "fee_income": 875116821,
+          "fee_expense": 60957557,
+          "net_fee_income": 814159264,
+          "net_int_fee_income": 5339146585,
+          "trading_income": 426739658,
+          "other_operating_income": 51665390,
+          "total_operating_income": 5817551633
+        },
+        "EXPENSES": {
+          "impairment_charge": 248282527,
+          "personnel_expenses": 1229753262,
+          "other_operating_expenses": 650045937,
+          "depreciation": 244877287,
+          "operating_profit": 2455266225,
+          "non_operating_income": 130437670,
+          "non_operating_expense": 3044540,
+          "pbt": 2585703895,
+          "tax": 781362830,
+          "net_profit": 1804341065
+        },
+        "REGULATORY": {
+          "cd_ratio": 94.1,
+          "core_capital": 11.02,
+          "supplementary_capital": 2.68,
+          "capital_fund": 13.7,
+          "npl_ratio": 0.12,
+          "base_rate": 7.55,
+          "spread": 3.59
+        }
+      },
+      "cash_flow": null,
+      "key_ratios": {
+        "Per Share": {
+          "EPS": 18.64,
+          "Book Value": 154.14
+        },
+        "Performance": {
+          "ROE": 12.09
+        },
+        "Dividend": {
+          "Bonus Share %": 17.0,
+          "Cash Dividend %": 0.89
+        }
+      }
+    },
+    {
+      "ticker": "SANIMA",
+      "fiscal_year": "078-079",
+      "report_type": "ANNUAL",
+      "quarter": null,
+      "is_audited": true,
+      "report_template": "BANK",
+      "paid_up_capital": 11327377326,
+      "reserves_and_surplus": 4339337965,
+      "net_profit": 2093115829,
+      "eps": 18.48,
+      "book_value": 149.29,
+      "return_on_equity": 12.38,
+      "bonus_share": 10.0,
+      "cash_dividend": 0.98,
+      "dividend_announced_date": null,
+      "dividend_book_close_date": "2022-12-05",
+      "balance_sheet": {
+        "ASSETS": {
+          "cash_equivalent": 5224716246,
+          "due_from_nrb": 13516139617,
+          "placement_bfis": 371162744,
+          "trading_assets": 500749431,
+          "loans_bfis": 5167865708,
+          "loans_customers": 136518037930,
+          "investment_securities": 26468395455,
+          "subsidiaries": 250000000,
+          "investment_property": 72932294,
+          "property_equipment": 1344606808,
+          "intangible_assets": 88267830,
+          "deferred_tax_assets": 138046695,
+          "other_assets": 2850171866,
+          "total_assets": 192511092727
+        },
+        "LIABILITIES": {
+          "due_to_bfis": 2614422138,
+          "due_to_nrb": 4096650775,
+          "derivative_liabilities": 52394722,
+          "deposits_customers": 157518535239,
+          "borrowings": 1279000000,
+          "current_tax_liabilities": 35222084,
+          "provisions": 44769659,
+          "other_liabilities": 3146611698,
+          "debt_securities": 6812316000,
+          "total_liabilities": 175599922316
+        },
+        "EQUITY": {
+          "share_capital": 11327377326,
+          "retained_earnings": 1244455120,
+          "reserves_reserves": 4339337965,
+          "total_equity": 16911170411,
+          "total_liabilities_equity": 192511092727
+        }
+      },
+      "profit_loss": {
+        "INCOME": {
+          "interest_income": 14850216913,
+          "interest_expense": 10198454206,
+          "net_interest_income": 4651762707,
+          "fee_income": 995913637,
+          "fee_expense": 148361763,
+          "net_fee_income": 847551874,
+          "net_int_fee_income": 5499314581,
+          "trading_income": 377678967,
+          "other_operating_income": 152708336,
+          "total_operating_income": 6029701884
+        },
+        "EXPENSES": {
+          "impairment_charge": 554394612,
+          "personnel_expenses": 1549409462,
+          "other_operating_expenses": 625429672,
+          "depreciation": 345906947,
+          "operating_profit": 2954561191,
+          "non_operating_income": 6285738,
+          "non_operating_expense": 12035811,
+          "pbt": 294881118,
+          "tax": 855695289,
+          "net_profit": 2093115829
+        },
+        "REGULATORY": {
+          "core_capital": 10.37,
+          "supplementary_capital": 4.05,
+          "capital_fund": 14.42,
+          "npl_ratio": 1.31,
+          "base_rate": 10.15,
+          "spread": 4.0
+        }
+      },
+      "cash_flow": {
+        "OPERATING": {
+          "interest_received": 1438637260,
+          "fees_received": 986479675,
+          "other_receipts": 359237214,
+          "interest_paid": -10183144438,
+          "fees_paid": -148361763,
+          "employee_payments": -1533415847,
+          "other_payments": -583202989,
+          "operating_cash_before_changes": 3283964457,
+          "change_nrb": -7462408343,
+          "change_placements": 1369545652,
+          "change_loans_bfis": -1073842042,
+          "change_loans_customers": -18001031818,
+          "change_other_assets": -146182552,
+          "change_due_bfis": -2306452136,
+          "change_due_nrb": 445346936,
+          "change_deposits": 29092668058,
+          "change_borrowings": -508250000,
+          "change_other_liabilities": 1288541489,
+          "operating_cash_before_tax": 5744844809,
+          "tax_paid": -882927767,
+          "net_operating_cash": 4861917043
+        },
+        "INVESTING": {
+          "purchase_investments": -5874490354,
+          "sale_investments": 0,
+          "purchase_ppe": -524839688,
+          "sale_ppe": 30714473,
+          "purchase_intangibles": -40184891,
+          "sale_intangibles": 0,
+          "purchase_investment_property": 0,
+          "sale_investment_property": -72932294,
+          "net_investing_cash": -6343582481
+        },
+        "FINANCING": {
+          "issue_debt_securities": 2033100000,
+          "repay_debt_securities": 0,
+          "dividends_paid": -86624118,
+          "other_financing": -11234677,
+          "net_financing_cash": 1935241204
+        },
+        "SUMMARY": {
+          "net_change_cash": 453575766,
+          "cash_beginning": 4771140480,
+          "cash_ending": 5224716246
+        }
+      },
+      "key_ratios": {
+        "Per Share": {
+          "EPS": 18.48,
+          "Book Value": 149.29
+        },
+        "Performance": {
+          "ROE": 12.38
+        },
+        "Dividend": {
+          "Bonus Share %": 10.0,
+          "Cash Dividend %": 0.98
+        }
+      }
+    },
+    {
+      "ticker": "SANIMA",
+      "fiscal_year": "079-080",
+      "report_type": "ANNUAL",
+      "quarter": null,
+      "is_audited": true,
+      "report_template": "BANK",
+      "paid_up_capital": 12460115059,
+      "reserves_and_surplus": 4704278987,
+      "net_profit": 2605793663,
+      "eps": 20.91,
+      "book_value": 155.53,
+      "return_on_equity": 13.45,
+      "bonus_share": 9.0,
+      "cash_dividend": 5.7,
+      "dividend_announced_date": null,
+      "dividend_book_close_date": "2023-10-09",
+      "balance_sheet": {
+        "ASSETS": {
+          "cash_equivalent": 5290591934,
+          "due_from_nrb": 10368096356,
+          "placement_bfis": 1056571534,
+          "trading_assets": 414838518,
+          "loans_bfis": 4445160972,
+          "loans_customers": 145424939454,
+          "investment_securities": 41980217771,
+          "current_tax_assets": 54535662,
+          "subsidiaries": 450000000,
+          "investment_property": 190174378,
+          "property_equipment": 1368384653,
+          "intangible_assets": 96082857,
+          "deferred_tax_assets": 169777226,
+          "other_assets": 4333617053,
+          "total_assets": 215642988368
+        },
+        "LIABILITIES": {
+          "due_to_bfis": 5091307913,
+          "due_to_nrb": 72086097,
+          "derivative_liabilities": 6045373,
+          "deposits_customers": 175745249454,
+          "borrowings": 2629000000,
+          "provisions": 34263966,
+          "other_liabilities": 3311936817,
+          "debt_securities": 9373666000,
+          "total_liabilities": 196263555622
+        },
+        "EQUITY": {
+          "share_capital": 12460115059,
+          "retained_earnings": 2215038700,
+          "reserves_reserves": 4704278987,
+          "total_equity": 19379432746,
+          "total_liabilities_equity": 215642988368
+        }
+      },
+      "profit_loss": {
+        "INCOME": {
+          "interest_income": 21607165934,
+          "interest_expense": 15128548520,
+          "net_interest_income": 6478617414,
+          "fee_income": 1039862304,
+          "fee_expense": 242160860,
+          "net_fee_income": 797701444,
+          "net_int_fee_income": 7276318858,
+          "trading_income": 217272574,
+          "other_operating_income": 158213052,
+          "total_operating_income": 7651804483
+        },
+        "EXPENSES": {
+          "impairment_charge": 1053105015,
+          "personnel_expenses": 1761951641,
+          "other_operating_expenses": 704681912,
+          "depreciation": 361739042,
+          "operating_profit": 3770326874,
+          "non_operating_income": 14218389,
+          "non_operating_expense": 54985289,
+          "pbt": 3729559974,
+          "net_profit": 2605793663
+        },
+        "REGULATORY": {
+          "cd_ratio": 83.8,
+          "core_capital": 10.37,
+          "supplementary_capital": 4.05,
+          "capital_fund": 14.42,
+          "npl_ratio": 1.31,
+          "base_rate": 10.15,
+          "spread": 4.0
+        }
+      },
+      "cash_flow": {
+        "OPERATING": {
+          "interest_received": 20572133494,
+          "fees_received": 1026889097,
+          "other_receipts": 272571894,
+          "interest_paid": -14908939503,
+          "fees_paid": -242160860,
+          "employee_payments": -1619372230,
+          "other_payments": -1006330523,
+          "operating_cash_before_changes": 4094792369,
+          "change_nrb": 3148043261,
+          "change_placements": -685408789,
+          "change_loans_bfis": 722704736,
+          "change_loans_customers": -9939819343,
+          "change_other_assets": -511927940,
+          "change_due_bfis": 2476885775,
+          "change_due_nrb": -4024564678,
+          "change_deposits": 18226714215,
+          "change_borrowings": 1350000000,
+          "change_other_liabilities": -118748671,
+          "operating_cash_before_tax": 14826058768,
+          "tax_paid": -1233887476,
+          "net_operating_cash": 13592171292
+        },
+        "INVESTING": {
+          "purchase_investments": -27535541910,
+          "sale_investments": 11840392500,
+          "purchase_ppe": -184871049,
+          "sale_ppe": 15236263,
+          "purchase_intangibles": -68033099,
+          "sale_intangibles": 0,
+          "purchase_investment_property": 0,
+          "sale_investment_property": -117242085,
+          "net_investing_cash": -15971264277
+        },
+        "FINANCING": {
+          "issue_debt_securities": 2952500000,
+          "repay_debt_securities": -370000000,
+          "dividends_paid": -111008298,
+          "other_financing": -26523030,
+          "net_financing_cash": 2444968673
+        },
+        "SUMMARY": {
+          "net_change_cash": 65875688,
+          "cash_beginning": 5224716246,
+          "cash_ending": 5290591934
+        }
+      },
+      "key_ratios": {
+        "Per Share": {
+          "EPS": 20.91,
+          "Book Value": 155.53
+        },
+        "Performance": {
+          "ROE": 13.45
+        },
+        "Dividend": {
+          "Bonus Share %": 9.0,
+          "Cash Dividend %": 5.7
+        }
+      }
+    },
+    {
+      "ticker": "SANIMA",
+      "fiscal_year": "080-081",
+      "report_type": "ANNUAL",
+      "quarter": null,
+      "is_audited": true,
+      "report_template": "BANK",
+      "paid_up_capital": 13581525414,
+      "reserves_and_surplus": 5894786451,
+      "net_profit": 2397443832,
+      "eps": 17.65,
+      "book_value": 154.06,
+      "return_on_equity": 11.46,
+      "bonus_share": 0.0,
+      "cash_dividend": 5.2632,
+      "dividend_announced_date": null,
+      "dividend_book_close_date": "2024-11-10",
+      "balance_sheet": {
+        "ASSETS": {
+          "cash_equivalent": 13072489091,
+          "due_from_nrb": 14237362921,
+          "placement_bfis": 591043234,
+          "trading_assets": 319682584,
+          "loans_bfis": 5527765571,
+          "loans_customers": 159414737417,
+          "investment_securities": 37082393021,
+          "current_tax_assets": 1657283,
+          "subsidiaries": 450000000,
+          "investment_property": 674001855,
+          "property_equipment": 1395433175,
+          "intangible_assets": 81631313,
+          "deferred_tax_assets": 248728752,
+          "other_assets": 3765283209,
+          "total_assets": 233862209426
+        },
+        "LIABILITIES": {
+          "due_to_bfis": 2182161765,
+          "derivative_liabilities": 1888161,
+          "deposits_customers": 197197071124,
+          "borrowings": 1070000000,
+          "provisions": 36443214,
+          "other_liabilities": 3073480040,
+          "debt_securities": 9377516000,
+          "total_liabilities": 212938560304
+        },
+        "EQUITY": {
+          "share_capital": 13581525414,
+          "retained_earnings": 1447337257,
+          "reserves_reserves": 5894786451,
+          "total_equity": 20923649123,
+          "total_liabilities_equity": 233862209426
+        }
+      },
+      "profit_loss": {
+        "INCOME": {
+          "interest_income": 20724065704,
+          "interest_expense": 14542367925,
+          "net_interest_income": 6181697779,
+          "fee_income": 1194851785,
+          "fee_expense": 175845663,
+          "net_fee_income": 1019006122,
+          "net_int_fee_income": 7200703901,
+          "trading_income": 517770003,
+          "other_operating_income": 210560237,
+          "total_operating_income": 7929034141
+        },
+        "EXPENSES": {
+          "impairment_charge": 1433321722,
+          "personnel_expenses": 1913493487,
+          "other_operating_expenses": 749836184,
+          "depreciation": 361488823,
+          "operating_profit": 3470893926,
+          "non_operating_income": 9037781,
+          "non_operating_expense": 99592861,
+          "pbt": 3380338845,
+          "net_profit": 2397443832
+        },
+        "REGULATORY": {
+          "cd_ratio": 82.73,
+          "core_capital": 9.75,
+          "supplementary_capital": 3.46,
+          "capital_fund": 13.21,
+          "npl_ratio": 1.72,
+          "base_rate": 7.83,
+          "spread": 4.0
+        }
+      },
+      "cash_flow": {
+        "OPERATING": {
+          "interest_received": 19971990974,
+          "fees_received": 1188889102,
+          "other_receipts": 569109676,
+          "interest_paid": -14573085065,
+          "fees_paid": -175845663,
+          "employee_payments": -1831049706,
+          "other_payments": -1082262618,
+          "operating_cash_before_changes": 4074941243,
+          "change_nrb": -3869266565,
+          "change_placements": 465528300,
+          "change_loans_bfis": -1082604599,
+          "change_loans_customers": -15885011034,
+          "change_other_assets": 1191916408,
+          "change_due_bfis": -2909146148,
+          "change_due_nrb": -72086097,
+          "change_deposits": 24451821670,
+          "change_borrowings": -1559000000,
+          "change_other_liabilities": -105171458,
+          "operating_cash_before_tax": 1794444445,
+          "tax_paid": -973026076,
+          "net_operating_cash": 821418370
+        },
+        "INVESTING": {
+          "purchase_investments": 0,
+          "sale_investments": 7966390634,
+          "purchase_ppe": -246343055,
+          "sale_ppe": 37167003,
+          "purchase_intangibles": -16703339,
+          "sale_intangibles": 0,
+          "purchase_investment_property": 0,
+          "sale_investment_property": 0,
+          "net_investing_cash": 7813706243
+        },
+        "FINANCING": {
+          "issue_debt_securities": 0,
+          "repay_debt_securities": 0,
+          "dividends_paid": -710226558,
+          "other_financing": -143000897,
+          "net_financing_cash": -853227456
+        },
+        "SUMMARY": {
+          "net_change_cash": 7781897157,
+          "cash_beginning": 5290591934,
+          "cash_ending": 13072489091
+        }
+      },
+      "key_ratios": {
+        "Per Share": {
+          "EPS": 17.65,
+          "Book Value": 154.06
+        },
+        "Performance": {
+          "ROE": 11.46
+        },
+        "Dividend": {
+          "Bonus Share %": 0.0,
+          "Cash Dividend %": 5.2632
+        }
+      }
+    },
+    {
+      "ticker": "SANIMA",
+      "fiscal_year": "081-082",
+      "report_type": "ANNUAL",
+      "quarter": null,
+      "is_audited": true,
+      "report_template": "BANK",
+      "paid_up_capital": 13581525414,
+      "reserves_and_surplus": 7349127489,
+      "net_profit": 2572463980,
+      "eps": 18.94,
+      "book_value": 169.59,
+      "return_on_equity": 11.17,
+      "bonus_share": 0.0,
+      "cash_dividend": 7.3685,
+      "dividend_announced_date": null,
+      "dividend_book_close_date": "2025-10-13",
+      "balance_sheet": {
+        "ASSETS": {
+          "cash_equivalent": 20360777301,
+          "due_from_nrb": 19875524160,
+          "placement_bfis": 3455159602,
+          "trading_assets": 429613790,
+          "loans_bfis": 7014125237,
+          "loans_customers": 176440505806,
+          "investment_securities": 29502942270,
+          "current_tax_assets": 169643424,
+          "subsidiaries": 450000000,
+          "investment_property": 951498926,
+          "property_equipment": 1343337324,
+          "intangible_assets": 85859445,
+          "deferred_tax_assets": 162676832,
+          "other_assets": 3310270762,
+          "total_assets": 363551934879
+        },
+        "LIABILITIES": {
+          "due_to_bfis": 1572392607,
+          "derivative_liabilities": 21381629,
+          "deposits_customers": 223954679225,
+          "borrowings": 2063250000,
+          "provisions": 404648637,
+          "other_liabilities": 3484840654,
+          "debt_securities": 9381366000,
+          "total_liabilities": 240518374981
+        },
+        "EQUITY": {
+          "share_capital": 13581525414,
+          "retained_earnings": 2102906994,
+          "reserves_reserves": 7349127489,
+          "total_equity": 23033559897,
+          "total_liabilities_equity": 363551934879
+        }
+      },
+      "profit_loss": {
+        "INCOME": {
+          "interest_income": 18040787831,
+          "interest_expense": 11684789917,
+          "net_interest_income": 6355997914,
+          "fee_income": 1380362833,
+          "fee_expense": 185015155,
+          "net_fee_income": 1195347678,
+          "net_int_fee_income": 7551345593,
+          "trading_income": 593391466,
+          "other_operating_income": 457720703,
+          "total_operating_income": 8602457762
+        },
+        "EXPENSES": {
+          "impairment_charge": 1889120780,
+          "personnel_expenses": 2001700084,
+          "other_operating_expenses": 782083723,
+          "depreciation": 353670492,
+          "operating_profit": 3575882683,
+          "non_operating_income": 28501664,
+          "non_operating_expense": 43321260,
+          "pbt": 3561063088,
+          "net_profit": 2572463980
+        },
+        "REGULATORY": {
+          "cd_ratio": 81.36,
+          "core_capital": 9.86,
+          "supplementary_capital": 3.16,
+          "capital_fund": 13.01,
+          "npl_ratio": 3.01,
+          "base_rate": 6.12,
+          "spread": 3.68
+        }
+      },
+      "cash_flow": {
+        "OPERATING": {
+          "interest_received": 17910785750,
+          "fees_received": 1382768032,
+          "dividend_received": 13095445,
+          "other_receipts": 669753248,
+          "interest_paid": -11106595415,
+          "fees_paid": -185015155,
+          "employee_payments": -1993576645,
+          "other_payments": -1056828743,
+          "operating_cash_before_changes": 5634386518,
+          "change_nrb": -5638161239,
+          "change_placements": -2864116369,
+          "change_loans_bfis": -1486359665,
+          "change_loans_customers": -19544859942,
+          "change_other_assets": 560272202,
+          "change_due_bfis": -609769158,
+          "change_deposits": 26757608101,
+          "change_borrowings": 993250000,
+          "change_other_liabilities": 59269083,
+          "operating_cash_before_tax": 3787725417,
+          "tax_paid": -1165093509,
+          "net_operating_cash": 2622631908
+        },
+        "INVESTING": {
+          "purchase_investments": 0,
+          "sale_investments": 5014316902,
+          "purchase_ppe": -164270421,
+          "sale_ppe": 28534091,
+          "purchase_intangibles": -28606664,
+          "sale_intangibles": 0,
+          "purchase_investment_property": 0,
+          "sale_investment_property": 181562453,
+          "net_investing_cash": 5128209507
+        },
+        "FINANCING": {
+          "issue_debt_securities": 0,
+          "repay_debt_securities": 0,
+          "dividends_paid": -714822846,
+          "other_financing": 252269640,
+          "net_financing_cash": -462553205
+        },
+        "SUMMARY": {
+          "net_change_cash": 7288288210,
+          "cash_beginning": 13072489091,
+          "cash_ending": 20360777301
+        }
+      },
+      "key_ratios": {
+        "Per Share": {
+          "EPS": 18.94,
+          "Book Value": 169.59
+        },
+        "Performance": {
+          "ROE": 11.17
+        },
+        "Dividend": {
+          "Bonus Share %": 0.0,
+          "Cash Dividend %": 7.3685
+        }
+      }
+    }
+  ]
+}

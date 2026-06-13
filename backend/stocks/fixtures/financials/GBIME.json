@@ -1,0 +1,1106 @@
+{
+  "ticker": "GBIME",
+  "company": {
+    "name": "Global IME Bank Limited",
+    "sector": "Commercial Banks",
+    "instrument_type": "Equity"
+  },
+  "reports": [
+    {
+      "ticker": "GBIME",
+      "fiscal_year": "072-073",
+      "report_type": "ANNUAL",
+      "quarter": null,
+      "is_audited": true,
+      "report_template": "BANK",
+      "paid_up_capital": 6392992200,
+      "reserves_and_surplus": 988825731,
+      "net_profit": 1527778082,
+      "eps": 23.9,
+      "book_value": 122.59,
+      "return_on_equity": 19.49,
+      "bonus_share": 20.0,
+      "cash_dividend": 1.05,
+      "dividend_announced_date": null,
+      "dividend_book_close_date": "2017-04-10",
+      "balance_sheet": {
+        "ASSETS": {
+          "cash_equivalent": 4267866823,
+          "due_from_nrb": 5154437483,
+          "placement_bfis": 3094000000,
+          "loans_bfis": 1186978027,
+          "loans_customers": 63327012905,
+          "investment_securities": 9481956143,
+          "property_equipment": 966551491,
+          "intangible_assets": 43498124,
+          "other_assets": 929551547,
+          "total_assets": 88451852543
+        },
+        "LIABILITIES": {
+          "due_to_bfis": 2614898395,
+          "deposits_customers": 76310266019,
+          "current_tax_liabilities": 355093296,
+          "deferred_tax_liabilities": 168310888,
+          "other_liabilities": 1166416516,
+          "total_liabilities": 80614984114
+        },
+        "EQUITY": {
+          "share_capital": 6392992200,
+          "retained_earnings": 455050498,
+          "reserves_reserves": 988825731,
+          "total_equity": 7836868429,
+          "total_liabilities_equity": 88451852543
+        }
+      },
+      "profit_loss": {
+        "INCOME": {
+          "interest_income": 8133948437,
+          "interest_expense": 4745726095,
+          "net_interest_income": 3388222342,
+          "fee_income": 423513547,
+          "fee_expense": 81756698,
+          "net_fee_income": 341756849,
+          "net_int_fee_income": 3729979191,
+          "trading_income": 229609613,
+          "other_operating_income": 99847028,
+          "total_operating_income": 4059435832
+        },
+        "EXPENSES": {
+          "impairment_charge": 431625090,
+          "personnel_expenses": 779069454,
+          "other_operating_expenses": 338271393,
+          "depreciation": 122491791,
+          "operating_profit": 2388078104,
+          "non_operating_income": 11064490,
+          "non_operating_expense": 159785760,
+          "pbt": 2239356834,
+          "tax": 711578752,
+          "net_profit": 1527778082
+        },
+        "REGULATORY": {
+          "cd_ratio": 80.21,
+          "core_capital": 10.36,
+          "supplementary_capital": 1.74,
+          "capital_fund": 12.1,
+          "npl_ratio": 0.66,
+          "base_rate": 8.3,
+          "spread": 4.5
+        }
+      },
+      "key_ratios": {
+        "Per Share": {
+          "EPS": 23.9,
+          "Book Value": 122.59
+        },
+        "Performance": {
+          "ROE": 19.49
+        },
+        "Dividend": {
+          "Bonus Share %": 20.0,
+          "Cash Dividend %": 1.05
+        }
+      }
+    },
+    {
+      "ticker": "GBIME",
+      "fiscal_year": "073-074",
+      "report_type": "ANNUAL",
+      "quarter": null,
+      "is_audited": true,
+      "report_template": "BANK",
+      "paid_up_capital": 6392992200,
+      "reserves_and_surplus": 647809543,
+      "net_profit": 1812909443,
+      "eps": 28.36,
+      "book_value": 118.61,
+      "return_on_equity": 23.91,
+      "bonus_share": 0.0,
+      "cash_dividend": 25.0,
+      "dividend_announced_date": null,
+      "dividend_book_close_date": "2018-04-06",
+      "balance_sheet": {
+        "ASSETS": {
+          "cash_equivalent": 4963834226,
+          "due_from_nrb": 7497503461,
+          "placement_bfis": 1949800000,
+          "loans_bfis": 1479706432,
+          "loans_customers": 85416813817,
+          "investment_securities": 14095756462,
+          "property_equipment": 1173337427,
+          "intangible_assets": 58753718,
+          "other_assets": 1218553200,
+          "total_assets": 117854058743
+        },
+        "LIABILITIES": {
+          "due_to_bfis": 7143697621,
+          "deposits_customers": 101153718855,
+          "current_tax_liabilities": 343437408,
+          "deferred_tax_liabilities": 227024093,
+          "other_liabilities": 1403649568,
+          "total_liabilities": 110271527545
+        },
+        "EQUITY": {
+          "share_capital": 6392992200,
+          "retained_earnings": 541729455,
+          "reserves_reserves": 647809543,
+          "total_equity": 7582531198,
+          "total_liabilities_equity": 117854058743
+        }
+      },
+      "profit_loss": {
+        "INCOME": {
+          "interest_income": 9567754625,
+          "interest_expense": 5618268083,
+          "net_interest_income": 3949486542,
+          "fee_income": 557399527,
+          "fee_expense": 81415049,
+          "net_fee_income": 475984478,
+          "net_int_fee_income": 4425471020,
+          "trading_income": 151268249,
+          "other_operating_income": 102756127,
+          "total_operating_income": 4679495396
+        },
+        "EXPENSES": {
+          "impairment_charge": 475001280,
+          "personnel_expenses": 905614820,
+          "other_operating_expenses": 388524665,
+          "depreciation": 152100897,
+          "operating_profit": 2758253734,
+          "non_operating_income": 13059428,
+          "non_operating_expense": 148183754,
+          "pbt": 2623129408,
+          "tax": 810219965,
+          "net_profit": 1812909443
+        },
+        "REGULATORY": {
+          "cd_ratio": 82.81,
+          "core_capital": 8.49,
+          "supplementary_capital": 1.72,
+          "capital_fund": 10.21,
+          "npl_ratio": 0.91,
+          "base_rate": 8.76,
+          "spread": 4.77
+        }
+      },
+      "key_ratios": {
+        "Per Share": {
+          "EPS": 28.36,
+          "Book Value": 118.61
+        },
+        "Performance": {
+          "ROE": 23.91
+        },
+        "Dividend": {
+          "Bonus Share %": 0.0,
+          "Cash Dividend %": 25.0
+        }
+      }
+    },
+    {
+      "ticker": "GBIME",
+      "fiscal_year": "074-075",
+      "report_type": "ANNUAL",
+      "quarter": null,
+      "is_audited": true,
+      "report_template": "BANK",
+      "paid_up_capital": 8311889860,
+      "reserves_and_surplus": 608339018,
+      "net_profit": 2783331494,
+      "eps": 33.49,
+      "book_value": 111.61,
+      "return_on_equity": 30.0,
+      "bonus_share": 30.0,
+      "cash_dividend": 1.05,
+      "dividend_announced_date": null,
+      "dividend_book_close_date": "2019-03-21",
+      "balance_sheet": {
+        "ASSETS": {
+          "cash_equivalent": 10104960754,
+          "due_from_nrb": 10399979505,
+          "placement_bfis": 2748625000,
+          "loans_bfis": 2133820782,
+          "loans_customers": 116618867038,
+          "investment_securities": 15875523975,
+          "property_equipment": 1516266000,
+          "intangible_assets": 73621905,
+          "other_assets": 2039584440,
+          "total_assets": 161511248399
+        },
+        "LIABILITIES": {
+          "due_to_bfis": 9009034826,
+          "deposits_customers": 140673540310,
+          "current_tax_liabilities": 505720793,
+          "deferred_tax_liabilities": 232688428,
+          "other_liabilities": 1813483400,
+          "total_liabilities": 152234467757
+        },
+        "EQUITY": {
+          "share_capital": 8311889860,
+          "retained_earnings": 356551764,
+          "reserves_reserves": 608339018,
+          "total_equity": 9276780642,
+          "total_liabilities_equity": 161511248399
+        }
+      },
+      "profit_loss": {
+        "INCOME": {
+          "interest_income": 13720523099,
+          "interest_expense": 8039760218,
+          "net_interest_income": 5680762881,
+          "fee_income": 760534432,
+          "fee_expense": 105085601,
+          "net_fee_income": 655448831,
+          "net_int_fee_income": 6336211712,
+          "trading_income": 125505082,
+          "other_operating_income": 140736636,
+          "total_operating_income": 6602453430
+        },
+        "EXPENSES": {
+          "impairment_charge": 605637073,
+          "personnel_expenses": 1147430386,
+          "other_operating_expenses": 473820827,
+          "depreciation": 175000000,
+          "operating_profit": 4200565144,
+          "non_operating_income": 42673889,
+          "non_operating_expense": 280887000,
+          "pbt": 3962351033,
+          "tax": 1179019539,
+          "net_profit": 2783331494
+        },
+        "REGULATORY": {
+          "cd_ratio": 80.75,
+          "core_capital": 8.19,
+          "supplementary_capital": 1.58,
+          "capital_fund": 9.77,
+          "npl_ratio": 0.91,
+          "base_rate": 9.7,
+          "spread": 4.62
+        }
+      },
+      "key_ratios": {
+        "Per Share": {
+          "EPS": 33.49,
+          "Book Value": 111.61
+        },
+        "Performance": {
+          "ROE": 30.0
+        },
+        "Dividend": {
+          "Bonus Share %": 30.0,
+          "Cash Dividend %": 1.05
+        }
+      }
+    },
+    {
+      "ticker": "GBIME",
+      "fiscal_year": "075-076",
+      "report_type": "ANNUAL",
+      "quarter": null,
+      "is_audited": true,
+      "report_template": "BANK",
+      "paid_up_capital": 8311889860,
+      "reserves_and_surplus": 743895252,
+      "net_profit": 3849000000,
+      "eps": 46.31,
+      "book_value": 116.12,
+      "return_on_equity": 39.88,
+      "bonus_share": 20.0,
+      "cash_dividend": 1.05,
+      "dividend_announced_date": null,
+      "dividend_book_close_date": "2020-02-26",
+      "balance_sheet": {
+        "ASSETS": {
+          "cash_equivalent": 9428621527,
+          "due_from_nrb": 10700009960,
+          "placement_bfis": 6680700000,
+          "loans_bfis": 2887219416,
+          "loans_customers": 148547764918,
+          "investment_securities": 19614882019,
+          "property_equipment": 1843282000,
+          "intangible_assets": 84989834,
+          "other_assets": 2527817613,
+          "total_assets": 202315287287
+        },
+        "LIABILITIES": {
+          "due_to_bfis": 12671688866,
+          "deposits_customers": 177234498524,
+          "current_tax_liabilities": 538289780,
+          "deferred_tax_liabilities": 233600000,
+          "other_liabilities": 1985399040,
+          "total_liabilities": 192663476210
+        },
+        "EQUITY": {
+          "share_capital": 8311889860,
+          "retained_earnings": 596025965,
+          "reserves_reserves": 743895252,
+          "total_equity": 9651811077,
+          "total_liabilities_equity": 202315287287
+        }
+      },
+      "profit_loss": {
+        "INCOME": {
+          "interest_income": 19084813625,
+          "interest_expense": 11499551462,
+          "net_interest_income": 7585262163,
+          "fee_income": 905699649,
+          "fee_expense": 123694613,
+          "net_fee_income": 782005036,
+          "net_int_fee_income": 8367267199,
+          "trading_income": 179978413,
+          "other_operating_income": 151895208,
+          "total_operating_income": 8699140820
+        },
+        "EXPENSES": {
+          "impairment_charge": 711684419,
+          "personnel_expenses": 1358289027,
+          "other_operating_expenses": 575131397,
+          "depreciation": 218000000,
+          "operating_profit": 5836035977,
+          "non_operating_income": 37918988,
+          "non_operating_expense": 390000000,
+          "pbt": 5484000000,
+          "tax": 1635000000,
+          "net_profit": 3849000000
+        },
+        "REGULATORY": {
+          "cd_ratio": 81.82,
+          "core_capital": 7.51,
+          "supplementary_capital": 1.6,
+          "capital_fund": 9.11,
+          "npl_ratio": 0.95,
+          "base_rate": 10.67,
+          "spread": 4.68
+        }
+      },
+      "key_ratios": {
+        "Per Share": {
+          "EPS": 46.31,
+          "Book Value": 116.12
+        },
+        "Performance": {
+          "ROE": 39.88
+        },
+        "Dividend": {
+          "Bonus Share %": 20.0,
+          "Cash Dividend %": 1.05
+        }
+      }
+    },
+    {
+      "ticker": "GBIME",
+      "fiscal_year": "076-077",
+      "report_type": "ANNUAL",
+      "quarter": null,
+      "is_audited": true,
+      "report_template": "BANK",
+      "paid_up_capital": 8311889860,
+      "reserves_and_surplus": 942870069,
+      "net_profit": 4360835046,
+      "eps": 52.47,
+      "book_value": 118.11,
+      "return_on_equity": 44.42,
+      "bonus_share": 0.0,
+      "cash_dividend": 10.0,
+      "dividend_announced_date": null,
+      "dividend_book_close_date": "2021-03-19",
+      "balance_sheet": {
+        "ASSETS": {
+          "cash_equivalent": 13503956665,
+          "due_from_nrb": 12303344963,
+          "placement_bfis": 11617200000,
+          "loans_bfis": 5032165946,
+          "loans_customers": 176671625741,
+          "investment_securities": 32694403049,
+          "property_equipment": 2305165000,
+          "intangible_assets": 122696183,
+          "other_assets": 3280028380,
+          "total_assets": 257530585927
+        },
+        "LIABILITIES": {
+          "due_to_bfis": 11038437985,
+          "deposits_customers": 233534621783,
+          "current_tax_liabilities": 441697067,
+          "deferred_tax_liabilities": 259850000,
+          "other_liabilities": 2438523117,
+          "total_liabilities": 247713129952
+        },
+        "EQUITY": {
+          "share_capital": 8311889860,
+          "retained_earnings": 562695046,
+          "reserves_reserves": 942870069,
+          "total_equity": 9817455975,
+          "total_liabilities_equity": 257530585927
+        }
+      },
+      "profit_loss": {
+        "INCOME": {
+          "interest_income": 21948044673,
+          "interest_expense": 12980427826,
+          "net_interest_income": 8967616847,
+          "fee_income": 988773025,
+          "fee_expense": 153619714,
+          "net_fee_income": 835153311,
+          "net_int_fee_income": 9802770158,
+          "trading_income": 238337618,
+          "other_operating_income": 234847649,
+          "total_operating_income": 10275955425
+        },
+        "EXPENSES": {
+          "impairment_charge": 1003048408,
+          "personnel_expenses": 1636065505,
+          "other_operating_expenses": 698791285,
+          "depreciation": 268000000,
+          "operating_profit": 6670050227,
+          "non_operating_income": 28261476,
+          "non_operating_expense": 503000000,
+          "pbt": 6195311703,
+          "tax": 1834476657,
+          "net_profit": 4360835046
+        },
+        "REGULATORY": {
+          "cd_ratio": 74.56,
+          "core_capital": 7.18,
+          "supplementary_capital": 1.66,
+          "capital_fund": 8.84,
+          "npl_ratio": 1.1,
+          "base_rate": 9.87,
+          "spread": 4.49
+        }
+      },
+      "key_ratios": {
+        "Per Share": {
+          "EPS": 52.47,
+          "Book Value": 118.11
+        },
+        "Performance": {
+          "ROE": 44.42
+        },
+        "Dividend": {
+          "Bonus Share %": 0.0,
+          "Cash Dividend %": 10.0
+        }
+      }
+    },
+    {
+      "ticker": "GBIME",
+      "fiscal_year": "077-078",
+      "report_type": "ANNUAL",
+      "quarter": null,
+      "is_audited": true,
+      "report_template": "BANK",
+      "paid_up_capital": 11643645804,
+      "reserves_and_surplus": 2055308147,
+      "net_profit": 7172084779,
+      "eps": 61.6,
+      "book_value": 124.13,
+      "return_on_equity": 49.62,
+      "bonus_share": 20.0,
+      "cash_dividend": 1.05,
+      "dividend_announced_date": null,
+      "dividend_book_close_date": "2022-05-03",
+      "balance_sheet": {
+        "ASSETS": {
+          "cash_equivalent": 14041791406,
+          "due_from_nrb": 17397344462,
+          "placement_bfis": 17754500000,
+          "loans_bfis": 6703456716,
+          "loans_customers": 261716625897,
+          "investment_securities": 43905455200,
+          "property_equipment": 3090673000,
+          "intangible_assets": 175283200,
+          "other_assets": 4616979218,
+          "total_assets": 369402109099
+        },
+        "LIABILITIES": {
+          "due_to_bfis": 22226827540,
+          "deposits_customers": 327680700427,
+          "current_tax_liabilities": 754133327,
+          "deferred_tax_liabilities": 285748000,
+          "other_liabilities": 4001855975,
+          "total_liabilities": 354949265269
+        },
+        "EQUITY": {
+          "share_capital": 11643645804,
+          "retained_earnings": 753889879,
+          "reserves_reserves": 2055308147,
+          "total_equity": 14452843830,
+          "total_liabilities_equity": 369402109099
+        }
+      },
+      "profit_loss": {
+        "INCOME": {
+          "interest_income": 27895975773,
+          "interest_expense": 14014028625,
+          "net_interest_income": 13881947148,
+          "fee_income": 1404034891,
+          "fee_expense": 203268866,
+          "net_fee_income": 1200766025,
+          "net_int_fee_income": 15082713173,
+          "trading_income": 416505920,
+          "other_operating_income": 317393143,
+          "total_operating_income": 15816612236
+        },
+        "EXPENSES": {
+          "impairment_charge": 1282174454,
+          "personnel_expenses": 2335408555,
+          "other_operating_expenses": 984977920,
+          "depreciation": 379000000,
+          "operating_profit": 10834051307,
+          "non_operating_income": 37761099,
+          "non_operating_expense": 670286455,
+          "pbt": 10201525951,
+          "tax": 3029441172,
+          "net_profit": 7172084779
+        },
+        "REGULATORY": {
+          "cd_ratio": 81.53,
+          "core_capital": 9.64,
+          "supplementary_capital": 2.07,
+          "capital_fund": 11.71,
+          "npl_ratio": 1.7,
+          "base_rate": 8.41,
+          "spread": 4.9
+        }
+      },
+      "cash_flow": {
+        "OPERATING": {
+          "net_profit_before_tax": 10201525951,
+          "depreciation_amortization": 379000000,
+          "increase_decrease_interest_receivable": -1500000000,
+          "increase_decrease_interest_payable": 800000000,
+          "increase_decrease_loans_advances": -56400000000,
+          "increase_decrease_deposits": 94146078644,
+          "increase_decrease_other": -2000000000,
+          "income_tax_paid": -3000000000,
+          "net_cash_operating": 42626604595
+        },
+        "INVESTING": {
+          "purchase_property_equipment": -750000000,
+          "proceeds_sale_assets": 50000000,
+          "purchase_investment_securities": -11210955200,
+          "net_cash_investing": -11910955200
+        },
+        "FINANCING": {
+          "dividends_paid": -1000000000,
+          "net_cash_financing": -1000000000
+        },
+        "SUMMARY": {
+          "net_increase_decrease_cash": 29715649395,
+          "cash_beginning": 17397344462,
+          "cash_end": 47112993857
+        }
+      },
+      "key_ratios": {
+        "Per Share": {
+          "EPS": 61.6,
+          "Book Value": 124.13
+        },
+        "Performance": {
+          "ROE": 49.62
+        },
+        "Dividend": {
+          "Bonus Share %": 20.0,
+          "Cash Dividend %": 1.05
+        }
+      }
+    },
+    {
+      "ticker": "GBIME",
+      "fiscal_year": "078-079",
+      "report_type": "ANNUAL",
+      "quarter": null,
+      "is_audited": true,
+      "report_template": "BANK",
+      "paid_up_capital": 16009501707,
+      "reserves_and_surplus": 5228310680,
+      "net_profit": 7952000000,
+      "eps": 49.67,
+      "book_value": 139.65,
+      "return_on_equity": 35.57,
+      "bonus_share": 20.0,
+      "cash_dividend": 1.05,
+      "dividend_announced_date": null,
+      "dividend_book_close_date": "2023-04-28",
+      "balance_sheet": {
+        "ASSETS": {
+          "cash_equivalent": 12898430637,
+          "due_from_nrb": 22296793985,
+          "placement_bfis": 15060000000,
+          "loans_bfis": 7764059234,
+          "loans_customers": 327459474462,
+          "investment_securities": 50754614665,
+          "property_equipment": 4148064000,
+          "intangible_assets": 233386558,
+          "other_assets": 6226551827,
+          "total_assets": 446841375368
+        },
+        "LIABILITIES": {
+          "due_to_bfis": 24620698497,
+          "deposits_customers": 393073048490,
+          "current_tax_liabilities": 871044649,
+          "deferred_tax_liabilities": 300000000,
+          "other_liabilities": 5619481519,
+          "total_liabilities": 424484273155
+        },
+        "EQUITY": {
+          "share_capital": 16009501707,
+          "retained_earnings": 1119289826,
+          "reserves_reserves": 5228310680,
+          "total_equity": 22357102213,
+          "total_liabilities_equity": 446841375368
+        }
+      },
+      "profit_loss": {
+        "INCOME": {
+          "interest_income": 44942823440,
+          "interest_expense": 27271226682,
+          "net_interest_income": 17671596758,
+          "fee_income": 2219524026,
+          "fee_expense": 308019979,
+          "net_fee_income": 1911504047,
+          "net_int_fee_income": 19583100805,
+          "trading_income": 369948547,
+          "other_operating_income": 383424073,
+          "total_operating_income": 20336473425
+        },
+        "EXPENSES": {
+          "impairment_charge": 2895386019,
+          "personnel_expenses": 3436965695,
+          "other_operating_expenses": 1418278893,
+          "depreciation": 549000000,
+          "operating_profit": 12036842818,
+          "non_operating_income": 89327867,
+          "non_operating_expense": 818281706,
+          "pbt": 11307888979,
+          "tax": 3355888979,
+          "net_profit": 7952000000
+        },
+        "REGULATORY": {
+          "cd_ratio": 82.81,
+          "core_capital": 9.96,
+          "supplementary_capital": 2.24,
+          "capital_fund": 12.2,
+          "npl_ratio": 2.9,
+          "base_rate": 12.97,
+          "spread": 5.0
+        }
+      },
+      "cash_flow": {
+        "OPERATING": {
+          "net_profit_before_tax": 11307888979,
+          "depreciation_amortization": 549000000,
+          "increase_decrease_interest_receivable": -2200000000,
+          "increase_decrease_interest_payable": 1100000000,
+          "increase_decrease_loans_advances": -65742848565,
+          "increase_decrease_deposits": 65392347663,
+          "increase_decrease_other": -1200000000,
+          "income_tax_paid": -3300000000,
+          "net_cash_operating": 5906388077
+        },
+        "INVESTING": {
+          "purchase_property_equipment": -1000000000,
+          "proceeds_sale_assets": 80000000,
+          "purchase_investment_securities": -6849159465,
+          "net_cash_investing": -7769159465
+        },
+        "FINANCING": {
+          "dividends_paid": -1200000000,
+          "net_cash_financing": -1200000000
+        },
+        "SUMMARY": {
+          "net_increase_decrease_cash": -3062771388,
+          "cash_beginning": 22296793985,
+          "cash_end": 19234022597
+        }
+      },
+      "key_ratios": {
+        "Per Share": {
+          "EPS": 49.67,
+          "Book Value": 139.65
+        },
+        "Performance": {
+          "ROE": 35.57
+        },
+        "Dividend": {
+          "Bonus Share %": 20.0,
+          "Cash Dividend %": 1.05
+        }
+      }
+    },
+    {
+      "ticker": "GBIME",
+      "fiscal_year": "079-080",
+      "report_type": "ANNUAL",
+      "quarter": null,
+      "is_audited": true,
+      "report_template": "BANK",
+      "paid_up_capital": 16009501707,
+      "reserves_and_surplus": 19499683155,
+      "net_profit": 6698400000,
+      "eps": 41.84,
+      "book_value": 230.98,
+      "return_on_equity": 18.11,
+      "bonus_share": 10.0,
+      "cash_dividend": 0.53,
+      "dividend_announced_date": null,
+      "dividend_book_close_date": "2024-02-14",
+      "balance_sheet": {
+        "ASSETS": {
+          "cash_equivalent": 11285748714,
+          "due_from_nrb": 22895044296,
+          "placement_bfis": 9895000000,
+          "derivative_assets": 1215396285,
+          "loans_bfis": 12503547042,
+          "loans_customers": 341521940543,
+          "investment_securities": 54049282219,
+          "current_tax_assets": 1055697985,
+          "property_equipment": 5013424000,
+          "intangible_assets": 315394830,
+          "other_assets": 7297990427,
+          "total_assets": 467052466341
+        },
+        "LIABILITIES": {
+          "due_to_bfis": 16813978628,
+          "derivative_liabilities": 1202476393,
+          "deposits_customers": 404590012819,
+          "deferred_tax_liabilities": 300000000,
+          "other_liabilities": 7166547440,
+          "total_liabilities": 430073015280
+        },
+        "EQUITY": {
+          "share_capital": 16009501707,
+          "retained_earnings": 1470266199,
+          "reserves_reserves": 19499683155,
+          "total_equity": 36979451061,
+          "total_liabilities_equity": 467052466341
+        }
+      },
+      "profit_loss": {
+        "INCOME": {
+          "interest_income": 54882979753,
+          "interest_expense": 35432879753,
+          "net_interest_income": 19450100000,
+          "fee_income": 2533000000,
+          "fee_expense": 365000000,
+          "net_fee_income": 2168000000,
+          "net_int_fee_income": 21618100000,
+          "trading_income": 395000000,
+          "other_operating_income": 490000000,
+          "total_operating_income": 22503100000
+        },
+        "EXPENSES": {
+          "impairment_charge": 5050000000,
+          "personnel_expenses": 4659000000,
+          "other_operating_expenses": 1862000000,
+          "depreciation": 650000000,
+          "operating_profit": 10282100000,
+          "non_operating_income": 115000000,
+          "non_operating_expense": 858000000,
+          "pbt": 9539100000,
+          "tax": 2840700000,
+          "net_profit": 6698400000
+        },
+        "REGULATORY": {
+          "cd_ratio": 82.19,
+          "core_capital": 9.96,
+          "supplementary_capital": 2.31,
+          "capital_fund": 12.27,
+          "npl_ratio": 4.23,
+          "base_rate": 12.31,
+          "spread": 4.68
+        }
+      },
+      "cash_flow": {
+        "OPERATING": {
+          "net_profit_before_tax": 9539100000,
+          "depreciation_amortization": 650000000,
+          "increase_decrease_interest_receivable": -1800000000,
+          "increase_decrease_interest_payable": 900000000,
+          "increase_decrease_loans_advances": -14062466081,
+          "increase_decrease_deposits": 11516964329,
+          "increase_decrease_other": -500000000,
+          "income_tax_paid": -2840700000,
+          "net_cash_operating": 3403898248
+        },
+        "INVESTING": {
+          "purchase_property_equipment": -1200000000,
+          "proceeds_sale_assets": 100000000,
+          "purchase_investment_securities": -3294667554,
+          "net_cash_investing": -4394667554
+        },
+        "FINANCING": {
+          "dividends_paid": -1500000000,
+          "net_cash_financing": -1500000000
+        },
+        "SUMMARY": {
+          "net_increase_decrease_cash": -2490769306,
+          "cash_beginning": 22895044296,
+          "cash_end": 20404274990
+        }
+      },
+      "key_ratios": {
+        "Per Share": {
+          "EPS": 41.84,
+          "Book Value": 230.98
+        },
+        "Performance": {
+          "ROE": 18.11
+        },
+        "Dividend": {
+          "Bonus Share %": 10.0,
+          "Cash Dividend %": 0.53
+        }
+      }
+    },
+    {
+      "ticker": "GBIME",
+      "fiscal_year": "080-081",
+      "report_type": "ANNUAL",
+      "quarter": null,
+      "is_audited": true,
+      "report_template": "BANK",
+      "paid_up_capital": 16009501707,
+      "reserves_and_surplus": 25971466583,
+      "net_profit": 6380000000,
+      "eps": 39.85,
+      "book_value": 272.91,
+      "return_on_equity": 14.6,
+      "bonus_share": 10.0,
+      "cash_dividend": 0.53,
+      "dividend_announced_date": null,
+      "dividend_book_close_date": "2025-01-06",
+      "balance_sheet": {
+        "ASSETS": {
+          "cash_equivalent": 10951706534,
+          "due_from_nrb": 21673590000,
+          "placement_bfis": 15862100000,
+          "derivative_assets": 1282813095,
+          "loans_bfis": 11695831025,
+          "loans_customers": 345568764001,
+          "investment_securities": 68498619742,
+          "current_tax_assets": 1218543893,
+          "property_equipment": 5498000000,
+          "intangible_assets": 379000000,
+          "other_assets": 8421000000,
+          "total_assets": 491049968290
+        },
+        "LIABILITIES": {
+          "due_to_bfis": 12929000000,
+          "derivative_liabilities": 1270000000,
+          "deposits_customers": 424753000000,
+          "deferred_tax_liabilities": 300000000,
+          "other_liabilities": 8107000000,
+          "total_liabilities": 447359000000
+        },
+        "EQUITY": {
+          "share_capital": 16009501707,
+          "retained_earnings": 1710000000,
+          "reserves_reserves": 25971466583,
+          "total_equity": 43690968290,
+          "total_liabilities_equity": 491049968290
+        }
+      },
+      "profit_loss": {
+        "INCOME": {
+          "interest_income": 52855000000,
+          "interest_expense": 33485000000,
+          "net_interest_income": 19370000000,
+          "fee_income": 2847000000,
+          "fee_expense": 387000000,
+          "net_fee_income": 2460000000,
+          "net_int_fee_income": 21830000000,
+          "trading_income": 355000000,
+          "other_operating_income": 458000000,
+          "total_operating_income": 22643000000
+        },
+        "EXPENSES": {
+          "impairment_charge": 4820000000,
+          "personnel_expenses": 5210000000,
+          "other_operating_expenses": 2085000000,
+          "depreciation": 720000000,
+          "operating_profit": 9808000000,
+          "non_operating_income": 170000000,
+          "non_operating_expense": 901000000,
+          "pbt": 9077000000,
+          "tax": 2697000000,
+          "net_profit": 6380000000
+        },
+        "REGULATORY": {
+          "cd_ratio": 78.87,
+          "core_capital": 10.59,
+          "supplementary_capital": 2.2,
+          "capital_fund": 12.79,
+          "npl_ratio": 5.25,
+          "base_rate": 9.75,
+          "spread": 4.33
+        }
+      },
+      "cash_flow": {
+        "OPERATING": {
+          "net_profit_before_tax": 9077000000,
+          "depreciation_amortization": 720000000,
+          "increase_decrease_interest_receivable": -1500000000,
+          "increase_decrease_interest_payable": 750000000,
+          "increase_decrease_loans_advances": -4047000000,
+          "increase_decrease_deposits": 20163000000,
+          "increase_decrease_other": -800000000,
+          "income_tax_paid": -2697000000,
+          "net_cash_operating": 21666000000
+        },
+        "INVESTING": {
+          "purchase_property_equipment": -1200000000,
+          "proceeds_sale_assets": 90000000,
+          "purchase_investment_securities": -14449337523,
+          "net_cash_investing": -15559337523
+        },
+        "FINANCING": {
+          "dividends_paid": -1800000000,
+          "net_cash_financing": -1800000000
+        },
+        "SUMMARY": {
+          "net_increase_decrease_cash": 4306662477,
+          "cash_beginning": 21673590000,
+          "cash_end": 25980252477
+        }
+      },
+      "key_ratios": {
+        "Per Share": {
+          "EPS": 39.85,
+          "Book Value": 272.91
+        },
+        "Performance": {
+          "ROE": 14.6
+        },
+        "Dividend": {
+          "Bonus Share %": 10.0,
+          "Cash Dividend %": 0.53
+        }
+      }
+    },
+    {
+      "ticker": "GBIME",
+      "fiscal_year": "081-082",
+      "report_type": "ANNUAL",
+      "quarter": null,
+      "is_audited": true,
+      "report_template": "BANK",
+      "paid_up_capital": 17611451778,
+      "reserves_and_surplus": 28209980120,
+      "net_profit": 7441000000,
+      "eps": 42.25,
+      "book_value": 271.83,
+      "return_on_equity": 15.54,
+      "bonus_share": 10.0,
+      "cash_dividend": 0.53,
+      "dividend_announced_date": null,
+      "dividend_book_close_date": "2025-12-05",
+      "balance_sheet": {
+        "ASSETS": {
+          "cash_equivalent": 11552432898,
+          "due_from_nrb": 26396000000,
+          "placement_bfis": 12977000000,
+          "derivative_assets": 2283000000,
+          "loans_bfis": 12553000000,
+          "loans_customers": 367284000000,
+          "investment_securities": 85285000000,
+          "current_tax_assets": 1073000000,
+          "property_equipment": 5729000000,
+          "intangible_assets": 434000000,
+          "other_assets": 10048000000,
+          "total_assets": 535614432898
+        },
+        "LIABILITIES": {
+          "due_to_bfis": 11813000000,
+          "derivative_liabilities": 2267000000,
+          "deposits_customers": 463558000000,
+          "deferred_tax_liabilities": 300000000,
+          "other_liabilities": 9803000000,
+          "total_liabilities": 487741000000
+        },
+        "EQUITY": {
+          "share_capital": 17611451778,
+          "retained_earnings": 2052000000,
+          "reserves_reserves": 28209980120,
+          "total_equity": 47873432898,
+          "total_liabilities_equity": 535614432898
+        }
+      },
+      "profit_loss": {
+        "INCOME": {
+          "interest_income": 49827000000,
+          "interest_expense": 31097000000,
+          "net_interest_income": 18730000000,
+          "fee_income": 3198000000,
+          "fee_expense": 423000000,
+          "net_fee_income": 2775000000,
+          "net_int_fee_income": 21505000000,
+          "trading_income": 672000000,
+          "other_operating_income": 636000000,
+          "total_operating_income": 22813000000
+        },
+        "EXPENSES": {
+          "impairment_charge": 2950000000,
+          "personnel_expenses": 5490000000,
+          "other_operating_expenses": 2210000000,
+          "depreciation": 785000000,
+          "operating_profit": 11378000000,
+          "non_operating_income": 198000000,
+          "non_operating_expense": 990000000,
+          "pbt": 10586000000,
+          "tax": 3145000000,
+          "net_profit": 7441000000
+        },
+        "REGULATORY": {
+          "cd_ratio": 77.42,
+          "core_capital": 10.77,
+          "supplementary_capital": 2.07,
+          "capital_fund": 12.84,
+          "npl_ratio": 4.12,
+          "base_rate": 7.86,
+          "spread": 3.87
+        }
+      },
+      "cash_flow": {
+        "OPERATING": {
+          "net_profit_before_tax": 10586000000,
+          "depreciation_amortization": 785000000,
+          "increase_decrease_interest_receivable": -1200000000,
+          "increase_decrease_interest_payable": 600000000,
+          "increase_decrease_loans_advances": -21716000000,
+          "increase_decrease_deposits": 38805000000,
+          "increase_decrease_other": -900000000,
+          "income_tax_paid": -3145000000,
+          "net_cash_operating": 23815000000
+        },
+        "INVESTING": {
+          "purchase_property_equipment": -1300000000,
+          "proceeds_sale_assets": 80000000,
+          "purchase_investment_securities": -16786380258,
+          "net_cash_investing": -18006380258
+        },
+        "FINANCING": {
+          "dividends_paid": -1900000000,
+          "net_cash_financing": -1900000000
+        },
+        "SUMMARY": {
+          "net_increase_decrease_cash": 3908619742,
+          "cash_beginning": 21673590000,
+          "cash_end": 25582209742
+        }
+      },
+      "key_ratios": {
+        "Per Share": {
+          "EPS": 42.25,
+          "Book Value": 271.83
+        },
+        "Performance": {
+          "ROE": 15.54
+        },
+        "Dividend": {
+          "Bonus Share %": 10.0,
+          "Cash Dividend %": 0.53
+        }
+      }
+    }
+  ]
+}
