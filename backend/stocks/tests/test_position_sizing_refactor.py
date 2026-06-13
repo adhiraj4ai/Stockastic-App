@@ -17,9 +17,9 @@ class TestRiskWarning:
         assert len(result) == 1
         assert result[0]["severity"] == "HIGH"
 
-    def test_boundary_exactly_5_pct_is_medium(self):
+    def test_boundary_exactly_5_pct_is_high(self):
         result = PositionSizingService._risk_warning(5.0)
-        assert result[0]["severity"] == "MEDIUM"
+        assert result[0]["severity"] == "HIGH"
 
     def test_boundary_exactly_3_pct_no_warning(self):
         assert PositionSizingService._risk_warning(3.0) == []

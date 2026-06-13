@@ -138,7 +138,7 @@ class PositionSizingService:
     @staticmethod
     def _risk_warning(risk_percentage: float) -> list:
         """Return a warning list for elevated or high risk percentages."""
-        if risk_percentage > PositionSizingService.RECOMMENDED_MAX_RISK:
+        if risk_percentage >= PositionSizingService.RECOMMENDED_MAX_RISK:
             return [{'type': 'HIGH_RISK', 'severity': 'HIGH',
                      'message': f'Risk of {risk_percentage}% exceeds recommended maximum of '
                                 f'{PositionSizingService.RECOMMENDED_MAX_RISK}%'}]
