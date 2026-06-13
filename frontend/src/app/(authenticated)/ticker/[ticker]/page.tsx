@@ -15,6 +15,7 @@ import {
     Check, ChevronDown, Search, X, PieChart, Globe
 } from 'lucide-react';
 import { formatNepaliNumber, formatRupees } from '@/lib/formatters';
+import { formatMetricValue } from '@/lib/metricFormat';
 import ReactECharts from 'echarts-for-react';
 import * as echarts from 'echarts';
 import TransactionModal from '@/components/TransactionModal';
@@ -64,6 +65,7 @@ interface StockDetailData {
         fundamental_indicators?: Array<{
             name: string;
             value: string;
+            sector_median?: string;
             sector_high: string;
             sector_high_ticker: string;
             sector_low: string;
@@ -783,33 +785,60 @@ export default function StockDetailPage() {
                                                         <th className="px-6 py-4 text-left font-semibold text-slate-400 dark:text-slate-500 text-[9px]">Metric</th>
                                                         <th className="px-6 py-4 text-center font-semibold text-slate-400 dark:text-slate-500 text-[9px]">Audited</th>
                                                         <th className="px-6 py-4 text-center font-semibold text-slate-400 dark:text-slate-500 text-[9px]">Unaudited</th>
+                                                        <th className="px-6 py-4 text-center font-semibold text-slate-400 dark:text-slate-500 text-[9px]">Sector Median</th>
                                                         <th className="px-6 py-4 text-left font-semibold text-slate-400 dark:text-slate-500 text-[9px]">Sector Range (Low - High)</th>
                                                     </tr>
                                                 </thead>
                                                 <tbody className="divide-y divide-slate-100 dark:divide-slate-800 bg-white/30 dark:bg-card">
-                                                    {[
-                                                        { name: 'P/E Ratio', key: 'pe_ratio', label: 'P/E' },
-                                                        { name: 'P/B Ratio', key: 'pb_ratio', label: 'P/B' },
-                                                        { name: 'ROE (%)', key: 'ro_equity', label: 'ROE' },
+                                                    {([
+                                                        { section: 'Per Share' },
                                                         { name: 'EPS', key: 'eps', label: 'EPS' },
-                                                        { name: 'Dividend Yield', key: 'dividend_yield', label: 'Div Yield' },
                                                         { name: 'Book Value', key: 'book_value', label: 'Book Value' },
-                                                        { name: 'Market Cap', key: 'market_cap', label: 'Mkt Cap' }
-                                                    ].map((metric, i) => {
-                                                        const indicator = data.fundamental?.fundamental_indicators?.find((ind: any) => ind.name?.toLowerCase()?.includes(metric.label.toLowerCase())) ||
-                                                            data.fundamental?.fundamental_indicators?.find((ind: any) => ind.name === metric.name);
+                                                        { section: 'Valuation' },
+                                                        { name: 'P/E Ratio', key: 'pe_ratio', label: 'P/E Ratio' },
+                                                        { name: 'P/E Ratio (5 Yrs)', key: 'pe_ratio_5yr', label: 'P/E Ratio (5 Yrs)' },
+                                                        { name: 'P/B Ratio', key: 'price_to_book', label: 'P/B' },
+                                                        { name: 'PEG Ratio', key: 'peg_ratio', label: 'PEG' },
+                                                        { name: 'Price to Sales', key: 'price_to_sales', label: 'Price to Sales' },
+                                                        { name: 'Earning Yield (E/P)', key: 'earning_yield', label: 'Earning Yield' },
+                                                        { name: 'Dividend Yield', key: 'dividend_yield', label: 'Dividend Yield' },
+                                                        { name: 'Market Cap', key: 'market_cap', label: 'Mkt Cap' },
+                                                        { section: 'Risk' },
+                                                        { name: 'Debt to Equity', key: 'debt_to_equity', label: 'Debt to Equity' },
+                                                        { name: '1 Year Beta', key: 'beta_1y', label: '1 Year Beta' },
+                                                        { name: 'EPS Trend', key: 'eps_trend', label: 'EPS Trend' },
+                                                        { name: 'ROE Trend', key: 'roe_trend', label: 'ROE Trend' },
+                                                        { section: 'Profitability' },
+                                                        { name: 'ROE (%)', key: 'ro_equity', label: 'ROE' },
+                                                        { name: 'ROA (%)', key: 'ro_assets', label: 'ROA' },
+                                                        { name: 'Payout Ratio', key: 'dividend_payout_ratio', label: 'Payout Ratio' },
+                                                        { name: 'Operating Margin', key: 'operating_margin', label: 'Operating Margin' },
+                                                        { name: 'Net Margin', key: 'net_margin', label: 'Net Margin' },
+                                                        { name: 'Net Margin (Quarterly)', key: 'net_margin_quarterly', label: 'Net Margin (Quarterly)' },
+                                                        { name: 'Asset Turnover', key: 'asset_turnover', label: 'Asset Turnover' },
+                                                    ] as Array<{ section?: string; name?: string; key?: string; label?: string }>).map((metric, i) => {
+                                                        if (metric.section) {
+                                                            return (
+                                                                <tr key={i} className="bg-slate-50/80 dark:bg-card">
+                                                                    <td colSpan={5} className="px-6 py-2 text-[9px] font-bold uppercase tracking-widest text-slate-400 dark:text-slate-500">{metric.section}</td>
+                                                                </tr>
+                                                            );
+                                                        }
 
-                                                        const auditedValue = (data.fundamental as any)?.[metric.key];
+                                                        const indicator = data.fundamental?.fundamental_indicators?.find((ind: any) => ind.name === metric.name) ||
+                                                            data.fundamental?.fundamental_indicators?.find((ind: any) => ind.name?.toLowerCase()?.includes(metric.label!.toLowerCase()));
+
+                                                        const auditedValue = (data.fundamental as any)?.[metric.key!];
                                                         const unauditedValue = (data.fundamental as any)?.[`${metric.key}_unaudited`] || auditedValue;
 
-                                                        const formatVal = (val: any) => formatRupees(val);
+                                                        const formatVal = (val: any) => formatMetricValue(metric.key!, val);
 
                                                         return (
                                                             <tr key={i} className="hover:bg-accent transition-colors group">
                                                                 <td className="px-6 py-4 font-bold text-slate-700 dark:text-slate-300 whitespace-nowrap">
                                                                     <div className="flex items-center gap-1">
                                                                         {metric.name}
-                                                                        <IndicatorTooltip name={metric.name} description="" />
+                                                                        <IndicatorTooltip name={metric.name!} description="" />
                                                                     </div>
                                                                 </td>
                                                                 <td className="px-6 py-4 text-center">
@@ -817,6 +846,9 @@ export default function StockDetailPage() {
                                                                 </td>
                                                                 <td className="px-6 py-4 text-center">
                                                                     <span className="px-2.5 py-1 rounded bg-amber-50 dark:bg-amber-900/30 text-amber-600 dark:text-amber-400 font-bold text-[11px] ring-1 ring-amber-100 dark:ring-amber-800">{formatVal(unauditedValue)}</span>
+                                                                </td>
+                                                                <td className="px-6 py-4 text-center">
+                                                                    <span className="text-[11px] font-bold text-slate-500 dark:text-slate-400 tabular-nums">{indicator?.sector_median || '-'}</span>
                                                                 </td>
                                                                 <td className="px-6 py-4">
                                                                     <div className="flex items-center gap-4">
