@@ -14,6 +14,7 @@ import logging
 import math
 from decimal import Decimal, ROUND_HALF_UP
 
+from ..constants import ANNUAL_REPORTS_FETCH_COUNT, GRAHAM_NUMBER_MULTIPLIER
 from ..models.fundamentals import Dividend, FinancialReport, StockFundamental
 from ..models.market import Company, DailyIndexValue, DailyStockPrice
 from ..utils import normalize_fiscal_year
@@ -140,7 +141,7 @@ def recalculate_fundamentals(ticker):
     StockFundamental, or None when the ticker has no annual reports."""
     annuals = list(
         FinancialReport.objects.filter(ticker=ticker, report_type=FinancialReport.ReportType.ANNUAL)
-        .order_by('-fiscal_year')[:5]
+        .order_by('-fiscal_year')[:ANNUAL_REPORTS_FETCH_COUNT]
     )
     if not annuals:
         return None
@@ -278,7 +279,7 @@ def recalculate_fundamentals(ticker):
 
     # Graham number: price premium/discount vs sqrt(22.5 * EPS * BV), in %
     if price and eps and eps > 0 and book_value and book_value > 0:
-        graham = math.sqrt(22.5 * eps * book_value)
+        graham = math.sqrt(GRAHAM_NUMBER_MULTIPLIER * eps * book_value)
         fundamental.graham_number_diff = _round2((price - graham) / graham * 100)
     else:
         fundamental.graham_number_diff = None
