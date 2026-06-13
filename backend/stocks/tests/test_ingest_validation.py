@@ -26,13 +26,19 @@ def test_negative_volume_rejected():
     assert valid == [] and rejected[0][1] == "negative field"
 
 
-def test_inconsistent_ohlc_rejected():
-    # low above close
+def test_inconsistent_ohlc_clamped():
+    # NEPSE bonds/debentures can arrive with high/low that don't span open/close.
+    # Instead of rejecting, clamp so the bar is always coherent.
+
+    # low=103 > open=100: clamp to min(103, open=100, close=102) = 100
     valid, rejected = validate_price_rows([_row(low=103)])
-    assert valid == [] and rejected[0][1] == "OHLC inconsistent"
-    # high below open
+    assert len(valid) == 1 and rejected == []
+    assert float(valid[0].low) == 100
+
+    # high=99 < close=102: clamp to max(99, open=100, close=102) = 102
     valid, rejected = validate_price_rows([_row(high=99)])
-    assert valid == [] and rejected[0][1] == "OHLC inconsistent"
+    assert len(valid) == 1 and rejected == []
+    assert float(valid[0].high) == 102
 
 
 def test_missing_ohl_backfilled_to_close():
