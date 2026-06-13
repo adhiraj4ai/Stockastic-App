@@ -14,6 +14,7 @@ from stocks.services.opportunity_engine import rank_opportunities
 from stocks.services.confluence import confluence_score, entry_status
 from stocks.services.analogs import analog_stats
 from stocks.services.catalysts import upcoming_catalysts
+from stocks.models import SignalEpisode
 
 logger = logging.getLogger(__name__)
 
@@ -79,94 +80,95 @@ def _market_context(as_of):
     }
 
 
-def build_daily_plan(as_of=None):
-    """Build and upsert the plan. `as_of` = latest completed session (default: latest price date)."""
-    from stocks.models import DailyStockPrice, DailyTradingPlan, SignalEpisode
-
-    if as_of is None:
-        latest = DailyStockPrice.objects.order_by("-date").values_list("date", flat=True).first()
-        if latest is None:
-            raise ValueError("no price data; cannot build plan")
-        as_of = latest
-
-    regime_info = current_regime(as_of=as_of)
+def _fetch_opportunities():
+    """Rank opportunities and index by symbol, excluding DIVERGENT rows."""
     opp_result = rank_opportunities(limit=50)
     opp_by_symbol = {}
     for row in opp_result.get("opportunities", []):
         if row.get("trust") == "DIVERGENT":
-            continue  # spec: DIVERGENT never feeds a pick
+            continue
         cur = opp_by_symbol.get(row["symbol"])
         if cur is None or (row.get("score") or 0) > (cur.get("score") or 0):
             opp_by_symbol[row["symbol"]] = row
+    return opp_result, opp_by_symbol
 
-    active = SignalEpisode.objects.filter(end_date__isnull=True)
+
+def _fetch_active_episodes():
+    """Load all open SignalEpisodes; partition into buy_eps and sell_sources."""
     buy_eps, sell_sources = defaultdict(list), defaultdict(set)
-    for ep in active:
+    for ep in SignalEpisode.objects.filter(end_date__isnull=True):
         if ep.direction == "BUY" and ep.source not in SELL_SIDE_SOURCES:
             buy_eps[ep.symbol].append(ep)
         else:
             sell_sources[ep.symbol].add(ep.source)
+    return buy_eps, sell_sources
 
-    sector_by_symbol = _sector_intensities()
 
+def _candidate_dict(symbol, score, components, anchor, age, status, zone_low, zone_high, price_df):
+    """Assemble the candidate payload dict from pre-computed fields."""
+    return {
+        "symbol": symbol, "direction": "BUY",
+        "confluence_score": score, "components": components,
+        "entry": {
+            "price": float(anchor.entry_price), "zone_low": round(zone_low, 2),
+            "zone_high": round(zone_high, 2), "status": status,
+            "last_signal_age_days": age, "latest_close": float(price_df["Close"].iloc[-1]),
+        },
+        "targets": {
+            "tp1": float(anchor.target_price) if anchor.target_price else None,
+            "sl": float(anchor.stop_loss_price) if anchor.stop_loss_price else None,
+        },
+        "analog": None, "catalyst": None,
+    }
+
+
+def _build_candidate_for_symbol(symbol, eps, sell_sources, opp_by_symbol, sector_by_symbol, as_of):
+    """Return a candidate dict for one symbol, or None if price data is unavailable."""
+    price_df = _load_price_df(symbol)
+    if price_df is None or price_df.empty:
+        return None
+    price_df = price_df.loc[: pd.Timestamp(as_of)]
+    if price_df.empty:
+        return None
+    score, components = confluence_score(
+        buy_sources={e.source for e in eps},
+        sell_sources=sell_sources.get(symbol, set()),
+        opportunity_row=opp_by_symbol.get(symbol),
+        episode_metadatas=[e.metadata for e in eps],
+        sector_intensity=sector_by_symbol.get(symbol),
+    )
+    anchor = max(eps, key=lambda e: e.last_signal_date)
+    age = _signal_age_trading_days(price_df, anchor.last_signal_date)
+    status, zone_low, zone_high = entry_status(anchor.entry_price, age, price_df)
+    return _candidate_dict(symbol, score, components, anchor, age, status, zone_low, zone_high, price_df)
+
+
+def _build_candidates(buy_eps, sell_sources, opp_by_symbol, sector_by_symbol, as_of):
+    """Build and sort candidate dicts for all symbols with open BUY episodes."""
     candidates = []
     for symbol, eps in buy_eps.items():
-        price_df = _load_price_df(symbol)
-        if price_df is None or price_df.empty:
-            continue
-        price_df = price_df.loc[: pd.Timestamp(as_of)]
-        if price_df.empty:
-            continue
-        score, components = confluence_score(
-            buy_sources={e.source for e in eps},
-            sell_sources=sell_sources.get(symbol, set()),
-            opportunity_row=opp_by_symbol.get(symbol),
-            episode_metadatas=[e.metadata for e in eps],
-            sector_intensity=sector_by_symbol.get(symbol),
+        candidate = _build_candidate_for_symbol(
+            symbol, eps, sell_sources, opp_by_symbol, sector_by_symbol, as_of
         )
-        anchor = max(eps, key=lambda e: e.last_signal_date)  # freshest episode anchors the entry
-        age = _signal_age_trading_days(price_df, anchor.last_signal_date)
-        status, zone_low, zone_high = entry_status(anchor.entry_price, age, price_df)
-        candidates.append({
-            "symbol": symbol,
-            "direction": "BUY",
-            "confluence_score": score,
-            "components": components,
-            "entry": {
-                "price": float(anchor.entry_price),
-                "zone_low": round(zone_low, 2),
-                "zone_high": round(zone_high, 2),
-                "status": status,
-                "last_signal_age_days": age,
-                "latest_close": float(price_df["Close"].iloc[-1]),
-            },
-            "targets": {
-                "tp1": float(anchor.target_price) if anchor.target_price else None,
-                "sl": float(anchor.stop_loss_price) if anchor.stop_loss_price else None,
-            },
-            "analog": None,
-            "catalyst": None,
-        })
-
+        if candidate is not None:
+            candidates.append(candidate)
     candidates.sort(key=lambda c: -c["confluence_score"])
-    entry_statuses = {c["symbol"]: c["entry"]["status"] for c in candidates}
-    in_zone = [c for c in candidates if c["entry"]["status"] == "IN_ZONE"]
-    picks = in_zone[:MAX_PICKS]
-    others = [c for c in candidates if c not in picks]
+    return candidates
 
+
+def _attach_analogs_catalysts(picks, as_of):
+    """Mutate each pick in-place with analog stats and nearest catalyst."""
     catalysts = upcoming_catalysts(as_of=as_of)
-    # reversed: catalysts are date-ascending, so the nearest one wins per symbol
     catalyst_by_symbol = {c["symbol"]: c for c in reversed(catalysts)}
     for pick in picks:
         pick["analog"] = analog_stats(pick["symbol"], as_of=as_of)
         pick["catalyst"] = catalyst_by_symbol.get(pick["symbol"])
+    return catalysts
 
-    exits = [
-        {"symbol": row["symbol"], "producer": row.get("producer"), "close": row.get("close")}
-        for row in opp_result.get("exits", [])
-    ]
 
-    plan_date = next_trading_date(as_of)
+def _upsert_plan(plan_date, as_of, regime_info, picks, others, exits, catalysts, entry_statuses):
+    """Create or update the DailyTradingPlan row and return the instance."""
+    from stocks.models import DailyTradingPlan
     existing = DailyTradingPlan.objects.filter(date=plan_date).first()
     regenerated = existing is None or existing.payload.get("as_of") != as_of.isoformat()
     plan, _created = DailyTradingPlan.objects.update_or_create(
@@ -176,17 +178,41 @@ def build_daily_plan(as_of=None):
             "breadth": regime_info.get("breadth"),
             "payload": {
                 "as_of": as_of.isoformat(),
-                "picks": picks,
-                "watch": others[:10],  # remaining candidates (overflow IN_ZONE beyond top-5, plus EXTENDED/STALE)
-                "exits": exits,
-                "catalysts": catalysts,
+                "picks": picks, "watch": others[:10],
+                "exits": exits, "catalysts": catalysts,
                 "market_context": _market_context(as_of),
                 "entry_statuses": entry_statuses,
             },
         },
     )
-    plan.was_regenerated = regenerated  # transient flag for the nightly task (holiday guard)
+    plan.was_regenerated = regenerated
     return plan
+
+
+def build_daily_plan(as_of=None):
+    """Build and upsert the plan. `as_of` = latest completed session (default: latest price date)."""
+    from stocks.models import DailyStockPrice
+    if as_of is None:
+        latest = DailyStockPrice.objects.order_by("-date").values_list("date", flat=True).first()
+        if latest is None:
+            raise ValueError("no price data; cannot build plan")
+        as_of = latest
+    regime_info = current_regime(as_of=as_of)
+    opp_result, opp_by_symbol = _fetch_opportunities()
+    buy_eps, sell_sources = _fetch_active_episodes()
+    sector_by_symbol = _sector_intensities()
+    candidates = _build_candidates(buy_eps, sell_sources, opp_by_symbol, sector_by_symbol, as_of)
+    entry_statuses = {c["symbol"]: c["entry"]["status"] for c in candidates}
+    in_zone = [c for c in candidates if c["entry"]["status"] == "IN_ZONE"]
+    picks = in_zone[:MAX_PICKS]
+    others = [c for c in candidates if c not in picks]
+    catalysts = _attach_analogs_catalysts(picks, as_of)
+    exits = [
+        {"symbol": row["symbol"], "producer": row.get("producer"), "close": row.get("close")}
+        for row in opp_result.get("exits", [])
+    ]
+    plan_date = next_trading_date(as_of)
+    return _upsert_plan(plan_date, as_of, regime_info, picks, others, exits, catalysts, entry_statuses)
 
 
 NEAR_PCT = 0.02  # "within 2%" per spec
