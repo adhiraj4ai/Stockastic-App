@@ -8,6 +8,8 @@ Called by the `generate_all_signals` management command, which is triggered via 
 import logging
 from datetime import date, timedelta
 from django.db import connections
+from .signal_episode.service import ingest_reading
+from .signal_episode.adapters import engine_reading
 
 logger = logging.getLogger(__name__)
 
@@ -53,56 +55,54 @@ class SignalGenerationService:
         return total_saved
 
     @staticmethod
-    def _persist_signals(source, signals):
-        """Persist a list of signal dicts to SignalEpisode via ingest_reading."""
-        if not signals:
-            return 0
+    def _build_price_levels(sig: dict, ltp: float) -> dict:
+        """Compute TP1/TP2/TP3/SL levels for a signal dict given a last-traded price."""
+        if ltp <= 0:
+            return {}
+        if sig['signal'] == 'BUY':
+            wac = sig.get('metadata', {}).get('top_broker_wac', 0)
+            sl = round(wac * 0.98, 2) if (wac > 0 and wac < ltp) else round(ltp * 0.95, 2)
+            return {
+                'tp1': round(ltp * 1.05, 2),
+                'tp2': round(ltp * 1.10, 2),
+                'tp3': round(ltp * 1.15, 2),
+                'sl': sl,
+            }
+        if sig['signal'] == 'SELL':
+            return {
+                'tp1': round(ltp * 0.95, 2),
+                'tp2': round(ltp * 0.90, 2),
+                'tp3': round(ltp * 0.85, 2),
+                'sl': round(ltp * 1.05, 2),
+            }
+        return {}
 
+    @staticmethod
+    def _persist_one(source: str, sig: dict, today) -> bool:
+        """Persist a single signal dict. Returns True on success, False on any error."""
+        try:
+            ltp = float(sig.get('ltp', 0))
+            metadata = dict(sig.get('metadata', {}))
+            levels = SignalGenerationService._build_price_levels(sig, ltp)
+            metadata.update(levels)
+            tp2 = levels.get('tp2', sig.get('target_price'))
+            sl = levels.get('sl', sig.get('stop_loss_price'))
+            reading = engine_reading(
+                d=sig.get('generated_date', today), signal=sig['signal'], ltp=ltp,
+                strength=sig.get('strength', 0), tier=sig.get('signal_tier', ''),
+                rationale=sig.get('rationale', ''), target=tp2, stop=sl, metadata=metadata,
+            )
+            ingest_reading(source=source, strategy=None, symbol=sig['symbol'], reading=reading)
+            return True
+        except Exception as e:
+            logger.error(f"Failed to save signal for {sig.get('symbol')}: {e}")
+            return False
+
+    @classmethod
+    def _persist_signals(cls, source: str, signals: list) -> int:
+        """Persist a list of signal dicts to SignalEpisode. Returns count saved."""
         today = date.today()
-        saved = 0
-
-        for sig in signals:
-            try:
-                ltp = float(sig.get('ltp', 0))
-                
-                # Default SL/TP
-                tp2 = sig.get('target_price')
-                sl = sig.get('stop_loss_price')
-                
-                # Calculate Detailed Trade Plan
-                metadata = sig.get('metadata', {})
-                if ltp > 0:
-                    if sig['signal'] == 'BUY':
-                        tp1 = round(ltp * 1.05, 2)
-                        tp2 = round(ltp * 1.10, 2)
-                        tp3 = round(ltp * 1.15, 2)
-                        wac = metadata.get('top_broker_wac', 0)
-                        # SL is institutional cost - 2% if cost is below LTP, else 5% below LTP
-                        sl = round(wac * 0.98, 2) if (wac > 0 and wac < ltp) else round(ltp * 0.95, 2)
-                        metadata.update({'tp1': tp1, 'tp2': tp2, 'tp3': tp3, 'sl': sl})
-                    elif sig['signal'] == 'SELL':
-                        tp1 = round(ltp * 0.95, 2)
-                        tp2 = round(ltp * 0.90, 2)
-                        tp3 = round(ltp * 0.85, 2)
-                        sl = round(ltp * 1.05, 2)
-                        metadata.update({'tp1': tp1, 'tp2': tp2, 'tp3': tp3, 'sl': sl})
-
-                from .signal_episode.service import ingest_reading
-                from .signal_episode.adapters import engine_reading
-
-                ingest_reading(
-                    source=source, strategy=None, symbol=sig['symbol'],
-                    reading=engine_reading(
-                        d=sig.get('generated_date', today), signal=sig['signal'], ltp=ltp,
-                        strength=sig.get('strength', 0), tier=sig.get('signal_tier', ''),
-                        rationale=sig.get('rationale', ''), target=tp2, stop=sl, metadata=metadata,
-                    ),
-                )
-                saved += 1
-            except Exception as e:
-                logger.error(f"Failed to save signal for {sig.get('symbol')}: {e}")
-
-        return saved
+        return sum(1 for sig in signals if cls._persist_one(source, sig, today))
 
     @staticmethod
     def _generate_smart_money_signals():
