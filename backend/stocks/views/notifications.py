@@ -1,9 +1,11 @@
+from django.core.cache import cache
 from rest_framework import status, viewsets
 from rest_framework.decorators import action
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from ..models import Notification
 from ..serializers import NotificationSerializer
+from ..services.notifications import default_orchestrator
 
 # Maps frontend category name → list of NotificationType values
 CATEGORY_TYPES = {
@@ -74,44 +76,15 @@ class NotificationViewSet(viewsets.ModelViewSet):
 
     @action(detail=False, methods=['POST'])
     def trigger_check(self, request):
-        """
-        Manually trigger notification checks for all sources.
-        Includes a 10-minute cooldown to prevent redundant heavy scans.
-        """
-        from django.core.cache import cache
-        from ..services.notification_service import (
-            check_portfolio_alerts, check_watchlist_alerts,
-            check_signal_alerts, check_whale_watch_alerts,
-            check_active_signal_alerts, check_zone_entry_alerts,
-        )
-        
-        # Cooldown check: 10 minutes
+        """Manually trigger notification checks via the orchestrator (10-min cooldown)."""
         cache_key = f"notif_check_cooldown_{request.user.id}"
         if cache.get(cache_key):
             return Response({
                 'status': 'skipped',
-                'message': 'Notification check recently performed. Please wait a few minutes before triggering again.',
-                'cooldown_active': True
+                'message': 'Notification check skipped — cooldown active.',
+                'cooldown_active': True,
             })
-
-        portfolio_count = check_portfolio_alerts(request.user)
-        watchlist_count = check_watchlist_alerts(request.user)
-        signal_count = check_signal_alerts(request.user)
-        whale_count = check_whale_watch_alerts(request.user)
-        active_signal_hits = check_active_signal_alerts(request.user)
-        zone_entry_count = check_zone_entry_alerts(request.user)
-
-        # Set cooldown for 10 minutes (600 seconds)
+        total = default_orchestrator.run(request.user)
         cache.set(cache_key, True, 600)
-
-        return Response({
-            'status': 'check complete',
-            'portfolio_notifications': portfolio_count,
-            'watchlist_notifications': watchlist_count,
-            'signal_notifications': signal_count,
-            'whale_notifications': whale_count,
-            'active_signal_hits': active_signal_hits,
-            'zone_entry_notifications': zone_entry_count,
-            'total_notifications': portfolio_count + watchlist_count + signal_count + whale_count + active_signal_hits + zone_entry_count,
-        })
+        return Response({'status': 'check complete', 'total_notifications': total})
 
