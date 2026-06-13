@@ -1,4 +1,5 @@
 """Tests for SignalGenerationService helper extraction (SOLID Phase 3a)."""
+from datetime import date
 from unittest.mock import patch, MagicMock
 import pytest
 from stocks.services.signal_generation_service import SignalGenerationService
@@ -53,7 +54,7 @@ class TestPersistOne:
             side_effect=Exception('DB error'),
         ):
             result = SignalGenerationService._persist_one(
-                'ingest', sig, __import__('datetime').date.today()
+                'ingest', sig, date.today()
             )
         assert result is False
 
@@ -70,23 +71,15 @@ class TestPersistOne:
             'stocks.services.signal_generation_service.ingest_reading',
             return_value=MagicMock(),
         ):
-            today = __import__('datetime').date.today()
-            result = SignalGenerationService._persist_one('ingest', sig, today)
+            result = SignalGenerationService._persist_one('ingest', sig, date.today())
         assert result is True
 
-    def test_returns_true_on_success_for_engine_source(self):
-        sig = {
-            'signal': 'BUY', 'symbol': 'NABIL', 'metadata': {},
-            'ltp': 100, 'strength': 70, 'signal_tier': 'Gold', 'rationale': 'test',
-        }
-        mock_reading = MagicMock()
-        with patch(
-            'stocks.services.signal_generation_service.engine_reading',
-            return_value=mock_reading,
-        ), patch(
-            'stocks.services.signal_generation_service.ingest_reading',
-            return_value=MagicMock(),
-        ):
-            today = __import__('datetime').date.today()
-            result = SignalGenerationService._persist_one('engine', sig, today)
+    def test_routes_engine_source_correctly(self):
+        sig = {'signal': 'BUY', 'symbol': 'NABIL', 'metadata': {}}
+        today = date.today()
+        with patch('stocks.services.signal_generation_service.engine_reading') as mock_engine:
+            mock_engine.return_value = MagicMock()
+            with patch('stocks.services.signal_generation_service.ingest_reading'):
+                result = SignalGenerationService._persist_one('engine', sig, today)
+        mock_engine.assert_called_once()
         assert result is True

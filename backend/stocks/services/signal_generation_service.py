@@ -6,12 +6,22 @@ Called by the `generate_all_signals` management command, which is triggered via 
 """
 
 import logging
-from datetime import date, timedelta
+from datetime import date
 from django.db import connections
 from .signal_episode.service import ingest_reading
 from .signal_episode.adapters import engine_reading
 
 logger = logging.getLogger(__name__)
+
+_WAC_SL_BUFFER = 0.98
+_LTP_SL_BUFFER = 0.95
+_TP1 = 1.05
+_TP2 = 1.10
+_TP3 = 1.15
+_SELL_TP1 = 0.95
+_SELL_TP2 = 0.90
+_SELL_TP3 = 0.85
+_SELL_SL = 1.05
 
 
 class SignalGenerationService:
@@ -39,20 +49,25 @@ class SignalGenerationService:
                 progress_callback(i + 1, len(sources), source_key)
             try:
                 signals = generator_fn()
-                if source_key == 'INSTITUTIONAL_ALERTS':
-                    # Special case: multi-source generator returns list of dicts with 'source' included
-                    for sub_source, sub_signals in signals.items():
-                        saved = SignalGenerationService._persist_signals(sub_source, sub_signals)
-                        total_saved += saved
-                        logger.info(f"[{sub_source}] Generated and saved {saved} signals via institutional scanner")
-                else:
-                    saved = SignalGenerationService._persist_signals(source_key, signals)
-                    total_saved += saved
-                    logger.info(f"[{source_key}] Generated and saved {saved} signals")
+                total_saved += SignalGenerationService._dispatch_source(source_key, signals)
             except Exception as e:
                 logger.error(f"[{source_key}] Failed to generate signals: {e}")
 
         return total_saved
+
+    @staticmethod
+    def _dispatch_source(source_key: str, signals) -> int:
+        """Persist signals for a source; handles the INSTITUTIONAL_ALERTS multi-source case."""
+        if source_key == 'INSTITUTIONAL_ALERTS':
+            total = 0
+            for sub_source, sub_signals in signals.items():
+                saved = SignalGenerationService._persist_signals(sub_source, sub_signals)
+                total += saved
+                logger.info(f"[{sub_source}] Generated and saved {saved} signals via institutional scanner")
+            return total
+        saved = SignalGenerationService._persist_signals(source_key, signals)
+        logger.info(f"[{source_key}] Generated and saved {saved} signals")
+        return saved
 
     @staticmethod
     def _build_price_levels(sig: dict, ltp: float) -> dict:
@@ -61,19 +76,19 @@ class SignalGenerationService:
             return {}
         if sig['signal'] == 'BUY':
             wac = sig.get('metadata', {}).get('top_broker_wac', 0)
-            sl = round(wac * 0.98, 2) if (wac > 0 and wac < ltp) else round(ltp * 0.95, 2)
+            sl = round(wac * _WAC_SL_BUFFER, 2) if (wac > 0 and wac < ltp) else round(ltp * _LTP_SL_BUFFER, 2)
             return {
-                'tp1': round(ltp * 1.05, 2),
-                'tp2': round(ltp * 1.10, 2),
-                'tp3': round(ltp * 1.15, 2),
+                'tp1': round(ltp * _TP1, 2),
+                'tp2': round(ltp * _TP2, 2),
+                'tp3': round(ltp * _TP3, 2),
                 'sl': sl,
             }
         if sig['signal'] == 'SELL':
             return {
-                'tp1': round(ltp * 0.95, 2),
-                'tp2': round(ltp * 0.90, 2),
-                'tp3': round(ltp * 0.85, 2),
-                'sl': round(ltp * 1.05, 2),
+                'tp1': round(ltp * _SELL_TP1, 2),
+                'tp2': round(ltp * _SELL_TP2, 2),
+                'tp3': round(ltp * _SELL_TP3, 2),
+                'sl': round(ltp * _SELL_SL, 2),
             }
         return {}
 
