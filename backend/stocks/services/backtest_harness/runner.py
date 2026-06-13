@@ -113,14 +113,9 @@ def _safe(stats, key, default=0.0):
     return float(val)
 
 
-def normalize_metrics(stats):
-    """Flatten a backtesting.py stats Series into a JSON-serializable dict.
-
-    NaN/inf (which backtesting.py emits for zero-trade runs) are coerced to 0.0.
-    Per-trade outcomes are captured from ``stats['_trades']`` when present so the
-    statistics layer can compute win-rate intervals and bootstrap significance.
-    """
-    metrics = {
+def _core_metrics(stats):
+    """Extract the primary return and risk metrics from a stats Series."""
+    return {
         "return_pct": _safe(stats, "Return [%]"),
         "buy_hold_return_pct": _safe(stats, "Buy & Hold Return [%]"),
         "sharpe": _safe(stats, "Sharpe Ratio"),
@@ -133,20 +128,33 @@ def normalize_metrics(stats):
         "profit_factor": _safe(stats, "Profit Factor"),
         "ann_return_pct": _safe(stats, "Return (Ann.) [%]"),
     }
-    trades = None
+
+
+def _trade_outcome_metrics(stats):
+    """Extract per-trade return outcomes from stats['_trades'] when available."""
     try:
         trades = stats["_trades"]
     except (KeyError, TypeError):
         trades = None
     if trades is not None and len(trades) and "ReturnPct" in trades:
         rets = [float(x) for x in trades["ReturnPct"].tolist()]
-        metrics["trade_returns"] = rets
-        metrics["wins"] = int(sum(1 for r in rets if r > 0))
-        metrics["losses"] = int(len(rets) - metrics["wins"])
-    else:
-        metrics["trade_returns"] = []
-        metrics["wins"] = 0
-        metrics["losses"] = 0
+        return {
+            "trade_returns": rets,
+            "wins": int(sum(1 for r in rets if r > 0)),
+            "losses": int(len(rets) - sum(1 for r in rets if r > 0)),
+        }
+    return {"trade_returns": [], "wins": 0, "losses": 0}
+
+
+def normalize_metrics(stats):
+    """Flatten a backtesting.py stats Series into a JSON-serializable dict.
+
+    NaN/inf (which backtesting.py emits for zero-trade runs) are coerced to 0.0.
+    Per-trade outcomes are captured from ``stats['_trades']`` when present so the
+    statistics layer can compute win-rate intervals and bootstrap significance.
+    """
+    metrics = _core_metrics(stats)
+    metrics.update(_trade_outcome_metrics(stats))
     return metrics
 
 
@@ -167,58 +175,57 @@ def _buy_hold_cost_pct(cash, resolved_commission, resolved_spread):
     return 2.0 * per_side * 100.0
 
 
+def _resolve_strategy_class(code, ticker, params):
+    """Exec strategy code and return the extracted Strategy subclass, or None."""
+    scope = build_strategy_scope(ticker, params=params)
+    exec(code, scope)  # noqa: S102
+    return extract_strategy_class(scope)
+
+
+def _execute_bt(df, strategy_class, cash, resolved_commission, resolved_spread, params):
+    """Build and run a Backtest instance; return raw stats."""
+    bt = Backtest(
+        df,
+        strategy_class,
+        cash=cash,
+        commission=resolved_commission,
+        spread=resolved_spread,
+        exclusive_orders=True,
+    )
+    run_params = {k: v for k, v in (params or {}).items() if hasattr(strategy_class, k)}
+    return bt.run(**run_params)
+
+
+def _truncate_error(e):
+    msg = str(e)
+    if len(msg) > 200:
+        msg = msg[:200] + "..."
+    return f"{type(e).__name__}: {msg}"
+
+
 def run_backtest(strategy_or_code, ticker, params=None, start=None, end=None,
                  cash=1_000_000, commission=None, spread=None, df=None):
     """Execute a strategy over one symbol and return a BacktestResult.
 
-    ``strategy_or_code`` may be a Strategy model instance, a raw code string, or
-    a special token (see scope.resolve_code). Exceptions are captured into the
-    result rather than raised, so a broken strategy is a recorded failure.
-
-    ``commission=None`` (default) applies the real NEPSE cost model: tiered
-    broker commission + 0.015% SEBON + Rs 25 DP charge per side, implemented
-    as a callable in ``fees.nepse_commission``. Pass a float (e.g. ``0.0``) to
-    override with a flat per-trade fraction for frictionless or custom runs.
-
-    ``spread=None`` (default) uses ``fees.DEFAULT_SPREAD`` (10 bps) to model
-    NEPSE bid-ask/illiquidity costs. Pass ``0.0`` to disable spread entirely.
+    Exceptions are captured into the result rather than raised.
+    commission=None uses the real NEPSE tiered cost model (nepse_commission).
+    spread=None uses DEFAULT_SPREAD (10 bps) for bid-ask/illiquidity.
     """
-    code = getattr(strategy_or_code, "code", strategy_or_code)
-    code = resolve_code(code)
-
+    code = resolve_code(getattr(strategy_or_code, "code", strategy_or_code))
     if df is None:
         df = load_price_df(ticker, start=start, end=end)
     if df is None or len(df) < MIN_BARS:
         return BacktestResult(symbol=ticker, ok=False,
                               error=f"Insufficient data (have {0 if df is None else len(df)}, need {MIN_BARS})")
-
     try:
-        scope = build_strategy_scope(ticker, params=params)
-        exec(code, scope)
-        strategy_class = extract_strategy_class(scope)
+        strategy_class = _resolve_strategy_class(code, ticker, params)
         if strategy_class is None:
             return BacktestResult(symbol=ticker, ok=False, error="No Strategy subclass found in code")
-
         resolved_commission = nepse_commission if commission is None else commission
         resolved_spread = DEFAULT_SPREAD if spread is None else spread
-        bt = Backtest(
-            df,
-            strategy_class,
-            cash=cash,
-            commission=resolved_commission,
-            spread=resolved_spread,
-            exclusive_orders=True,
-        )
-        run_params = {k: v for k, v in (params or {}).items() if hasattr(strategy_class, k)}
-        stats = bt.run(**run_params)
+        stats = _execute_bt(df, strategy_class, cash, resolved_commission, resolved_spread, params)
         metrics = normalize_metrics(stats)
-        # Charge buy & hold the same round-trip cost so the comparison is net-vs-net.
-        metrics["buy_hold_return_pct"] -= _buy_hold_cost_pct(
-            cash, resolved_commission, resolved_spread
-        )
+        metrics["buy_hold_return_pct"] -= _buy_hold_cost_pct(cash, resolved_commission, resolved_spread)
         return BacktestResult(symbol=ticker, ok=True, metrics=metrics)
     except Exception as e:  # noqa: BLE001 — any strategy error becomes a recorded failure
-        msg = str(e)
-        if len(msg) > 200:
-            msg = msg[:200] + "..."
-        return BacktestResult(symbol=ticker, ok=False, error=f"{type(e).__name__}: {msg}")
+        return BacktestResult(symbol=ticker, ok=False, error=_truncate_error(e))

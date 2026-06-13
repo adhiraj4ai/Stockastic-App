@@ -92,75 +92,69 @@ def evaluate_over_basket(strategy_or_code, basket, oos_fraction=None, strategy_n
     return score_results(name, results)
 
 
-def score_results(strategy_name, results):
-    """Pure scorecard computation over a list of BacktestResult (no DB/backtest).
+def _bh_ret_over_dd(r):
+    """Buy-and-hold return / |max drawdown| for one BacktestResult."""
+    dd = abs(r.metrics["max_drawdown_pct"])
+    if dd > 1e-9:
+        return r.metrics["buy_hold_return_pct"] / dd
+    return r.metrics["buy_hold_return_pct"]
 
-    Separated from evaluate_over_basket so the acceptance rule is unit-testable.
-    """
-    card = ScoreCard(strategy_name=strategy_name, results=results)
 
-    ok = card.ok_results
-    n_total = len(results)
+def _build_series(ok):
+    """Derive all per-symbol series needed for verdict and aggregate computation."""
+    return {
+        "strat_returns": [r.metrics["return_pct"] for r in ok],
+        "excess": [r.excess_return for r in ok],
+        "strat_sortino": [r.metrics["sortino"] for r in ok],
+        "strat_rdd": [_ret_over_dd(r.metrics) for r in ok],
+        "bh_rdd": [_bh_ret_over_dd(r) for r in ok],
+        "trade_counts": [r.metrics["num_trades"] for r in ok],
+        "n_traded": sum(1 for r in ok if r.metrics["num_trades"] > 0),
+    }
 
-    if not ok:
-        card.passed = False
-        card.verdicts = {"runs_clean": False}
-        card.aggregates = {"symbols_total": n_total, "symbols_ok": 0}
-        return card
 
-    strat_returns = [r.metrics["return_pct"] for r in ok]
-    excess = [r.excess_return for r in ok]
-    # Risk-adjusted profile: Sortino (downside-only) rather than Sharpe — Sharpe is
-    # near-zero and rounding-fragile on daily NEPSE data. The risk-adjusted comparison
-    # against passive holding is done via return/|drawdown| (condition 5).
-    strat_sortino = [r.metrics["sortino"] for r in ok]
-    strat_rdd = [_ret_over_dd(r.metrics) for r in ok]
-    bh_rdd = [
-        (r.metrics["buy_hold_return_pct"] / abs(r.metrics["max_drawdown_pct"]))
-        if abs(r.metrics["max_drawdown_pct"]) > 1e-9
-        else r.metrics["buy_hold_return_pct"]
-        for r in ok
-    ]
-    n_traded = sum(1 for r in ok if r.metrics["num_trades"] > 0)
-    trade_counts = [r.metrics["num_trades"] for r in ok]
-
-    med_excess = median(excess)
-    med_strat_sortino = median(strat_sortino)
-    med_strat_rdd = median(strat_rdd)
-    med_bh_rdd = median(bh_rdd)
-    med_trades = median(trade_counts)
-
-    verdicts = {
+def _compute_verdicts(ok, n_total, series):
+    """Return the five pass/fail verdicts dict."""
+    med_excess = median(series["excess"])
+    med_strat_sortino = median(series["strat_sortino"])
+    med_strat_rdd = median(series["strat_rdd"])
+    med_bh_rdd = median(series["bh_rdd"])
+    med_trades = median(series["trade_counts"])
+    n_traded = series["n_traded"]
+    return {
         "runs_clean": len(ok) == n_total,
         "active": (n_traded / n_total >= MIN_TRADE_SYMBOL_FRACTION) and (med_trades >= MIN_MEDIAN_TRADES),
         "beats_bh_return": med_excess > 0,
         "positive_risk_adjusted": med_strat_sortino > 0,
         "beats_bh_drawdown_adjusted": med_strat_rdd >= med_bh_rdd,
     }
-    card.verdicts = verdicts
-    card.passed = all(verdicts.values())
-    card.aggregates = {
+
+
+def _compute_aggregates(ok, n_total, series):
+    """Return the aggregates dict for a ScoreCard."""
+    med_excess = median(series["excess"])
+    med_strat_sortino = median(series["strat_sortino"])
+    med_strat_rdd = median(series["strat_rdd"])
+    med_bh_rdd = median(series["bh_rdd"])
+    return {
         "symbols_total": n_total,
         "symbols_ok": len(ok),
-        "symbols_traded": n_traded,
-        "median_return_pct": round(median(strat_returns), 2),
+        "symbols_traded": series["n_traded"],
+        "median_return_pct": round(median(series["strat_returns"]), 2),
         "median_excess_return_pct": round(med_excess, 2),
         "median_strategy_sortino": round(med_strat_sortino, 3),
         "median_strategy_return_over_dd": round(med_strat_rdd, 3),
         "median_buyhold_return_over_dd": round(med_bh_rdd, 3),
-        "median_trades": med_trades,
+        "median_trades": median(series["trade_counts"]),
     }
 
-    # --- Statistical confidence (reported; does NOT gate card.passed) ---
-    # Win rate: pooled proportion + Wilson interval, behind a sample-size gate.
+
+def _compute_confidence(ok, excess):
+    """Return the statistical confidence dict for a ScoreCard."""
     total_wins = sum(int(r.metrics.get("wins", 0)) for r in ok)
     total_trades = sum(int(r.metrics.get("num_trades", 0)) for r in ok)
     ci_lo, ci_hi = wilson_interval(total_wins, total_trades)
-    # Significance of the EDGE over buy & hold: bootstrap the mean of the
-    # per-symbol excess returns (the natural independent unit — NOT pooled
-    # correlated trades, which would understate variance and inflate
-    # significance). `excess` is strategy% - buyhold% per symbol, computed above.
-    card.confidence = {
+    confidence = {
         "total_trades": total_trades,
         "total_wins": total_wins,
         "pooled_win_rate": round(100.0 * total_wins / total_trades, 2) if total_trades else 0.0,
@@ -168,12 +162,31 @@ def score_results(strategy_name, results):
         "win_rate_reportable": winrate_is_reportable(total_trades),
         "excess_pvalue": round(bootstrap_pvalue(excess), 4),
     }
-
     pooled_trade_returns = [x for r in ok for x in r.metrics.get("trade_returns", [])]
-    _exp = expectancy_stats(pooled_trade_returns)
-    card.confidence["expectancy"] = round(_exp["expectancy"], 5)
-    card.confidence["avg_win"] = round(_exp["avg_win"], 5)
-    card.confidence["avg_loss"] = round(_exp["avg_loss"], 5)
-    card.confidence["payoff_ratio"] = round(_exp["payoff_ratio"], 3)
+    exp = expectancy_stats(pooled_trade_returns)
+    confidence["expectancy"] = round(exp["expectancy"], 5)
+    confidence["avg_win"] = round(exp["avg_win"], 5)
+    confidence["avg_loss"] = round(exp["avg_loss"], 5)
+    confidence["payoff_ratio"] = round(exp["payoff_ratio"], 3)
+    return confidence
 
+
+def score_results(strategy_name, results):
+    """Pure scorecard computation over a list of BacktestResult (no DB/backtest).
+
+    Separated from evaluate_over_basket so the acceptance rule is unit-testable.
+    """
+    card = ScoreCard(strategy_name=strategy_name, results=results)
+    ok = card.ok_results
+    n_total = len(results)
+    if not ok:
+        card.passed = False
+        card.verdicts = {"runs_clean": False}
+        card.aggregates = {"symbols_total": n_total, "symbols_ok": 0}
+        return card
+    series = _build_series(ok)
+    card.verdicts = _compute_verdicts(ok, n_total, series)
+    card.passed = all(card.verdicts.values())
+    card.aggregates = _compute_aggregates(ok, n_total, series)
+    card.confidence = _compute_confidence(ok, series["excess"])
     return card
