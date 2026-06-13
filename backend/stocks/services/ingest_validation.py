@@ -18,6 +18,29 @@ __all__ = ["validate_price_rows"]
 _EPS = 1e-9
 
 
+def _rejection_reason(it):
+    """Return a rejection reason string if `it` fails basic field checks, else None."""
+    c = float(it.close or 0)
+    if c <= 0:
+        return "non-positive close"
+    o = float(it.open or 0)
+    h = float(it.high or 0)
+    low = float(it.low or 0)
+    vol = float(it.volume or 0)
+    if min(o, h, low, vol) < 0:
+        return "negative field"
+    return None
+
+
+def _clamp_ohlc(it):
+    """Back-fill missing OHLC legs and clamp H/L to always span open/close (in place)."""
+    it.open = it.open or it.close
+    it.high = it.high or it.close
+    it.low = it.low or it.close
+    it.high = max(float(it.high), float(it.open), float(it.close))
+    it.low = min(float(it.low), float(it.open), float(it.close))
+
+
 def validate_price_rows(items):
     """Partition unsaved DailyStockPrice instances into (valid, rejected).
 
@@ -27,27 +50,10 @@ def validate_price_rows(items):
     """
     valid, rejected = [], []
     for it in items:
-        o = float(it.open or 0)
-        h = float(it.high or 0)
-        low = float(it.low or 0)
-        c = float(it.close or 0)
-        vol = float(it.volume or 0)
-
-        if c <= 0:
-            rejected.append((it.ticker, "non-positive close"))
+        reason = _rejection_reason(it)
+        if reason:
+            rejected.append((it.ticker, reason))
             continue
-        if min(o, h, low, vol) < 0:
-            rejected.append((it.ticker, "negative field"))
-            continue
-
-        # Back-fill missing legs, then clamp H/L to always span open/close.
-        # This covers both zero-legs (CSV sentinel) and OHLC-inconsistent rows
-        # from the NEPSE API (bonds/debentures where LTP != session H/L range).
-        it.open = it.open or it.close
-        it.high = it.high or it.close
-        it.low = it.low or it.close
-        it.high = max(float(it.high), float(it.open), float(it.close))
-        it.low = min(float(it.low), float(it.open), float(it.close))
-
+        _clamp_ohlc(it)
         valid.append(it)
     return valid, rejected

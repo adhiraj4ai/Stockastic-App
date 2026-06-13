@@ -127,9 +127,44 @@ def _load_price_df(symbol):
     return load_price_df(symbol)
 
 
+def _compute_signals(df, symbol):
+    """Compute intensity, RSI and regime Series for `df`; return (intensity, rsi, regime)."""
+    closes, volume = df["Close"], df["Volume"]
+    acc = _daily_total_accumulation(symbol)
+    if acc is None:
+        return None, None, None
+    acc = acc.reindex(df.index).ffill()
+    acc_mom = acc - acc.shift(ACC_WINDOW)
+    vol_avg = volume.rolling(VOL_WINDOW).mean()
+    intensity = (acc_mom / vol_avg.replace(0, np.nan) * 100).clip(-50, 50)
+    rsi = compute_rsi(closes)
+    regime = _index_regime_series()
+    if regime is not None:
+        regime = regime.reindex(df.index).ffill()
+    return intensity, rsi, regime
+
+
+def _fingerprint(intensity, rsi, regime, i):
+    """Build the (bucket, band, regime_bool) fingerprint tuple for position i."""
+    return (
+        intensity_bucket(float(intensity.iloc[i])),
+        rsi_band(float(rsi.iloc[i])),
+        bool(regime.iloc[i]) if regime is not None else None,
+    )
+
+
+def _find_match_positions(df, intensity, rsi, regime, valid, today_fp):
+    """Return integer positions (excluding today) whose fingerprint matches today_fp."""
+    match_positions = []
+    for i in range(len(df) - 1):
+        if valid.iloc[i] and _fingerprint(intensity, rsi, regime, i) == today_fp:
+            match_positions.append(i)
+    return match_positions
+
+
 def analog_stats(symbol, as_of=None):
     """Forward-return base rates for days matching today's fingerprint, or None."""
-    df = _load_price_df(symbol)  # corporate-action adjusted; DatetimeIndex, OHLCV
+    df = _load_price_df(symbol)
     if df is None or len(df) < 60:
         return None
     if as_of is not None:
@@ -137,19 +172,9 @@ def analog_stats(symbol, as_of=None):
         if len(df) < 60:
             return None
 
-    closes, volume = df["Close"], df["Volume"]
-    acc = _daily_total_accumulation(symbol)
-    if acc is None:
+    intensity, rsi, regime = _compute_signals(df, symbol)
+    if intensity is None:
         return None
-    acc = acc.reindex(df.index).ffill()
-    acc_mom = acc - acc.shift(ACC_WINDOW)
-    vol_avg = volume.rolling(VOL_WINDOW).mean()
-    intensity = (acc_mom / vol_avg.replace(0, np.nan) * 100).clip(-50, 50)
-    rsi = compute_rsi(closes)
-
-    regime = _index_regime_series()
-    if regime is not None:
-        regime = regime.reindex(df.index).ffill()
 
     valid = intensity.notna() & rsi.notna()
     if regime is not None:
@@ -157,16 +182,6 @@ def analog_stats(symbol, as_of=None):
     if not valid.iloc[-1]:
         return None
 
-    today_fp = (intensity_bucket(float(intensity.iloc[-1])), rsi_band(float(rsi.iloc[-1])),
-                bool(regime.iloc[-1]) if regime is not None else None)
-
-    match_positions = []
-    n = len(df)
-    for i in range(n - 1):  # exclude today itself
-        if not valid.iloc[i]:
-            continue
-        fp = (intensity_bucket(float(intensity.iloc[i])), rsi_band(float(rsi.iloc[i])),
-              bool(regime.iloc[i]) if regime is not None else None)
-        if fp == today_fp:
-            match_positions.append(i)
-    return forward_return_stats(closes, match_positions)
+    today_fp = _fingerprint(intensity, rsi, regime, -1)
+    match_positions = _find_match_positions(df, intensity, rsi, regime, valid, today_fp)
+    return forward_return_stats(df["Close"], match_positions)

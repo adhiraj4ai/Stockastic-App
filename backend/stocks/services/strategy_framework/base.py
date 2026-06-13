@@ -104,6 +104,31 @@ class ExitRule(Component):
         return False
 
 
+def _composed_next(self, _alpha, _regime, _stop, _rr, exits):
+    """Per-bar logic for a composed strategy instance."""
+    price = self.data.Close[-1]
+    if self.position and _stop is not None:
+        for trade in self.trades:
+            _stop.trail(self, trade)
+    if not self.position:
+        _composed_try_entry(self, _alpha, _regime, _stop, _rr, price)
+    else:
+        if _alpha.exit(self) or any(e.exit(self) for e in exits):
+            self.position.close()
+
+
+def _composed_try_entry(self, _alpha, _regime, _stop, _rr, price):
+    """Attempt an entry: check signal, compute stop/TP, then call buy."""
+    if not (_alpha.entry(self) and (_regime is None or _regime.ok(self))):
+        return
+    sl = _stop.initial(self, price) if _stop is not None else None
+    if sl is not None and 0 < sl < price:
+        tp = price + _rr * (price - sl) if _rr else None
+        self.buy(sl=sl, tp=tp)
+    else:
+        self.buy()
+
+
 def build_strategy(alpha, regime=None, stop=None, exit=None, rr=None,
                    name="ComposedStrategy", **params):
     """Compile components into a backtesting.py Strategy subclass.
@@ -124,24 +149,7 @@ def build_strategy(alpha, regime=None, stop=None, exit=None, rr=None,
                     c.register(self)
 
         def next(self):
-            price = self.data.Close[-1]
-            if self.position and _stop is not None:
-                for trade in self.trades:
-                    _stop.trail(self, trade)
-
-            if not self.position:
-                if _alpha.entry(self) and (_regime is None or _regime.ok(self)):
-                    sl = _stop.initial(self, price) if _stop is not None else None
-                    # A wide ATR stop can fall below zero on low-priced / high-vol names;
-                    # only attach the stop when it's a valid (0, price) level.
-                    if sl is not None and 0 < sl < price:
-                        tp = price + _rr * (price - sl) if _rr else None
-                        self.buy(sl=sl, tp=tp)
-                    else:
-                        self.buy()
-            else:
-                if _alpha.exit(self) or any(e.exit(self) for e in exits):
-                    self.position.close()
+            _composed_next(self, _alpha, _regime, _stop, _rr, exits)
 
     for k, v in params.items():
         setattr(_Composed, k, v)

@@ -7,52 +7,38 @@ logger = logging.getLogger(__name__)
 
 class DataSyncService:
     @staticmethod
+    def _collect_company_indicators(company, sector_data, stock_results):
+        """Compute indicators for one company and accumulate into sector_data/stock_results."""
+        indicators = get_technical_indicators(company.symbol)
+        if not indicators:
+            return
+        sector = company.sector or 'Unknown'
+        stock_results[company.symbol] = {'indicators': indicators, 'sector': sector}
+        sector_data.setdefault(sector, {})
+        for ind in indicators:
+            raw_val = ind.get('raw_value')
+            if raw_val is not None:
+                sector_data[sector].setdefault(ind['name'], []).append(
+                    {'ticker': company.symbol, 'value': raw_val}
+                )
+
+    @staticmethod
     def update_all_technical_indicators(progress_callback=None):
         """Calculates and updates technical indicators for all stocks, including sector stats."""
         companies = Company.objects.all()
         total = companies.count()
+        sector_data, stock_results = {}, {}
         processed = 0
-        
-        sector_data = {} 
-        stock_results = {} 
-
         for company in companies:
             try:
-                indicators = get_technical_indicators(company.symbol)
-                if not indicators:
-                    continue
-                
-                stock_results[company.symbol] = {
-                    'indicators': indicators,
-                    'sector': company.sector or 'Unknown'
-                }
-                
-                sector = company.sector or 'Unknown'
-                if sector not in sector_data:
-                    sector_data[sector] = {}
-                
-                for ind in indicators:
-                    name = ind['name']
-                    raw_val = ind.get('raw_value')
-                    if raw_val is not None:
-                        if name not in sector_data[sector]:
-                            sector_data[sector][name] = []
-                        sector_data[sector][name].append({
-                            'ticker': company.symbol,
-                            'value': raw_val
-                        })
-                
+                DataSyncService._collect_company_indicators(company, sector_data, stock_results)
                 processed += 1
                 if progress_callback:
                     progress_callback(processed, total)
-
             except Exception as e:
                 logger.error(f"Error processing {company.symbol}: {e}")
-
         sector_stats = DataSyncService._calculate_sector_stats(sector_data)
-        update_count = DataSyncService._save_indicators_with_stats(stock_results, sector_stats)
-        
-        return update_count
+        return DataSyncService._save_indicators_with_stats(stock_results, sector_stats)
 
     @staticmethod
     def _calculate_sector_stats(sector_data):

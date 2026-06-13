@@ -34,14 +34,8 @@ def is_long_term_holding(acquisition_date, sell_date):
     return (sell_date - acquisition_date).days >= LONG_TERM_DAYS
 
 
-def xirr(cashflows, guess=0.1):
-    """Money-weighted annualized return (IRR with irregular dates).
-
-    cashflows: list of (date, amount); outflows negative, inflows positive.
-    Solves sum(cf / (1+r)**(days/365)) = 0. Returns None if there's no sign
-    change (unsolvable) or too few flows. Newton's method with a bisection
-    fallback over [-0.999, 10].
-    """
+def _xirr_prepare(cashflows):
+    """Validate and normalize cashflows; return (amounts, years) or None if unsolvable."""
     flows = [(d, float(a)) for d, a in cashflows]
     if len(flows) < 2:
         return None
@@ -49,16 +43,15 @@ def xirr(cashflows, guess=0.1):
     if not (any(a > 0 for a in amounts) and any(a < 0 for a in amounts)):
         return None
     t0 = min(d for d, _ in flows)
-    years = [((d - t0).days / 365.0) for d, _ in flows]
+    years = [(d - t0).days / 365.0 for d, _ in flows]
+    return amounts, years
 
-    def npv(r):
-        return sum(a / (1.0 + r) ** y for a, y in zip(amounts, years))
 
-    # Newton
+def _xirr_newton(npv, guess):
+    """Newton's method for root-finding; return r if converged, else None."""
     r = guess
     for _ in range(100):
         f = npv(r)
-        # numerical derivative
         df = (npv(r + 1e-6) - f) / 1e-6
         if df == 0:
             break
@@ -68,7 +61,11 @@ def xirr(cashflows, guess=0.1):
             r = -0.999999
         if abs(step) < 1e-8:
             return r
-    # Bisection fallback
+    return None
+
+
+def _xirr_bisection(npv):
+    """Bisection fallback over [-0.999, 10]; return root or None if no sign change."""
     lo, hi = -0.999, 10.0
     flo, fhi = npv(lo), npv(hi)
     if flo * fhi > 0:
@@ -83,6 +80,28 @@ def xirr(cashflows, guess=0.1):
         else:
             lo, flo = mid, fmid
     return (lo + hi) / 2
+
+
+def xirr(cashflows, guess=0.1):
+    """Money-weighted annualized return (IRR with irregular dates).
+
+    cashflows: list of (date, amount); outflows negative, inflows positive.
+    Solves sum(cf / (1+r)**(days/365)) = 0. Returns None if there's no sign
+    change (unsolvable) or too few flows. Newton's method with a bisection
+    fallback over [-0.999, 10].
+    """
+    prepared = _xirr_prepare(cashflows)
+    if prepared is None:
+        return None
+    amounts, years = prepared
+
+    def npv(r):
+        return sum(a / (1.0 + r) ** y for a, y in zip(amounts, years))
+
+    result = _xirr_newton(npv, guess)
+    if result is not None:
+        return result
+    return _xirr_bisection(npv)
 
 
 def time_weighted_return(points):
