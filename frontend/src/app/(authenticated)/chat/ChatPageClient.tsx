@@ -2,13 +2,16 @@
 
 import { useEffect, useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { Bookmark, PanelRightClose, PanelRightOpen } from 'lucide-react';
+import { Bookmark, CalendarDays, PanelRightClose, PanelRightOpen } from 'lucide-react';
 import DashboardLayout from '@/components/DashboardLayout';
 import { ChatInterface } from '@/components/chat/ChatInterface';
 import { SessionList } from '@/components/chat/SessionList';
 import { BookmarkCatalog } from '@/components/chat/BookmarkCatalog';
+import { PlanSidebar } from '@/components/chat/PlanSidebar';
 import api from '@/lib/api';
 import type { ChatSession } from '@/components/chat/types';
+
+type SidebarTab = 'analyses' | 'plan';
 
 export default function ChatPageClient() {
     const router = useRouter();
@@ -19,10 +22,16 @@ export default function ChatPageClient() {
     const [loading, setLoading] = useState(true);
     // Captured once from ?q= (home omnibox handoff); the URL is then cleaned.
     const [pendingPrompt, setPendingPrompt] = useState<string | null>(null);
-    // Right-side bookmark catalog; preference persisted across visits.
+    // Right-side sidebar; open/collapsed and active tab persisted across visits.
     const [bookmarksOpen, setBookmarksOpen] = useState<boolean>(() =>
         typeof window === 'undefined' ? true : localStorage.getItem('chat:bookmarksOpen') !== '0',
     );
+    const [sidebarTab, setSidebarTab] = useState<SidebarTab>(() => {
+        if (typeof window === 'undefined') return 'analyses';
+        const stored = localStorage.getItem('chat:sidebarTab');
+        return stored === 'plan' ? 'plan' : 'analyses';
+    });
+
     const toggleBookmarks = () =>
         setBookmarksOpen((v) => {
             const next = !v;
@@ -30,6 +39,11 @@ export default function ChatPageClient() {
                 localStorage.setItem('chat:bookmarksOpen', next ? '1' : '0');
             return next;
         });
+
+    const selectTab = (tab: SidebarTab) => {
+        setSidebarTab(tab);
+        if (typeof window !== 'undefined') localStorage.setItem('chat:sidebarTab', tab);
+    };
 
     const refresh = async () => {
         try {
@@ -101,29 +115,53 @@ export default function ChatPageClient() {
                     )}
                 </div>
 
-                {/* Right-side saved-analyses catalog (shares BookmarkCatalog with /bookmarks) */}
+                {/* Right-side sidebar: Analyses and Plan tabs */}
                 {bookmarksOpen ? (
                     <aside className="hidden w-80 shrink-0 flex-col border-l border-border bg-sidebar md:flex">
-                        <div className="flex h-12 shrink-0 items-center justify-between border-b border-border px-3">
-                            <span className="inline-flex items-center gap-2 text-[13px] font-semibold text-foreground">
-                                <Bookmark size={14} className="text-emerald-500" /> Saved analyses
-                            </span>
+                        {/* Tab strip header */}
+                        <div className="flex h-12 shrink-0 items-center border-b border-border px-1 gap-0.5">
+                            <button
+                                onClick={() => selectTab('analyses')}
+                                className={`inline-flex items-center gap-1.5 px-3 h-full text-[13px] border-b-2 transition-colors ${
+                                    sidebarTab === 'analyses'
+                                        ? 'border-primary font-medium text-foreground'
+                                        : 'border-transparent text-muted-foreground hover:text-foreground'
+                                }`}
+                            >
+                                <Bookmark size={13} className={sidebarTab === 'analyses' ? 'text-emerald-500' : ''} />
+                                Analyses
+                            </button>
+                            <button
+                                onClick={() => selectTab('plan')}
+                                className={`inline-flex items-center gap-1.5 px-3 h-full text-[13px] border-b-2 transition-colors ${
+                                    sidebarTab === 'plan'
+                                        ? 'border-primary font-medium text-foreground'
+                                        : 'border-transparent text-muted-foreground hover:text-foreground'
+                                }`}
+                            >
+                                <CalendarDays size={13} className={sidebarTab === 'plan' ? 'text-emerald-500' : ''} />
+                                Plan
+                            </button>
                             <button
                                 onClick={toggleBookmarks}
-                                title="Hide saved analyses"
-                                className="rounded p-1 text-muted-foreground transition-colors hover:bg-sidebar-accent hover:text-foreground"
+                                title="Hide sidebar"
+                                className="ml-auto rounded p-1 text-muted-foreground transition-colors hover:bg-sidebar-accent hover:text-foreground"
                             >
                                 <PanelRightClose size={15} />
                             </button>
                         </div>
                         <div className="min-h-0 flex-1">
-                            <BookmarkCatalog variant="sidebar" />
+                            {sidebarTab === 'analyses' ? (
+                                <BookmarkCatalog variant="sidebar" />
+                            ) : (
+                                <PlanSidebar />
+                            )}
                         </div>
                     </aside>
                 ) : (
                     <button
                         onClick={toggleBookmarks}
-                        title="Show saved analyses"
+                        title="Show sidebar"
                         className="hidden w-10 shrink-0 flex-col items-center gap-2 border-l border-border bg-sidebar py-3 text-muted-foreground transition-colors hover:text-foreground md:flex"
                     >
                         <PanelRightOpen size={15} />
