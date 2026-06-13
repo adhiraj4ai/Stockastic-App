@@ -1,245 +1,153 @@
-from django.core.management.base import BaseCommand
-from stocks.models import Company, FinancialReport
-from decimal import Decimal
+from stocks.management.commands._quarterly_bank_seeder import QuarterlyBankSeeder
 
 
-class Command(BaseCommand):
+class Command(QuarterlyBankSeeder):
     help = 'Seeds CZBIL quarterly financial reports'
-
-    def handle(self, *args, **kwargs):
-        self.stdout.write('Seeding CZBIL quarterly financial data...')
-
-        # Ensure CZBIL company exists
-        company, _ = Company.objects.get_or_create(
-            symbol='CZBIL',
-            defaults={
-                'name': 'Citizens Bank International Limited',
-                'sector': 'Commercial Banks',
-                'instrument_type': 'Equity'
-            }
-        )
-
-        # Values provided are in RS in 000'
-        # Mapping: Fiscal Year -> Quarter -> Data
-        quarterly_data = {
-            '082/083': {
-                3: {
-                    'paid_up_capital': 15507463.61,
-                    'retained_earnings': -504454.82,
-                    'reserves': 9186771.04,
-                    'total_equity': 24189779.84,
-                    'total_assets': 248586906.43,
-                    'deposits': 213468835.49,
-                    'borrowings': 0,
-                    'loans_bfis': 1424078.97,
-                    'loans_customers': 169391269.95,
-                    'investment_securities': 41067798.65,
-                    'interest_income': 11273333.93,
-                    'net_interest_income': 4678859.98,
-                    'total_operating_income': 6159261.14,
-                    'operating_profit': 1849271.89,
-                    'net_profit': 1306461.35,
-                    'distributable_profit': -504454.82,
-                    'num_shares': 155074636.14,
-                    'eps': 11.23,
-                    'book_value': 155.99,
-                    'roe': 7.2,
-                    'car': 12.45,
-                    'npl': 6.82,
-                    'cost_of_funds': 3.54,
-                    'cd_ratio': 85.9,
-                    'base_rate': 6.62,
-                    'interest_spread': 3.83,
-                },
-                2: {
-                    'paid_up_capital': 15507463.61,
-                    'retained_earnings': -1100493.66,
-                    'reserves': 8821724.25,
-                    'total_equity': 23228694.20,
-                    'total_assets': 245653491.69,
-                    'deposits': 210223564.91,
-                    'borrowings': 0,
-                    'loans_bfis': 606328.24,
-                    'loans_customers': 168210202.69,
-                    'investment_securities': 41821077.11,
-                    'interest_income': 7723863.53,
-                    'net_interest_income': 3144546.13,
-                    'total_operating_income': 4118749.81,
-                    'operating_profit': 504171.39,
-                    'net_profit': 358858.63,
-                    'distributable_profit': -1100493.66,
-                    'num_shares': 155074636.14,
-                    'eps': 4.63,
-                    'book_value': 149.79,
-                    'roe': 3.09,
-                    'car': 12.43,
-                    'npl': 6.86,
-                    'cost_of_funds': 3.78,
-                    'cd_ratio': 82.66,
-                    'base_rate': 5.62,
-                    'interest_spread': 3.69,
-                },
-                1: {
-                    'paid_up_capital': 14769012.97,
-                    'retained_earnings': -414778.09,
-                    'reserves': 8287288.76,
-                    'total_equity': 22641523.64,
-                    'total_assets': 246348568.17,
-                    'deposits': 212681116.60,
-                    'borrowings': 0,
-                    'loans_bfis': 736072.91,
-                    'loans_customers': 168863110.11,
-                    'investment_securities': 41557067.05,
-                    'interest_income': 4066326.62,
-                    'net_interest_income': 1666263.49,
-                    'total_operating_income': 2214921.98,
-                    'operating_profit': -371855.00,
-                    'net_profit': -220411.17,
-                    'distributable_profit': -414778.09,
-                    'num_shares': 147690129.66,
-                    'eps': -5.97,
-                    'book_value': 153.30,
-                    'roe': -3.89,
-                    'car': 12.31,
-                    'npl': 6.84,
-                    'cost_of_funds': 4.05,
-                    'cd_ratio': 81.9,
-                    'base_rate': 5.9,
-                    'interest_spread': 3.79,
-                }
+    symbol = 'CZBIL'
+    company_name = 'Citizens Bank International Limited'
+    quarterly_data = {
+        '082/083': {
+            3: {
+                'paid_up_capital': 15507463.61,
+                'retained_earnings': -504454.82,
+                'reserves': 9186771.04,
+                'total_equity': 24189779.84,
+                'total_assets': 248586906.43,
+                'deposits': 213468835.49,
+                'borrowings': 0,
+                'loans_bfis': 1424078.97,
+                'loans_customers': 169391269.95,
+                'investment_securities': 41067798.65,
+                'interest_income': 11273333.93,
+                'net_interest_income': 4678859.98,
+                'total_operating_income': 6159261.14,
+                'operating_profit': 1849271.89,
+                'net_profit': 1306461.35,
+                'distributable_profit': -504454.82,
+                'num_shares': 155074636.14,
+                'eps': 11.23,
+                'book_value': 155.99,
+                'roe': 7.2,
+                'car': 12.45,
+                'npl': 6.82,
+                'cost_of_funds': 3.54,
+                'cd_ratio': 85.9,
+                'base_rate': 6.62,
+                'interest_spread': 3.83,
             },
-            '081/082': {
-                4: {
-                    'paid_up_capital': 14769012.97,
-                    'retained_earnings': 775452.21,
-                    'reserves': 7409494.89,
-                    'total_equity': 22953960.07,
-                    'total_assets': 245377715.62,
-                    'deposits': 211500793.31,
-                    'borrowings': 0,
-                    'loans_bfis': 1254373.37,
-                    'loans_customers': 168956818.90,
-                    'investment_securities': 42267572.42,
-                    'interest_income': 17309675.06,
-                    'net_interest_income': 6364973.10,
-                    'total_operating_income': 8124410.88,
-                    'operating_profit': 2000975.83,
-                    'net_profit': 1293321.39,
-                    'distributable_profit': 775452.21,
-                    'num_shares': 147690129.66,
-                    'eps': 8.76,
-                    'book_value': 155.42,
-                    'roe': 5.63,
-                    'car': 12.45,
-                    'npl': 4.94,
-                    'cost_of_funds': 4.49,
-                    'cd_ratio': 81.91,
-                    'base_rate': 6.25,
-                    'interest_spread': 3.64,
-                },
-                3: {
-                    'paid_up_capital': 14769012.97,
-                    'retained_earnings': 162621.86,
-                    'reserves': 7627379.17,
-                    'total_equity': 22559014.00,
-                    'total_assets': 235912345.74,
-                    'deposits': 198946016.93,
-                    'borrowings': 0,
-                    'loans_bfis': 1331377.35,
-                    'loans_customers': 167764275.41,
-                    'investment_securities': 32059468.33,
-                    'interest_income': 13134451.06,
-                    'net_interest_income': 4748976.36,
-                    'total_operating_income': 5976294.00,
-                    'operating_profit': 1334116.17,
-                    'net_profit': 961893.69,
-                    'distributable_profit': 162621.86,
-                    'num_shares': 147690129.66,
-                    'eps': 8.68,
-                    'book_value': 152.75,
-                    'roe': 5.69,
-                    'car': 12.34,
-                    'npl': 5.71,
-                    'cost_of_funds': 4.77,
-                    'cd_ratio': 85.90,
-                    'base_rate': 6.62,
-                    'interest_spread': 3.83,
-                }
+            2: {
+                'paid_up_capital': 15507463.61,
+                'retained_earnings': -1100493.66,
+                'reserves': 8821724.25,
+                'total_equity': 23228694.20,
+                'total_assets': 245653491.69,
+                'deposits': 210223564.91,
+                'borrowings': 0,
+                'loans_bfis': 606328.24,
+                'loans_customers': 168210202.69,
+                'investment_securities': 41821077.11,
+                'interest_income': 7723863.53,
+                'net_interest_income': 3144546.13,
+                'total_operating_income': 4118749.81,
+                'operating_profit': 504171.39,
+                'net_profit': 358858.63,
+                'distributable_profit': -1100493.66,
+                'num_shares': 155074636.14,
+                'eps': 4.63,
+                'book_value': 149.79,
+                'roe': 3.09,
+                'car': 12.43,
+                'npl': 6.86,
+                'cost_of_funds': 3.78,
+                'cd_ratio': 82.66,
+                'base_rate': 5.62,
+                'interest_spread': 3.69,
+            },
+            1: {
+                'paid_up_capital': 14769012.97,
+                'retained_earnings': -414778.09,
+                'reserves': 8287288.76,
+                'total_equity': 22641523.64,
+                'total_assets': 246348568.17,
+                'deposits': 212681116.60,
+                'borrowings': 0,
+                'loans_bfis': 736072.91,
+                'loans_customers': 168863110.11,
+                'investment_securities': 41557067.05,
+                'interest_income': 4066326.62,
+                'net_interest_income': 1666263.49,
+                'total_operating_income': 2214921.98,
+                'operating_profit': -371855.00,
+                'net_profit': -220411.17,
+                'distributable_profit': -414778.09,
+                'num_shares': 147690129.66,
+                'eps': -5.97,
+                'book_value': 153.30,
+                'roe': -3.89,
+                'car': 12.31,
+                'npl': 6.84,
+                'cost_of_funds': 4.05,
+                'cd_ratio': 81.9,
+                'base_rate': 5.9,
+                'interest_spread': 3.79,
+            }
+        },
+        '081/082': {
+            4: {
+                'paid_up_capital': 14769012.97,
+                'retained_earnings': 775452.21,
+                'reserves': 7409494.89,
+                'total_equity': 22953960.07,
+                'total_assets': 245377715.62,
+                'deposits': 211500793.31,
+                'borrowings': 0,
+                'loans_bfis': 1254373.37,
+                'loans_customers': 168956818.90,
+                'investment_securities': 42267572.42,
+                'interest_income': 17309675.06,
+                'net_interest_income': 6364973.10,
+                'total_operating_income': 8124410.88,
+                'operating_profit': 2000975.83,
+                'net_profit': 1293321.39,
+                'distributable_profit': 775452.21,
+                'num_shares': 147690129.66,
+                'eps': 8.76,
+                'book_value': 155.42,
+                'roe': 5.63,
+                'car': 12.45,
+                'npl': 4.94,
+                'cost_of_funds': 4.49,
+                'cd_ratio': 81.91,
+                'base_rate': 6.25,
+                'interest_spread': 3.64,
+            },
+            3: {
+                'paid_up_capital': 14769012.97,
+                'retained_earnings': 162621.86,
+                'reserves': 7627379.17,
+                'total_equity': 22559014.00,
+                'total_assets': 235912345.74,
+                'deposits': 198946016.93,
+                'borrowings': 0,
+                'loans_bfis': 1331377.35,
+                'loans_customers': 167764275.41,
+                'investment_securities': 32059468.33,
+                'interest_income': 13134451.06,
+                'net_interest_income': 4748976.36,
+                'total_operating_income': 5976294.00,
+                'operating_profit': 1334116.17,
+                'net_profit': 961893.69,
+                'distributable_profit': 162621.86,
+                'num_shares': 147690129.66,
+                'eps': 8.68,
+                'book_value': 152.75,
+                'roe': 5.69,
+                'car': 12.34,
+                'npl': 5.71,
+                'cost_of_funds': 4.77,
+                'cd_ratio': 85.90,
+                'base_rate': 6.62,
+                'interest_spread': 3.83,
             }
         }
-
-        created_count = 0
-        updated_count = 0
-
-        for fiscal_year, quarters in quarterly_data.items():
-            formatted_fy = fiscal_year.replace('/', '-')
-            for quarter, d in quarters.items():
-                balance_sheet = {
-                    'SUMMARY': {
-                        'placement_bfis': d['loans_bfis'] * 1000,
-                        'loans_customers': d['loans_customers'] * 1000,
-                        'investment_securities': d['investment_securities'] * 1000,
-                        'total_assets': d['total_assets'] * 1000,
-                        'deposits_customers': d['deposits'] * 1000,
-                        'borrowings': d['borrowings'] * 1000,
-                        'paid_up_capital': d['paid_up_capital'] * 1000,
-                        'reserves': d['reserves'] * 1000,
-                        'total_equity': d['total_equity'] * 1000,
-                    }
-                }
-
-                profit_loss = {
-                    'PL': {
-                        'interest_income': d['interest_income'] * 1000,
-                        'net_interest_income': d['net_interest_income'] * 1000,
-                        'net_fee_income': None,
-                        'total_operating_income': d['total_operating_income'] * 1000,
-                        'impairment_charges': None,
-                        'operating_profit': d['operating_profit'] * 1000,
-                        'net_profit': d['net_profit'] * 1000,
-                        'distributable_profit': d['distributable_profit'] * 1000,
-                    },
-                    'RATIOS': {
-                        'eps_annualized': d['eps'],
-                        'npl': d['npl'],
-                        'cost_of_funds': d['cost_of_funds'],
-                        'cd_ratio': d['cd_ratio'],
-                        'base_rate': d['base_rate'],
-                        'spread': d['interest_spread'],
-                        'book_value': d['book_value'],
-                    }
-                }
-
-                # Create or update report
-                report, created = FinancialReport.objects.update_or_create(
-                    ticker='CZBIL',
-                    fiscal_year=formatted_fy,
-                    report_type='QUARTERLY',
-                    quarter=quarter,
-                    defaults={
-                        'is_audited': False,
-                        'report_template': 'BANK_QUARTERLY',
-                        'balance_sheet': balance_sheet,
-                        'profit_loss': profit_loss,
-                        'key_ratios': None,
-                        'paid_up_capital': Decimal(str(d['paid_up_capital'] * 1000)),
-                        'reserves_and_surplus': Decimal(str(d['reserves'] * 1000)),
-                        'net_profit': Decimal(str(d['net_profit'] * 1000)),
-                        'eps': Decimal(str(d['eps'])),
-                        'book_value': Decimal(str(d['book_value'])),
-                        'return_on_equity': Decimal(str(d['roe'])),
-                    }
-                )
-
-                if created:
-                    created_count += 1
-                    self.stdout.write(self.style.SUCCESS(f'✓ Created report for FY {formatted_fy} Q{quarter}'))
-                else:
-                    updated_count += 1
-                    self.stdout.write(self.style.WARNING(f'⟳ Updated report for FY {formatted_fy} Q{quarter}'))
-
-        self.stdout.write(self.style.SUCCESS(
-            f'\n✓ Successfully processed quarterly reports for CZBIL'
-        ))
-        self.stdout.write(f'  Created: {created_count}')
-        self.stdout.write(f'  Updated: {updated_count}')
+    }
