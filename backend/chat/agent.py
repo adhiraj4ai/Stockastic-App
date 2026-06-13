@@ -123,6 +123,25 @@ def _is_stale_session(exc: Exception) -> bool:
     return any(phrase in msg for phrase in _STALE_SESSION_PHRASES)
 
 
+@sync_to_async
+def _fetch_memory(user):
+    from chat.models import UserMemory
+    return list(UserMemory.objects.filter(user=user).values_list("content", flat=True))
+
+
+@sync_to_async
+def _fetch_saved_hint_async(user, prompt: str) -> str:
+    return _build_saved_hint(user, prompt)
+
+
+async def _run_sdk_turn(options, formatted_prompt: str):
+    """Run a single SDK turn, yielding messages. Raises on error."""
+    async with ClaudeSDKClient(options=options) as client:
+        await client.query(formatted_prompt)
+        async for message in client.receive_response():
+            yield message
+
+
 async def run_chat_session(user, sdk_session_id: str, prompt: str) -> AsyncIterator:
     """Run one assistant turn against the orchestrator, yielding SDK messages.
 
@@ -131,39 +150,19 @@ async def run_chat_session(user, sdk_session_id: str, prompt: str) -> AsyncItera
     fresh session so the user gets a response instead of an error.
     """
     _user_context.set_user(user)
-
-    @sync_to_async
-    def _fetch_memory():
-        from chat.models import UserMemory
-        return list(
-            UserMemory.objects.filter(user=user).values_list("content", flat=True)
-        )
-
-    memory = await _fetch_memory()
-
-    @sync_to_async
-    def _fetch_saved_hint():
-        return _build_saved_hint(user, prompt)
-
-    saved_hint = await _fetch_saved_hint()
+    memory = await _fetch_memory(user)
+    saved_hint = await _fetch_saved_hint_async(user, prompt)
     formatted_prompt = _format_prompt(user, prompt, memory=memory, saved_hint=saved_hint)
 
-    # Try with resumption first; fall back to a brand-new session if stale.
     session_ids = [sdk_session_id, ""] if sdk_session_id else [""]
     for attempt_id in session_ids:
         options = _build_options(sdk_session_id=attempt_id)
         try:
-            async with ClaudeSDKClient(options=options) as client:
-                await client.query(formatted_prompt)
-                async for message in client.receive_response():
-                    yield message
-            return  # success — stop iterating
+            async for message in _run_sdk_turn(options, formatted_prompt):
+                yield message
+            return
         except Exception as exc:  # pylint: disable=broad-except
             if attempt_id and _is_stale_session(exc):
-                log.warning(
-                    "SDK session %r is stale (%s) — retrying as a fresh session",
-                    attempt_id,
-                    exc,
-                )
+                log.warning("SDK session %r is stale (%s) — retrying as a fresh session", attempt_id, exc)
                 continue
             raise

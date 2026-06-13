@@ -5,38 +5,45 @@ import base64
 import hashlib
 import os
 
-def get_crypter():
-    """
-    Get a Fernet crypter using a securely derived key.
-    
-    In production: requires ENCRYPTION_KEY environment variable (a Fernet-compatible key).
-    In development: derives a key from SECRET_KEY using PBKDF2 (with a warning).
-    """
-    encryption_key = os.environ.get('ENCRYPTION_KEY')
-    
-    if encryption_key:
-        # Use the provided key directly (must be a valid Fernet key)
-        try:
-            return Fernet(encryption_key.encode() if isinstance(encryption_key, str) else encryption_key)
-        except Exception:
-            raise ValueError("ENCRYPTION_KEY is not a valid Fernet key. Generate one with: python -c 'from cryptography.fernet import Fernet; print(Fernet.generate_key().decode())'")
-    
-    if not settings.DEBUG:
-        raise RuntimeError(
-            "ENCRYPTION_KEY environment variable is required in production. "
-            "Generate one with: python -c 'from cryptography.fernet import Fernet; print(Fernet.generate_key().decode())'"
-        )
-    
-    # Development fallback: derive key from SECRET_KEY using PBKDF2
+_KEYGEN_HINT = "python -c 'from cryptography.fernet import Fernet; print(Fernet.generate_key().decode())'"
+
+
+def _crypter_from_env_key(encryption_key: str) -> Fernet:
+    """Build a Fernet instance from the provided ENCRYPTION_KEY. Raises ValueError if invalid."""
+    raw = encryption_key.encode() if isinstance(encryption_key, str) else encryption_key
+    try:
+        return Fernet(raw)
+    except Exception:
+        raise ValueError(f"ENCRYPTION_KEY is not a valid Fernet key. Generate one with: {_KEYGEN_HINT}")
+
+
+def _crypter_from_secret_key() -> Fernet:
+    """Derive a Fernet key from Django's SECRET_KEY (development only)."""
     import warnings
-    warnings.warn("Using SECRET_KEY-derived encryption key. Set ENCRYPTION_KEY env var for production.", UserWarning)
+    warnings.warn(
+        "Using SECRET_KEY-derived encryption key. Set ENCRYPTION_KEY env var for production.",
+        UserWarning,
+    )
     derived_key = hashlib.pbkdf2_hmac(
-        'sha256',
-        settings.SECRET_KEY.encode(),
-        b'stockastic-encryption-salt',
-        100000
+        'sha256', settings.SECRET_KEY.encode(), b'stockastic-encryption-salt', 100000
     )
     return Fernet(base64.urlsafe_b64encode(derived_key[:32]))
+
+
+def get_crypter():
+    """Return a Fernet crypter using a securely derived key.
+
+    Production: requires the ENCRYPTION_KEY environment variable (a valid Fernet key).
+    Development: derives a key from SECRET_KEY via PBKDF2 (emits a UserWarning).
+    """
+    encryption_key = os.environ.get('ENCRYPTION_KEY')
+    if encryption_key:
+        return _crypter_from_env_key(encryption_key)
+    if not settings.DEBUG:
+        raise RuntimeError(
+            f"ENCRYPTION_KEY environment variable is required in production. Generate one with: {_KEYGEN_HINT}"
+        )
+    return _crypter_from_secret_key()
 
 class EncryptedField(models.Field):
     def __init__(self, *args, **kwargs):
