@@ -58,18 +58,22 @@ def _build_saved_hint(user, message: str, limit: int = 3) -> str:
 
 
 def _format_prompt(user, message: str, memory: list[str] | None = None,
-                   saved_hint: str = "") -> str:
+                   saved_hint: str = "", summary: str = "", history: str = "") -> str:
     """Render the orchestrator user-turn template with live context."""
     safe_username = _safe_prompt_value(getattr(user, "username", ""))
     memory_block = (
         "Known about this user:\n" + "\n".join(f"- {f}" for f in memory)
         if memory else "(nothing recorded about this user yet)"
     )
+    summary_block = (summary or "").strip() or "(no earlier conversation summarized yet)"
+    history_block = (history or "").strip() or "(the user's message does not reference earlier turns)"
     saved_block = saved_hint or "(no related saved analyses)"
     return _ORCHESTRATOR_USER_TEMPLATE.format(
         date=date.today().isoformat(),
         username=safe_username,
         memory=memory_block,
+        summary=summary_block,
+        history=history_block,
         saved_hint=saved_block,
         message=message,
     )
@@ -134,6 +138,19 @@ def _fetch_saved_hint_async(user, prompt: str) -> str:
     return _build_saved_hint(user, prompt)
 
 
+@sync_to_async
+def _fetch_history_context(session, message: str) -> tuple[str, str]:
+    """Return (summary, gated_history) for the prompt. History is empty unless the
+    message references prior turns; the summary is always returned."""
+    from chat.history import recent_exchanges, format_exchanges, references_prior_context
+
+    summary = session.summary or ""
+    history = ""
+    if references_prior_context(message):
+        history = format_exchanges(recent_exchanges(session))
+    return summary, history
+
+
 async def _run_sdk_turn(options, formatted_prompt: str):
     """Run a single SDK turn, yielding messages. Raises on error."""
     async with ClaudeSDKClient(options=options) as client:
@@ -142,18 +159,22 @@ async def _run_sdk_turn(options, formatted_prompt: str):
             yield message
 
 
-async def run_chat_session(user, sdk_session_id: str, prompt: str) -> AsyncIterator:
+async def run_chat_session(user, session, prompt: str) -> AsyncIterator:
     """Run one assistant turn against the orchestrator, yielding SDK messages.
 
-    If sdk_session_id is stale (deleted on Claude's side between calls), the
-    SDK raises with 'No conversation found'.  We transparently retry as a
-    fresh session so the user gets a response instead of an error.
+    If the session's sdk_session_id is stale (deleted on Claude's side between
+    calls), the SDK raises with 'No conversation found'. We transparently retry
+    as a fresh session so the user gets a response instead of an error.
     """
     _user_context.set_user(user)
     memory = await _fetch_memory(user)
     saved_hint = await _fetch_saved_hint_async(user, prompt)
-    formatted_prompt = _format_prompt(user, prompt, memory=memory, saved_hint=saved_hint)
+    summary, history = await _fetch_history_context(session, prompt)
+    formatted_prompt = _format_prompt(
+        user, prompt, memory=memory, saved_hint=saved_hint, summary=summary, history=history,
+    )
 
+    sdk_session_id = session.sdk_session_id
     session_ids = [sdk_session_id, ""] if sdk_session_id else [""]
     for attempt_id in session_ids:
         options = _build_options(sdk_session_id=attempt_id)
