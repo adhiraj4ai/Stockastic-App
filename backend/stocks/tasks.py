@@ -1,48 +1,28 @@
+import logging
+
 from celery import shared_task
 from django.contrib.auth.models import User
 from django.db import models
+
+logger = logging.getLogger(__name__)
 
 
 
 @shared_task(bind=True, name='stocks.check_notifications')
 def check_all_user_notifications(self):
     """
-    Periodic task to check portfolio and watchlist alerts for all active users.
-    Runs every 15 minutes during market hours, hourly otherwise.
+    Periodic task — checks all alert types for all active users via NotificationOrchestrator.
     """
-    from stocks.services.notification_service import (
-        check_portfolio_alerts, check_watchlist_alerts,
-        check_signal_alerts, check_whale_watch_alerts,
-        check_zone_entry_alerts, check_active_signal_alerts,
-    )
+    from stocks.services.notifications import default_orchestrator
+    from django.contrib.auth.models import User
 
-    total_portfolio = 0
-    total_watchlist = 0
-    total_signals = 0
-    total_whale = 0
-    total_zone_entry = 0
-    total_active_signal = 0
-
+    total = 0
     for user in User.objects.filter(is_active=True):
         try:
-            total_portfolio += check_portfolio_alerts(user)
-            total_watchlist += check_watchlist_alerts(user)
-            total_signals += check_signal_alerts(user)
-            total_whale += check_whale_watch_alerts(user)
-            total_zone_entry += check_zone_entry_alerts(user)
-            total_active_signal += check_active_signal_alerts(user)
-        except Exception as e:
-            print(f"Error checking notifications for user {user.username}: {e}")
-
-    return {
-        'total_portfolio_notifications': total_portfolio,
-        'total_watchlist_notifications': total_watchlist,
-        'total_signal_notifications': total_signals,
-        'total_whale_notifications': total_whale,
-        'total_zone_entry_notifications': total_zone_entry,
-        'total_active_signal_notifications': total_active_signal,
-        'total_notifications': total_portfolio + total_watchlist + total_signals + total_whale + total_zone_entry + total_active_signal,
-    }
+            total += default_orchestrator.run(user)
+        except Exception as exc:
+            logger.error("Notification check failed for user %s: %s", user, exc)
+    return total
 @shared_task(bind=True, name='stocks.capture_portfolio_snapshots')
 def capture_portfolio_snapshots(self):
     """

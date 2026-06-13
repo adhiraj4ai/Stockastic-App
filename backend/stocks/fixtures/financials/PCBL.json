@@ -1,0 +1,972 @@
+{
+  "ticker": "PCBL",
+  "company": {
+    "name": "Prabhu Bank Limited",
+    "sector": "Commercial Banks",
+    "instrument_type": "Equity"
+  },
+  "reports": [
+    {
+      "ticker": "PCBL",
+      "fiscal_year": "072-073",
+      "report_type": "ANNUAL",
+      "quarter": null,
+      "is_audited": true,
+      "report_template": "BANK",
+      "paid_up_capital": 4557472586,
+      "reserves_and_surplus": 846222934,
+      "net_profit": 1115759677,
+      "eps": 24.48,
+      "book_value": 118.57,
+      "return_on_equity": 20.65,
+      "bonus_share": 17.25,
+      "cash_dividend": 1.21,
+      "dividend_announced_date": null,
+      "dividend_book_close_date": "2017-01-12",
+      "balance_sheet": {
+        "ASSETS": {
+          "cash_equivalent": 2001623750,
+          "due_from_nrb": 5156340560,
+          "placement_bfis": 666926623,
+          "loans_customers": 40272093722,
+          "property_equipment": 371146244,
+          "total_assets": 54398972985
+        },
+        "LIABILITIES": {
+          "deposits_customers": 48342121058,
+          "borrowings": 9000000,
+          "total_liabilities": 48995277465
+        },
+        "EQUITY": {
+          "share_capital": 4557472586,
+          "reserves_reserves": 846222934,
+          "total_equity": 5403695520,
+          "total_liabilities_equity": 54398972985
+        }
+      },
+      "profit_loss": {
+        "INCOME": {
+          "interest_income": 3556635240,
+          "interest_expense": 1968174155,
+          "net_interest_income": 1588461085,
+          "total_operating_income": 2170881010
+        },
+        "EXPENSES": {
+          "personnel_expenses": 208879690,
+          "operating_profit": 1435009118,
+          "net_profit": 1115759677
+        }
+      },
+      "cash_flow": null,
+      "key_ratios": {
+        "Per Share": {
+          "EPS": 24.48,
+          "Book Value": 118.57
+        },
+        "Performance": {
+          "ROE": 20.65
+        },
+        "Dividend": {
+          "Bonus Share %": 17.25,
+          "Cash Dividend %": 1.21
+        }
+      }
+    },
+    {
+      "ticker": "PCBL",
+      "fiscal_year": "073-074",
+      "report_type": "ANNUAL",
+      "quarter": null,
+      "is_audited": true,
+      "report_template": "BANK",
+      "paid_up_capital": 6325432181,
+      "reserves_and_surplus": 1330464353,
+      "net_profit": 1479231598,
+      "eps": 23.39,
+      "book_value": 151.24,
+      "return_on_equity": 15.46,
+      "bonus_share": 27.0,
+      "cash_dividend": 0.0,
+      "dividend_announced_date": null,
+      "dividend_book_close_date": "2017-12-20",
+      "balance_sheet": {
+        "ASSETS": {
+          "cash_equivalent": 4464073730,
+          "due_from_nrb": 8300375217,
+          "placement_bfis": 1042440729,
+          "loans_bfis": 1944323252,
+          "loans_customers": 56076914321,
+          "investment_securities": 4982312111,
+          "current_tax_assets": 20385487,
+          "associates": 28000000,
+          "investment_property": 50879041,
+          "property_equipment": 580253128,
+          "intangible_assets": 5263635,
+          "other_assets": 291627328,
+          "total_assets": 77786847979
+        },
+        "LIABILITIES": {
+          "due_to_bfis": 6175791739,
+          "due_to_nrb": 1494861286,
+          "deposits_customers": 59680088647,
+          "deferred_tax_liabilities": 10935214,
+          "other_liabilities": 858733514,
+          "total_liabilities": 68220410399
+        },
+        "EQUITY": {
+          "share_capital": 6325432181,
+          "retained_earnings": 1910541047,
+          "reserves_reserves": 1330464353,
+          "total_equity": 9566437580,
+          "total_liabilities_equity": 77786847979
+        }
+      },
+      "profit_loss": {
+        "INCOME": {
+          "interest_income": 5235440466,
+          "interest_expense": 3304386188,
+          "net_interest_income": 1931054278,
+          "fee_income": 725657786,
+          "fee_expense": 34178274,
+          "net_fee_income": 691479512,
+          "net_int_fee_income": 2622533789,
+          "trading_income": 126521387,
+          "other_operating_income": 180176033,
+          "total_operating_income": 2929231209
+        },
+        "EXPENSES": {
+          "impairment_charge": 58545407,
+          "personnel_expenses": 496682646,
+          "other_operating_expenses": 213679543,
+          "depreciation": 45013946,
+          "operating_profit": 2115309666,
+          "pbt": 2115309666,
+          "tax": 636078068,
+          "net_profit": 1479231598
+        },
+        "REGULATORY": {
+          "cd_ratio": 89.12,
+          "core_capital": 12.45,
+          "supplementary_capital": 0.83,
+          "capital_fund": 13.28,
+          "liquidity_crr": 13.27,
+          "npl_ratio": 0.88,
+          "base_rate": 10.64,
+          "spread": 3.45,
+          "total_employees": 571,
+          "branches": 55,
+          "atms": 33
+        }
+      },
+      "cash_flow": null,
+      "key_ratios": {
+        "Per Share": {
+          "EPS": 23.39,
+          "Book Value": 151.24
+        },
+        "Performance": {
+          "ROE": 15.46
+        },
+        "Dividend": {
+          "Bonus Share %": 27.0,
+          "Cash Dividend %": 0.0
+        }
+      }
+    },
+    {
+      "ticker": "PCBL",
+      "fiscal_year": "074-075",
+      "report_type": "ANNUAL",
+      "quarter": null,
+      "is_audited": true,
+      "report_template": "BANK",
+      "paid_up_capital": 8033298870,
+      "reserves_and_surplus": 1838524079,
+      "net_profit": 1726246109,
+      "eps": 21.49,
+      "book_value": 139.52,
+      "return_on_equity": 15.4,
+      "bonus_share": 16.0,
+      "cash_dividend": 0.0,
+      "dividend_announced_date": null,
+      "dividend_book_close_date": "2019-05-23",
+      "balance_sheet": {
+        "ASSETS": {
+          "cash_equivalent": 4502735569,
+          "due_from_nrb": 8815836010,
+          "placement_bfis": 1960450695,
+          "loans_bfis": 2829040379,
+          "loans_customers": 67137816058,
+          "investment_securities": 8428082790,
+          "current_tax_assets": 153617101,
+          "associates": 28000000,
+          "investment_property": 15528305,
+          "property_equipment": 606763277,
+          "intangible_assets": 5278217,
+          "deferred_tax_assets": 33163681,
+          "other_assets": 527666934,
+          "total_assets": 95043979017
+        },
+        "LIABILITIES": {
+          "due_to_bfis": 8668488205,
+          "due_to_nrb": 1269890141,
+          "deposits_customers": 72635987983,
+          "other_liabilities": 1261902073,
+          "total_liabilities": 83836268402
+        },
+        "EQUITY": {
+          "share_capital": 8033298870,
+          "retained_earnings": 1335887667,
+          "reserves_reserves": 1838524079,
+          "total_equity": 11207710615,
+          "total_liabilities_equity": 95043979017
+        }
+      },
+      "profit_loss": {
+        "INCOME": {
+          "interest_income": 8559690846,
+          "interest_expense": 5893775409,
+          "net_interest_income": 2665915437,
+          "fee_income": 666788096,
+          "fee_expense": 46529774,
+          "net_fee_income": 620258322,
+          "net_int_fee_income": 3286173760,
+          "trading_income": 177877342,
+          "other_operating_income": 161085645,
+          "total_operating_income": 3625136747
+        },
+        "EXPENSES": {
+          "impairment_charge": 223985612,
+          "personnel_expenses": 631648386,
+          "other_operating_expenses": 273537368,
+          "depreciation": 70128273,
+          "operating_profit": 2425837108,
+          "non_operating_income": 21587289,
+          "pbt": 2447424397,
+          "tax": 721178288,
+          "net_profit": 1726246109
+        },
+        "REGULATORY": {
+          "cd_ratio": 87.53,
+          "core_capital": 11.43,
+          "supplementary_capital": 0.8,
+          "capital_fund": 12.24,
+          "liquidity_crr": 11.42,
+          "npl_ratio": 0.85,
+          "base_rate": 10.47,
+          "spread": 4.23,
+          "total_employees": 691,
+          "branches": 64,
+          "atms": 36
+        }
+      },
+      "cash_flow": null,
+      "key_ratios": {
+        "Per Share": {
+          "EPS": 21.49,
+          "Book Value": 139.52
+        },
+        "Performance": {
+          "ROE": 15.4
+        },
+        "Dividend": {
+          "Bonus Share %": 16.0,
+          "Cash Dividend %": 0.0
+        }
+      }
+    },
+    {
+      "ticker": "PCBL",
+      "fiscal_year": "075-076",
+      "report_type": "ANNUAL",
+      "quarter": null,
+      "is_audited": true,
+      "report_template": "BANK",
+      "paid_up_capital": 9318626700,
+      "reserves_and_surplus": 2509716961,
+      "net_profit": 2198792243,
+      "eps": 23.6,
+      "book_value": 143.84,
+      "return_on_equity": 16.4,
+      "bonus_share": 16.0,
+      "cash_dividend": 0.0,
+      "dividend_announced_date": null,
+      "dividend_book_close_date": "2019-12-30",
+      "balance_sheet": {
+        "ASSETS": {
+          "cash_equivalent": 5304763277,
+          "due_from_nrb": 7807981176,
+          "placement_bfis": 1118729717,
+          "loans_bfis": 3014808270,
+          "loans_customers": 72545401637,
+          "investment_securities": 10142156518,
+          "current_tax_assets": 112532211,
+          "associates": 51023000,
+          "investment_property": 242559537,
+          "property_equipment": 743976625,
+          "intangible_assets": 7708980,
+          "deferred_tax_assets": 74332927,
+          "other_assets": 1089855744,
+          "total_assets": 102256000000
+        },
+        "LIABILITIES": {
+          "due_to_bfis": 9217763323,
+          "due_to_nrb": 1269349325,
+          "deposits_customers": 77040074374,
+          "other_liabilities": 1324653303,
+          "total_liabilities": 88851840326
+        },
+        "EQUITY": {
+          "share_capital": 9318626700,
+          "retained_earnings": 1575645633,
+          "reserves_reserves": 2509716961,
+          "total_equity": 13403989294,
+          "total_liabilities_equity": 102256000000
+        }
+      },
+      "profit_loss": {
+        "INCOME": {
+          "interest_income": 9822370722,
+          "interest_expense": 6237763535,
+          "net_interest_income": 3584607187,
+          "fee_income": 766872082,
+          "fee_expense": 51275901,
+          "net_fee_income": 715596181,
+          "net_int_fee_income": 4300203368,
+          "trading_income": 234439303,
+          "other_operating_income": 70411231,
+          "total_operating_income": 4605053902
+        },
+        "EXPENSES": {
+          "impairment_charge": 135339954,
+          "personnel_expenses": 888335061,
+          "other_operating_expenses": 350946358,
+          "depreciation": 80916820,
+          "operating_profit": 3149515709,
+          "pbt": 3149515709,
+          "tax": 950723466,
+          "net_profit": 2198792243
+        },
+        "REGULATORY": {
+          "cd_ratio": 89.15,
+          "core_capital": 11.97,
+          "supplementary_capital": 0.8,
+          "capital_fund": 12.76,
+          "liquidity_crr": 9.83,
+          "npl_ratio": 1.0,
+          "base_rate": 10.03,
+          "spread": 4.32,
+          "total_employees": 725,
+          "branches": 73,
+          "atms": 46
+        }
+      },
+      "cash_flow": null,
+      "key_ratios": {
+        "Per Share": {
+          "EPS": 23.6,
+          "Book Value": 143.84
+        },
+        "Performance": {
+          "ROE": 16.4
+        },
+        "Dividend": {
+          "Bonus Share %": 16.0,
+          "Cash Dividend %": 0.0
+        }
+      }
+    },
+    {
+      "ticker": "PCBL",
+      "fiscal_year": "076-077",
+      "report_type": "ANNUAL",
+      "quarter": null,
+      "is_audited": true,
+      "report_template": "BANK",
+      "paid_up_capital": 13985249504,
+      "reserves_and_surplus": 4651990943,
+      "net_profit": 2251478300,
+      "eps": 16.1,
+      "book_value": 146.78,
+      "return_on_equity": 10.97,
+      "bonus_share": 15.0,
+      "cash_dividend": 0.0,
+      "dividend_announced_date": null,
+      "dividend_book_close_date": "2021-01-04",
+      "balance_sheet": {
+        "ASSETS": {
+          "cash_equivalent": 10379968108,
+          "due_from_nrb": 8716147441,
+          "placement_bfis": 2260117991,
+          "loans_bfis": 4116319738,
+          "loans_customers": 110436000000,
+          "investment_securities": 13684280290,
+          "current_tax_assets": 136770124,
+          "associates": 60023000,
+          "investment_property": 496489981,
+          "property_equipment": 1076214783,
+          "intangible_assets": 15995334,
+          "deferred_tax_assets": 11946088,
+          "other_assets": 792928030,
+          "total_assets": 152183000000
+        },
+        "LIABILITIES": {
+          "due_to_bfis": 10350291413,
+          "due_to_nrb": 121197355,
+          "deposits_customers": 119442000000,
+          "other_liabilities": 1743037097,
+          "total_liabilities": 131656000000
+        },
+        "EQUITY": {
+          "share_capital": 13985249504,
+          "share_premium": 644823,
+          "retained_earnings": 1888969218,
+          "reserves_reserves": 4651990943,
+          "total_equity": 20526854488,
+          "total_liabilities_equity": 152183000000
+        }
+      },
+      "profit_loss": {
+        "INCOME": {
+          "interest_income": 12233257785,
+          "interest_expense": 7592636706,
+          "net_interest_income": 4640621080,
+          "fee_income": 902766630,
+          "fee_expense": 71334334,
+          "net_fee_income": 831432295,
+          "net_int_fee_income": 5472053375,
+          "trading_income": 267526501,
+          "other_operating_income": 61914593,
+          "total_operating_income": 5801494468
+        },
+        "EXPENSES": {
+          "impairment_charge": 766213411,
+          "personnel_expenses": 1093776904,
+          "other_operating_expenses": 532520434,
+          "depreciation": 140440750,
+          "operating_profit": 3268542969,
+          "pbt": 3268542969,
+          "tax": 1017064669,
+          "net_profit": 2251478300
+        },
+        "REGULATORY": {
+          "cd_ratio": 88.97,
+          "core_capital": 12.83,
+          "supplementary_capital": 1.01,
+          "capital_fund": 13.84,
+          "liquidity_crr": 7.25,
+          "npl_ratio": 1.48,
+          "base_rate": 8.62,
+          "spread": 4.22,
+          "total_employees": 1469,
+          "branches": 184,
+          "atms": 103
+        }
+      },
+      "cash_flow": null,
+      "key_ratios": {
+        "Per Share": {
+          "EPS": 16.1,
+          "Book Value": 146.78
+        },
+        "Performance": {
+          "ROE": 10.97
+        },
+        "Dividend": {
+          "Bonus Share %": 15.0,
+          "Cash Dividend %": 0.0
+        }
+      }
+    },
+    {
+      "ticker": "PCBL",
+      "fiscal_year": "077-078",
+      "report_type": "ANNUAL",
+      "quarter": null,
+      "is_audited": true,
+      "report_template": "BANK",
+      "paid_up_capital": 16083036900,
+      "reserves_and_surplus": 5139314861,
+      "net_profit": 3268400687,
+      "eps": 20.32,
+      "book_value": 148.86,
+      "return_on_equity": 13.65,
+      "bonus_share": 16.0,
+      "cash_dividend": 0.6313,
+      "dividend_announced_date": null,
+      "dividend_book_close_date": "2021-12-08",
+      "balance_sheet": {
+        "ASSETS": {
+          "cash_equivalent": 7864971018,
+          "due_from_nrb": 10497986812,
+          "placement_bfis": 4766883849,
+          "loans_bfis": 6097765504,
+          "loans_customers": 135384000000,
+          "investment_securities": 23426854321,
+          "current_tax_assets": 288058641,
+          "associates": 46023000,
+          "investment_property": 365775958,
+          "property_equipment": 1048084951,
+          "intangible_assets": 22773971,
+          "deferred_tax_assets": 34938030,
+          "other_assets": 693318870,
+          "total_assets": 190537000000
+        },
+        "LIABILITIES": {
+          "due_to_bfis": 6042373556,
+          "due_to_nrb": 2360808929,
+          "deposits_customers": 154140000000,
+          "other_liabilities": 1612039976,
+          "debt_securities": 2440968911,
+          "total_liabilities": 166596000000
+        },
+        "EQUITY": {
+          "share_capital": 16083036900,
+          "retained_earnings": 2719161525,
+          "reserves_reserves": 5139314861,
+          "total_equity": 23941513286,
+          "total_liabilities_equity": 190537000000
+        }
+      },
+      "profit_loss": {
+        "INCOME": {
+          "interest_income": 14009655970,
+          "interest_expense": 8060765419,
+          "net_interest_income": 5948890550,
+          "fee_income": 1408058182,
+          "fee_expense": 105269669,
+          "net_fee_income": 1302788513,
+          "net_int_fee_income": 7251679063,
+          "trading_income": 321266753,
+          "other_operating_income": 269718604,
+          "total_operating_income": 7842664420
+        },
+        "EXPENSES": {
+          "impairment_charge": 769296125,
+          "personnel_expenses": 1591342525,
+          "other_operating_expenses": 612310804,
+          "depreciation": 184381124,
+          "operating_profit": 4685333842,
+          "pbt": 4685333842,
+          "tax": 1416933155,
+          "net_profit": 3268400687
+        },
+        "REGULATORY": {
+          "cd_ratio": 89.23,
+          "core_capital": 12.28,
+          "supplementary_capital": 2.54,
+          "capital_fund": 14.82,
+          "liquidity_crr": 7.18,
+          "npl_ratio": 0.99,
+          "base_rate": 7.21,
+          "spread": 4.14,
+          "total_employees": 1548,
+          "branches": 192,
+          "atms": 107
+        }
+      },
+      "cash_flow": null,
+      "key_ratios": {
+        "Per Share": {
+          "EPS": 20.32,
+          "Book Value": 148.86
+        },
+        "Performance": {
+          "ROE": 13.65
+        },
+        "Dividend": {
+          "Bonus Share %": 16.0,
+          "Cash Dividend %": 0.6313
+        }
+      }
+    },
+    {
+      "ticker": "PCBL",
+      "fiscal_year": "078-079",
+      "report_type": "ANNUAL",
+      "quarter": null,
+      "is_audited": true,
+      "report_template": "BANK",
+      "paid_up_capital": 18656322804,
+      "reserves_and_surplus": 6610531389,
+      "net_profit": 2787326348,
+      "eps": 14.94,
+      "book_value": 144.75,
+      "return_on_equity": 10.32,
+      "bonus_share": 4.0,
+      "cash_dividend": 4.95,
+      "dividend_announced_date": null,
+      "dividend_book_close_date": "2022-12-29",
+      "balance_sheet": {
+        "ASSETS": {
+          "cash_equivalent": 11620911866,
+          "due_from_nrb": 8860332435,
+          "placement_bfis": 144901159,
+          "loans_bfis": 31402844583,
+          "loans_customers": 147053901572,
+          "investment_securities": 31402844583,
+          "current_tax_assets": 640047029,
+          "associates": 46023000,
+          "investment_property": 529813300,
+          "property_equipment": 1973692537,
+          "intangible_assets": 379539830,
+          "deferred_tax_assets": 123167702,
+          "other_assets": 913959782,
+          "total_assets": 210361895395
+        },
+        "LIABILITIES": {
+          "due_to_bfis": 6096829391,
+          "due_to_nrb": 4556140870,
+          "deposits_customers": 160203350799,
+          "other_liabilities": 3354346258,
+          "debt_securities": 9145519492,
+          "total_liabilities": 183356186810
+        },
+        "EQUITY": {
+          "share_capital": 18656322804,
+          "retained_earnings": 1738854392,
+          "reserves_reserves": 6610531389,
+          "total_equity": 27005708585,
+          "total_liabilities_equity": 210361895395
+        }
+      },
+      "profit_loss": {
+        "INCOME": {
+          "interest_income": 18301346511,
+          "interest_expense": 12114390803,
+          "net_interest_income": 6186955708,
+          "fee_income": 1230738396,
+          "fee_expense": 142548201,
+          "net_fee_income": 1088190195,
+          "net_int_fee_income": 7275145903,
+          "trading_income": 231163380,
+          "other_operating_income": 156907726,
+          "total_operating_income": 7663217009
+        },
+        "EXPENSES": {
+          "impairment_charge": 1239836403,
+          "personnel_expenses": 1670363055,
+          "other_operating_expenses": 471909882,
+          "depreciation": 329683646,
+          "operating_profit": 3951424023,
+          "pbt": 3951424023,
+          "tax": 1164097675,
+          "net_profit": 2787326348
+        }
+      },
+      "cash_flow": null,
+      "key_ratios": {
+        "Per Share": {
+          "EPS": 14.94,
+          "Book Value": 144.75
+        },
+        "Performance": {
+          "ROE": 10.32
+        },
+        "Dividend": {
+          "Bonus Share %": 4.0,
+          "Cash Dividend %": 4.95
+        }
+      }
+    },
+    {
+      "ticker": "PCBL",
+      "fiscal_year": "079-080",
+      "report_type": "ANNUAL",
+      "quarter": null,
+      "is_audited": true,
+      "report_template": "BANK",
+      "paid_up_capital": 19402575716,
+      "reserves_and_surplus": 8437797730,
+      "net_profit": 1027899106,
+      "eps": 5.3,
+      "book_value": 140.05,
+      "return_on_equity": 3.78,
+      "bonus_share": 0.0,
+      "cash_dividend": 0.0,
+      "dividend_announced_date": null,
+      "dividend_book_close_date": null,
+      "balance_sheet": {
+        "ASSETS": {
+          "cash_equivalent": 14305373289,
+          "due_from_nrb": 12049737956,
+          "loans_bfis": 6515726428,
+          "loans_customers": 153067870306,
+          "investment_securities": 29067661637,
+          "current_tax_assets": 458584132,
+          "associates": 46023000,
+          "investment_property": 1413049718,
+          "property_equipment": 2055349370,
+          "intangible_assets": 371835677,
+          "deferred_tax_assets": 270513439,
+          "other_assets": 1206081382,
+          "total_assets": 220827806336
+        },
+        "LIABILITIES": {
+          "due_to_bfis": 4511658408,
+          "deposits_customers": 174058036674,
+          "other_liabilities": 3302475719,
+          "debt_securities": 9152213243,
+          "total_liabilities": 193654384044
+        },
+        "EQUITY": {
+          "share_capital": 19402575716,
+          "retained_earnings": -666951154,
+          "reserves_reserves": 8437797730,
+          "total_equity": 27173422293,
+          "total_liabilities_equity": 220827806336
+        }
+      },
+      "profit_loss": {
+        "INCOME": {
+          "interest_income": 23159247664,
+          "interest_expense": 16018499671,
+          "net_interest_income": 7140747994,
+          "fee_income": 1354544226,
+          "fee_expense": 178312827,
+          "net_fee_income": 1176231399,
+          "net_int_fee_income": 8316979393,
+          "trading_income": 150351334,
+          "other_operating_income": 142896659,
+          "total_operating_income": 8610227387
+        },
+        "EXPENSES": {
+          "impairment_charge": 4106190188,
+          "personnel_expenses": 1600418251,
+          "other_operating_expenses": 527880295,
+          "depreciation": 322109341,
+          "operating_profit": 2053629312,
+          "non_operating_expense": 72077294,
+          "pbt": 1981552018,
+          "net_profit": 1027899106
+        },
+        "REGULATORY": {
+          "cd_ratio": 91.32,
+          "core_capital": 10.8,
+          "supplementary_capital": 1.3,
+          "capital_fund": 12.1,
+          "liquidity_crr": 7.29,
+          "npl_ratio": 4.85,
+          "cost_of_funds": 8.67,
+          "base_rate": 10.57,
+          "spread": 3.98,
+          "total_employees": 1639,
+          "branches": 190,
+          "atms": 131
+        }
+      },
+      "cash_flow": null,
+      "key_ratios": {
+        "Per Share": {
+          "EPS": 5.3,
+          "Book Value": 140.05
+        },
+        "Performance": {
+          "ROE": 3.78
+        },
+        "Dividend": {
+          "Bonus Share %": 0.0,
+          "Cash Dividend %": 0.0
+        }
+      }
+    },
+    {
+      "ticker": "PCBL",
+      "fiscal_year": "080-081",
+      "report_type": "ANNUAL",
+      "quarter": null,
+      "is_audited": true,
+      "report_template": "BANK",
+      "paid_up_capital": 19402575716,
+      "reserves_and_surplus": 10254431430,
+      "net_profit": 3507894994,
+      "eps": 18.08,
+      "book_value": 157.98,
+      "return_on_equity": 11.44,
+      "bonus_share": 0.0,
+      "cash_dividend": 5.0,
+      "dividend_announced_date": null,
+      "dividend_book_close_date": "2024-11-24",
+      "balance_sheet": {
+        "ASSETS": {
+          "cash_equivalent": 11435837812,
+          "due_from_nrb": 9697968737,
+          "placement_bfis": 1152687068,
+          "loans_bfis": 8938361821,
+          "loans_customers": 181029569181,
+          "investment_securities": 47583463732,
+          "current_tax_assets": 68385789,
+          "associates": 46023000,
+          "investment_property": 1911871567,
+          "property_equipment": 2007215341,
+          "intangible_assets": 373923455,
+          "deferred_tax_assets": 389156714,
+          "other_assets": 2367920529,
+          "total_assets": 267002384746
+        },
+        "LIABILITIES": {
+          "due_to_bfis": 10120800618,
+          "deposits_customers": 211160276034,
+          "borrowings": 2674000000,
+          "other_liabilities": 3235526793,
+          "debt_securities": 9159434708,
+          "total_liabilities": 236350038153
+        },
+        "EQUITY": {
+          "share_capital": 19402575716,
+          "retained_earnings": 995339447,
+          "reserves_reserves": 10254431430,
+          "total_equity": 30652346593,
+          "total_liabilities_equity": 267002384746
+        }
+      },
+      "profit_loss": {
+        "INCOME": {
+          "interest_income": 25799304115,
+          "interest_expense": 17916528589,
+          "net_interest_income": 7882775527,
+          "fee_income": 1874205208,
+          "fee_expense": 195436348,
+          "net_fee_income": 1678768861,
+          "net_int_fee_income": 9561544387,
+          "trading_income": 153614947,
+          "other_operating_income": 118952558,
+          "total_operating_income": 9834111893
+        },
+        "EXPENSES": {
+          "impairment_charge": 1636720661,
+          "personnel_expenses": 2047432071,
+          "other_operating_expenses": 528417038,
+          "depreciation": 308623748,
+          "operating_profit": 5312918375,
+          "non_operating_income": 831480,
+          "non_operating_expense": 266712141,
+          "pbt": 5047037714,
+          "net_profit": 3507894994
+        },
+        "REGULATORY": {
+          "cd_ratio": 90.47,
+          "core_capital": 10.67,
+          "supplementary_capital": 1.13,
+          "capital_fund": 11.8,
+          "liquidity_crr": 4.51,
+          "npl_ratio": 4.65,
+          "base_rate": 8.49,
+          "spread": 3.98,
+          "total_employees": 1713,
+          "branches": 194,
+          "atms": 133
+        }
+      },
+      "cash_flow": null,
+      "key_ratios": {
+        "Per Share": {
+          "EPS": 18.08,
+          "Book Value": 157.98
+        },
+        "Performance": {
+          "ROE": 11.44
+        },
+        "Dividend": {
+          "Bonus Share %": 0.0,
+          "Cash Dividend %": 5.0
+        }
+      }
+    },
+    {
+      "ticker": "PCBL",
+      "fiscal_year": "081-082",
+      "report_type": "ANNUAL",
+      "quarter": null,
+      "is_audited": true,
+      "report_template": "BANK",
+      "paid_up_capital": 19402575716,
+      "reserves_and_surplus": 11754603016,
+      "net_profit": 3200758955,
+      "eps": 16.5,
+      "book_value": 169.52,
+      "return_on_equity": 9.73,
+      "bonus_share": 8.0,
+      "cash_dividend": 0.421,
+      "dividend_announced_date": null,
+      "dividend_book_close_date": "2026-01-05",
+      "balance_sheet": {
+        "ASSETS": {
+          "cash_equivalent": 13558945679,
+          "due_from_nrb": 19567391102,
+          "placement_bfis": 3759755176,
+          "loans_bfis": 8929933751,
+          "loans_customers": 209099209917,
+          "investment_securities": 52379418305,
+          "current_tax_assets": 15377688,
+          "associates": 46023000,
+          "investment_property": 3943962799,
+          "property_equipment": 1936980810,
+          "intangible_assets": 385861036,
+          "deferred_tax_assets": 802779389,
+          "other_assets": 2065927829,
+          "total_assets": 316491566481
+        },
+        "LIABILITIES": {
+          "due_to_bfis": 4659806860,
+          "deposits_customers": 263360694622,
+          "borrowings": 2750000000,
+          "other_liabilities": 3663180012,
+          "debt_securities": 9167406736,
+          "total_liabilities": 28360108230
+        },
+        "EQUITY": {
+          "share_capital": 19402575716,
+          "retained_earnings": 1733299518,
+          "reserves_reserves": 11754603016,
+          "total_equity": 32890478250,
+          "total_liabilities_equity": 316491566481
+        }
+      },
+      "profit_loss": {
+        "INCOME": {
+          "interest_income": 23628502552,
+          "interest_expense": 14710340026,
+          "net_interest_income": 8918162526,
+          "fee_income": 1914537279,
+          "fee_expense": 220246764,
+          "net_fee_income": 1694290515,
+          "net_int_fee_income": 10612453041,
+          "trading_income": 240326974,
+          "other_operating_income": 393153213,
+          "total_operating_income": 11245933229
+        },
+        "EXPENSES": {
+          "impairment_charge": 2720743761,
+          "personnel_expenses": 2293842001,
+          "other_operating_expenses": 552814574,
+          "depreciation": 295743013,
+          "operating_profit": 5382789880,
+          "non_operating_income": 1896747,
+          "non_operating_expense": 621290984,
+          "pbt": 4763395642,
+          "net_profit": 3200758955
+        },
+        "REGULATORY": {
+          "core_capital": 9.05,
+          "supplementary_capital": 2.86,
+          "capital_fund": 11.92
+        }
+      },
+      "cash_flow": null,
+      "key_ratios": {
+        "Per Share": {
+          "EPS": 16.5,
+          "Book Value": 169.52
+        },
+        "Performance": {
+          "ROE": 9.73
+        },
+        "Dividend": {
+          "Bonus Share %": 8.0,
+          "Cash Dividend %": 0.421
+        }
+      }
+    }
+  ]
+}

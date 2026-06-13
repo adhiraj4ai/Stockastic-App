@@ -1,0 +1,1009 @@
+{
+  "ticker": "CZBIL",
+  "company": {
+    "name": "Citizens Bank International Limited",
+    "sector": "Commercial Banks",
+    "instrument_type": "Equity"
+  },
+  "reports": [
+    {
+      "ticker": "CZBIL",
+      "fiscal_year": "072-073",
+      "report_type": "ANNUAL",
+      "quarter": null,
+      "is_audited": true,
+      "report_template": "BANK",
+      "paid_up_capital": 4401315379,
+      "reserves_and_surplus": 903981689,
+      "net_profit": 1080377498,
+      "eps": 24.55,
+      "book_value": 120.54,
+      "return_on_equity": 20.36,
+      "bonus_share": 15.8,
+      "cash_dividend": 0.83,
+      "dividend_announced_date": null,
+      "dividend_book_close_date": "2016-09-22",
+      "balance_sheet": {
+        "ASSETS": {
+          "cash_equivalent": 1884360876,
+          "due_from_nrb": 3149515238,
+          "placement_bfis": 859317987,
+          "loans_customers": 39635465293,
+          "property_equipment": 1107847373,
+          "total_assets": 55062015618
+        },
+        "LIABILITIES": {
+          "deposits_customers": 47393500966,
+          "borrowings": 1119046010,
+          "debt_securities": 500000000,
+          "total_liabilities": 49756718550
+        },
+        "EQUITY": {
+          "share_capital": 4401315379,
+          "reserves_reserves": 903981689,
+          "total_equity": 5305297068,
+          "total_liabilities_equity": 55062015618
+        }
+      },
+      "profit_loss": {
+        "INCOME": {
+          "interest_income": 3443472897,
+          "interest_expense": 1823705606,
+          "net_interest_income": 1619767291,
+          "total_operating_income": 2132970747
+        },
+        "EXPENSES": {
+          "personnel_expenses": 295202178,
+          "operating_profit": 1109826027,
+          "net_profit": 1080377498
+        },
+        "REGULATORY": {
+          "cd_ratio": 85.59,
+          "core_capital": 10.57,
+          "supplementary_capital": 1.83,
+          "capital_fund": 12.4,
+          "npl_ratio": 1.38,
+          "base_rate": 6.06,
+          "spread": 3.96
+        }
+      },
+      "key_ratios": {
+        "Per Share": {
+          "EPS": 24.55,
+          "Book Value": 120.54
+        },
+        "Performance": {
+          "ROE": 20.36
+        },
+        "Dividend": {
+          "Bonus Share %": 15.8,
+          "Cash Dividend %": 0.83
+        }
+      }
+    },
+    {
+      "ticker": "CZBIL",
+      "fiscal_year": "073-074",
+      "report_type": "ANNUAL",
+      "quarter": null,
+      "is_audited": true,
+      "report_template": "BANK",
+      "paid_up_capital": 6921689662,
+      "reserves_and_surplus": 1625329711,
+      "net_profit": 1634917774,
+      "eps": 23.62,
+      "book_value": 142.21,
+      "return_on_equity": 16.61,
+      "bonus_share": 16.0,
+      "cash_dividend": 1.0,
+      "dividend_announced_date": null,
+      "dividend_book_close_date": "2017-08-28",
+      "balance_sheet": {
+        "ASSETS": {
+          "cash_equivalent": 3887468818,
+          "due_from_nrb": 2190896703,
+          "placement_bfis": 1568014418,
+          "derivative_assets": 21975955,
+          "trading_assets": 51442831,
+          "loans_bfis": 1467126976,
+          "loans_customers": 46021501436,
+          "investment_securities": 6785605921,
+          "current_tax_assets": 300791522,
+          "subsidiaries": 67000000,
+          "associates": 31751500,
+          "investment_property": 390066062,
+          "property_equipment": 1758546430,
+          "intangible_assets": 8066489,
+          "other_assets": 1331359117,
+          "total_assets": 65881614179
+        },
+        "LIABILITIES": {
+          "due_to_bfis": 2501906804,
+          "due_to_nrb": 33578077,
+          "deposits_customers": 51716674652,
+          "deferred_tax_liabilities": 85192158,
+          "other_liabilities": 1202929525,
+          "debt_securities": 498148814,
+          "total_liabilities": 56038430030
+        },
+        "EQUITY": {
+          "share_capital": 6921689662,
+          "share_premium": 532794833,
+          "retained_earnings": 763369943,
+          "reserves_reserves": 1625329711,
+          "total_equity": 9843184149,
+          "total_liabilities_equity": 65881614179
+        }
+      },
+      "profit_loss": {
+        "INCOME": {
+          "interest_income": 4960197979,
+          "interest_expense": 3169957746,
+          "net_interest_income": 1790240233,
+          "fee_income": 429211115,
+          "fee_expense": 33396855,
+          "net_fee_income": 395814259,
+          "net_int_fee_income": 2186054492,
+          "trading_income": 136794468,
+          "other_operating_income": 93889840,
+          "total_operating_income": 2416738801
+        },
+        "EXPENSES": {
+          "impairment_charge": 96965217,
+          "personnel_expenses": 579564141,
+          "other_operating_expenses": 309364627,
+          "depreciation": 92692281,
+          "operating_profit": 1532082967,
+          "non_operating_income": 735476834,
+          "non_operating_expense": 105936458,
+          "pbt": 2161623344,
+          "tax": 526705570,
+          "net_profit": 1634917774
+        },
+        "REGULATORY": {
+          "cd_ratio": 91.89,
+          "core_capital": 15.37,
+          "supplementary_capital": 1.51,
+          "capital_fund": 16.88,
+          "npl_ratio": 2.02,
+          "base_rate": 11.17,
+          "spread": 3.91
+        }
+      },
+      "key_ratios": {
+        "Per Share": {
+          "EPS": 23.62,
+          "Book Value": 142.21
+        },
+        "Performance": {
+          "ROE": 16.61
+        },
+        "Dividend": {
+          "Bonus Share %": 16.0,
+          "Cash Dividend %": 1.0
+        }
+      }
+    },
+    {
+      "ticker": "CZBIL",
+      "fiscal_year": "074-075",
+      "report_type": "ANNUAL",
+      "quarter": null,
+      "is_audited": true,
+      "report_template": "BANK",
+      "paid_up_capital": 8033236400,
+      "reserves_and_surplus": 2848012733,
+      "net_profit": 1234103897,
+      "eps": 15.36,
+      "book_value": 137.1,
+      "return_on_equity": 11.2,
+      "bonus_share": 3.63,
+      "cash_dividend": 1.635,
+      "dividend_announced_date": null,
+      "dividend_book_close_date": "2019-01-01",
+      "balance_sheet": {
+        "ASSETS": {
+          "cash_equivalent": 5046237676,
+          "due_from_nrb": 3690192293,
+          "placement_bfis": 1989878358,
+          "derivative_assets": 36385944,
+          "trading_assets": 76236446,
+          "loans_bfis": 1420646197,
+          "loans_customers": 55601766580,
+          "investment_securities": 5616858302,
+          "current_tax_assets": 114653791,
+          "subsidiaries": 117200000,
+          "associates": 17951500,
+          "investment_property": 287547060,
+          "property_equipment": 2121592854,
+          "intangible_assets": 70534031,
+          "other_assets": 1502271962,
+          "total_assets": 77709952994
+        },
+        "LIABILITIES": {
+          "due_to_bfis": 3335288532,
+          "due_to_nrb": 695041370,
+          "deposits_customers": 60696026972,
+          "provisions": 5306626,
+          "deferred_tax_liabilities": 17677499,
+          "other_liabilities": 1447977647,
+          "debt_securities": 498722911,
+          "total_liabilities": 66696041556
+        },
+        "EQUITY": {
+          "share_capital": 8033236400,
+          "share_premium": 433526,
+          "retained_earnings": 132228780,
+          "reserves_reserves": 2848012733,
+          "total_equity": 11013911439,
+          "total_liabilities_equity": 77709952994
+        }
+      },
+      "profit_loss": {
+        "INCOME": {
+          "interest_income": 7109387573,
+          "interest_expense": 4887319894,
+          "net_interest_income": 2222067679,
+          "fee_income": 559884278,
+          "fee_expense": 50836108,
+          "net_fee_income": 509048171,
+          "net_int_fee_income": 2731115850,
+          "trading_income": 181074487,
+          "other_operating_income": 120696494,
+          "total_operating_income": 3032886830
+        },
+        "EXPENSES": {
+          "impairment_charge": -89316642,
+          "personnel_expenses": 784057981,
+          "other_operating_expenses": 347358417,
+          "depreciation": 126526734,
+          "operating_profit": 1685627057,
+          "non_operating_income": 37955047,
+          "non_operating_expense": 16717011,
+          "pbt": 1706865093,
+          "tax": 472761196,
+          "net_profit": 1234103897
+        },
+        "REGULATORY": {
+          "cd_ratio": 92.75,
+          "core_capital": 12.76,
+          "supplementary_capital": 1.08,
+          "capital_fund": 13.84,
+          "npl_ratio": 1.48,
+          "base_rate": 11.78,
+          "spread": 3.84
+        }
+      },
+      "key_ratios": {
+        "Per Share": {
+          "EPS": 15.36,
+          "Book Value": 137.1
+        },
+        "Performance": {
+          "ROE": 11.2
+        },
+        "Dividend": {
+          "Bonus Share %": 3.63,
+          "Cash Dividend %": 1.635
+        }
+      }
+    },
+    {
+      "ticker": "CZBIL",
+      "fiscal_year": "075-076",
+      "report_type": "ANNUAL",
+      "quarter": null,
+      "is_audited": true,
+      "report_template": "BANK",
+      "paid_up_capital": 8371064773,
+      "reserves_and_surplus": 2825478410,
+      "net_profit": 1463218780,
+      "eps": 17.48,
+      "book_value": 149.26,
+      "return_on_equity": 11.71,
+      "bonus_share": 3.0,
+      "cash_dividend": 12.0,
+      "dividend_announced_date": null,
+      "dividend_book_close_date": "2019-09-17",
+      "balance_sheet": {
+        "ASSETS": {
+          "cash_equivalent": 6740702460,
+          "due_from_nrb": 2596966889,
+          "placement_bfis": 394769893,
+          "derivative_assets": 44104432,
+          "trading_assets": 567253478,
+          "loans_bfis": 1581899190,
+          "loans_customers": 62911970484,
+          "investment_securities": 10822603551,
+          "current_tax_assets": 14624427,
+          "subsidiaries": 167204200,
+          "associates": 17951500,
+          "investment_property": 222547153,
+          "property_equipment": 2302848710,
+          "intangible_assets": 93353427,
+          "deferred_tax_assets": 20235997,
+          "other_assets": 1622327761,
+          "total_assets": 90121363554
+        },
+        "LIABILITIES": {
+          "due_to_bfis": 3926662470,
+          "due_to_nrb": 1212586471,
+          "deposits_customers": 70509084649,
+          "provisions": 5306626,
+          "other_liabilities": 1473951481,
+          "debt_securities": 499145186,
+          "total_liabilities": 77626736883
+        },
+        "EQUITY": {
+          "share_capital": 8371064773,
+          "share_premium": 46816126,
+          "retained_earnings": 1251267361,
+          "reserves_reserves": 2825478410,
+          "total_equity": 12494626670,
+          "total_liabilities_equity": 90121363554
+        }
+      },
+      "profit_loss": {
+        "INCOME": {
+          "interest_income": 8532283587,
+          "interest_expense": 5843821610,
+          "net_interest_income": 2688461977,
+          "fee_income": 568573901,
+          "fee_expense": 67393405,
+          "net_fee_income": 501180496,
+          "net_int_fee_income": 3189642473,
+          "trading_income": 277322135,
+          "other_operating_income": 30465306,
+          "total_operating_income": 3497429914
+        },
+        "EXPENSES": {
+          "impairment_charge": 138372772,
+          "personnel_expenses": 900244354,
+          "other_operating_expenses": 464654072,
+          "depreciation": 170501154,
+          "operating_profit": 2100403106,
+          "non_operating_income": 77786069,
+          "non_operating_expense": 575339,
+          "pbt": 2177613836,
+          "tax": 714395056,
+          "net_profit": 1463218780
+        },
+        "REGULATORY": {
+          "cd_ratio": 88.76,
+          "core_capital": 13.46,
+          "supplementary_capital": 0.91,
+          "capital_fund": 14.37,
+          "npl_ratio": 1.19,
+          "base_rate": 10.52,
+          "spread": 3.15
+        }
+      },
+      "key_ratios": {
+        "Per Share": {
+          "EPS": 17.48,
+          "Book Value": 149.26
+        },
+        "Performance": {
+          "ROE": 11.71
+        },
+        "Dividend": {
+          "Bonus Share %": 3.0,
+          "Cash Dividend %": 12.0
+        }
+      }
+    },
+    {
+      "ticker": "CZBIL",
+      "fiscal_year": "076-077",
+      "report_type": "ANNUAL",
+      "quarter": null,
+      "is_audited": true,
+      "report_template": "BANK",
+      "paid_up_capital": 9089817290,
+      "reserves_and_surplus": 3392621587,
+      "net_profit": 1198504659,
+      "eps": 13.19,
+      "book_value": 147.61,
+      "return_on_equity": 8.93,
+      "bonus_share": 8.0,
+      "cash_dividend": 3.0,
+      "dividend_announced_date": null,
+      "dividend_book_close_date": "2020-11-26",
+      "balance_sheet": {
+        "ASSETS": {
+          "cash_equivalent": 10841972930,
+          "due_from_nrb": 2430001128,
+          "placement_bfis": 302681924,
+          "derivative_assets": 1029497,
+          "trading_assets": 90624023,
+          "loans_bfis": 1534103548,
+          "loans_customers": 78976395245,
+          "investment_securities": 11828332562,
+          "current_tax_assets": 142488502,
+          "subsidiaries": 167204200,
+          "associates": 18951500,
+          "investment_property": 195532789,
+          "property_equipment": 2554050177,
+          "intangible_assets": 75322689,
+          "other_assets": 1391992008,
+          "total_assets": 110551000000
+        },
+        "LIABILITIES": {
+          "due_to_bfis": 3926662470,
+          "due_to_nrb": 567577082,
+          "deposits_customers": 88496228464,
+          "provisions": 5306626,
+          "deferred_tax_liabilities": 13613542,
+          "other_liabilities": 1386951527,
+          "debt_securities": 2974381302,
+          "total_liabilities": 97132962497
+        },
+        "EQUITY": {
+          "share_capital": 9089817290,
+          "share_premium": 4124402,
+          "retained_earnings": 931156947,
+          "reserves_reserves": 3392621587,
+          "total_equity": 13417720225,
+          "total_liabilities_equity": 110551000000
+        }
+      },
+      "profit_loss": {
+        "INCOME": {
+          "interest_income": 9489525338,
+          "interest_expense": 6604771721,
+          "net_interest_income": 2884753617,
+          "fee_income": 582213590,
+          "fee_expense": 57731667,
+          "net_fee_income": 524481923,
+          "net_int_fee_income": 3409235540,
+          "trading_income": 281338052,
+          "other_operating_income": 100102839,
+          "total_operating_income": 3790676430
+        },
+        "EXPENSES": {
+          "impairment_charge": -640133259,
+          "personnel_expenses": 935254564,
+          "other_operating_expenses": 504580220,
+          "depreciation": 211684673,
+          "operating_profit": 1499023715,
+          "non_operating_income": 169713481,
+          "pbt": 1668737195,
+          "tax": 470232536,
+          "net_profit": 1198504659
+        },
+        "REGULATORY": {
+          "cd_ratio": 89.56,
+          "core_capital": 11.85,
+          "supplementary_capital": 3.29,
+          "capital_fund": 15.14,
+          "npl_ratio": 1.55,
+          "base_rate": 9.04,
+          "spread": 4.03
+        }
+      },
+      "key_ratios": {
+        "Per Share": {
+          "EPS": 13.19,
+          "Book Value": 147.61
+        },
+        "Performance": {
+          "ROE": 8.93
+        },
+        "Dividend": {
+          "Bonus Share %": 8.0,
+          "Cash Dividend %": 3.0
+        }
+      }
+    },
+    {
+      "ticker": "CZBIL",
+      "fiscal_year": "077-078",
+      "report_type": "ANNUAL",
+      "quarter": null,
+      "is_audited": true,
+      "report_template": "BANK",
+      "paid_up_capital": 12576923115,
+      "reserves_and_surplus": 4888321283,
+      "net_profit": 1804341065,
+      "eps": 14.35,
+      "book_value": 150.18,
+      "return_on_equity": 9.55,
+      "bonus_share": 12.91,
+      "cash_dividend": 3.087,
+      "dividend_announced_date": null,
+      "dividend_book_close_date": "2021-10-08",
+      "balance_sheet": {
+        "ASSETS": {
+          "cash_equivalent": 11563041720,
+          "due_from_nrb": 3796487797,
+          "placement_bfis": 2874874811,
+          "derivative_assets": 47007498,
+          "trading_assets": 596888937,
+          "loans_bfis": 3247166953,
+          "loans_customers": 118912000000,
+          "investment_securities": 22017422075,
+          "current_tax_assets": 288457633,
+          "subsidiaries": 167204200,
+          "associates": 16000000,
+          "investment_property": 141146454,
+          "property_equipment": 2880204084,
+          "intangible_assets": 83562290,
+          "other_assets": 1697543676,
+          "total_assets": 168329000000
+        },
+        "LIABILITIES": {
+          "due_to_bfis": 2765001954,
+          "due_to_nrb": 1205558827,
+          "deposits_customers": 140638000000,
+          "provisions": 5306626,
+          "deferred_tax_liabilities": 217486290,
+          "other_liabilities": 2133181270,
+          "debt_securities": 2476082261,
+          "total_liabilities": 149441000000
+        },
+        "EQUITY": {
+          "share_capital": 12576923115,
+          "retained_earnings": 1422777310,
+          "reserves_reserves": 4888321283,
+          "total_equity": 18888021708,
+          "total_liabilities_equity": 168329000000
+        }
+      },
+      "profit_loss": {
+        "INCOME": {
+          "interest_income": 10839534353,
+          "interest_expense": 7189136209,
+          "net_interest_income": 3650398144,
+          "fee_income": 825370410,
+          "fee_expense": 73360658,
+          "net_fee_income": 752009752,
+          "net_int_fee_income": 4402407896,
+          "trading_income": 418465532,
+          "other_operating_income": 153105306,
+          "total_operating_income": 4973978734
+        },
+        "EXPENSES": {
+          "impairment_charge": -394036022,
+          "personnel_expenses": 1229753262,
+          "other_operating_expenses": 650045937,
+          "depreciation": 244877287,
+          "operating_profit": 2455266225,
+          "non_operating_income": 130437670,
+          "pbt": 2585703895,
+          "tax": 781362830,
+          "net_profit": 1804341065
+        },
+        "REGULATORY": {
+          "cd_ratio": 87.52,
+          "core_capital": 11.02,
+          "supplementary_capital": 2.68,
+          "capital_fund": 13.7,
+          "npl_ratio": 1.64,
+          "base_rate": 7.55,
+          "spread": 3.59
+        }
+      },
+      "key_ratios": {
+        "Per Share": {
+          "EPS": 14.35,
+          "Book Value": 150.18
+        },
+        "Performance": {
+          "ROE": 9.55
+        },
+        "Dividend": {
+          "Bonus Share %": 12.91,
+          "Cash Dividend %": 3.087
+        }
+      }
+    },
+    {
+      "ticker": "CZBIL",
+      "fiscal_year": "078-079",
+      "report_type": "ANNUAL",
+      "quarter": null,
+      "is_audited": true,
+      "report_template": "BANK",
+      "paid_up_capital": 14200974006,
+      "reserves_and_surplus": 4878852650,
+      "net_profit": 2005610796,
+      "eps": 14.12,
+      "book_value": 143.72,
+      "return_on_equity": 9.83,
+      "bonus_share": 0.0,
+      "cash_dividend": 9.0,
+      "dividend_announced_date": null,
+      "dividend_book_close_date": "2022-10-14",
+      "balance_sheet": {
+        "ASSETS": {
+          "cash_equivalent": 17892741270,
+          "due_from_nrb": 4266508053,
+          "placement_bfis": 1233631457,
+          "derivative_assets": 2659089,
+          "trading_assets": 327340379,
+          "loans_bfis": 3299919602,
+          "loans_customers": 131344327079,
+          "investment_securities": 28153425968,
+          "current_tax_assets": 348140704,
+          "subsidiaries": 167204200,
+          "associates": 375645491,
+          "investment_property": 208645871,
+          "property_equipment": 3704207328,
+          "intangible_assets": 196840188,
+          "other_assets": 2891413836,
+          "total_assets": 194412650515
+        },
+        "LIABILITIES": {
+          "due_to_bfis": 4063054785,
+          "due_to_nrb": 11070250868,
+          "deposits_customers": 152801490371,
+          "provisions": 5306626,
+          "deferred_tax_liabilities": 63308934,
+          "other_liabilities": 3522074792,
+          "debt_securities": 2477875480,
+          "total_liabilities": 174003361856
+        },
+        "EQUITY": {
+          "share_capital": 14200974006,
+          "retained_earnings": 1329462003,
+          "reserves_reserves": 4878852650,
+          "total_equity": 20409288659,
+          "total_liabilities_equity": 194412650515
+        }
+      },
+      "profit_loss": {
+        "INCOME": {
+          "interest_income": 15967648035,
+          "interest_expense": 10974158052,
+          "net_interest_income": 4993489983,
+          "fee_income": 998102482,
+          "fee_expense": 129036061,
+          "net_fee_income": 869066421,
+          "net_int_fee_income": 5862556404,
+          "trading_income": 224276449,
+          "other_operating_income": 177226700,
+          "total_operating_income": 6264059553
+        },
+        "EXPENSES": {
+          "impairment_charge": 552420450,
+          "personnel_expenses": 1785432248,
+          "other_operating_expenses": 803854246,
+          "depreciation": 413100077,
+          "operating_profit": 2709252532,
+          "non_operating_income": 123343936,
+          "pbt": 2832596468,
+          "tax": 826985672,
+          "net_profit": 2005610796
+        },
+        "REGULATORY": {
+          "cd_ratio": 0.89,
+          "core_capital": 0.1,
+          "supplementary_capital": 0.02,
+          "capital_fund": 0.13,
+          "npl_ratio": 0.02,
+          "base_rate": 0.1,
+          "spread": 0.04
+        }
+      },
+      "key_ratios": {
+        "Per Share": {
+          "EPS": 14.12,
+          "Book Value": 143.72
+        },
+        "Performance": {
+          "ROE": 9.83
+        },
+        "Dividend": {
+          "Bonus Share %": 0.0,
+          "Cash Dividend %": 9.0
+        }
+      }
+    },
+    {
+      "ticker": "CZBIL",
+      "fiscal_year": "079-080",
+      "report_type": "ANNUAL",
+      "quarter": null,
+      "is_audited": true,
+      "report_template": "BANK",
+      "paid_up_capital": 14200974006,
+      "reserves_and_surplus": 591555469,
+      "net_profit": 1863756011,
+      "eps": 13.12,
+      "book_value": 147.62,
+      "return_on_equity": 8.89,
+      "bonus_share": 0.0,
+      "cash_dividend": 5.79,
+      "dividend_announced_date": null,
+      "dividend_book_close_date": "2023-10-02",
+      "balance_sheet": {
+        "ASSETS": {
+          "cash_equivalent": 9764245573,
+          "due_from_nrb": 6703008872,
+          "placement_bfis": 2236412161,
+          "derivative_assets": 17045476,
+          "trading_assets": 318872100,
+          "loans_bfis": 2510671744,
+          "loans_customers": 139832005022,
+          "investment_securities": 28685569583,
+          "current_tax_assets": 283947414,
+          "subsidiaries": 317204200,
+          "associates": 330011545,
+          "investment_property": 256128571,
+          "property_equipment": 3757646456,
+          "intangible_assets": 179517754,
+          "deferred_tax_assets": 62803729,
+          "other_assets": 3677520668,
+          "total_assets": 198932610867
+        },
+        "LIABILITIES": {
+          "due_to_bfis": 3714711816,
+          "deposits_customers": 168842139608,
+          "provisions": 5306626,
+          "other_liabilities": 2927086615,
+          "debt_securities": 2479847548,
+          "total_liabilities": 177969092212
+        },
+        "EQUITY": {
+          "share_capital": 14200974006,
+          "retained_earnings": 846989180,
+          "reserves_reserves": 591555469,
+          "total_equity": 20963518655,
+          "total_liabilities_equity": 198932610867
+        }
+      },
+      "profit_loss": {
+        "INCOME": {
+          "interest_income": 20660828235,
+          "interest_expense": 14832332039,
+          "net_interest_income": 5828496196,
+          "fee_income": 1013993665,
+          "fee_expense": 137210558,
+          "net_fee_income": 876783106,
+          "net_int_fee_income": 6705279302,
+          "trading_income": 182203411,
+          "other_operating_income": 23577946,
+          "total_operating_income": 6911060660
+        },
+        "EXPENSES": {
+          "impairment_charge": -1216480218,
+          "personnel_expenses": 1889896983,
+          "other_operating_expenses": 901913517,
+          "depreciation": 327427689,
+          "operating_profit": 2575342253,
+          "non_operating_income": 20681607,
+          "non_operating_expense": 79570322,
+          "pbt": 2516453538,
+          "net_profit": 1863756011
+        },
+        "REGULATORY": {
+          "cd_ratio": 85.55,
+          "core_capital": 10.01,
+          "supplementary_capital": 2.11,
+          "capital_fund": 12.12,
+          "npl_ratio": 3.39,
+          "base_rate": 10.51,
+          "spread": 4.0,
+          "total_employees": 1716,
+          "branches": 188,
+          "atms": 145
+        }
+      },
+      "key_ratios": {
+        "Per Share": {
+          "EPS": 13.12,
+          "Book Value": 147.62
+        },
+        "Performance": {
+          "ROE": 8.89
+        },
+        "Dividend": {
+          "Bonus Share %": 0.0,
+          "Cash Dividend %": 5.79
+        }
+      }
+    },
+    {
+      "ticker": "CZBIL",
+      "fiscal_year": "080-081",
+      "report_type": "ANNUAL",
+      "quarter": null,
+      "is_audited": true,
+      "report_template": "BANK",
+      "paid_up_capital": 14200974006,
+      "reserves_and_surplus": 6760149698,
+      "net_profit": 1320731001,
+      "eps": 9.3,
+      "book_value": 151.92,
+      "return_on_equity": 6.12,
+      "bonus_share": 4.0,
+      "cash_dividend": 0.21,
+      "dividend_announced_date": null,
+      "dividend_book_close_date": "2024-10-15",
+      "balance_sheet": {
+        "ASSETS": {
+          "cash_equivalent": 11103495123,
+          "due_from_nrb": 6678168437,
+          "placement_bfis": 1752857356,
+          "derivative_assets": 4096799,
+          "trading_assets": 334687833,
+          "loans_bfis": 1821139008,
+          "loans_customers": 153343650160,
+          "investment_securities": 36283861266,
+          "current_tax_assets": 452990685,
+          "subsidiaries": 317204200,
+          "associates": 364714000,
+          "investment_property": 821262933,
+          "property_equipment": 4297547263,
+          "intangible_assets": 194143634,
+          "deferred_tax_assets": 24486861,
+          "other_assets": 4887925332,
+          "total_assets": 222682230891
+        },
+        "LIABILITIES": {
+          "due_to_bfis": 2438002332,
+          "deposits_customers": 189236668435,
+          "provisions": 5306626,
+          "other_liabilities": 3960093816,
+          "debt_securities": 5467793773,
+          "total_liabilities": 201107864981
+        },
+        "EQUITY": {
+          "share_capital": 14200974006,
+          "retained_earnings": 613242207,
+          "reserves_reserves": 6760149698,
+          "total_equity": 21574365910,
+          "total_liabilities_equity": 222682230891
+        }
+      },
+      "profit_loss": {
+        "INCOME": {
+          "interest_income": 19719665007,
+          "interest_expense": 13995845998,
+          "net_interest_income": 5723819009,
+          "fee_income": 1279684020,
+          "fee_expense": 154714534,
+          "net_fee_income": 1124969487,
+          "net_int_fee_income": 6848788496,
+          "trading_income": 156055435,
+          "other_operating_income": 52089910,
+          "total_operating_income": 7056933841
+        },
+        "EXPENSES": {
+          "impairment_charge": -1725407494,
+          "personnel_expenses": 1987316489,
+          "other_operating_expenses": 949096989,
+          "depreciation": 346532327,
+          "operating_profit": 2048580542,
+          "non_operating_income": 28524541,
+          "non_operating_expense": 19518786,
+          "pbt": 2057586297,
+          "net_profit": 1320731001
+        },
+        "REGULATORY": {
+          "cd_ratio": 84.34,
+          "core_capital": 9.21,
+          "supplementary_capital": 3.85,
+          "capital_fund": 13.06,
+          "npl_ratio": 4.1,
+          "base_rate": 8.26,
+          "spread": 3.99,
+          "total_employees": 1784,
+          "branches": 197,
+          "atms": 160
+        }
+      },
+      "key_ratios": {
+        "Per Share": {
+          "EPS": 9.3,
+          "Book Value": 151.92
+        },
+        "Performance": {
+          "ROE": 6.12
+        },
+        "Dividend": {
+          "Bonus Share %": 4.0,
+          "Cash Dividend %": 0.21
+        }
+      }
+    },
+    {
+      "ticker": "CZBIL",
+      "fiscal_year": "081-082",
+      "report_type": "ANNUAL",
+      "quarter": null,
+      "is_audited": true,
+      "report_template": "BANK",
+      "paid_up_capital": 14769012966,
+      "reserves_and_surplus": 7400531827,
+      "net_profit": 1287075105,
+      "eps": 8.71,
+      "book_value": 155.38,
+      "return_on_equity": 5.61,
+      "bonus_share": 5.0,
+      "cash_dividend": 0.263,
+      "dividend_announced_date": null,
+      "dividend_book_close_date": "2025-11-03",
+      "balance_sheet": {
+        "ASSETS": {
+          "cash_equivalent": 11435104517,
+          "due_from_nrb": 8112517259,
+          "placement_bfis": 1916516537,
+          "derivative_assets": 9781119,
+          "trading_assets": 416187210,
+          "loans_bfis": 1254373368,
+          "loans_customers": 168860738128,
+          "investment_securities": 42267572417,
+          "current_tax_assets": 210948042,
+          "subsidiaries": 317204200,
+          "associates": 524292202,
+          "investment_property": 1260423530,
+          "property_equipment": 1490156307,
+          "intangible_assets": 193758774,
+          "deferred_tax_assets": 206874441,
+          "other_assets": 4206411402,
+          "total_assets": 245382966453
+        },
+        "LIABILITIES": {
+          "due_to_bfis": 2581158410,
+          "due_to_nrb": 41439071,
+          "deposits_customers": 211500793308,
+          "provisions": 5306626,
+          "other_liabilities": 2835328218,
+          "debt_securities": 5471227040,
+          "total_liabilities": 222435252673
+        },
+        "EQUITY": {
+          "share_capital": 14769012966,
+          "retained_earnings": 778168988,
+          "reserves_reserves": 7400531827,
+          "total_equity": 22947713780,
+          "total_liabilities_equity": 245382966453
+        }
+      },
+      "profit_loss": {
+        "INCOME": {
+          "interest_income": 17360136288,
+          "interest_expense": 10944729588,
+          "net_interest_income": 6415406700,
+          "fee_income": 1511943983,
+          "fee_expense": 164892910,
+          "net_fee_income": 1347051073,
+          "net_int_fee_income": 7762457773,
+          "trading_income": 302726511,
+          "other_operating_income": 109660190,
+          "total_operating_income": 8174844474
+        },
+        "EXPENSES": {
+          "impairment_charge": -2680009409,
+          "personnel_expenses": 2035651709,
+          "other_operating_expenses": 1073942373,
+          "depreciation": 398322493,
+          "operating_profit": 1986918490,
+          "non_operating_income": 19316785,
+          "non_operating_expense": 181822283,
+          "pbt": 1824412992,
+          "net_profit": 1287075105
+        },
+        "REGULATORY": {
+          "core_capital": 8.95,
+          "supplementary_capital": 3.52,
+          "capital_fund": 12.47
+        }
+      },
+      "key_ratios": {
+        "Per Share": {
+          "EPS": 8.71,
+          "Book Value": 155.38
+        },
+        "Performance": {
+          "ROE": 5.61
+        },
+        "Dividend": {
+          "Bonus Share %": 5.0,
+          "Cash Dividend %": 0.263
+        }
+      }
+    }
+  ]
+}

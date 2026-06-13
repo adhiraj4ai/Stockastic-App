@@ -1073,5 +1073,14 @@ class SignalGenerationService:
                     
         except Exception as e:
             logger.error(f"Institutional alerts generation error: {e}")
-            
+
         return grouped_results
+
+
+# ---------------------------------------------------------------------------
+# Backward-compat shim — new code should use signals.default_orchestrator
+# ---------------------------------------------------------------------------
+def generate_all_signals(progress_callback=None):
+    """Legacy entry-point. Prefer signals.default_orchestrator.generate_all()."""
+    from .signals import default_orchestrator
+    return default_orchestrator.generate_all(progress_callback=progress_callback)
