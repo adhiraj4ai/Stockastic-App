@@ -82,3 +82,32 @@ def test_truncate_reply_appends_ellipsis_and_strips():
 
     result = _truncate_reply("a" * 500 + " " * 200)
     assert result == "a" * 500 + "…"
+
+
+from chat.history import references_prior_context
+
+
+@pytest.mark.parametrize("message", [
+    "Explain that",
+    "Why?",
+    "Tell me more about it",
+    "What about those?",
+    "You said it was a buy — why?",
+    "Compare it to the previous one",
+])
+def test_detects_back_reference(message):
+    assert references_prior_context(message) is True
+
+
+@pytest.mark.parametrize("message", [
+    "What is the PE ratio of NABIL?",
+    "Should I buy SHIVM today?",
+    "Give me the market summary",
+    "Why is NABIL down today?",  # elaboration cue but names a fresh ticker → standalone
+])
+def test_standalone_message_is_not_a_reference(message):
+    assert references_prior_context(message) is False
+
+
+def test_empty_message_is_not_a_reference():
+    assert references_prior_context("") is False
