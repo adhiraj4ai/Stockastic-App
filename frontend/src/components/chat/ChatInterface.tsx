@@ -2,7 +2,7 @@
 
 import { useEffect, useLayoutEffect, useRef, useState, useCallback } from 'react';
 import { Send, StopCircle, Loader2 } from 'lucide-react';
-import api from '@/lib/api';
+import api, { savedApi } from '@/lib/api';
 import { openChatStream } from '@/lib/chat-sse';
 import { cn } from '@/lib/utils';
 import { MessageBubble } from './MessageBubble';
@@ -35,6 +35,8 @@ export function ChatInterface({ sessionId, onTitleChange, initialPrompt }: ChatI
     const [activeMessageId, setActiveMessageId] = useState<string | null>(null);
     const [visibleFrom, setVisibleFrom] = useState(0);
     const [bookmarkMessageId, setBookmarkMessageId] = useState<string | null>(null);
+    // Server message ids already saved as bookmarks (drives the filled icon + blocks duplicates).
+    const [bookmarkedIds, setBookmarkedIds] = useState<Set<string>>(new Set());
     const abortRef = useRef<AbortController | null>(null);
     const scrollerRef = useRef<HTMLDivElement | null>(null);
     const messageRefs = useRef<Map<string, HTMLDivElement>>(new Map());
@@ -68,6 +70,27 @@ export function ChatInterface({ sessionId, onTitleChange, initialPrompt }: ChatI
         return () => {
             cancelled = true;
             abortRef.current?.abort();
+        };
+    }, [sessionId]);
+
+    // Load which messages in this session are already bookmarked (for the filled icon).
+    useEffect(() => {
+        let cancelled = false;
+        savedApi
+            .list({ session: sessionId })
+            .then((res) => {
+                if (cancelled) return;
+                const data = res.data as SavedAnalysis[] | { results?: SavedAnalysis[] };
+                const arr = Array.isArray(data) ? data : data?.results || [];
+                setBookmarkedIds(
+                    new Set(arr.map((s) => s.source_message).filter(Boolean) as string[]),
+                );
+            })
+            .catch(() => {
+                /* non-fatal: icons just won't pre-fill */
+            });
+        return () => {
+            cancelled = true;
         };
     }, [sessionId]);
 
@@ -382,7 +405,11 @@ export function ChatInterface({ sessionId, onTitleChange, initialPrompt }: ChatI
                                                 else messageRefs.current.delete(m.id);
                                             }}
                                         >
-                                            <MessageBubble message={m} onBookmark={(id) => setBookmarkMessageId(id)} />
+                                            <MessageBubble
+                                                message={m}
+                                                onBookmark={(id) => setBookmarkMessageId(id)}
+                                                bookmarked={bookmarkedIds.has(m.serverId ?? m.id)}
+                                            />
                                         </div>
                                     ))}
                                 </>
@@ -410,7 +437,15 @@ export function ChatInterface({ sessionId, onTitleChange, initialPrompt }: ChatI
                     sessionId={sessionId}
                     messageId={bookmarkMessageId}
                     onClose={() => setBookmarkMessageId(null)}
-                    onSaved={() => setBookmarkMessageId(null)}
+                    onSaved={() => {
+                        const savedId = bookmarkMessageId;
+                        setBookmarkedIds((prev) => {
+                            const next = new Set(prev);
+                            if (savedId) next.add(savedId);
+                            return next;
+                        });
+                        setBookmarkMessageId(null);
+                    }}
                 />
             )}
         </WorkbenchContext.Provider>

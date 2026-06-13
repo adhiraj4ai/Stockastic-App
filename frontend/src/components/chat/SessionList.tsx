@@ -1,11 +1,9 @@
 'use client';
 
-import { useEffect, useState } from 'react';
 import Link from 'next/link';
-import { Plus, Trash2, MessageSquare, Bookmark, ChevronRight, ChevronDown } from 'lucide-react';
+import { Plus, Trash2, MessageSquare } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import { savedApi } from '@/lib/api';
-import type { ChatSession, SavedAnalysis } from './types';
+import type { ChatSession } from './types';
 
 interface Props {
     sessions: ChatSession[];
@@ -16,19 +14,6 @@ interface Props {
 }
 
 export function SessionList({ sessions, activeId, loading, onNew, onDelete }: Props) {
-    const [saved, setSaved] = useState<SavedAnalysis[]>([]);
-    const [savedOpen, setSavedOpen] = useState(false);
-
-    useEffect(() => {
-        savedApi
-            .list()
-            .then((res) => {
-                const data = res.data as SavedAnalysis[] | { results?: SavedAnalysis[] };
-                setSaved(Array.isArray(data) ? data : data?.results || []);
-            })
-            .catch(() => setSaved([]));
-    }, []);
-
     return (
         <aside className="w-64 shrink-0 border-r border-border bg-sidebar h-full flex flex-col">
             <div className="px-3 py-3 border-b border-border flex items-center justify-between">
@@ -43,49 +28,6 @@ export function SessionList({ sessions, activeId, loading, onNew, onDelete }: Pr
                 </button>
             </div>
             <div className="flex-1 overflow-y-auto custom-scrollbar p-1">
-                <div className="mb-1.5 border-b border-border/60 pb-1.5">
-                    <button
-                        type="button"
-                        onClick={() => setSavedOpen((v) => !v)}
-                        className="flex w-full items-center justify-between gap-2 px-2 py-1.5 rounded-md text-[12px] font-medium text-muted-foreground hover:bg-sidebar-accent transition-colors"
-                    >
-                        <span className="inline-flex items-center gap-2">
-                            <Bookmark size={13} className="text-emerald-500 shrink-0" />
-                            Saved
-                            <span className="text-muted-foreground/70">({saved.length})</span>
-                        </span>
-                        {savedOpen ? <ChevronDown size={13} /> : <ChevronRight size={13} />}
-                    </button>
-                    {savedOpen && (
-                        <ul className="mt-0.5 space-y-0.5">
-                            {saved.map((s) => (
-                                <li key={s.id}>
-                                    <Link
-                                        href={`/bookmarks?focus=${s.id}`}
-                                        className="flex items-center gap-2 px-2 py-1.5 rounded-md hover:bg-sidebar-accent transition-colors"
-                                        title={s.one_liner}
-                                    >
-                                        <Bookmark size={12} className="text-emerald-500 shrink-0" />
-                                        <span className="text-[13px] text-foreground truncate">{s.title}</span>
-                                    </Link>
-                                </li>
-                            ))}
-                            {saved.length === 0 && (
-                                <li className="px-2 py-1.5 text-[12px] text-muted-foreground">
-                                    No saved analyses yet
-                                </li>
-                            )}
-                            <li>
-                                <Link
-                                    href="/bookmarks"
-                                    className="block px-2 py-1 text-[12px] font-medium text-emerald-500 hover:underline"
-                                >
-                                    View all →
-                                </Link>
-                            </li>
-                        </ul>
-                    )}
-                </div>
                 {loading ? (
                     <div className="px-3 py-4 text-[12px] text-muted-foreground">Loading…</div>
                 ) : sessions.length === 0 ? (

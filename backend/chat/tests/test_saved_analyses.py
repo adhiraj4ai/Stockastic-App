@@ -286,6 +286,71 @@ class SavedAnalysisAPITests(APITestCase):
         )
         self.assertEqual(resp.status_code, 404)
 
+    def test_bookmark_draft_includes_source_message(self):
+        msg = ChatMessage.objects.create(
+            session=self.session, role=ChatMessage.ROLE_ASSISTANT, text="ans",
+        )
+        fake = {"title": "t", "summary": "s", "one_liner": "o", "category": "",
+                "tags": [], "tickers": [], "series_key": "", "verdict": "",
+                "structured": {}, "degraded": True}
+        with patch("chat.views.build_draft", return_value=fake):
+            resp = self.client.post(
+                f"/api/chat/sessions/{self.session.id}/bookmark_draft/",
+                {"message_id": str(msg.id)}, format="json",
+            )
+        self.assertEqual(resp.status_code, 200, resp.content)
+        self.assertEqual(resp.data["source_message"], str(msg.id))
+
+    def test_duplicate_message_bookmark_rejected(self):
+        msg = ChatMessage.objects.create(
+            session=self.session, role=ChatMessage.ROLE_ASSISTANT, text="ans",
+        )
+        payload = {
+            "title": "GBIME Q2", "summary": "body", "session": str(self.session.id),
+            "source_message": str(msg.id),
+        }
+        first = self.client.post("/api/chat/saved/", payload, format="json")
+        self.assertEqual(first.status_code, 201, first.content)
+        second = self.client.post("/api/chat/saved/", payload, format="json")
+        self.assertEqual(second.status_code, 400, second.content)
+        self.assertIn("source_message", second.data)
+
+    def test_create_rejects_foreign_source_message(self):
+        foreign = ChatSession.objects.create(user=self.other, title="theirs")
+        msg = ChatMessage.objects.create(
+            session=foreign, role=ChatMessage.ROLE_ASSISTANT, text="ans",
+        )
+        resp = self.client.post("/api/chat/saved/", {
+            "title": "x", "summary": "b", "source_message": str(msg.id),
+        }, format="json")
+        self.assertEqual(resp.status_code, 400, resp.content)
+
+    def test_detail_includes_source_question_and_answer(self):
+        q = ChatMessage.objects.create(
+            session=self.session, role=ChatMessage.ROLE_USER, text="How is GBIME doing?",
+        )
+        a = ChatMessage.objects.create(
+            session=self.session, role=ChatMessage.ROLE_ASSISTANT, text="GBIME looks strong.",
+        )
+        sa = SavedAnalysis.objects.create(
+            user=self.user, title="t", summary="s", session=self.session, source_message=a,
+        )
+        resp = self.client.get(f"/api/chat/saved/{sa.id}/")
+        self.assertEqual(resp.status_code, 200, resp.content)
+        self.assertEqual(resp.data["source_answer"], "GBIME looks strong.")
+        self.assertEqual(resp.data["source_question"], "How is GBIME doing?")
+        # Ensure q is referenced (it is the preceding user turn).
+        self.assertEqual(str(q.session_id), str(self.session.id))
+
+    def test_list_filters_by_session(self):
+        other_session = ChatSession.objects.create(user=self.user, title="other")
+        SavedAnalysis.objects.create(user=self.user, title="a", summary="s", session=self.session)
+        SavedAnalysis.objects.create(user=self.user, title="b", summary="s", session=other_session)
+        resp = self.client.get("/api/chat/saved/", {"session": str(self.session.id)})
+        self.assertEqual(resp.status_code, 200)
+        self.assertEqual(len(resp.data), 1)
+        self.assertEqual(resp.data[0]["title"], "a")
+
 
 import asyncio
 

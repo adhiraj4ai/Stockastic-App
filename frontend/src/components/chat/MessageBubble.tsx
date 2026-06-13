@@ -81,9 +81,11 @@ const MarkdownComponents = {
 export function MessageBubble({
     message,
     onBookmark,
+    bookmarked = false,
 }: {
     message: ChatMessage;
     onBookmark?: (messageId: string) => void;
+    bookmarked?: boolean;
 }) {
     if (message.role === 'user') {
         return (
@@ -106,15 +108,28 @@ export function MessageBubble({
         <div className="group">
             <AssistantBubble blocks={message.blocks || []} />
             {canBookmark && (
-                <div className="mt-1 opacity-60 group-hover:opacity-100 focus-within:opacity-100 transition-opacity">
+                <div
+                    className={cn(
+                        'mt-1 transition-opacity',
+                        bookmarked
+                            ? 'opacity-100'
+                            : 'opacity-60 group-hover:opacity-100 focus-within:opacity-100',
+                    )}
+                >
                     <button
                         type="button"
-                        onClick={() => onBookmark!(bookmarkId)}
-                        title="Bookmark this answer"
-                        className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[11px] font-medium text-muted-foreground hover:text-emerald-500 hover:bg-accent transition-colors"
+                        onClick={() => !bookmarked && onBookmark!(bookmarkId)}
+                        disabled={bookmarked}
+                        title={bookmarked ? 'Saved to bookmarks' : 'Bookmark this answer'}
+                        className={cn(
+                            'inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[11px] font-medium transition-colors',
+                            bookmarked
+                                ? 'cursor-default text-emerald-500'
+                                : 'text-muted-foreground hover:text-emerald-500 hover:bg-accent',
+                        )}
                     >
-                        <Bookmark size={12} />
-                        Bookmark
+                        <Bookmark size={12} className={bookmarked ? 'fill-current' : ''} />
+                        {bookmarked ? 'Bookmarked' : 'Bookmark'}
                     </button>
                 </div>
             )}

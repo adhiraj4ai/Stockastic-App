@@ -93,6 +93,9 @@ export interface ChatMessage {
 export interface SavedAnalysis {
     id: string;
     session: string | null;
+    source_message?: string | null; // the assistant message this bookmark was captured from
+    source_question?: string;       // verbatim user question (detail only)
+    source_answer?: string;         // verbatim assistant answer (detail only)
     title: string;
     summary?: string;        // present on detail, omitted from list/suggest
     one_liner: string;
@@ -108,6 +111,7 @@ export interface SavedAnalysis {
 
 export interface SavedAnalysisDraft {
     session: string;
+    source_message?: string | null;
     title: string;
     summary: string;
     one_liner: string;

@@ -188,6 +188,8 @@ class ChatSessionViewSet(viewsets.ModelViewSet):
                 )
         draft = build_draft(session, message=message)
         draft["session"] = str(session.id)
+        if message is not None:
+            draft["source_message"] = str(message.id)
         return Response(draft)
 
 
@@ -286,6 +288,8 @@ class SavedAnalysisViewSet(viewsets.ModelViewSet):
             qs = qs.filter(tags__contains=[params["tag"]])
         if params.get("series_key"):
             qs = qs.filter(series_key=params["series_key"])
+        if params.get("session"):
+            qs = qs.filter(session=params["session"])
         return qs.order_by("-created_at")
 
     def perform_create(self, serializer):

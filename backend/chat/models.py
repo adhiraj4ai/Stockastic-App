@@ -127,6 +127,13 @@ class SavedAnalysis(models.Model):
         ChatSession, on_delete=models.SET_NULL, null=True, blank=True,
         related_name="saved_analyses",
     )
+    # The specific assistant turn this snapshot was captured from. SET_NULL keeps the
+    # snapshot if the message is deleted; a partial unique constraint (below) blocks
+    # bookmarking the same message twice.
+    source_message = models.ForeignKey(
+        ChatMessage, on_delete=models.SET_NULL, null=True, blank=True,
+        related_name="+",
+    )
     title = models.CharField(max_length=255)
     summary = models.TextField()                       # frozen synthesis (markdown)
     one_liner = models.CharField(max_length=280, blank=True, default="")
@@ -142,6 +149,13 @@ class SavedAnalysis(models.Model):
     class Meta:
         ordering = ["-created_at"]
         indexes = [models.Index(fields=["user", "series_key", "created_at"])]
+        constraints = [
+            models.UniqueConstraint(
+                fields=["user", "source_message"],
+                condition=models.Q(source_message__isnull=False),
+                name="uniq_saved_analysis_per_message",
+            ),
+        ]
 
     def __str__(self) -> str:
         return f"{self.user.username} · {self.title}"

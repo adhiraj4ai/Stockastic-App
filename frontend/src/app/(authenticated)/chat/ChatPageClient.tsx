@@ -2,9 +2,11 @@
 
 import { useEffect, useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
+import { Bookmark, PanelRightClose, PanelRightOpen } from 'lucide-react';
 import DashboardLayout from '@/components/DashboardLayout';
 import { ChatInterface } from '@/components/chat/ChatInterface';
 import { SessionList } from '@/components/chat/SessionList';
+import { BookmarkCatalog } from '@/components/chat/BookmarkCatalog';
 import api from '@/lib/api';
 import type { ChatSession } from '@/components/chat/types';
 
@@ -17,6 +19,17 @@ export default function ChatPageClient() {
     const [loading, setLoading] = useState(true);
     // Captured once from ?q= (home omnibox handoff); the URL is then cleaned.
     const [pendingPrompt, setPendingPrompt] = useState<string | null>(null);
+    // Right-side bookmark catalog; preference persisted across visits.
+    const [bookmarksOpen, setBookmarksOpen] = useState<boolean>(() =>
+        typeof window === 'undefined' ? true : localStorage.getItem('chat:bookmarksOpen') !== '0',
+    );
+    const toggleBookmarks = () =>
+        setBookmarksOpen((v) => {
+            const next = !v;
+            if (typeof window !== 'undefined')
+                localStorage.setItem('chat:bookmarksOpen', next ? '1' : '0');
+            return next;
+        });
 
     const refresh = async () => {
         try {
@@ -87,6 +100,37 @@ export default function ChatPageClient() {
                         <EmptyState onNew={handleNew} />
                     )}
                 </div>
+
+                {/* Right-side saved-analyses catalog (shares BookmarkCatalog with /bookmarks) */}
+                {bookmarksOpen ? (
+                    <aside className="hidden w-80 shrink-0 flex-col border-l border-border bg-sidebar md:flex">
+                        <div className="flex h-12 shrink-0 items-center justify-between border-b border-border px-3">
+                            <span className="inline-flex items-center gap-2 text-[13px] font-semibold text-foreground">
+                                <Bookmark size={14} className="text-emerald-500" /> Saved analyses
+                            </span>
+                            <button
+                                onClick={toggleBookmarks}
+                                title="Hide saved analyses"
+                                className="rounded p-1 text-muted-foreground transition-colors hover:bg-sidebar-accent hover:text-foreground"
+                            >
+                                <PanelRightClose size={15} />
+                            </button>
+                        </div>
+                        <div className="min-h-0 flex-1">
+                            <BookmarkCatalog variant="sidebar" />
+                        </div>
+                    </aside>
+                ) : (
+                    <button
+                        onClick={toggleBookmarks}
+                        title="Show saved analyses"
+                        className="hidden w-10 shrink-0 flex-col items-center gap-2 border-l border-border bg-sidebar py-3 text-muted-foreground transition-colors hover:text-foreground md:flex"
+                    >
+                        <PanelRightOpen size={15} />
+                        <Bookmark size={14} className="text-emerald-500" />
+                        <span className="[writing-mode:vertical-rl] text-[11px] tracking-wide">Saved</span>
+                    </button>
+                )}
             </div>
         </DashboardLayout>
     );
