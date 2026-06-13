@@ -61,6 +61,159 @@ def rank_opportunities_from_rows(rows, regime):
     )
 
 
+def _fetch_setup(symbols):
+    """Resolve regime, symbol list, and basket. Returns (regime_dict, regime_label, syms, basket)."""
+    from stocks.services.universe import research_universe
+    from stocks.services.market_regime import current_regime
+    from stocks.services.backtest_harness import load_basket
+
+    regime = current_regime()
+    regime_label = regime["regime"]
+    syms = [s.strip().upper() for s in symbols] if symbols else sorted(research_universe())
+    basket, _ = load_basket()
+    return regime, regime_label, syms, basket
+
+
+def _build_bt_cache_entry(strat, basket, evaluate_over_basket):
+    """Run the basket scorecard for one strategy. Returns a cache dict."""
+    try:
+        card = evaluate_over_basket(strat, basket, strategy_name=strat.name)
+        c = card.confidence or {}
+        return {
+            "pvalue": c.get("excess_pvalue", 1.0),
+            "expectancy": c.get("expectancy", 0.0),
+        }, False
+    except Exception:
+        return {"pvalue": 1.0, "expectancy": 0.0}, True
+
+
+def _assemble_strategy_buy_row(producer, strat, sym, sig, bt, tier, live, m):
+    """Assemble the BUY row dict from backtest metrics ``m``."""
+    edge = (m.get("ann_return_pct", 0.0) or 0.0) / 100.0
+    return {
+        "key": f"{producer}|{sym}",
+        "basis": "backtest",
+        "producer": producer,
+        "strategy_id": strat.id,
+        "strategy_name": strat.name,
+        "symbol": sym,
+        "direction": "BUY",
+        "close": (sig or {}).get("close"),
+        "edge": edge,
+        "ann_return_pct": m.get("ann_return_pct", 0.0),
+        "num_trades": m.get("num_trades", 0),
+        "win_rate_pct": m.get("win_rate_pct", 0.0),
+        "sortino": m.get("sortino", 0.0),
+        "win_rate_reportable": (m.get("num_trades", 0) >= 30),
+        "pvalue": bt["pvalue"],
+        "trust": tier,
+        "live_win_rate": live["live_win_rate"],
+        "live_resolved": live["resolved"],
+        "live_avg_pnl_pct": live["avg_pnl_pct"],
+    }
+
+
+def _build_strategy_buy_row(producer, strat, sym, sig, bt, tier, live, run_backtest):
+    """Run backtest for one symbol and build a BUY row. Returns (row|None, skipped_count)."""
+    best_params = strat.best_params or None
+    try:
+        res = run_backtest(strat, sym, params=best_params)
+    except Exception:
+        return None, 1
+    if not res.ok:
+        return None, 0
+    row = _assemble_strategy_buy_row(producer, strat, sym, sig, bt, tier, live, res.metrics)
+    return row, 0
+
+
+def _process_symbol_for_strategy(producer, strat, sym, bt, tier, live, StrategyService, run_backtest):
+    """Infer signal for one symbol; return (rows_to_add, exits_to_add, skipped_delta)."""
+    try:
+        sig = StrategyService.infer_current_signal(strat, sym)
+    except Exception:
+        return [], [], 1
+    direction = (sig or {}).get("signal")
+    if direction == "SELL":
+        exit_row = {"producer": producer, "strategy_name": strat.name,
+                    "symbol": sym, "close": (sig or {}).get("close")}
+        return [], [exit_row], 0
+    if direction != "BUY":
+        return [], [], 0
+    row, skip = _build_strategy_buy_row(producer, strat, sym, sig, bt, tier, live, run_backtest)
+    rows = [row] if row is not None else []
+    return rows, [], skip
+
+
+def _process_strategies(syms, basket, bt_cache, evaluate_over_basket, producer_track_record, trust_tier, StrategyService, run_backtest):
+    """Iterate all USER_STRATEGY strategies; populate rows, exits, skipped."""
+    from stocks.models import Strategy, SignalEpisode
+
+    rows, exits = [], []
+    skipped = 0
+    for strat in Strategy.objects.all().order_by("id"):
+        producer = SignalEpisode.make_producer_key("USER_STRATEGY", strat.id)
+        if producer not in bt_cache:
+            bt_cache[producer], errored = _build_bt_cache_entry(strat, basket, evaluate_over_basket)
+            if errored:
+                skipped += 1
+        bt = bt_cache[producer]
+        live = producer_track_record(producer)
+        tier = trust_tier(bt["expectancy"], live)
+        for sym in syms:
+            new_rows, new_exits, skip = _process_symbol_for_strategy(
+                producer, strat, sym, bt, tier, live, StrategyService, run_backtest,
+            )
+            rows.extend(new_rows)
+            exits.extend(new_exits)
+            skipped += skip
+    return rows, exits, skipped
+
+
+def _build_engine_row(ep, live, tier):
+    """Build one BUY row for an engine episode (live-basis)."""
+    edge = (live["avg_pnl_pct"] or 0.0) / 100.0
+    return {
+        "key": f"{ep.producer_key}|{ep.symbol}",
+        "basis": "live",
+        "producer": ep.producer_key,
+        "strategy_id": None,
+        "strategy_name": ep.source,
+        "symbol": ep.symbol,
+        "direction": "BUY",
+        "close": float(ep.entry_price) if ep.entry_price else None,
+        "edge": edge,
+        "ann_return_pct": None,
+        "num_trades": None,
+        "win_rate_pct": round(live["live_win_rate"] * 100, 1),
+        "sortino": None,
+        "win_rate_reportable": live["resolved"] >= 30,
+        "pvalue": 1.0,
+        "trust": tier,
+        "live_win_rate": live["live_win_rate"],
+        "live_resolved": live["resolved"],
+        "live_avg_pnl_pct": live["avg_pnl_pct"],
+    }
+
+
+def _process_engines(syms, symbols, producer_track_record, trust_tier):
+    """Collect BUY rows from active engine episodes (non-USER_STRATEGY)."""
+    from stocks.models import SignalEpisode
+
+    engine_actives = (
+        SignalEpisode.objects.filter(status="ACTIVE", direction="BUY")
+        .exclude(source="USER_STRATEGY")
+    )
+    if symbols:
+        engine_actives = engine_actives.filter(symbol__in=syms)
+    rows = []
+    for ep in engine_actives.order_by("-start_date")[:500]:
+        live = producer_track_record(ep.producer_key)
+        edge = (live["avg_pnl_pct"] or 0.0) / 100.0
+        tier = trust_tier(edge, live)
+        rows.append(_build_engine_row(ep, live, tier))
+    return rows
+
+
 def rank_opportunities(symbols=None, limit=50, include_engines=True):
     """Build & rank today's BUY entries. Returns {regime, opportunities, exits, skipped}.
 
@@ -74,123 +227,18 @@ def rank_opportunities(symbols=None, limit=50, include_engines=True):
     (``include_engines``) contribute BUY entries from their latest ACTIVE
     episodes, ranked on their live realized edge (``basis="live"``).
     """
-    from stocks.models import Strategy, SignalEpisode
-    from stocks.services.universe import research_universe
     from stocks.services.strategy_service import StrategyService
     from stocks.services.live_validation import producer_track_record, trust_tier
-    from stocks.services.market_regime import current_regime
-    from stocks.services.backtest_harness import evaluate_over_basket, load_basket
+    from stocks.services.backtest_harness import evaluate_over_basket
     from stocks.services.backtest_harness.runner import run_backtest
 
-    regime = current_regime()
-    regime_label = regime["regime"]
-    syms = [s.strip().upper() for s in symbols] if symbols else sorted(research_universe())
-    basket, _ = load_basket()
-
-    rows, exits = [], []
-    skipped = 0
-    # Cache the expensive per-producer basket scorecard (significance + trust input).
+    regime, regime_label, syms, basket = _fetch_setup(symbols)
     bt_cache = {}
-
-    for strat in Strategy.objects.all().order_by("id"):
-        producer = SignalEpisode.make_producer_key("USER_STRATEGY", strat.id)
-        if producer not in bt_cache:
-            try:
-                card = evaluate_over_basket(strat, basket, strategy_name=strat.name)
-                c = card.confidence or {}
-                bt_cache[producer] = {
-                    "pvalue": c.get("excess_pvalue", 1.0),
-                    "expectancy": c.get("expectancy", 0.0),  # hypothesis sign for trust
-                }
-            except Exception:
-                bt_cache[producer] = {"pvalue": 1.0, "expectancy": 0.0}
-                skipped += 1
-        bt = bt_cache[producer]
-        live = producer_track_record(producer)
-        tier = trust_tier(bt["expectancy"], live)
-        best_params = strat.best_params or None
-
-        for sym in syms:
-            try:
-                sig = StrategyService.infer_current_signal(strat, sym)
-            except Exception:
-                skipped += 1
-                continue
-            direction = (sig or {}).get("signal")
-            if direction == "SELL":
-                exits.append({"producer": producer, "strategy_name": strat.name,
-                              "symbol": sym, "close": (sig or {}).get("close")})
-                continue
-            if direction != "BUY":
-                continue
-            # Per-symbol, frequency-aware, fee-net edge — measured with the same
-            # params the live rule uses, so the edge matches what fired.
-            try:
-                res = run_backtest(strat, sym, params=best_params)
-            except Exception:
-                skipped += 1
-                continue
-            if not res.ok:
-                continue
-            m = res.metrics
-            edge = (m.get("ann_return_pct", 0.0) or 0.0) / 100.0
-            rows.append({
-                "key": f"{producer}|{sym}",
-                "basis": "backtest",
-                "producer": producer,
-                "strategy_id": strat.id,
-                "strategy_name": strat.name,
-                "symbol": sym,
-                "direction": "BUY",
-                "close": (sig or {}).get("close"),
-                "edge": edge,                       # annualized fee-net return, this symbol
-                "ann_return_pct": m.get("ann_return_pct", 0.0),
-                "num_trades": m.get("num_trades", 0),
-                "win_rate_pct": m.get("win_rate_pct", 0.0),
-                "sortino": m.get("sortino", 0.0),
-                "win_rate_reportable": (m.get("num_trades", 0) >= 30),
-                "pvalue": bt["pvalue"],
-                "trust": tier,
-                "live_win_rate": live["live_win_rate"],
-                "live_resolved": live["resolved"],
-                "live_avg_pnl_pct": live["avg_pnl_pct"],
-            })
-
+    rows, exits, skipped = _process_strategies(
+        syms, basket, bt_cache, evaluate_over_basket,
+        producer_track_record, trust_tier, StrategyService, run_backtest,
+    )
     if include_engines:
-        engine_actives = (
-            SignalEpisode.objects.filter(status="ACTIVE", direction="BUY")
-            .exclude(source="USER_STRATEGY")
-        )
-        if symbols:
-            engine_actives = engine_actives.filter(symbol__in=syms)
-        for ep in engine_actives.order_by("-start_date")[:500]:
-            live = producer_track_record(ep.producer_key)
-            # Engines have no backtest; their edge is the live realized average.
-            # basis="live" flags that this is ranked on a different basis than
-            # the backtest-validated strategy entries.
-            edge = (live["avg_pnl_pct"] or 0.0) / 100.0
-            tier = trust_tier(edge, live)
-            rows.append({
-                "key": f"{ep.producer_key}|{ep.symbol}",
-                "basis": "live",
-                "producer": ep.producer_key,
-                "strategy_id": None,
-                "strategy_name": ep.source,
-                "symbol": ep.symbol,
-                "direction": "BUY",
-                "close": float(ep.entry_price) if ep.entry_price else None,
-                "edge": edge,
-                "ann_return_pct": None,
-                "num_trades": None,
-                "win_rate_pct": round(live["live_win_rate"] * 100, 1),
-                "sortino": None,
-                "win_rate_reportable": live["resolved"] >= 30,
-                "pvalue": 1.0,
-                "trust": tier,
-                "live_win_rate": live["live_win_rate"],
-                "live_resolved": live["resolved"],
-                "live_avg_pnl_pct": live["avg_pnl_pct"],
-            })
-
+        rows.extend(_process_engines(syms, symbols, producer_track_record, trust_tier))
     ranked = rank_opportunities_from_rows(rows, regime_label)[:limit]
     return {"regime": regime, "opportunities": ranked, "exits": exits, "skipped": skipped}
