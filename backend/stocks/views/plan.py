@@ -6,7 +6,7 @@ from rest_framework.permissions import IsAuthenticated
 from rest_framework import status
 
 from ..models import DailyTradingPlan
-from ..services.daily_plan import user_overlay
+from ..services.daily_plan import build_daily_plan, user_overlay
 from ..services.position_sizing import sizing_map_for_user
 
 
@@ -54,3 +54,21 @@ class PlanHistoryView(APIView):
             return Response({"detail": "No plan for that date."},
                             status=status.HTTP_404_NOT_FOUND)
         return Response(_serialize(plan))
+
+
+class PlanGenerateView(APIView):
+    """Manually trigger plan generation and return the result."""
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request):
+        try:
+            plan = build_daily_plan()
+        except ValueError as exc:
+            return Response({"detail": str(exc)}, status=status.HTTP_400_BAD_REQUEST)
+        except Exception as exc:
+            return Response({"detail": str(exc)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+        data = _serialize(plan)
+        data["overlay"] = user_overlay(request.user)
+        data["overlay"]["sizing"] = sizing_map_for_user(
+            request.user, plan.payload.get("picks", []))
+        return Response(data)

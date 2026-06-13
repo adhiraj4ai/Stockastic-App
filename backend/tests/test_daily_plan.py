@@ -400,3 +400,34 @@ class TestFetchActionsMapArraySafety:
         assert fetch_actions_map(np.array(["NABIL", "NICA"])) == {}
         assert fetch_actions_map(np.array([])) == {}
         assert fetch_actions_map(None) == {}
+
+
+@pytest.mark.django_db
+class TestPlanGenerateView:
+    def test_post_returns_plan(self, auth_client):
+        plan_obj = DailyTradingPlan.objects.create(
+            date=date(2026, 6, 13),
+            regime="RISK_ON",
+            breadth=0.6,
+            payload={"picks": [], "exits": [], "catalysts": [], "market_context": {}},
+        )
+        with patch("stocks.views.plan.build_daily_plan", return_value=plan_obj) as mock_build, \
+             patch("stocks.views.plan.user_overlay", return_value={}), \
+             patch("stocks.views.plan.sizing_map_for_user", return_value={}):
+            resp = auth_client.post("/api/stocks/plan/generate/")
+        assert resp.status_code == 200
+        data = resp.json()
+        assert data["date"] == "2026-06-13"
+        assert "picks" in data["payload"]
+        assert "overlay" in data
+        mock_build.assert_called_once()
+
+    def test_post_unauthenticated_returns_401(self, api_client):
+        resp = api_client.post("/api/stocks/plan/generate/")
+        assert resp.status_code == 401
+
+    def test_post_build_failure_returns_400(self, auth_client):
+        with patch("stocks.views.plan.build_daily_plan", side_effect=ValueError("no data")):
+            resp = auth_client.post("/api/stocks/plan/generate/")
+        assert resp.status_code == 400
+        assert "no data" in resp.json()["detail"]

@@ -100,6 +100,7 @@ urlpatterns = [
 
     # Daily trading plan
     path('plan/today/', plan.PlanTodayView.as_view(), name='plan_today'),
+    path('plan/generate/', plan.PlanGenerateView.as_view(), name='plan_generate'),
     path('plan/', plan.PlanHistoryView.as_view(), name='plan_history'),
 
     # Entry Statuses
