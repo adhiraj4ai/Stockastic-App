@@ -1,4 +1,4 @@
-from . import market_views as market
+from . import market
 from . import portfolio_views as portfolio
 from . import strategy
 from . import broker
