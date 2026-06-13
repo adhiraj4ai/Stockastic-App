@@ -3,7 +3,13 @@ from decimal import Decimal
 from django.db.models import Sum, F, Q
 from ..models.fundamentals import Dividend
 from ..models.portfolio import PortfolioTransaction, TransactionType, PortfolioItem, AccountType
-from ..constants import FACE_VALUE_PER_SHARE, WITHHOLDING_TAX_RATE
+from ..constants import (
+    FACE_VALUE_PER_SHARE,
+    WITHHOLDING_TAX_RATE,
+    DIVIDEND_STATUS_UPCOMING,
+    DIVIDEND_STATUS_RECEIVED,
+    PERCENT_DIVISOR,
+)
 
 
 # ---------------------------------------------------------------------------
@@ -129,190 +135,167 @@ def _wacc_at_date(user_txns, ticker: str, cutoff_date) -> Decimal:
     return wacc
 
 
+def _get_holdings_at_date(user_txns: list, ticker: str, cutoff_date) -> Decimal:
+    """Return shares held for *ticker* strictly before *cutoff_date*."""
+    qty = Decimal('0')
+    for t in user_txns:
+        if t.ticker != ticker:
+            continue
+        if t.transaction_date.date() >= cutoff_date:
+            continue
+        if t.transaction_type in (TransactionType.BUY, TransactionType.BONUS):
+            qty += t.quantity
+        elif t.transaction_type == TransactionType.SELL:
+            qty -= t.quantity
+    return max(qty, Decimal('0'))
+
+
+def _compute_cash_item(div, qty_held: Decimal, today) -> "dict | None":
+    """Return a dividend line-item dict for *div* given *qty_held*, or None."""
+    if qty_held <= 0:
+        return None
+    fv = _face_value(div.ticker)
+    gross = qty_held * fv * div.cash_percent / Decimal(PERCENT_DIVISOR)
+    tax = gross * Decimal(str(WITHHOLDING_TAX_RATE))
+    bonus = int(qty_held * div.bonus_percent / Decimal(PERCENT_DIVISOR))
+    status = DIVIDEND_STATUS_UPCOMING if div.book_close_date > today else DIVIDEND_STATUS_RECEIVED
+    return {
+        "id": div.id, "ticker": div.ticker, "fiscal_year": div.fiscal_year,
+        "book_close_date": div.book_close_date, "shares_held": qty_held,
+        "cash_dividend_gross": round(gross, 2), "tax": round(tax, 2),
+        "cash_dividend_net": round(gross - tax, 2), "bonus_shares": bonus,
+        "cash_percent": div.cash_percent, "bonus_percent": div.bonus_percent,
+        "type": status,
+    }
+
+
+def _update_ticker_state(state: dict, txn) -> None:
+    """Mutate *state* in-place to reflect the effect of *txn* on WACC / realized P&L."""
+    if txn.transaction_type == TransactionType.BUY:
+        cost = (Decimal(txn.quantity) * Decimal(txn.rate)
+                + Decimal(txn.commission) + Decimal(txn.sebon_fee) + Decimal(txn.dp_charge))
+        old_val = state['qty'] * state['wacc']
+        state['qty'] += Decimal(txn.quantity)
+        if state['qty'] > 0:
+            state['wacc'] = (old_val + cost) / state['qty']
+    elif txn.transaction_type == TransactionType.BONUS:
+        old_val = state['qty'] * state['wacc']
+        state['qty'] += Decimal(txn.quantity)
+        if state['qty'] > 0:
+            state['wacc'] = old_val / state['qty']
+    elif txn.transaction_type == TransactionType.SELL:
+        qty = Decimal(txn.quantity)
+        fees = Decimal(txn.commission) + Decimal(txn.sebon_fee) + Decimal(txn.dp_charge) + Decimal(txn.cgt)
+        net_pnl = qty * (Decimal(txn.rate) - state['wacc']) - fees
+        state['realized_pnl'] += net_pnl
+        state['total_sold_qty'] += txn.quantity
+        state['sell_count'] += 1
+        if net_pnl > 0:
+            state['profitable_sells'] += 1
+        state['qty'] = max(Decimal('0'), state['qty'] - qty)
+
+
+def _compute_realized_pnl(user) -> "tuple[list, Decimal]":
+    """Replay all LIVE transactions and return (pnl_per_ticker, total_realized_pnl)."""
+    live_txns = PortfolioTransaction.objects.filter(
+        user=user,
+        transaction_type__in=[TransactionType.BUY, TransactionType.SELL, TransactionType.BONUS],
+    ).filter(
+        Q(account__account_type=AccountType.LIVE) | Q(account__isnull=True)
+    ).order_by('transaction_date', 'created_at')
+
+    ticker_state: dict = {}
+    for txn in live_txns:
+        if txn.ticker not in ticker_state:
+            ticker_state[txn.ticker] = {
+                'qty': Decimal('0'), 'wacc': Decimal('0.00'),
+                'realized_pnl': Decimal('0.00'), 'total_sold_qty': 0,
+                'sell_count': 0, 'profitable_sells': 0,
+            }
+        _update_ticker_state(ticker_state[txn.ticker], txn)
+
+    items = [
+        {
+            'ticker': t, 'realized_pnl': float(round(s['realized_pnl'], 2)),
+            'total_sold_qty': s['total_sold_qty'], 'sell_count': s['sell_count'],
+            'profitable_sells': s['profitable_sells'],
+        }
+        for t, s in ticker_state.items() if s['sell_count'] > 0
+    ]
+    total = sum((Decimal(str(i['realized_pnl'])) for i in items), Decimal('0'))
+    return items, total
+
+
+def _zero_dividend_totals() -> dict:
+    """Return a fresh accumulator dict for dividend summary totals."""
+    return {'cash': Decimal('0'), 'bonus': Decimal('0'), 'cost': Decimal('0')}
+
+
+def _accumulate_dividend(div, item: dict, category: str, user_txns, history, upcoming, totals) -> None:
+    """Append *item* to the right bucket and update *totals* for received rows."""
+    if category == DIVIDEND_STATUS_UPCOMING:
+        upcoming.append(item)
+        return
+    history.append(item)
+    qty_held = item['shares_held']
+    totals['cash'] += item['cash_dividend_net']
+    totals['bonus'] += item['bonus_shares']
+    totals['cost'] += qty_held * _wacc_at_date(user_txns, div.ticker, div.book_close_date)
+
+
+def _process_dividend_row(div, user_txns, today) -> "tuple[dict | None, str]":
+    """Return (item_dict_or_None, category_string) for a single dividend row."""
+    qty = _get_holdings_at_date(user_txns, div.ticker, div.book_close_date)
+    item = _compute_cash_item(div, qty, today)
+    if item is None:
+        return None, ""
+    return item, item["type"]
+
+
+def _compute_yield_on_cost(total_cash_net: Decimal, historical_cost: Decimal) -> Decimal:
+    """Return yield-on-cost as a percentage, or zero when cost basis is missing."""
+    if not historical_cost:
+        return Decimal("0")
+    return total_cash_net / historical_cost * Decimal(PERCENT_DIVISOR)
+
+
+def _build_dividend_response(history, upcoming, totals, pnl_per_ticker, total_realized_pnl) -> dict:
+    """Assemble the final calculate_dividends response dict."""
+    yield_on_cost = _compute_yield_on_cost(totals['cash'], totals['cost'])
+    return {
+        "summary": {
+            "total_cash_net": float(round(totals['cash'], 2)),
+            "total_bonus_shares": float(totals['bonus']),
+            "yield_on_cost": float(round(yield_on_cost, 2)),
+            "historical_cost_basis": float(round(totals['cost'], 2)),
+            "current_invested": float(round(totals['cost'], 2)),
+            "total_realized_pnl": float(round(total_realized_pnl, 2)),
+        },
+        "history": sorted(history, key=lambda x: x['book_close_date'], reverse=True),
+        "upcoming": sorted(upcoming, key=lambda x: x['book_close_date']),
+        "realized_pnl": pnl_per_ticker,
+    }
+
+
 class DividendService:
     @staticmethod
     def calculate_dividends(user):
-        """
-        Calculate total dividends (Cash & Bonus) for a user based on their portfolio history.
-        Logic:
-        1. Fetch all dividends with a book_close_date.
-        2. For each dividend, check if user held shares on (book_close_date - 1 day).
-        3. Simple approach: Sum of BUY - BONUS - SELL before book_close_date.
-        4. Calculate amounts using per-stock face value and floored bonus quantities.
-        5. Yield-on-cost denominator uses the historical cost basis at each book-close
-           (qty_held × wacc_as_of_close), NOT the current portfolio cost basis.
-        """
+        """Calculate lifetime cash/bonus dividends and realized P&L for *user*."""
+        from django.utils import timezone
         dividends = Dividend.objects.filter(book_close_date__isnull=False).order_by('book_close_date')
-
-        history = []
-        upcoming = []
-        total_cash_in = Decimal(0)
-        total_bonus_shares = Decimal(0)
-
-        # Get distinct tickers that had dividends
+        today = timezone.now().date()
         dividend_tickers = dividends.values_list('ticker', flat=True).distinct()
-
-        # Fetch all user transactions for these tickers (used by both helpers)
         user_txns = list(PortfolioTransaction.objects.filter(
-            user=user,
-            ticker__in=dividend_tickers
+            user=user, ticker__in=dividend_tickers,
         ).order_by('transaction_date', 'created_at'))
 
-        # Helper to get holdings at date
-        def get_holdings_at_date(ticker, date):
-            # Holdings = Buy + Bonus - Sell strictly before book_close_date.
-            # Transaction Date is treated as approximately the ownership date.
-            relevant_txns = [t for t in user_txns if t.ticker == ticker and t.transaction_date.date() < date]
-
-            qty = Decimal(0)
-            for t in relevant_txns:
-                if t.transaction_type in [TransactionType.BUY, TransactionType.BONUS]:
-                    qty += t.quantity
-                elif t.transaction_type == TransactionType.SELL:
-                    qty -= t.quantity
-            return max(qty, Decimal(0))
-
-        from django.utils import timezone
-        today = timezone.now().date()
-
-        # Accumulate historical cost basis across all past dividend events for yield calc.
-        # historical_cost_basis = Σ (qty_held_at_close × wacc_as_of_close) per dividend.
-        historical_cost_basis = Decimal(0)
-
+        history, upcoming, totals = [], [], _zero_dividend_totals()
         for div in dividends:
-            if not div.book_close_date:
+            item, category = _process_dividend_row(div, user_txns, today)
+            if item is None:
                 continue
+            _accumulate_dividend(div, item, category, user_txns, history, upcoming, totals)
 
-            qty_held = get_holdings_at_date(div.ticker, div.book_close_date)
-
-            if qty_held > 0:
-                # --- Cash dividend ---
-                # Formula: Qty × Face Value × Cash% / 100
-                # Uses per-stock face value (currently always 100 for NEPSE;
-                # see _face_value() to add a real lookup when DB data available).
-                fv = _face_value(div.ticker)
-                gross_cash = (qty_held * fv * div.cash_percent) / 100
-                tax = gross_cash * Decimal(str(WITHHOLDING_TAX_RATE))  # standard 5% withholding
-                net_cash = gross_cash - tax
-
-                # --- Bonus shares ---
-                # floored: quantity is IntegerField; fractional bonus shares unsupported
-                # (tracked follow-up — true fractional share support requires a schema change)
-                bonus_qty = int((qty_held * div.bonus_percent) / 100)
-
-                item = {
-                    "id": div.id,
-                    "ticker": div.ticker,
-                    "fiscal_year": div.fiscal_year,
-                    "book_close_date": div.book_close_date,
-                    "shares_held": qty_held,
-                    "cash_dividend_gross": round(gross_cash, 2),
-                    "tax": round(tax, 2),
-                    "cash_dividend_net": round(net_cash, 2),
-                    "bonus_shares": bonus_qty,
-                    "bonus_percent": div.bonus_percent,
-                    "cash_percent": div.cash_percent,
-                    "type": "Upcoming" if div.book_close_date > today else "Received"
-                }
-
-                if div.book_close_date > today:
-                    upcoming.append(item)
-                else:
-                    history.append(item)
-                    total_cash_in += net_cash
-                    total_bonus_shares += bonus_qty
-
-                    # Accumulate historical cost basis for yield denominator.
-                    # We use wacc_as_of_close so that early cheap buys and late
-                    # expensive buys are each weighted correctly per event.
-                    wacc_at_close = _wacc_at_date(user_txns, div.ticker, div.book_close_date)
-                    historical_cost_basis += qty_held * wacc_at_close
-
-        # --- Yield on cost (historical basis) ---
-        # Numerator : total net cash dividends received (lifetime)
-        # Denominator: sum over all past dividend events of (qty_held_at_close × wacc_as_of_close)
-        # This correctly attributes each cash receipt to the cost basis that actually earned it.
-        if historical_cost_basis > 0:
-            yield_on_cost = (total_cash_in / historical_cost_basis) * 100
-        else:
-            yield_on_cost = Decimal(0)
-
-        # Realized P&L from BUY/SELL transactions on LIVE accounts only
-        live_txns = PortfolioTransaction.objects.filter(
-            user=user,
-            transaction_type__in=[TransactionType.BUY, TransactionType.SELL, TransactionType.BONUS]
-        ).filter(
-            Q(account__account_type=AccountType.LIVE) | Q(account__isnull=True)
-        ).order_by('transaction_date', 'created_at')
-
-        ticker_state = {}
-        for txn in live_txns:
-            ticker = txn.ticker
-            if ticker not in ticker_state:
-                ticker_state[ticker] = {
-                    'qty': Decimal('0'),
-                    'wacc': Decimal('0.00'),
-                    'realized_pnl': Decimal('0.00'),
-                    'total_sold_qty': 0,
-                    'sell_count': 0,
-                    'profitable_sells': 0,
-                }
-            state = ticker_state[ticker]
-
-            if txn.transaction_type == TransactionType.BUY:
-                cost = Decimal(txn.quantity) * Decimal(txn.rate) + Decimal(txn.commission) + Decimal(txn.sebon_fee) + Decimal(txn.dp_charge)
-                old_val = state['qty'] * state['wacc']
-                state['qty'] += txn.quantity
-                if state['qty'] > 0:
-                    state['wacc'] = (old_val + cost) / state['qty']
-
-            elif txn.transaction_type == TransactionType.BONUS:
-                old_val = state['qty'] * state['wacc']
-                state['qty'] += txn.quantity
-                if state['qty'] > 0:
-                    state['wacc'] = old_val / state['qty']
-
-            elif txn.transaction_type == TransactionType.SELL:
-                qty = Decimal(txn.quantity)
-                sell_proceeds = qty * Decimal(txn.rate)
-                cost_basis = qty * state['wacc']
-                fees = Decimal(txn.commission) + Decimal(txn.sebon_fee) + Decimal(txn.dp_charge) + Decimal(txn.cgt)
-                net_pnl = sell_proceeds - cost_basis - fees
-                state['realized_pnl'] += net_pnl
-                state['total_sold_qty'] += txn.quantity
-                state['sell_count'] += 1
-                if net_pnl > 0:
-                    state['profitable_sells'] += 1
-                state['qty'] = max(Decimal('0'), state['qty'] - qty)
-
-        pnl_per_ticker = []
-        total_realized_pnl = Decimal('0')
-        for ticker, state in ticker_state.items():
-            if state['sell_count'] > 0:
-                pnl_per_ticker.append({
-                    'ticker': ticker,
-                    'realized_pnl': float(round(state['realized_pnl'], 2)),
-                    'total_sold_qty': state['total_sold_qty'],
-                    'sell_count': state['sell_count'],
-                    'profitable_sells': state['profitable_sells'],
-                })
-                total_realized_pnl += state['realized_pnl']
-
+        pnl_per_ticker, total_realized_pnl = _compute_realized_pnl(user)
         pnl_per_ticker.sort(key=lambda x: x['realized_pnl'], reverse=True)
-
-        return {
-            "summary": {
-                "total_cash_net": float(round(total_cash_in, 2)),
-                "total_bonus_shares": float(total_bonus_shares),
-                "yield_on_cost": float(round(yield_on_cost, 2)),
-                "historical_cost_basis": float(round(historical_cost_basis, 2)),
-                # Backward-compatible alias: the frontend (DividendIncome.tsx) reads
-                # `current_invested`. The value is now the historical cost basis
-                # (cost of the shares that earned the dividends), not current holdings.
-                "current_invested": float(round(historical_cost_basis, 2)),
-                "total_realized_pnl": float(round(total_realized_pnl, 2)),
-            },
-            "history": sorted(history, key=lambda x: x['book_close_date'], reverse=True),
-            "upcoming": sorted(upcoming, key=lambda x: x['book_close_date']),
-            "realized_pnl": pnl_per_ticker,
-        }
+        return _build_dividend_response(history, upcoming, totals, pnl_per_ticker, total_realized_pnl)

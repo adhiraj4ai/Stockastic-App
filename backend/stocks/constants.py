@@ -21,6 +21,13 @@ DYNAMIC_MAX_WEIGHT_SCALE: float = 1.3
 MIN_DYNAMIC_MAX_WEIGHT: float = 0.6
 MAX_DYNAMIC_MAX_WEIGHT: float = 0.95
 
+# Dividend status labels
+DIVIDEND_STATUS_UPCOMING: str = "Upcoming"
+DIVIDEND_STATUS_RECEIVED: str = "Received"
+
+# Percentage arithmetic
+PERCENT_DIVISOR: str = "100"
+
 # NEPSE benchmark
 NEPSE_TICKER: str = "NEPSE"
 NEPSE_PAR_VALUE: int = 100
