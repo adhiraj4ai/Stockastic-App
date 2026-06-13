@@ -70,6 +70,9 @@ class ConcentrationShiftGenerator:
     def generate(self) -> list[dict]:
         return self._run(target_date=None)
 
+    def generate_for_date(self, target_date=None) -> list[dict]:
+        return self._run(target_date=target_date)
+
     def _run(self, target_date=None) -> list[dict]:
         where_val = "WHERE transaction_date <= %s" if target_date else ""
         query = _QUERY_TPL.format(where_val=where_val)

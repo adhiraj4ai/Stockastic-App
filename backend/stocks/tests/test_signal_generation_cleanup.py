@@ -118,3 +118,79 @@ class TestGenerateAllSignalsTask:
             mock_orch.generate_all.return_value = 10
             result = generate_all_signals_task()
         assert result['episodes_closed'] == 5
+
+
+class TestGenerateForDate:
+    def test_distribution_alert_generate_for_date_calls_run(self):
+        from stocks.services.signals.generators.distribution_alert import DistributionAlertGenerator
+        gen = DistributionAlertGenerator()
+        with patch.object(gen, '_run', return_value=[]) as mock_run:
+            gen.generate_for_date(target_date='2026-01-01')
+        mock_run.assert_called_once_with(target_date='2026-01-01')
+
+    def test_distribution_alert_generate_for_date_returns_run_result(self):
+        from stocks.services.signals.generators.distribution_alert import DistributionAlertGenerator
+        gen = DistributionAlertGenerator()
+        sentinel = [{'signal': 'SELL'}]
+        with patch.object(gen, '_run', return_value=sentinel):
+            result = gen.generate_for_date(target_date='2026-01-01')
+        assert result is sentinel
+
+    def test_below_cost_reversal_generate_for_date_calls_run(self):
+        from stocks.services.signals.generators.below_cost_reversal import BelowCostReversalGenerator
+        gen = BelowCostReversalGenerator()
+        with patch.object(gen, '_run', return_value=[]) as mock_run:
+            gen.generate_for_date(target_date='2026-01-01')
+        mock_run.assert_called_once_with(target_date='2026-01-01')
+
+    def test_below_cost_reversal_generate_for_date_returns_run_result(self):
+        from stocks.services.signals.generators.below_cost_reversal import BelowCostReversalGenerator
+        gen = BelowCostReversalGenerator()
+        sentinel = [{'signal': 'BUY'}]
+        with patch.object(gen, '_run', return_value=sentinel):
+            result = gen.generate_for_date(target_date='2026-01-01')
+        assert result is sentinel
+
+    def test_volume_breakout_generate_for_date_calls_run(self):
+        from stocks.services.signals.generators.volume_breakout import VolumeBreakoutGenerator
+        gen = VolumeBreakoutGenerator()
+        with patch.object(gen, '_run', return_value=[]) as mock_run:
+            gen.generate_for_date(target_date='2026-01-01')
+        mock_run.assert_called_once_with(target_date='2026-01-01')
+
+    def test_volume_breakout_generate_for_date_returns_run_result(self):
+        from stocks.services.signals.generators.volume_breakout import VolumeBreakoutGenerator
+        gen = VolumeBreakoutGenerator()
+        sentinel = [{'signal': 'BUY'}]
+        with patch.object(gen, '_run', return_value=sentinel):
+            result = gen.generate_for_date(target_date='2026-01-01')
+        assert result is sentinel
+
+    def test_concentration_shift_generate_for_date_calls_run(self):
+        from stocks.services.signals.generators.concentration_shift import ConcentrationShiftGenerator
+        gen = ConcentrationShiftGenerator()
+        with patch.object(gen, '_run', return_value=[]) as mock_run:
+            gen.generate_for_date(target_date='2026-01-01')
+        mock_run.assert_called_once_with(target_date='2026-01-01')
+
+    def test_concentration_shift_generate_for_date_returns_run_result(self):
+        from stocks.services.signals.generators.concentration_shift import ConcentrationShiftGenerator
+        gen = ConcentrationShiftGenerator()
+        sentinel = [{'signal': 'BUY'}]
+        with patch.object(gen, '_run', return_value=sentinel):
+            result = gen.generate_for_date(target_date='2026-01-01')
+        assert result is sentinel
+
+    def test_generate_for_date_default_target_date_is_none(self):
+        from stocks.services.signals.generators.distribution_alert import DistributionAlertGenerator
+        gen = DistributionAlertGenerator()
+        with patch.object(gen, '_run', return_value=[]) as mock_run:
+            gen.generate_for_date()
+        mock_run.assert_called_once_with(target_date=None)
+
+    def test_backtest_engine_calls_generate_for_date(self):
+        from stocks.services.signals.generators.distribution_alert import DistributionAlertGenerator
+        gen = DistributionAlertGenerator()
+        with patch.object(gen, 'generate_for_date', return_value=[]) as mock_gfd:
+            gen.generate_for_date(target_date='2026-01-15')
+        mock_gfd.assert_called_once_with(target_date='2026-01-15')

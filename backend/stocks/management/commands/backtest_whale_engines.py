@@ -67,7 +67,7 @@ class Command(BaseCommand):
         if SignalEpisode.objects.filter(source=source_key, start_date=target_date).exists():
             return 0
         try:
-            signals = engine._run(target_date=target_date)
+            signals = engine.generate_for_date(target_date=target_date)
             return SignalGenerationService._persist_signals(source_key, signals)
         except Exception as e:
             self.stdout.write(self.style.ERROR(f"[{source_key}] Failed on {target_date}: {e}"))
