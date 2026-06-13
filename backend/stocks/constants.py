@@ -20,3 +20,19 @@ MIN_OPTIMIZATION_DAYS: int = 20
 DYNAMIC_MAX_WEIGHT_SCALE: float = 1.3
 MIN_DYNAMIC_MAX_WEIGHT: float = 0.6
 MAX_DYNAMIC_MAX_WEIGHT: float = 0.95
+
+# NEPSE benchmark
+NEPSE_TICKER: str = "NEPSE"
+NEPSE_PAR_VALUE: int = 100
+DIVIDEND_TAX_RATE: float = 0.05
+
+# Portfolio metrics periods (days)
+PERIOD_DAYS: dict[str, int] = {
+    "1M": 30,
+    "3M": 90,
+    "6M": 180,
+    "1Y": 365,
+}
+
+# Minimum observations for risk calculations
+MIN_RISK_OBSERVATIONS: int = 2
