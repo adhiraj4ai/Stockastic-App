@@ -33,6 +33,15 @@ class WhaleWatchChecker:
         row = DailyStockPrice.objects.filter(ticker=ticker).order_by('-date').values('close').first()
         return float(row['close']) if row else None
 
+    def _build_summary_text(self, signal_type: str, count: int, symbol_str: str) -> tuple[str, str]:
+        if signal_type == 'BUY':
+            title = f'Whale Watch: {count} Symbols Detect BUY'
+            message = f'Smart money accumulation detected for {count} tickers including {symbol_str}.'
+        else:
+            title = f'Whale Watch: {count} Symbols Detect SELL'
+            message = f'Distribution detected for {count} tickers including {symbol_str}.'
+        return title, message
+
     def _build_alerts(self, groups: dict) -> list[Alert]:
         alerts = []
         today = date.today()
@@ -45,12 +54,7 @@ class WhaleWatchChecker:
                       else Notification.NotificationType.WHALE_SELL)
             count = len(symbols)
             symbol_str = ', '.join(symbols[:8]) + ('...' if count > 8 else '')
-            if signal_type == 'BUY':
-                title = f'Whale Watch: {count} Symbols Detect BUY'
-                message = f'Smart money accumulation detected for {count} tickers including {symbol_str}.'
-            else:
-                title = f'Whale Watch: {count} Symbols Detect SELL'
-                message = f'Distribution detected for {count} tickers including {symbol_str}.'
+            title, message = self._build_summary_text(signal_type, count, symbol_str)
             items_data = [{'symbol': s.symbol, 'detail': f"{signal_type} ({s.strategy.name})",
                            'price': self._fetch_price(s.symbol)} for s in sig_list]
             alerts.append(Alert(

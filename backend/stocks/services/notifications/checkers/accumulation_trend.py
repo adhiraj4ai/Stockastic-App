@@ -89,22 +89,26 @@ class AccumulationTrendChecker:
             result.setdefault(row['symbol'], []).append(row)
         return result
 
+    def _build_alert_message(self, symbol: str, brokers: list, top: dict) -> tuple[str, float]:
+        if len(brokers) == 1:
+            message = (f"Broker {top['broker']} is accumulating {symbol} "
+                       f"(Below Cost) with an increasing 5-day trend.")
+        else:
+            message = (f"Broker {top['broker']} and {len(brokers)-1} others are accumulating "
+                       f"{symbol} (Below Cost) with an increasing 5-day trend.")
+        try:
+            net_5d_val = float(top['net_5d'])
+        except (TypeError, ValueError):
+            net_5d_val = 0.0
+        return message, net_5d_val
+
     def _build_alerts(self, symbols_map: dict) -> list[Alert]:
         alerts = []
         n_type = Notification.NotificationType.TREND_BUY_5D
         for symbol, brokers in symbols_map.items():
             top = max(brokers, key=lambda x: x['net_5d'])
             title = f"{symbol} - 5D Buying Trend"
-            if len(brokers) == 1:
-                message = (f"Broker {top['broker']} is accumulating {symbol} "
-                           f"(Below Cost) with an increasing 5-day trend.")
-            else:
-                message = (f"Broker {top['broker']} and {len(brokers)-1} others are accumulating "
-                           f"{symbol} (Below Cost) with an increasing 5-day trend.")
-            try:
-                net_5d_val = float(top['net_5d'])
-            except (TypeError, ValueError):
-                net_5d_val = 0.0
+            message, net_5d_val = self._build_alert_message(symbol, brokers, top)
             alerts.append(Alert(
                 notification_type=n_type,
                 title=title,
