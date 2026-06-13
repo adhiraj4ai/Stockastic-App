@@ -95,6 +95,18 @@ All code in this repo must follow SOLID principles and clean code practices. The
 - **Interface Segregation**: prefer small, focused interfaces/protocols over large catch-all ones. Callers should not depend on methods they don't use.
 - **Dependency Inversion**: depend on abstractions, not concretions. Inject dependencies; don't instantiate them deep inside logic.
 
+### Test-Driven Development
+
+All new features and bug fixes must follow the TDD cycle — no exceptions:
+
+1. **Red**: write a failing test that specifies the behaviour.
+2. **Green**: write the minimum code to make it pass.
+3. **Refactor**: clean up while keeping tests green.
+
+- Never write implementation code without a failing test driving it first.
+- Tests live alongside the code they cover (`tests/` in each Django app; `*.test.ts` / `*.spec.ts` co-located in the frontend).
+- A PR that adds logic without corresponding tests will be rejected.
+
 ### Clean Code
 
 - **30-line hard limit**: no function or method body may exceed 30 lines. If it would, extract helpers first — no exceptions.
