@@ -225,3 +225,11 @@ def generate_daily_plan_task():
         )
         notified += 1
     return {"plan_date": plan.date.isoformat(), "picks": pick_count, "notified": notified}
+
+
+@shared_task
+def refresh_fundamentals_task():
+    """Daily: recompute derived fundamentals (P/E, P/B, yields, growth) so
+    price-dependent ratios track the latest close instead of going stale."""
+    from stocks.services.fundamental_calculator import recalculate_all_fundamentals
+    return {"tickers_updated": recalculate_all_fundamentals()}

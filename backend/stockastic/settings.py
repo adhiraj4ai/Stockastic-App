@@ -299,6 +299,12 @@ CELERY_BEAT_SCHEDULE = {
         "task": "stocks.tasks.generate_all_signals_task",
         "schedule": crontab(hour=17, minute=0),
     },
+    # Price-dependent fundamental ratios (P/E, P/B, yield) re-derived from the
+    # day's close, before signal generation reads them.
+    "refresh-fundamentals-daily": {
+        "task": "stocks.tasks.refresh_fundamentals_task",
+        "schedule": crontab(hour=16, minute=45),
+    },
     # Plan generation 30 min after signals so episodes/evaluation have landed.
     "generate-daily-plan": {
         "task": "stocks.tasks.generate_daily_plan_task",

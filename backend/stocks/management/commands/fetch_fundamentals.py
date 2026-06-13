@@ -98,6 +98,13 @@ LABEL_MAPPING = {
     "expenses": "expenses",
     
     # Key Ratios
+    "pe ratio": "pe_ratio",
+    "p/e ratio": "pe_ratio",
+    "pe ratio (annualized)": "pe_ratio",
+    "p/e ratio (annualized)": "pe_ratio",
+    "price earning ratio": "pe_ratio",
+    "price earnings ratio": "pe_ratio",
+    "annualized p/e": "pe_ratio",
     "basic earnings per share(annualized eps)": "eps_annualized",
     "basic earnings per share": "eps_annualized",
     "annualized eps": "eps_annualized",
@@ -372,8 +379,9 @@ class Command(BaseCommand):
                 
                 # Top-level metric extracts
                 scraped_eps = mapped_scraped_data.get("eps_annualized") or mapped_scraped_data.get("eps_reported")
-                scraped_pe = mapped_scraped_data.get("pe_ratio") or mapped_scraped_data.get("pe_ratio_unaudited")
+                scraped_pe = mapped_scraped_data.get("pe_ratio")
                 scraped_bv = mapped_scraped_data.get("book_value") or mapped_scraped_data.get("book_value_reported")
+                scraped_roe = mapped_scraped_data.get("roe_reported")
                 
                 scraped_net_profit = mapped_scraped_data.get("net_profit")
                 scraped_revenue = mapped_scraped_data.get("revenue")
@@ -406,6 +414,7 @@ class Command(BaseCommand):
                             "eps": Decimal(str(scraped_eps)) if scraped_eps else None,
                             "pe_ratio": Decimal(str(scraped_pe)) if scraped_pe else None,
                             "book_value": Decimal(str(scraped_bv)) if scraped_bv else None,
+                            "return_on_equity": Decimal(str(scraped_roe)) if scraped_roe else None,
                             "net_profit": scale_currency(scraped_net_profit),
                             "revenue": scale_currency(scraped_revenue),
                             "operating_profit": scale_currency(scraped_operating_profit),

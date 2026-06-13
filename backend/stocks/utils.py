@@ -50,3 +50,29 @@ def calculate_cgt(profit, is_long_term=False):
     profit = Decimal(str(profit))
     rate = Decimal('0.05') if is_long_term else Decimal('0.075')
     return round(profit * rate, 2)
+
+
+import re
+
+_FISCAL_YEAR_RE = re.compile(r'(\d{2,4})\s*[/-]\s*(\d{2,4})')
+
+def normalize_fiscal_year(value):
+    """
+    Normalize Nepali fiscal year strings to the canonical '0XX-0XX' form.
+
+    Seeds and scrapers write mixed formats ('2081/82', '082/083', '072-073');
+    fiscal_year is a CharField ordered lexically, so mixed formats break every
+    "latest report" query. '2081/82' -> '081-082'.
+    Unparseable values pass through unchanged.
+    """
+    if not value:
+        return value
+    match = _FISCAL_YEAR_RE.search(str(value))
+    if not match:
+        return value
+    first, second = match.group(1), match.group(2)
+    first = first[-3:].zfill(3)
+    second = second[-3:]
+    if len(second) == 2:
+        second = first[0] + second
+    return f"{first}-{second.zfill(3)}"

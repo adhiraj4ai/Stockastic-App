@@ -1,5 +1,7 @@
 from django.db import models
 
+from ..utils import normalize_fiscal_year
+
 class StockFundamental(models.Model):
     ticker = models.CharField(max_length=20, unique=True, db_index=True)
     company_name = models.CharField(max_length=255)
@@ -35,7 +37,20 @@ class StockFundamental(models.Model):
     yoy_earnings_growth = models.DecimalField(max_digits=10, decimal_places=2, null=True, blank=True)
     graham_number_diff = models.DecimalField(max_digits=10, decimal_places=2, null=True, blank=True)
     debt_to_equity = models.DecimalField(max_digits=10, decimal_places=2, null=True, blank=True)
-    
+
+    # Extended metrics (derived; percents stored as e.g. 16.66)
+    earning_yield = models.DecimalField(max_digits=10, decimal_places=2, null=True, blank=True)
+    pe_ratio_5yr = models.DecimalField(max_digits=10, decimal_places=2, null=True, blank=True)
+    operating_margin = models.DecimalField(max_digits=10, decimal_places=2, null=True, blank=True)
+    net_margin = models.DecimalField(max_digits=10, decimal_places=2, null=True, blank=True)
+    net_margin_quarterly = models.DecimalField(max_digits=10, decimal_places=2, null=True, blank=True)
+    asset_turnover = models.DecimalField(max_digits=10, decimal_places=2, null=True, blank=True)
+    eps_trend = models.CharField(max_length=10, null=True, blank=True)
+    roe_trend = models.CharField(max_length=10, null=True, blank=True)
+    beta_3m = models.DecimalField(max_digits=10, decimal_places=2, null=True, blank=True)
+    beta_1y = models.DecimalField(max_digits=10, decimal_places=2, null=True, blank=True)
+    beta_3y = models.DecimalField(max_digits=10, decimal_places=2, null=True, blank=True)
+
     # 52 Week
     fifty_two_week_high = models.DecimalField(max_digits=10, decimal_places=2, null=True, blank=True)
     fifty_two_week_low = models.DecimalField(max_digits=10, decimal_places=2, null=True, blank=True)
@@ -91,6 +106,22 @@ class CorporateAction(models.Model):
         return f"{self.ticker} {self.action_type} {self.ratio_percent}% @ {self.ex_date}"
 
 
+class FinancialReportManager(models.Manager):
+    """Normalizes fiscal_year in lookup kwargs so seeds/scrapers writing
+    '2081/82' and '081-082' resolve to the same row instead of duplicating."""
+
+    def _normalize_kwargs(self, kwargs):
+        if kwargs.get('fiscal_year'):
+            kwargs = {**kwargs, 'fiscal_year': normalize_fiscal_year(kwargs['fiscal_year'])}
+        return kwargs
+
+    def get_or_create(self, defaults=None, **kwargs):
+        return super().get_or_create(defaults=defaults, **self._normalize_kwargs(kwargs))
+
+    def update_or_create(self, defaults=None, **kwargs):
+        return super().update_or_create(defaults=defaults, **self._normalize_kwargs(kwargs))
+
+
 class FinancialReport(models.Model):
     class ReportType(models.TextChoices):
         ANNUAL = 'ANNUAL', 'Annual'
@@ -124,9 +155,15 @@ class FinancialReport(models.Model):
     cash_flow = models.JSONField(null=True, blank=True)
     key_ratios = models.JSONField(null=True, blank=True)
 
+    objects = FinancialReportManager()
+
     class Meta:
         unique_together = ('ticker', 'fiscal_year', 'report_type', 'quarter')
         ordering = ['-fiscal_year', '-report_type', '-quarter']
+
+    def save(self, *args, **kwargs):
+        self.fiscal_year = normalize_fiscal_year(self.fiscal_year)
+        super().save(*args, **kwargs)
 
     def __str__(self):
         if self.report_type == self.ReportType.ANNUAL:

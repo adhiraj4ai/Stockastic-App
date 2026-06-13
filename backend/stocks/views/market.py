@@ -984,9 +984,9 @@ def stock_detail(request, ticker):
     })
 
 def _enrich_fundamental_data(data, fundamental_obj):
-    if not data or not fundamental_obj:
+    if data is None or not fundamental_obj:
         return data
-        
+
     metrics = [
         {'key': 'eps', 'name': 'EPS (TTM)'},
         {'key': 'pe_ratio', 'name': 'P/E Ratio'},
@@ -994,36 +994,62 @@ def _enrich_fundamental_data(data, fundamental_obj):
         {'key': 'book_value', 'name': 'Book Value'},
         {'key': 'ro_equity', 'name': 'ROE'},
         {'key': 'dividend_yield', 'name': 'Dividend Yield'},
+        {'key': 'peg_ratio', 'name': 'PEG Ratio'},
+        {'key': 'price_to_sales', 'name': 'Price to Sales'},
+        {'key': 'earning_yield', 'name': 'Earning Yield (E/P)'},
+        {'key': 'pe_ratio_5yr', 'name': 'P/E Ratio (5 Yrs)'},
+        {'key': 'debt_to_equity', 'name': 'Debt to Equity'},
+        {'key': 'ro_assets', 'name': 'ROA'},
+        {'key': 'dividend_payout_ratio', 'name': 'Payout Ratio'},
+        {'key': 'operating_margin', 'name': 'Operating Margin'},
+        {'key': 'net_margin', 'name': 'Net Margin'},
+        {'key': 'net_margin_quarterly', 'name': 'Net Margin (Quarterly)'},
+        {'key': 'asset_turnover', 'name': 'Asset Turnover'},
+        {'key': 'beta_1y', 'name': '1 Year Beta'},
     ]
-    
+
+    PERCENT_KEYS = {
+        'dividend_yield', 'ro_equity', 'ro_assets', 'earning_yield', 'dividend_payout_ratio',
+        'operating_margin', 'net_margin', 'net_margin_quarterly', 'asset_turnover',
+    }
+
+    import statistics
+
     peers = StockFundamental.objects.filter(sector=fundamental_obj.sector)
-    
+
     indicators = []
-    
+
     for m in metrics:
         key = m['key']
         val = getattr(fundamental_obj, key, None)
-        
-        max_obj = peers.order_by(f'-{key}').first()
-        min_obj = peers.order_by(f'{key}').first()
-        
+
+        # Exclude null-valued peers: Postgres sorts NULLs first on DESC, which
+        # otherwise puts an empty peer in the sector-high slot.
+        ranked = peers.exclude(**{f'{key}__isnull': True})
+        max_obj = ranked.order_by(f'-{key}').first()
+        min_obj = ranked.order_by(f'{key}').first()
+
         max_val = getattr(max_obj, key, None) if max_obj else None
         min_val = getattr(min_obj, key, None) if min_obj else None
-        
+
+        peer_values = [float(v) for v in ranked.values_list(key, flat=True)]
+        median_val = statistics.median(peer_values) if peer_values else None
+
         formatted_val = f"{val:.2f}" if val is not None else "-"
-        
-        if (key == 'dividend_yield' or key == 'ro_equity') and val is not None:
+
+        if key in PERCENT_KEYS and val is not None:
             formatted_val += "%"
-            
+
         indicators.append({
             'name': m['name'],
             'value': formatted_val,
+            'sector_median': f"{median_val:.2f}" if median_val is not None else "-",
             'sector_high': f"{max_val:.2f}" if max_val is not None else "-",
             'sector_high_ticker': max_obj.ticker if max_obj else "-",
             'sector_low': f"{min_val:.2f}" if min_val is not None else "-",
             'sector_low_ticker': min_obj.ticker if min_obj else "-"
         })
-        
+
     data['fundamental_indicators'] = indicators
     return data
 
@@ -1038,141 +1064,20 @@ class CompanyViewSet(AccumulationMixin, viewsets.ReadOnlyModelViewSet):
     def refresh_fundamentals(self, request, symbol=None):
         """Recalculate ALL fundamental metrics dynamically from latest financial reports"""
         from rest_framework import status
-        from decimal import Decimal
-        
+        from ..services.fundamental_calculator import recalculate_fundamentals
+
         company = self.get_object()
-        ticker = company.symbol
-        
+
         try:
-            # Get latest ANNUAL financial report
-            latest_report = FinancialReport.objects.filter(
-                ticker=ticker,
-                report_type='ANNUAL'
-            ).order_by('-fiscal_year').first()
-            
-            if not latest_report:
+            fundamental = recalculate_fundamentals(company.symbol)
+            if fundamental is None:
                 return Response(
                     {'error': 'No financial reports found for this company'},
                     status=status.HTTP_404_NOT_FOUND
                 )
-            
-            # Get latest market price
-            latest_price = DailyStockPrice.objects.filter(ticker=ticker).order_by('-date').first()
-            current_price = float(latest_price.close) if latest_price and latest_price.close else None
-            
-            # Extract data from JSON fields
-            balance_sheet = latest_report.balance_sheet or {}
-            profit_loss = latest_report.profit_loss or {}
-            
-            # Get or create fundamental record
-            fundamental, _ = StockFundamental.objects.get_or_create(
-                ticker=ticker,
-                defaults={
-                    'company_name': company.name,
-                    'sector': company.sector
-                }
-            )
-            
-            # === CALCULATE ALL METRICS FROM JSON DATA ===
-            
-            # Extract key values from balance sheet
-            equity_data = balance_sheet.get('EQUITY', {})
-            assets_data = balance_sheet.get('ASSETS', {})
-            liabilities_data = balance_sheet.get('LIABILITIES', {})
-            
-            share_capital = equity_data.get('share_capital')
-            total_equity = equity_data.get('total_equity')
-            total_assets = assets_data.get('total_assets')
-            total_liabilities = liabilities_data.get('total_liabilities')
-            
-            # Extract from profit & loss
-            income_data = profit_loss.get('INCOME', {})
-            expenses_data = profit_loss.get('EXPENSES', {})
-            
-            total_revenue = income_data.get('total_operating_income') or income_data.get('net_interest_income')
-            net_profit = expenses_data.get('net_profit')
-            
-            # Calculate number of shares (face value = 100)
-            num_shares = share_capital / 100 if share_capital else None
-            
-            # 1. EPS = Net Profit / Number of Shares
-            if net_profit and num_shares:
-                fundamental.eps = round(Decimal(net_profit / num_shares), 2)
-            
-            # 2. Book Value = Total Equity / Number of Shares
-            if total_equity and num_shares:
-                fundamental.book_value = round(Decimal(total_equity / num_shares), 2)
-            
-            # 3. ROE = (Net Profit / Total Equity) * 100
-            if net_profit and total_equity and total_equity > 0:
-                fundamental.ro_equity = round(Decimal((net_profit / total_equity) * 100), 2)
-            
-            # 4. ROA = (Net Profit / Total Assets) * 100
-            if net_profit and total_assets and total_assets > 0:
-                fundamental.ro_assets = round(Decimal((net_profit / total_assets) * 100), 2)
-            
-            # 5. P/E Ratio = Market Price / EPS
-            if current_price and fundamental.eps and fundamental.eps > 0:
-                fundamental.pe_ratio = round(Decimal(current_price / float(fundamental.eps)), 2)
-            
-            # 6. P/B Ratio = Market Price / Book Value
-            if current_price and fundamental.book_value and fundamental.book_value > 0:
-                fundamental.price_to_book = round(Decimal(current_price / float(fundamental.book_value)), 2)
-            
-            # 7. Price to Sales = Market Cap / Revenue
-            if current_price and num_shares and total_revenue and total_revenue > 0:
-                market_cap = current_price * num_shares
-                fundamental.market_cap = round(Decimal(market_cap), 2)
-                fundamental.price_to_sales = round(Decimal(market_cap / total_revenue), 2)
-            
-            # 8. Debt to Equity = Total Liabilities / Total Equity
-            if total_liabilities and total_equity and total_equity > 0:
-                fundamental.debt_to_equity = round(Decimal(total_liabilities / total_equity), 2)
-            
-            # 9. Shares Outstanding
-            if num_shares:
-                fundamental.shares_outstanding = round(Decimal(num_shares), 2)
-            
-            # 10. Paid Up Capital
-            if share_capital:
-                fundamental.paid_up_capital = round(Decimal(share_capital), 2)
-            
-            # === UNAUDITED METRICS (LATEST QUARTERLY) ===
-            latest_quarterly = FinancialReport.objects.filter(
-                ticker=ticker,
-                report_type='QUARTERLY'
-            ).order_by('-fiscal_year', '-quarter').first()
-
-            if latest_quarterly:
-                fundamental.eps_unaudited = latest_quarterly.eps
-                fundamental.book_value_unaudited = latest_quarterly.book_value
-                if current_price and latest_quarterly.eps and latest_quarterly.eps > 0:
-                    fundamental.pe_ratio_unaudited = round(Decimal(current_price / float(latest_quarterly.eps)), 2)
-            else:
-                fundamental.eps_unaudited = fundamental.eps
-                fundamental.book_value_unaudited = fundamental.book_value
-                fundamental.pe_ratio_unaudited = fundamental.pe_ratio
-
-            # 11. Dividend Yield = (Latest Cash Dividend per Share / Market Price) * 100
-            # Search for the latest report WITH a cash dividend, not necessarily the latest report overall
-            latest_div_report = FinancialReport.objects.filter(
-                ticker=ticker,
-                cash_dividend__gt=0
-            ).order_by('-fiscal_year', '-quarter').first()
-            
-            if latest_div_report and current_price and current_price > 0:
-                # cash_dividend is a percentage of face value (100)
-                cash_amount = float(latest_div_report.cash_dividend)
-                fundamental.dividend_yield = round(Decimal((cash_amount / current_price) * 100), 2)
-            else:
-                fundamental.dividend_yield = 0
-            
-            fundamental.save()
-            
-            # Return updated data
             serializer = StockFundamentalSerializer(fundamental)
             return Response(serializer.data)
-            
+
         except Exception as e:
             import traceback
             return Response(
