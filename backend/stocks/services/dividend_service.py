@@ -3,6 +3,7 @@ from decimal import Decimal
 from django.db.models import Sum, F, Q
 from ..models.fundamentals import Dividend
 from ..models.portfolio import PortfolioTransaction, TransactionType, PortfolioItem, AccountType
+from ..constants import FACE_VALUE_PER_SHARE, WITHHOLDING_TAX_RATE
 
 
 # ---------------------------------------------------------------------------
@@ -21,7 +22,7 @@ def _face_value(ticker: str) -> Decimal:
     single place to add that lookup when the data becomes available.
     """
     # Future: try StockFundamental.objects.filter(ticker=ticker).values_list('face_value', flat=True).first()
-    return Decimal('100')
+    return Decimal(str(FACE_VALUE_PER_SHARE))
 
 
 # ---------------------------------------------------------------------------
@@ -191,7 +192,7 @@ class DividendService:
                 # see _face_value() to add a real lookup when DB data available).
                 fv = _face_value(div.ticker)
                 gross_cash = (qty_held * fv * div.cash_percent) / 100
-                tax = gross_cash * Decimal('0.05')  # standard 5% withholding
+                tax = gross_cash * Decimal(str(WITHHOLDING_TAX_RATE))  # standard 5% withholding
                 net_cash = gross_cash - tax
 
                 # --- Bonus shares ---

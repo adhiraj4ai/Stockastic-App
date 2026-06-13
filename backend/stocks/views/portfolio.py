@@ -28,6 +28,7 @@ from ..utils import (
 )
 from ..services.portfolio_service import PortfolioService
 from ..optimization import perform_portfolio_optimization
+from ..constants import ANNUAL_TRADING_DAYS, RISK_FREE_RATE_ANNUAL
 
 class PortfolioAccountViewSet(viewsets.ModelViewSet):
     permission_classes = [IsAuthenticated]
@@ -979,7 +980,7 @@ class PortfolioPerformanceView(viewsets.ViewSet):
                 # np.cov / .std() on a single point raise or produce NaN. Leave them
                 # at 0 when there isn't enough history rather than 500 / emit NaN JSON.
                 beta = alpha = sharpe = 0.0
-                rf_daily = 0.06 / 252  # ~6% annualized risk-free, daily
+                rf_daily = RISK_FREE_RATE_ANNUAL / ANNUAL_TRADING_DAYS
                 if len(df_combined) >= 2:
                     covariance = np.cov(df_combined['return'], df_combined['benchmark_return'])[0][1]
                     benchmark_variance = np.var(df_combined['benchmark_return'])
@@ -987,11 +988,11 @@ class PortfolioPerformanceView(viewsets.ViewSet):
 
                     avg_port_ret = df_combined['return'].mean()
                     avg_bench_ret = df_combined['benchmark_return'].mean()
-                    alpha = ((avg_port_ret - rf_daily) - (beta * (avg_bench_ret - rf_daily))) * 252
+                    alpha = ((avg_port_ret - rf_daily) - (beta * (avg_bench_ret - rf_daily))) * ANNUAL_TRADING_DAYS
 
                     std = df_combined['return'].std()
                     if std and not pd.isna(std) and std != 0:
-                        sharpe = ((df_combined['return'].mean() - rf_daily) / std) * (252 ** 0.5)
+                        sharpe = ((df_combined['return'].mean() - rf_daily) / std) * (ANNUAL_TRADING_DAYS ** 0.5)
 
                 metrics = {
                     "alpha": round(float(alpha), 4),
