@@ -148,6 +148,49 @@ class PositionSizingService:
             raise ValueError("Stop-loss price must be below entry price for long positions")
     
     @staticmethod
+    def _risk_warning(risk_percentage: float) -> list:
+        """Return a warning list for elevated or high risk percentages."""
+        if risk_percentage > PositionSizingService.RECOMMENDED_MAX_RISK:
+            return [{'type': 'HIGH_RISK', 'severity': 'HIGH',
+                     'message': f'Risk of {risk_percentage}% exceeds recommended maximum of '
+                                f'{PositionSizingService.RECOMMENDED_MAX_RISK}%'}]
+        if risk_percentage > 3.0:
+            return [{'type': 'ELEVATED_RISK', 'severity': 'MEDIUM',
+                     'message': f'Risk of {risk_percentage}% is above conservative threshold of 3%'}]
+        return []
+
+    @staticmethod
+    def _position_warning(position_size_percentage) -> list:
+        """Return a warning list for large or concentrated position sizes."""
+        pct = Decimal(str(position_size_percentage))
+        if pct > Decimal('50'):
+            return [{'type': 'LARGE_POSITION', 'severity': 'HIGH',
+                     'message': f'Position size of {pct:.1f}% exceeds 50% of account - consider diversification'}]
+        if pct > Decimal('25'):
+            return [{'type': 'CONCENTRATED_POSITION', 'severity': 'MEDIUM',
+                     'message': f'Position size of {pct:.1f}% is concentrated - ensure proper diversification'}]
+        return []
+
+    @staticmethod
+    def _shares_warning(max_shares: int) -> list:
+        """Return a warning list for zero or very few shares."""
+        if max_shares == 0:
+            return [{'type': 'INSUFFICIENT_CAPITAL', 'severity': 'HIGH',
+                     'message': 'Insufficient capital for even 1 share with current risk parameters'}]
+        if max_shares < 10:
+            return [{'type': 'LOW_SHARES', 'severity': 'LOW',
+                     'message': f'Only {max_shares} shares recommended - consider wider stop-loss or higher risk tolerance'}]
+        return []
+
+    @staticmethod
+    def _leverage_warning(total_investment: Decimal, account_balance: Decimal) -> list:
+        """Return a warning list when total investment exceeds account balance."""
+        if total_investment > account_balance:
+            return [{'type': 'OVER_LEVERAGE', 'severity': 'CRITICAL',
+                     'message': 'Calculated position exceeds account balance - this should not happen'}]
+        return []
+
+    @staticmethod
     def _generate_warnings(
         risk_percentage: float,
         position_size_percentage: Decimal,
@@ -155,60 +198,13 @@ class PositionSizingService:
         total_investment: Decimal,
         account_balance: Decimal
     ) -> list:
-        """Generate warning messages based on calculated values."""
-        warnings = []
-        
-        # High risk warning
-        if risk_percentage > PositionSizingService.RECOMMENDED_MAX_RISK:
-            warnings.append({
-                'type': 'HIGH_RISK',
-                'message': f'Risk of {risk_percentage}% exceeds recommended maximum of {PositionSizingService.RECOMMENDED_MAX_RISK}%',
-                'severity': 'HIGH'
-            })
-        elif risk_percentage > 3.0:
-            warnings.append({
-                'type': 'ELEVATED_RISK',
-                'message': f'Risk of {risk_percentage}% is above conservative threshold of 3%',
-                'severity': 'MEDIUM'
-            })
-        
-        # Position size warning
-        if position_size_percentage > Decimal('50'):
-            warnings.append({
-                'type': 'LARGE_POSITION',
-                'message': f'Position size of {position_size_percentage:.1f}% exceeds 50% of account - consider diversification',
-                'severity': 'HIGH'
-            })
-        elif position_size_percentage > Decimal('25'):
-            warnings.append({
-                'type': 'CONCENTRATED_POSITION',
-                'message': f'Position size of {position_size_percentage:.1f}% is concentrated - ensure proper diversification',
-                'severity': 'MEDIUM'
-            })
-        
-        # Low shares warning
-        if max_shares == 0:
-            warnings.append({
-                'type': 'INSUFFICIENT_CAPITAL',
-                'message': 'Insufficient capital for even 1 share with current risk parameters',
-                'severity': 'HIGH'
-            })
-        elif max_shares < 10:
-            warnings.append({
-                'type': 'LOW_SHARES',
-                'message': f'Only {max_shares} shares recommended - consider wider stop-loss or higher risk tolerance',
-                'severity': 'LOW'
-            })
-        
-        # Over-leverage warning
-        if total_investment > account_balance:
-            warnings.append({
-                'type': 'OVER_LEVERAGE',
-                'message': 'Calculated position exceeds account balance - this should not happen',
-                'severity': 'CRITICAL'
-            })
-        
-        return warnings
+        """Generate warning messages by delegating to focused helper methods."""
+        return (
+            PositionSizingService._risk_warning(risk_percentage)
+            + PositionSizingService._position_warning(position_size_percentage)
+            + PositionSizingService._shares_warning(max_shares)
+            + PositionSizingService._leverage_warning(total_investment, account_balance)
+        )
     
     @staticmethod
     def get_preset_risk_levels() -> Dict:
