@@ -855,31 +855,17 @@ def check_accumulation_trend_alerts(user):
         
     return notifications_created
 
+# ---------------------------------------------------------------------------
+# Backward-compat: new code should call NotificationOrchestrator.run(user)
+# ---------------------------------------------------------------------------
 def check_all_users():
-    """
-    Check alerts for all active users.
-    This function is called by the Celery periodic task.
-    """
-    total_notifications = 0
-
-    for user in User.objects.filter(is_active=True):
-        portfolio_count = check_portfolio_alerts(user)
-        watchlist_count = check_watchlist_alerts(user)
-        signal_count = check_signal_alerts(user)
-        whale_count = check_whale_watch_alerts(user)
-        trend_5d_count = check_accumulation_trend_alerts(user)
-        tech_count = check_technical_alerts(user)
-        broker_discovery_count = check_broker_discovery_alerts(user)
-        portfolio_mgmt_count = check_portfolio_management_alerts(user)
-        
-        user_total = (
-            int(portfolio_count) + int(watchlist_count) + int(signal_count) + 
-            int(whale_count) + int(trend_5d_count) + int(tech_count) + 
-            int(broker_discovery_count) + int(portfolio_mgmt_count)
-        )
-        total_notifications += user_total
-
-    return total_notifications
+    """Legacy entry-point kept for backward compat. Prefer default_orchestrator.run(user)."""
+    from django.contrib.auth.models import User as _User
+    from .notifications import default_orchestrator
+    total = 0
+    for user in _User.objects.filter(is_active=True):
+        total += default_orchestrator.run(user)
+    return total
 
 def check_technical_alerts(user):
     """

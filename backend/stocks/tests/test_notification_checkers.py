@@ -133,3 +133,43 @@ def test_checker_implements_protocol(checker_path, cls_name):
     mod = importlib.import_module(checker_path)
     cls = getattr(mod, cls_name)
     assert isinstance(cls(), IAlertChecker)
+
+
+def test_orchestrator_calls_all_registered_checkers():
+    from stocks.services.notifications.orchestrator import NotificationOrchestrator
+    from stocks.services.notifications.base import Alert
+    from unittest.mock import MagicMock, patch
+
+    calls = []
+
+    class CountingChecker:
+        def check(self, user):
+            calls.append(user)
+            return [Alert(
+                notification_type='TEST',
+                title='T', message='M',
+                redirect_url='/', ticker='X',
+            )]
+
+    user = MagicMock()
+    orchestrator = NotificationOrchestrator(checkers=[CountingChecker(), CountingChecker()])
+
+    with patch.object(orchestrator, '_persist', return_value=True):
+        count = orchestrator.run(user)
+
+    assert len(calls) == 2
+    assert count == 2
+
+
+def test_orchestrator_tolerates_checker_exception():
+    from stocks.services.notifications.orchestrator import NotificationOrchestrator
+    from unittest.mock import MagicMock
+
+    class BrokenChecker:
+        def check(self, user):
+            raise RuntimeError("db gone")
+
+    user = MagicMock()
+    orchestrator = NotificationOrchestrator(checkers=[BrokenChecker()])
+    count = orchestrator.run(user)  # must not raise
+    assert count == 0
