@@ -29,6 +29,7 @@ from __future__ import annotations
 
 import json
 import logging
+import uuid
 from typing import AsyncIterator
 
 from asgiref.sync import sync_to_async
@@ -82,184 +83,85 @@ def _is_subagent(msg: AssistantMessage | UserMessage) -> bool:
     return bool(getattr(msg, "parent_tool_use_id", None))
 
 
-async def stream_chat(
-    *, user, session: ChatSession, prompt: str
-) -> AsyncIterator[bytes]:
-    """Stream one assistant turn over SSE and persist the assistant message at end."""
-
-    _user_context.reset_cards()
-    blocks: list[dict] = []  # full structured transcript to persist
-    seen_subagents: set[str] = set()  # parent_tool_use_ids we've announced
-    final_session_id: str | None = session.sdk_session_id or None
-    usage_total = {
+def _empty_usage() -> dict:
+    """Return a zeroed usage accumulator dict."""
+    return {
         "input_tokens": 0,
         "output_tokens": 0,
         "cache_read_input_tokens": 0,
         "cache_creation_input_tokens": 0,
     }
 
-    yield _sse("assistant_start", {"session_id": str(session.id)})
 
-    try:
-        async for msg in run_chat_session(
-            user=user, sdk_session_id=session.sdk_session_id, prompt=prompt
-        ):
-            # Token-level deltas: incrementally stream assistant text/thinking as it
-            # is generated. The final AssistantMessage (below) carries the same content
-            # in whole — we persist from there but DON'T re-yield it, to avoid doubling.
-            if isinstance(msg, StreamEvent):
-                ev = msg.event or {}
-                etype = ev.get("type")
-                parent = getattr(msg, "parent_tool_use_id", None)
-                sub = "subagent" if parent else None
+def _accumulate_usage(usage_total: dict, usage: dict | None) -> None:
+    """Add token counts from usage into usage_total in-place; None is a no-op."""
+    if not usage:
+        return
+    for k in usage_total:
+        usage_total[k] += int(usage.get(k, 0) or 0)
 
-                if etype == "message_start" and parent and parent not in seen_subagents:
-                    seen_subagents.add(parent)
-                    payload = {
-                        "kind": "subagent_start",
-                        "parent": parent,
-                        "model": (ev.get("message") or {}).get("model"),
-                    }
-                    blocks.append(payload)
-                    yield _sse("subagent_start", payload)
 
-                elif etype == "content_block_delta":
-                    delta = ev.get("delta") or {}
-                    if delta.get("type") == "text_delta" and delta.get("text"):
-                        yield _sse("text", {"kind": "text", "subagent": sub, "text": delta["text"]})
-                    elif delta.get("type") == "thinking_delta" and delta.get("thinking"):
-                        yield _sse("thinking", {"kind": "thinking", "subagent": sub, "text": delta["thinking"]})
-                continue
+async def _handle_stream_event(msg, blocks: list, seen_subagents: set) -> AsyncIterator[bytes]:
+    """Yield SSE frames for a StreamEvent message."""
+    ev = msg.event or {}
+    etype = ev.get("type")
+    parent = getattr(msg, "parent_tool_use_id", None)
+    if etype == "message_start" and parent and parent not in seen_subagents:
+        seen_subagents.add(parent)
+        payload = {"kind": "subagent_start", "parent": parent,
+                   "model": (ev.get("message") or {}).get("model")}
+        blocks.append(payload)
+        yield _sse("subagent_start", payload)
+        return
+    if etype != "content_block_delta":
+        return
+    sub = "subagent" if parent else None
+    delta = ev.get("delta") or {}
+    if delta.get("type") == "text_delta" and delta.get("text"):
+        yield _sse("text", {"kind": "text", "subagent": sub, "text": delta["text"]})
+    elif delta.get("type") == "thinking_delta" and delta.get("thinking"):
+        yield _sse("thinking", {"kind": "thinking", "subagent": sub, "text": delta["thinking"]})
 
-            if isinstance(msg, AssistantMessage):
-                if msg.session_id:
-                    final_session_id = msg.session_id
 
-                if msg.usage:
-                    for k in usage_total:
-                        usage_total[k] += int(msg.usage.get(k, 0) or 0)
+async def _handle_tool_result_blocks(
+    tool_result_blocks, blocks: list, subagent_marker
+) -> AsyncIterator[bytes]:
+    """Yield tool_result and card SSE frames for a list of ToolResultBlock objects."""
+    for block in tool_result_blocks:
+        text = _content_text(block.content)
+        payload = {"kind": "tool_result", "subagent": subagent_marker,
+                   "id": block.tool_use_id, "is_error": bool(block.is_error), "text": text}
+        blocks.append(payload)
+        yield _sse("tool_result", payload)
+        for card in _user_context.take_cards():
+            card_payload = {"kind": "card", "type": card.get("type"),
+                            "data": card.get("data"), "tool": card.get("tool")}
+            blocks.append(card_payload)
+            yield _sse("card", card_payload)
 
-                subagent_marker = "subagent" if _is_subagent(msg) else None
-                if _is_subagent(msg) and msg.parent_tool_use_id not in seen_subagents:
-                    seen_subagents.add(msg.parent_tool_use_id)
-                    payload = {
-                        "kind": "subagent_start",
-                        "parent": msg.parent_tool_use_id,
-                        "model": msg.model,
-                    }
-                    blocks.append(payload)
-                    yield _sse("subagent_start", payload)
 
-                for block in msg.content:
-                    # Text/thinking already streamed live via StreamEvent deltas; here we
-                    # only record them for persistence (so reloads show the full turn).
-                    if isinstance(block, TextBlock):
-                        blocks.append({"kind": "text", "subagent": subagent_marker, "text": block.text})
+async def _handle_result_message(msg, usage_total: dict, final_session_id) -> tuple:
+    """Accumulate usage from ResultMessage and return (usage_frame, updated_session_id)."""
+    if msg.session_id:
+        final_session_id = msg.session_id
+    _accumulate_usage(usage_total, msg.usage)
+    frame = _sse("usage", {
+        "input_tokens": usage_total["input_tokens"],
+        "output_tokens": usage_total["output_tokens"],
+        "cache_read_input_tokens": usage_total["cache_read_input_tokens"],
+        "cache_creation_input_tokens": usage_total["cache_creation_input_tokens"],
+        "cost_usd": msg.total_cost_usd,
+        "duration_ms": msg.duration_ms,
+    })
+    return frame, final_session_id
 
-                    elif isinstance(block, ThinkingBlock):
-                        blocks.append({"kind": "thinking", "subagent": subagent_marker, "text": block.thinking})
 
-                    elif isinstance(block, ToolUseBlock):
-                        # Drain any cards left over from a prior tool — shouldn't
-                        # happen but defensive.
-                        _user_context.take_cards()
-                        payload = {
-                            "kind": "tool_use",
-                            "subagent": subagent_marker,
-                            "tool": block.name,
-                            "input": block.input,
-                            "id": block.id,
-                        }
-                        blocks.append(payload)
-                        yield _sse("tool_use", payload)
-
-                    elif isinstance(block, ToolResultBlock):
-                        text = _content_text(block.content)
-                        payload = {
-                            "kind": "tool_result",
-                            "subagent": subagent_marker,
-                            "id": block.tool_use_id,
-                            "is_error": bool(block.is_error),
-                            "text": text,
-                        }
-                        blocks.append(payload)
-                        yield _sse("tool_result", payload)
-
-                        # Emit any cards that the tool pushed into the buffer.
-                        for card in _user_context.take_cards():
-                            card_payload = {
-                                "kind": "card",
-                                "type": card.get("type"),
-                                "data": card.get("data"),
-                                "tool": card.get("tool"),
-                            }
-                            blocks.append(card_payload)
-                            yield _sse("card", card_payload)
-
-            elif isinstance(msg, UserMessage):
-                subagent_marker = "subagent" if _is_subagent(msg) else None
-                for block in msg.content:
-                    if isinstance(block, ToolResultBlock):
-                        text = _content_text(block.content)
-                        payload = {
-                            "kind": "tool_result",
-                            "subagent": subagent_marker,
-                            "id": block.tool_use_id,
-                            "is_error": bool(block.is_error),
-                            "text": text,
-                        }
-                        blocks.append(payload)
-                        yield _sse("tool_result", payload)
-
-                        # Emit any cards that the tool pushed into the buffer.
-                        for card in _user_context.take_cards():
-                            card_payload = {
-                                "kind": "card",
-                                "type": card.get("type"),
-                                "data": card.get("data"),
-                                "tool": card.get("tool"),
-                            }
-                            blocks.append(card_payload)
-                            yield _sse("card", card_payload)
-
-            elif isinstance(msg, SystemMessage):
-                # init/setup messages; not user-facing.
-                pass
-
-            elif isinstance(msg, ResultMessage):
-                if msg.session_id:
-                    final_session_id = msg.session_id
-                if msg.usage:
-                    for k in usage_total:
-                        usage_total[k] += int(msg.usage.get(k, 0) or 0)
-                yield _sse(
-                    "usage",
-                    {
-                        "input_tokens": usage_total["input_tokens"],
-                        "output_tokens": usage_total["output_tokens"],
-                        "cache_read_input_tokens": usage_total["cache_read_input_tokens"],
-                        "cache_creation_input_tokens": usage_total["cache_creation_input_tokens"],
-                        "cost_usd": msg.total_cost_usd,
-                        "duration_ms": msg.duration_ms,
-                    },
-                )
-
-        yield _sse("assistant_end", {})
-
-    except Exception as exc:  # pylint: disable=broad-except
-        import uuid as _uuid
-        error_id = _uuid.uuid4().hex[:8]
-        log.exception("chat stream error [%s]", error_id)
-        # Generic client-facing message; details stay server-side under error_id.
-        yield _sse("error", {"message": f"An internal error occurred (ref {error_id})."})
-
-    # Persist the assistant turn — collect joined text for the .text column.
-    joined_text = "\n".join(
-        b["text"] for b in blocks if b.get("kind") == "text" and b.get("text")
-    )
+async def _persist_turn(session, blocks: list, usage_total: dict, final_session_id) -> str | None:
+    """Persist the assistant turn to the database and return the new ChatMessage id."""
+    joined_text = "\n".join(b["text"] for b in blocks if b.get("kind") == "text" and b.get("text"))
 
     @sync_to_async
-    def _persist():
+    def _save():
         msg = ChatMessage.objects.create(
             session=session,
             role=ChatMessage.ROLE_ASSISTANT,
@@ -274,18 +176,116 @@ async def stream_chat(
             session.sdk_session_id = final_session_id
             session.save(update_fields=["sdk_session_id", "updated_at"])
         else:
-            # Touch updated_at so the session moves to the top of the sidebar.
             session.save(update_fields=["updated_at"])
         return str(msg.id)
 
+    return await _save()
+
+
+def _process_content_block(block, blocks: list, subagent_marker, frames: list) -> None:
+    """Append block to transcript and push SSE frames for tool_use and tool_result blocks."""
+    if isinstance(block, TextBlock):
+        blocks.append({"kind": "text", "subagent": subagent_marker, "text": block.text})
+    elif isinstance(block, ThinkingBlock):
+        blocks.append({"kind": "thinking", "subagent": subagent_marker, "text": block.thinking})
+    elif isinstance(block, ToolUseBlock):
+        _user_context.take_cards()
+        payload = {"kind": "tool_use", "subagent": subagent_marker,
+                   "tool": block.name, "input": block.input, "id": block.id}
+        blocks.append(payload)
+        frames.append(_sse("tool_use", payload))
+    elif isinstance(block, ToolResultBlock):
+        text = _content_text(block.content)
+        payload = {"kind": "tool_result", "subagent": subagent_marker,
+                   "id": block.tool_use_id, "is_error": bool(block.is_error), "text": text}
+        blocks.append(payload)
+        frames.append(_sse("tool_result", payload))
+        for card in _user_context.take_cards():
+            card_payload = {"kind": "card", "type": card.get("type"),
+                            "data": card.get("data"), "tool": card.get("tool")}
+            blocks.append(card_payload)
+            frames.append(_sse("card", card_payload))
+
+
+async def _process_assistant_message(
+    msg, blocks: list, seen_subagents: set, usage_total: dict, final_session_id
+) -> tuple:
+    """Process an AssistantMessage: accumulate usage, announce new subagents, emit content frames."""
+    if msg.session_id:
+        final_session_id = msg.session_id
+    _accumulate_usage(usage_total, msg.usage)
+    subagent_marker = "subagent" if _is_subagent(msg) else None
+    frames: list[bytes] = []
+    if _is_subagent(msg) and msg.parent_tool_use_id not in seen_subagents:
+        seen_subagents.add(msg.parent_tool_use_id)
+        payload = {"kind": "subagent_start", "parent": msg.parent_tool_use_id, "model": msg.model}
+        blocks.append(payload)
+        frames.append(_sse("subagent_start", payload))
+    for block in msg.content:
+        _process_content_block(block, blocks, subagent_marker, frames)
+    return final_session_id, frames
+
+
+async def _dispatch_session(
+    user, session, prompt: str, blocks: list, seen_subagents: set,
+    usage_total: dict, final_session_id_ref: list,
+) -> AsyncIterator[bytes]:
+    """Drive run_chat_session and fan out SSE frames; stores final_session_id in ref[0]."""
+    try:
+        async for msg in run_chat_session(
+            user=user, sdk_session_id=session.sdk_session_id, prompt=prompt
+        ):
+            if isinstance(msg, StreamEvent):
+                async for frame in _handle_stream_event(msg, blocks, seen_subagents):
+                    yield frame
+                continue
+            if isinstance(msg, AssistantMessage):
+                final_session_id_ref[0], frames = await _process_assistant_message(
+                    msg, blocks, seen_subagents, usage_total, final_session_id_ref[0]
+                )
+                for frame in frames:
+                    yield frame
+            elif isinstance(msg, UserMessage):
+                subagent_marker = "subagent" if _is_subagent(msg) else None
+                result_blocks = [b for b in msg.content if isinstance(b, ToolResultBlock)]
+                async for frame in _handle_tool_result_blocks(result_blocks, blocks, subagent_marker):
+                    yield frame
+            elif isinstance(msg, ResultMessage):
+                frame, final_session_id_ref[0] = await _handle_result_message(
+                    msg, usage_total, final_session_id_ref[0]
+                )
+                yield frame
+        yield _sse("assistant_end", {})
+    except Exception:
+        error_id = uuid.uuid4().hex[:8]
+        log.exception("chat stream error [%s]", error_id)
+        yield _sse("error", {"message": f"An internal error occurred (ref {error_id})."})
+
+
+async def stream_chat(
+    *, user, session: ChatSession, prompt: str
+) -> AsyncIterator[bytes]:
+    """Stream one assistant turn over SSE and persist the assistant message at end."""
+    _user_context.reset_cards()
+    blocks: list[dict] = []
+    seen_subagents: set[str] = set()
+    final_session_id_ref = [session.sdk_session_id or None]
+    usage_total = _empty_usage()
+
+    yield _sse("assistant_start", {"session_id": str(session.id)})
+
+    async for frame in _dispatch_session(
+        user, session, prompt, blocks, seen_subagents, usage_total, final_session_id_ref
+    ):
+        yield frame
+
     persisted_message_id = None
     try:
-        persisted_message_id = await _persist()
-    except Exception:  # pylint: disable=broad-except
+        persisted_message_id = await _persist_turn(
+            session, blocks, usage_total, final_session_id_ref[0]
+        )
+    except Exception:
         log.exception("failed to persist assistant turn")
-
-    yield _sse("done", {
-        "session_id": str(session.id),
-        "sdk_session_id": final_session_id,
-        "message_id": persisted_message_id,
-    })
+    yield _sse("done", {"session_id": str(session.id),
+                        "sdk_session_id": final_session_id_ref[0],
+                        "message_id": persisted_message_id})
