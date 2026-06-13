@@ -431,3 +431,9 @@ class TestPlanGenerateView:
             resp = auth_client.post("/api/stocks/plan/generate/")
         assert resp.status_code == 400
         assert "no data" in resp.json()["detail"]
+
+    def test_post_unexpected_exception_returns_500(self, auth_client):
+        with patch("stocks.views.plan.build_daily_plan", side_effect=RuntimeError("db exploded")):
+            resp = auth_client.post("/api/stocks/plan/generate/")
+        assert resp.status_code == 500
+        assert "db exploded" in resp.json()["detail"]
