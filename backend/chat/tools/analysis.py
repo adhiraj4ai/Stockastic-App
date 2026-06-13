@@ -324,16 +324,6 @@ def _build_action_record_lines(drafts, plans):
 # ─── Saved analyses ───────────────────────────────────────────────────────────
 
 
-@tool(
-    "search_saved_analyses",
-    "Search the user's saved analyses (bookmarked past analyses). Returns a compact "
-    "catalog — title, category, tags, tickers, series, date, one-line summary, verdict. "
-    "Call this BEFORE a fundamental or technical analysis to check for a prior analysis "
-    "or recurring series on this ticker/topic, then fetch the full one with "
-    "get_saved_analysis to compare what changed. Args (all optional): ticker, category, "
-    "tag, series_key, query, limit.",
-    {"ticker": str, "category": str, "tag": str, "series_key": str, "query": str, "limit": int},
-)
 def _query_saved_analyses(user, args):
     ticker = (args.get("ticker") or "").upper().strip()
     category = (args.get("category") or "").strip()
@@ -356,6 +346,16 @@ def _query_saved_analyses(user, args):
     return records
 
 
+@tool(
+    "search_saved_analyses",
+    "Search the user's saved analyses (bookmarked past analyses). Returns a compact "
+    "catalog — title, category, tags, tickers, series, date, one-line summary, verdict. "
+    "Call this BEFORE a fundamental or technical analysis to check for a prior analysis "
+    "or recurring series on this ticker/topic, then fetch the full one with "
+    "get_saved_analysis to compare what changed. Args (all optional): ticker, category, "
+    "tag, series_key, query, limit.",
+    {"ticker": str, "category": str, "tag": str, "series_key": str, "query": str, "limit": int},
+)
 async def search_saved_analyses(args: dict) -> dict:
     from chat._user_context import get_user
     user = get_user()
