@@ -54,3 +54,9 @@ def test_constant_types():
     assert isinstance(DYNAMIC_MAX_WEIGHT_SCALE, float)
     assert isinstance(MIN_DYNAMIC_MAX_WEIGHT, float)
     assert isinstance(MAX_DYNAMIC_MAX_WEIGHT, float)
+
+
+def test_profit_factor_default_value():
+    from stocks.constants import PROFIT_FACTOR_DEFAULT
+    assert PROFIT_FACTOR_DEFAULT == 999.0
+    assert isinstance(PROFIT_FACTOR_DEFAULT, float)
