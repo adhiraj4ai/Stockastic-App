@@ -83,6 +83,27 @@ docker-compose exec backend python manage.py <command>
 docker-compose logs -f backend
 ```
 
+## Code Quality Standards
+
+All code in this repo must follow SOLID principles and clean code practices. These are hard requirements, not guidelines.
+
+### SOLID Principles
+
+- **Single Responsibility**: every class, module, and function does exactly one thing. If you need "and" to describe what it does, split it.
+- **Open/Closed**: extend behaviour through new classes or hooks, not by editing existing logic.
+- **Liskov Substitution**: subtypes must be substitutable for their base types without breaking callers.
+- **Interface Segregation**: prefer small, focused interfaces/protocols over large catch-all ones. Callers should not depend on methods they don't use.
+- **Dependency Inversion**: depend on abstractions, not concretions. Inject dependencies; don't instantiate them deep inside logic.
+
+### Clean Code
+
+- **30-line hard limit**: no function or method body may exceed 30 lines. If it would, extract helpers first — no exceptions.
+- **Names tell the whole story**: variables, functions, and classes are named so a reader never needs a comment to understand intent.
+- **One level of abstraction per function**: don't mix high-level orchestration with low-level detail in the same function.
+- **No magic numbers or strings**: extract to named constants.
+- **Dead code is deleted**: never leave commented-out code or unused imports/variables.
+- **Flat over nested**: prefer early returns and guard clauses over deep if/else nesting.
+
 ## Key Conventions
 
 - **Number formatting**: Use `lib/numbers` utilities in the frontend — never format API decimals ad hoc.
