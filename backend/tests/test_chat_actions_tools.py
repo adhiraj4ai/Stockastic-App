@@ -122,8 +122,8 @@ class TestZoneEntryAlerts:
     def test_alert_created_when_in_zone(self, create_user):
         from unittest.mock import patch
         from stocks.models import DailyTradingPlan, Notification, WatchlistItem
-        from stocks.services import notification_service
-        from stocks.services.notification_service import check_zone_entry_alerts
+        from stocks.services.notifications.checkers.zone_entry import ZoneEntryChecker
+        from stocks.services.notification_service import create_notification
         user = create_user(username="zone1", password="x")
         WatchlistItem.objects.create(user=user, ticker="SHL", alert_enabled=True)
         WatchlistItem.objects.create(user=user, ticker="GVL", alert_enabled=True)   # EXTENDED → no alert
@@ -132,16 +132,26 @@ class TestZoneEntryAlerts:
             date=date(2026, 6, 12), regime="RISK_ON",
             payload={"entry_statuses": {"SHL": "IN_ZONE", "GVL": "EXTENDED", "OFF": "IN_ZONE"},
                      "picks": [], "watch": [], "exits": [], "catalysts": [], "market_context": {}})
-        with patch.object(notification_service, 'get_latest_price', return_value=None):
-            count = check_zone_entry_alerts(user)
-        assert count == 1
+        checker = ZoneEntryChecker()
+        with patch.object(checker, '_fetch_price', return_value=None):
+            alerts = checker.check(user)
+            for alert in alerts:
+                create_notification(
+                    user=user, notification_type=alert.notification_type,
+                    title=alert.title, message=alert.message,
+                    ticker=alert.ticker, redirect_url=alert.redirect_url,
+                    watchlist_item_id=alert.watchlist_item_id,
+                    metadata=alert.metadata, severity=alert.severity,
+                )
+        assert len(alerts) == 1
         notif = Notification.objects.get(user=user, type="WATCHLIST_ENTRY")
         assert notif.ticker == "SHL"
         assert "/ticker/SHL" in notif.redirect_url
 
     def test_no_plan_no_alerts(self, create_user):
-        from stocks.services.notification_service import check_zone_entry_alerts
-        assert check_zone_entry_alerts(create_user(username="zone2", password="x")) == 0
+        from stocks.services.notifications.checkers.zone_entry import ZoneEntryChecker
+        checker = ZoneEntryChecker()
+        assert checker.check(create_user(username="zone2", password="x")) == []
 
 
 @pytest.mark.django_db(transaction=True)

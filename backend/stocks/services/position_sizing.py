@@ -13,111 +13,99 @@ import math
 
 class PositionSizingService:
     """Service for calculating position sizes based on risk parameters."""
-    
+
     # Risk percentage limits
     MIN_RISK_PERCENTAGE = 0.1  # 0.1%
     MAX_RISK_PERCENTAGE = 10.0  # 10%
     RECOMMENDED_MAX_RISK = 5.0  # 5%
-    
+    POOR_RR_THRESHOLD = Decimal("1.5")
+
+    @staticmethod
+    def _compute_core(
+        balance: Decimal, risk_pct: Decimal, entry: Decimal, stop_loss: Decimal
+    ):
+        """Return (risk_amount, risk_per_share, max_shares, total_investment, max_loss, pos_pct)."""
+        risk_amount = balance * (risk_pct / Decimal("100"))
+        risk_per_share = entry - stop_loss
+        max_shares = int(risk_amount / risk_per_share)
+        total_investment = Decimal(str(max_shares)) * entry
+        max_loss = Decimal(str(max_shares)) * risk_per_share
+        pos_pct = (total_investment / balance) * Decimal("100")
+        return risk_amount, risk_per_share, max_shares, total_investment, max_loss, pos_pct
+
+    @staticmethod
+    def _build_result(
+        balance: Decimal, risk_pct: Decimal, entry: Decimal, stop_loss: Decimal,
+        risk_amount: Decimal, risk_per_share: Decimal, max_shares: int,
+        total_investment: Decimal, max_loss: Decimal, pos_pct: Decimal,
+        warnings: list,
+    ) -> dict:
+        """Assemble the base result dictionary from computed fields."""
+        return {
+            "max_shares": max_shares,
+            "total_investment": float(total_investment),
+            "risk_amount": float(risk_amount),
+            "max_loss_if_stopped": float(max_loss),
+            "risk_per_share": float(risk_per_share),
+            "position_size_percentage": float(pos_pct),
+            "warnings": warnings,
+            "account_balance": float(balance),
+            "risk_percentage": float(risk_pct),
+            "entry_price": float(entry),
+            "stop_loss_price": float(stop_loss),
+        }
+
+    @staticmethod
+    def _append_rr_fields(
+        result: dict,
+        target_price: Decimal,
+        entry: Decimal,
+        risk_per_share: Decimal,
+        max_shares: int,
+        warnings: list,
+    ) -> None:
+        """Mutate result with reward/ratio/profit fields; append warning if ratio is poor."""
+        reward_per_share = target_price - entry
+        ratio = reward_per_share / risk_per_share
+        result["reward_per_share"] = float(reward_per_share)
+        result["risk_reward_ratio"] = float(ratio)
+        result["potential_profit"] = float(reward_per_share * Decimal(str(max_shares)))
+        if ratio < PositionSizingService.POOR_RR_THRESHOLD:
+            warnings.append({
+                "type": "POOR_RISK_REWARD",
+                "severity": "MEDIUM",
+                "message": f"Risk/reward ratio {float(ratio):.2f} is below recommended 1.5",
+            })
+
     @staticmethod
     def calculate_position_size(
         account_balance: float,
         risk_percentage: float,
         entry_price: float,
         stop_loss_price: float,
-        target_price: Optional[float] = None
+        target_price: Optional[float] = None,
     ) -> Dict:
-        """
-        Calculate optimal position size based on risk parameters.
-        
-        Args:
-            account_balance: Total account balance in Rs.
-            risk_percentage: Percentage of account to risk (e.g., 2.0 for 2%)
-            entry_price: Intended entry price per share
-            stop_loss_price: Stop-loss price per share
-            target_price: Optional target price for R/R calculation
-            
-        Returns:
-            Dictionary containing:
-                - max_shares: Maximum number of shares to buy
-                - total_investment: Total capital required
-                - risk_amount: Total amount at risk
-                - max_loss_if_stopped: Maximum loss if stop-loss is hit
-                - risk_per_share: Risk per share (entry - stop_loss)
-                - position_size_percentage: Position size as % of account
-                - risk_reward_ratio: Risk/reward ratio (if target provided)
-                - warnings: List of warning messages
-                
-        Raises:
-            ValueError: If parameters are invalid
-        """
-        # Validate inputs
+        """Calculate optimal position size based on risk parameters."""
         PositionSizingService._validate_inputs(
             account_balance, risk_percentage, entry_price, stop_loss_price
         )
-        
-        # Convert to Decimal for precise calculations
-        balance = Decimal(str(account_balance))
-        risk_pct = Decimal(str(risk_percentage))
-        entry = Decimal(str(entry_price))
-        stop_loss = Decimal(str(stop_loss_price))
-        
-        # Calculate risk amount (how much we're willing to lose)
-        risk_amount = balance * (risk_pct / Decimal('100'))
-        
-        # Calculate risk per share
-        risk_per_share = entry - stop_loss
-        
-        # Calculate maximum shares we can buy
-        max_shares = int(risk_amount / risk_per_share)
-        
-        # Calculate total investment required
-        total_investment = max_shares * entry
-        
-        # Calculate actual max loss (should equal risk_amount, but recalc for precision)
-        max_loss_if_stopped = max_shares * risk_per_share
-        
-        # Calculate position size as percentage of account
-        position_size_percentage = (total_investment / balance * Decimal('100')) if balance > 0 else Decimal('0')
-        
-        # Generate warnings
-        warnings = PositionSizingService._generate_warnings(
-            risk_percentage, position_size_percentage, max_shares, total_investment, balance
+        balance, risk_pct = Decimal(str(account_balance)), Decimal(str(risk_percentage))
+        entry, stop_loss = Decimal(str(entry_price)), Decimal(str(stop_loss_price))
+        risk_amount, risk_per_share, max_shares, total_investment, max_loss, pos_pct = (
+            PositionSizingService._compute_core(balance, risk_pct, entry, stop_loss)
         )
-        
-        # Build result dictionary
-        result = {
-            'max_shares': max_shares,
-            'total_investment': float(total_investment),
-            'risk_amount': float(risk_amount),
-            'max_loss_if_stopped': float(max_loss_if_stopped),
-            'risk_per_share': float(risk_per_share),
-            'position_size_percentage': float(position_size_percentage),
-            'warnings': warnings,
-            'account_balance': float(balance),
-            'risk_percentage': float(risk_pct),
-            'entry_price': float(entry),
-            'stop_loss_price': float(stop_loss)
-        }
-        
-        # Calculate risk/reward ratio if target price provided
+        warnings = PositionSizingService._generate_warnings(
+            risk_percentage, pos_pct, max_shares, total_investment, balance
+        )
+        result = PositionSizingService._build_result(
+            balance, risk_pct, entry, stop_loss,
+            risk_amount, risk_per_share, max_shares, total_investment, max_loss, pos_pct,
+            warnings,
+        )
         if target_price is not None:
-            target = Decimal(str(target_price))
-            if target > entry:
-                reward_per_share = target - entry
-                risk_reward_ratio = reward_per_share / risk_per_share
-                result['risk_reward_ratio'] = float(risk_reward_ratio)
-                result['target_price'] = float(target)
-                result['potential_profit'] = float(max_shares * reward_per_share)
-                
-                # Add R/R warning if ratio is poor
-                if risk_reward_ratio < Decimal('1.5'):
-                    warnings.append({
-                        'type': 'POOR_RISK_REWARD',
-                        'message': f'Risk/Reward ratio of 1:{risk_reward_ratio:.1f} is below recommended 1:1.5 minimum',
-                        'severity': 'MEDIUM'
-                    })
-        
+            PositionSizingService._append_rr_fields(
+                result, Decimal(str(target_price)), entry, risk_per_share, max_shares, warnings
+            )
         return result
     
     @staticmethod
@@ -148,6 +136,49 @@ class PositionSizingService:
             raise ValueError("Stop-loss price must be below entry price for long positions")
     
     @staticmethod
+    def _risk_warning(risk_percentage: float) -> list:
+        """Return a warning list for elevated or high risk percentages."""
+        if risk_percentage >= PositionSizingService.RECOMMENDED_MAX_RISK:
+            return [{'type': 'HIGH_RISK', 'severity': 'HIGH',
+                     'message': f'Risk of {risk_percentage}% exceeds recommended maximum of '
+                                f'{PositionSizingService.RECOMMENDED_MAX_RISK}%'}]
+        if risk_percentage > 3.0:
+            return [{'type': 'ELEVATED_RISK', 'severity': 'MEDIUM',
+                     'message': f'Risk of {risk_percentage}% is above conservative threshold of 3%'}]
+        return []
+
+    @staticmethod
+    def _position_warning(position_size_percentage) -> list:
+        """Return a warning list for large or concentrated position sizes."""
+        pct = Decimal(str(position_size_percentage))
+        if pct > Decimal('50'):
+            return [{'type': 'LARGE_POSITION', 'severity': 'HIGH',
+                     'message': f'Position size of {pct:.1f}% exceeds 50% of account - consider diversification'}]
+        if pct > Decimal('25'):
+            return [{'type': 'CONCENTRATED_POSITION', 'severity': 'MEDIUM',
+                     'message': f'Position size of {pct:.1f}% is concentrated - ensure proper diversification'}]
+        return []
+
+    @staticmethod
+    def _shares_warning(max_shares: int) -> list:
+        """Return a warning list for zero or very few shares."""
+        if max_shares == 0:
+            return [{'type': 'INSUFFICIENT_CAPITAL', 'severity': 'HIGH',
+                     'message': 'Insufficient capital for even 1 share with current risk parameters'}]
+        if max_shares < 10:
+            return [{'type': 'LOW_SHARES', 'severity': 'LOW',
+                     'message': f'Only {max_shares} shares recommended - consider wider stop-loss or higher risk tolerance'}]
+        return []
+
+    @staticmethod
+    def _leverage_warning(total_investment: Decimal, account_balance: Decimal) -> list:
+        """Return a warning list when total investment exceeds account balance."""
+        if total_investment > account_balance:
+            return [{'type': 'OVER_LEVERAGE', 'severity': 'CRITICAL',
+                     'message': 'Calculated position exceeds account balance - this should not happen'}]
+        return []
+
+    @staticmethod
     def _generate_warnings(
         risk_percentage: float,
         position_size_percentage: Decimal,
@@ -155,60 +186,13 @@ class PositionSizingService:
         total_investment: Decimal,
         account_balance: Decimal
     ) -> list:
-        """Generate warning messages based on calculated values."""
-        warnings = []
-        
-        # High risk warning
-        if risk_percentage > PositionSizingService.RECOMMENDED_MAX_RISK:
-            warnings.append({
-                'type': 'HIGH_RISK',
-                'message': f'Risk of {risk_percentage}% exceeds recommended maximum of {PositionSizingService.RECOMMENDED_MAX_RISK}%',
-                'severity': 'HIGH'
-            })
-        elif risk_percentage > 3.0:
-            warnings.append({
-                'type': 'ELEVATED_RISK',
-                'message': f'Risk of {risk_percentage}% is above conservative threshold of 3%',
-                'severity': 'MEDIUM'
-            })
-        
-        # Position size warning
-        if position_size_percentage > Decimal('50'):
-            warnings.append({
-                'type': 'LARGE_POSITION',
-                'message': f'Position size of {position_size_percentage:.1f}% exceeds 50% of account - consider diversification',
-                'severity': 'HIGH'
-            })
-        elif position_size_percentage > Decimal('25'):
-            warnings.append({
-                'type': 'CONCENTRATED_POSITION',
-                'message': f'Position size of {position_size_percentage:.1f}% is concentrated - ensure proper diversification',
-                'severity': 'MEDIUM'
-            })
-        
-        # Low shares warning
-        if max_shares == 0:
-            warnings.append({
-                'type': 'INSUFFICIENT_CAPITAL',
-                'message': 'Insufficient capital for even 1 share with current risk parameters',
-                'severity': 'HIGH'
-            })
-        elif max_shares < 10:
-            warnings.append({
-                'type': 'LOW_SHARES',
-                'message': f'Only {max_shares} shares recommended - consider wider stop-loss or higher risk tolerance',
-                'severity': 'LOW'
-            })
-        
-        # Over-leverage warning
-        if total_investment > account_balance:
-            warnings.append({
-                'type': 'OVER_LEVERAGE',
-                'message': 'Calculated position exceeds account balance - this should not happen',
-                'severity': 'CRITICAL'
-            })
-        
-        return warnings
+        """Generate warning messages by delegating to focused helper methods."""
+        return (
+            PositionSizingService._risk_warning(risk_percentage)
+            + PositionSizingService._position_warning(position_size_percentage)
+            + PositionSizingService._shares_warning(max_shares)
+            + PositionSizingService._leverage_warning(total_investment, account_balance)
+        )
     
     @staticmethod
     def get_preset_risk_levels() -> Dict:
