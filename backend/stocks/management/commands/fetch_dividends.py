@@ -58,66 +58,64 @@ class Command(BaseCommand):
         parser.add_argument("--basket", action="store_true", help="The pinned evaluation basket")
         parser.add_argument("--all", action="store_true", help="Every active equity (slow)")
 
-    def handle(self, *args, **opts):
+    def _resolve_tickers(self, opts):
         if opts.get("ticker"):
-            tickers = [opts["ticker"].upper()]
-        elif opts.get("basket"):
+            return [opts["ticker"].upper()]
+        if opts.get("basket"):
             from stocks.services.backtest_harness.basket import DEFAULT_BASKET
-            tickers = list(DEFAULT_BASKET)
-        elif opts.get("all"):
-            tickers = list(Company.objects.values_list("symbol", flat=True))
-        else:
-            raise CommandError("Provide --ticker, --basket, or --all.")
+            return list(DEFAULT_BASKET)
+        if opts.get("all"):
+            return list(Company.objects.values_list("symbol", flat=True))
+        raise CommandError("Provide --ticker, --basket, or --all.")
 
+    def _upsert_dividend_row(self, ticker, row, counters):
+        bonus = _dec(row.get("bonus_share"))
+        cash = _dec(row.get("cash_dividend"))
+        total = _dec(row.get("total_dividend")) or (bonus + cash)
+        fiscal_year = (row.get("year") or "").strip()
+        if not fiscal_year or (bonus == 0 and cash == 0):
+            counters["skipped"] += 1
+            return
+        _, was_created = Dividend.objects.update_or_create(
+            ticker=ticker,
+            fiscal_year=fiscal_year,
+            defaults={
+                "bonus_percent": bonus,
+                "cash_percent": cash,
+                "total_percent": total,
+                "book_close_date": _parse_book_close(row.get("bookclose_date")),
+            },
+        )
+        counters["created"] += was_created
+        counters["updated"] += not was_created
+
+    def handle(self, *args, **opts):
+        tickers = self._resolve_tickers(opts)
         session = requests.Session()
-        created = updated = skipped = failed = 0
-
+        counters = {"created": 0, "updated": 0, "skipped": 0, "failed": 0}
         for idx, ticker in enumerate(tickers):
             self.stdout.write(f"[{idx + 1}/{len(tickers)}] {ticker}...")
             try:
                 rows = self._fetch_company_dividends(session, ticker)
-            except Exception as exc:  # noqa: BLE001 — one bad company must not kill the run
+            except Exception as exc:  # noqa: BLE001
                 self.stdout.write(self.style.WARNING(f"  failed: {exc}"))
-                failed += 1
+                counters["failed"] += 1
                 continue
-
             for row in rows:
-                book_close = _parse_book_close(row.get("bookclose_date"))
-                bonus = _dec(row.get("bonus_share"))
-                cash = _dec(row.get("cash_dividend"))
-                total = _dec(row.get("total_dividend")) or (bonus + cash)
-                fiscal_year = (row.get("year") or "").strip()
-                if not fiscal_year or (bonus == 0 and cash == 0):
-                    skipped += 1
-                    continue
-                _, was_created = Dividend.objects.update_or_create(
-                    ticker=ticker,
-                    fiscal_year=fiscal_year,
-                    defaults={
-                        "bonus_percent": bonus,
-                        "cash_percent": cash,
-                        "total_percent": total,
-                        "book_close_date": book_close,
-                    },
-                )
-                created += was_created
-                updated += not was_created
-
-            time.sleep(random.uniform(1.0, 2.5))  # politeness, matches fetch_fundamentals
-
+                self._upsert_dividend_row(ticker, row, counters)
+            time.sleep(random.uniform(1.0, 2.5))
         self.stdout.write(self.style.SUCCESS(
-            f"Done. created={created} updated={updated} skipped(no-dividend-rows)={skipped} "
-            f"companies_failed={failed}. Now run: python manage.py backfill_corporate_actions"
+            f"Done. created={counters['created']} updated={counters['updated']} "
+            f"skipped(no-dividend-rows)={counters['skipped']} "
+            f"companies_failed={counters['failed']}. "
+            f"Now run: python manage.py backfill_corporate_actions"
         ))
 
-    def _fetch_company_dividends(self, session, ticker):
-        """GET company page → companyid + CSRF; POST the DataTables dividend endpoint."""
-        page_url = f"{_BASE}/company/{ticker.lower()}"
+    def _parse_company_page(self, session, page_url):
         resp = session.get(page_url, headers={"User-Agent": _UA}, impersonate="chrome", timeout=15)
         if resp.status_code != 200:
             raise RuntimeError(f"company page HTTP {resp.status_code}")
         html = resp.text
-
         cid_m = re.search(r'id="companyid"[^>]*>(\d+)</div>', html)
         if not cid_m:
             raise RuntimeError("no companyid on page (delisted or renamed?)")
@@ -125,22 +123,16 @@ class Command(BaseCommand):
                  or re.search(r'name="_token"\s+value="([^"]+)"', html))
         if not tok_m:
             raise RuntimeError("no CSRF token on page")
+        return cid_m.group(1), tok_m.group(1)
 
-        headers = {
-            "X-CSRF-Token": tok_m.group(1),
-            "X-Requested-With": "XMLHttpRequest",
-            "Referer": page_url,
-            "Origin": _BASE,
-        }
-        # DataTables server-side endpoint: requires draw/start/length, and the
-        # server CAPS length at 50 (length=200 → HTTP 202 with zero rows).
-        # Paginate with `start` until a short page signals the end.
+    def _paginate_dividend_endpoint(self, session, company_id, headers):
+        """Paginate DataTables endpoint (server CAPs length at 50)."""
         rows, start, page = [], 0, 50
         while True:
             post_resp = session.post(
                 f"{_BASE}/company-dividend",
                 headers=headers,
-                data={"company": cid_m.group(1), "draw": "1",
+                data={"company": company_id, "draw": "1",
                       "start": str(start), "length": str(page)},
                 impersonate="chrome",
                 timeout=15,
@@ -152,3 +144,15 @@ class Command(BaseCommand):
             if len(batch) < page:
                 return rows
             start += page
+
+    def _fetch_company_dividends(self, session, ticker):
+        """GET company page → companyid + CSRF; POST the DataTables dividend endpoint."""
+        page_url = f"{_BASE}/company/{ticker.lower()}"
+        company_id, csrf_token = self._parse_company_page(session, page_url)
+        headers = {
+            "X-CSRF-Token": csrf_token,
+            "X-Requested-With": "XMLHttpRequest",
+            "Referer": page_url,
+            "Origin": _BASE,
+        }
+        return self._paginate_dividend_endpoint(session, company_id, headers)

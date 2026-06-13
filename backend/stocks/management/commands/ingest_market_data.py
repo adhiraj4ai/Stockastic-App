@@ -25,6 +25,19 @@ class Command(BaseCommand):
         parser.add_argument("--date", default=None)
         parser.add_argument("--provider", default=None)
 
+    def _ingest_dataset(self, ds, svc, provider, on):
+        if ds == "prices":
+            return svc.ingest_prices(provider.fetch_daily_prices(on))
+        if ds == "floorsheet":
+            return svc.ingest_floorsheet(provider.fetch_floorsheet(on))
+        if ds == "summary":
+            return svc.ingest_market_summary(provider.fetch_market_summary(on))
+        if ds == "companies":
+            return svc.ingest_companies(provider.fetch_company_list())
+        if ds == "indices":
+            return svc.ingest_indices(provider.fetch_indices(on))
+        return None
+
     def handle(self, *args, **opts):
         on = (
             datetime.strptime(opts["date"], "%Y-%m-%d").date()
@@ -34,22 +47,11 @@ class Command(BaseCommand):
         provider = get_provider(opts["provider"])
         svc = IngestionService()
         self.stdout.write(f"Provider: {provider.name} | date: {on} | datasets: {datasets}")
-
-        total_saved = 0
-        any_ok = False
+        total_saved, any_ok = 0, False
         for ds in datasets:
             try:
-                if ds == "prices":
-                    res = svc.ingest_prices(provider.fetch_daily_prices(on))
-                elif ds == "floorsheet":
-                    res = svc.ingest_floorsheet(provider.fetch_floorsheet(on))
-                elif ds == "summary":
-                    res = svc.ingest_market_summary(provider.fetch_market_summary(on))
-                elif ds == "companies":
-                    res = svc.ingest_companies(provider.fetch_company_list())
-                elif ds == "indices":
-                    res = svc.ingest_indices(provider.fetch_indices(on))
-                else:
+                res = self._ingest_dataset(ds, svc, provider, on)
+                if res is None:
                     self.stdout.write(f"  {ds}: SKIPPED (unknown dataset)")
                     continue
                 any_ok = True
@@ -58,10 +60,8 @@ class Command(BaseCommand):
                     f"  {ds}: OK — inserted={res.inserted} updated={res.updated} "
                     f"rejected={res.rejected}"
                 )
-            except Exception as e:  # noqa: BLE001 — isolate per-dataset failures (transport, schema drift, or unexpected); the type name in the message distinguishes them
+            except Exception as e:  # noqa: BLE001
                 self.stdout.write(f"  {ds}: FAILED — {type(e).__name__}: {e}")
-
         self.stdout.write(f"Total records saved: {total_saved}")
         if not any_ok:
-            # Non-zero exit only when EVERY dataset failed.
             raise SystemExit(1)
