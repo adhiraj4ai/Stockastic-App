@@ -234,19 +234,8 @@ def _near(close, level):
     return level is not None and float(level) > 0 and abs(close - float(level)) / float(level) <= NEAR_PCT
 
 
-def user_overlay(user):
-    """Per-user actions for tomorrow. Cheap indexed queries; safe for read-time use.
-
-    Watchlist semantics: target_price is a desired BUY-ENTRY level, so it triggers
-    when close <= target (price came down to entry level) OR proximity within 2% of
-    either level.
-    """
-    from stocks.models import PortfolioItem, SignalEpisode, WatchlistItem
-
-    items = list(PortfolioItem.objects.filter(user=user))
-    watch = list(WatchlistItem.objects.filter(user=user))
-    closes = _latest_closes([i.ticker for i in items] + [w.ticker for w in watch]) if (items or watch) else {}
-
+def _near_position_actions(items, closes):
+    """Return position-action alerts for portfolio items near key price levels."""
     positions = []
     for item in items:
         close = closes.get(item.ticker)
@@ -258,34 +247,62 @@ def user_overlay(user):
         ):
             near = "STOP_LOSS"
         else:
-            for level, label in ((item.target_price, "TP1"), (item.target_price_2, "TP2"),
-                                 (item.target_price_3, "TP3")):
+            for level, label in (
+                (item.target_price, "TP1"),
+                (item.target_price_2, "TP2"),
+                (item.target_price_3, "TP3"),
+            ):
                 if _near(close, level) or (level is not None and close >= float(level)):
                     near = label
                     break
         if near:
-            positions.append({"ticker": item.ticker, "near": near, "close": close,
-                              "stop_loss_price": float(item.stop_loss_price) if item.stop_loss_price else None,
-                              "target_price": float(item.target_price) if item.target_price else None})
+            positions.append({
+                "ticker": item.ticker, "near": near, "close": close,
+                "stop_loss_price": float(item.stop_loss_price) if item.stop_loss_price else None,
+                "target_price": float(item.target_price) if item.target_price else None,
+            })
+    return positions
 
-    held = {i.ticker for i in items}
-    flips = [
-        {"symbol": ep.symbol, "source": ep.source, "since": ep.start_date.isoformat(),
-         "strength": ep.entry_strength}
-        for ep in SignalEpisode.objects.filter(
-            end_date__isnull=True, direction="SELL", symbol__in=held)
+
+def _signal_flips_for_held(held):
+    """Return open SELL-direction episodes for symbols currently held."""
+    if not held:
+        return []
+    return [
+        {"symbol": ep.symbol, "source": ep.source,
+         "since": ep.start_date.isoformat(), "strength": ep.entry_strength}
+        for ep in SignalEpisode.objects.filter(end_date__isnull=True, direction="SELL", symbol__in=held)
     ]
 
+
+def _watchlist_triggers(watch, closes):
+    """Return watchlist items whose close has reached or is near the desired entry level."""
     triggers = []
     for w in watch:
         close = closes.get(w.ticker)
         if close is None:
             continue
-        if (_near(close, w.target_price) or _near(close, w.stop_loss_price)
-                or (w.target_price is not None and close <= float(w.target_price))):
-            triggers.append({"ticker": w.ticker, "close": close,
-                             "target_price": float(w.target_price) if w.target_price else None,
-                             "stop_loss_price": float(w.stop_loss_price) if w.stop_loss_price else None})
+        if (
+            _near(close, w.target_price)
+            or _near(close, w.stop_loss_price)
+            or (w.target_price is not None and close <= float(w.target_price))
+        ):
+            triggers.append({
+                "ticker": w.ticker, "close": close,
+                "target_price": float(w.target_price) if w.target_price else None,
+                "stop_loss_price": float(w.stop_loss_price) if w.stop_loss_price else None,
+            })
+    return triggers
 
-    return {"positions_near_action": positions, "signal_flips": flips,
-            "watchlist_triggers": triggers}
+
+def user_overlay(user):
+    """Per-user actions for tomorrow. Cheap indexed queries; safe for read-time use."""
+    from stocks.models import PortfolioItem, WatchlistItem
+    items = list(PortfolioItem.objects.filter(user=user))
+    watch = list(WatchlistItem.objects.filter(user=user))
+    closes = _latest_closes([i.ticker for i in items] + [w.ticker for w in watch]) if (items or watch) else {}
+    positions = _near_position_actions(items, closes)
+    held = {i.ticker for i in items}
+    flips = _signal_flips_for_held(held)
+    triggers = _watchlist_triggers(watch, closes)
+    return {"positions_near_action": positions, "signal_flips": flips, "watchlist_triggers": triggers}

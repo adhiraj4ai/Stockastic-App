@@ -99,3 +99,98 @@ class TestBuildCandidates:
                 as_of=date.today(),
             )
         assert result == []
+
+
+class TestNearPositionActions:
+    def test_returns_empty_when_no_closes(self):
+        from stocks.services.daily_plan import _near_position_actions
+        item = MagicMock()
+        item.ticker = "NABIL"
+        result = _near_position_actions(items=[item], closes={})
+        assert result == []
+
+    def test_flags_stop_loss_proximity(self):
+        from stocks.services.daily_plan import _near_position_actions
+        item = MagicMock()
+        item.ticker = "NABIL"
+        item.stop_loss_price = 95.0
+        item.target_price = 120.0
+        item.target_price_2 = None
+        item.target_price_3 = None
+        result = _near_position_actions(items=[item], closes={"NABIL": 95.0})
+        assert len(result) == 1
+        assert result[0]["near"] == "STOP_LOSS"
+
+    def test_flags_target_price_proximity(self):
+        from stocks.services.daily_plan import _near_position_actions
+        item = MagicMock()
+        item.ticker = "SCB"
+        item.stop_loss_price = 80.0
+        item.target_price = 120.0
+        item.target_price_2 = None
+        item.target_price_3 = None
+        result = _near_position_actions(items=[item], closes={"SCB": 120.0})
+        assert len(result) == 1
+        assert result[0]["near"] == "TP1"
+
+    def test_excludes_items_without_action_level(self):
+        from stocks.services.daily_plan import _near_position_actions
+        item = MagicMock()
+        item.ticker = "MEGA"
+        item.stop_loss_price = 80.0
+        item.target_price = 120.0
+        item.target_price_2 = None
+        item.target_price_3 = None
+        result = _near_position_actions(items=[item], closes={"MEGA": 100.0})
+        assert result == []
+
+
+class TestSignalFlips:
+    def test_returns_flips_for_held_symbols(self):
+        from stocks.services.daily_plan import _signal_flips_for_held
+        ep = MagicMock()
+        ep.symbol = "NABIL"
+        ep.source = "RSI_OVERBOUGHT"
+        ep.start_date = MagicMock()
+        ep.start_date.isoformat.return_value = "2026-06-10"
+        ep.entry_strength = 0.7
+        with patch("stocks.services.daily_plan.SignalEpisode") as mock_model:
+            mock_model.objects.filter.return_value = [ep]
+            result = _signal_flips_for_held(held={"NABIL"})
+        assert len(result) == 1
+        assert result[0]["symbol"] == "NABIL"
+
+    def test_returns_empty_when_no_held(self):
+        from stocks.services.daily_plan import _signal_flips_for_held
+        result = _signal_flips_for_held(held=set())
+        assert result == []
+
+
+class TestWatchlistTriggers:
+    def test_triggers_when_close_at_or_below_target(self):
+        from stocks.services.daily_plan import _watchlist_triggers
+        w = MagicMock()
+        w.ticker = "NABIL"
+        w.target_price = 100.0
+        w.stop_loss_price = None
+        result = _watchlist_triggers(watch=[w], closes={"NABIL": 100.0})
+        assert len(result) == 1
+        assert result[0]["ticker"] == "NABIL"
+
+    def test_excludes_when_far_from_all_levels(self):
+        from stocks.services.daily_plan import _watchlist_triggers
+        w = MagicMock()
+        w.ticker = "SCB"
+        w.target_price = 100.0
+        w.stop_loss_price = None
+        result = _watchlist_triggers(watch=[w], closes={"SCB": 150.0})
+        assert result == []
+
+    def test_returns_empty_when_no_closes(self):
+        from stocks.services.daily_plan import _watchlist_triggers
+        w = MagicMock()
+        w.ticker = "MEGA"
+        w.target_price = 100.0
+        w.stop_loss_price = None
+        result = _watchlist_triggers(watch=[w], closes={})
+        assert result == []
