@@ -16,6 +16,7 @@ import {
 } from 'lucide-react';
 import { formatNepaliNumber, formatRupees } from '@/lib/formatters';
 import { formatMetricValue } from '@/lib/metricFormat';
+import { humanizeFinancialLabel, formatStatementValue, STATEMENT_UNIT_LABEL } from '@/lib/financialStatements';
 import ReactECharts from 'echarts-for-react';
 import * as echarts from 'echarts';
 import TransactionModal from '@/components/TransactionModal';
@@ -987,7 +988,10 @@ export default function StockDetailPage() {
                                                                         <table className="w-full text-sm">
                                                                             <thead>
                                                                                 <tr className="border-b border-slate-50 dark:border-slate-800">
-                                                                                    <th className="text-left py-2 font-semibold text-slate-400 dark:text-slate-500 text-[10px]">Metadata/Metric</th>
+                                                                                    <th className="text-left py-2 font-semibold text-slate-400 dark:text-slate-500 text-[10px]">
+                                                                                        Particulars
+                                                                                        {section !== 'key_ratios' && <span className="ml-1 font-normal text-slate-400/80 dark:text-slate-500/80">({STATEMENT_UNIT_LABEL})</span>}
+                                                                                    </th>
                                                                                     {financials.filter(f => f.report_type === reportType)
                                                                                         .sort((a, b) => b.fiscal_year.localeCompare(a.fiscal_year))
                                                                                         .map((f, idx) => (
@@ -999,18 +1003,18 @@ export default function StockDetailPage() {
                                                                                 {Object.entries(sectionData).map(([category, items]: [string, any]) => (
                                                                                     <React.Fragment key={category}>
                                                                                         <tr className="bg-slate-50/30 dark:bg-slate-800/20">
-                                                                                            <td colSpan={100} className="py-2 px-2 font-bold text-blue-600/70 dark:text-blue-400/70 text-[10px]">{category}</td>
+                                                                                            <td colSpan={100} className="py-2 px-2 font-bold text-blue-600/70 dark:text-blue-400/70 text-[10px]">{humanizeFinancialLabel(category)}</td>
                                                                                         </tr>
-                                                                                        {Object.entries(items).map(([key, val]: [string, any]) => (
+                                                                                        {Object.keys(items as Record<string, unknown>).map((key) => (
                                                                                             <tr key={key} className="hover:bg-slate-50/30 dark:hover:bg-slate-800/30 border-b border-slate-50 dark:border-slate-800 last:border-0 transition-colors group">
-                                                                                                <td className="py-3 px-2 font-medium text-slate-600 dark:text-slate-400 group-hover:text-slate-900 dark:group-hover:text-slate-100">{key}</td>
+                                                                                                <td className="py-3 px-2 font-medium text-slate-600 dark:text-slate-400 group-hover:text-slate-900 dark:group-hover:text-slate-100">{humanizeFinancialLabel(key)}</td>
                                                                                                 {financials.filter(f => f.report_type === reportType)
                                                                                                     .sort((a, b) => b.fiscal_year.localeCompare(a.fiscal_year))
                                                                                                     .map((f, idx) => {
                                                                                                         const v = f[section]?.[category]?.[key];
                                                                                                         return (
-                                                                                                            <td key={`${f.fiscal_year}-${idx}`} className="text-right px-4 font-mono text-slate-700 dark:text-slate-300">
-                                                                                                                {typeof v === 'number' ? (v >= 10000000 ? (v / 10000000).toLocaleString(undefined, { maximumFractionDigits: 2 }) + ' Cr' : v.toLocaleString()) : (v || '-')}
+                                                                                                            <td key={`${f.fiscal_year}-${idx}`} className="text-right px-4 tabular-nums text-slate-700 dark:text-slate-300">
+                                                                                                                {section === 'key_ratios' ? formatMetricValue(key, v) : formatStatementValue(v, key)}
                                                                                                             </td>
                                                                                                         );
                                                                                                     })}
