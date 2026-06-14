@@ -30,3 +30,23 @@ def test_price_row_required_dash_close_raises():
 def test_price_row_missing_required_close_raises():
     with pytest.raises(ValidationError):
         RawPriceRow.model_validate({"symbol": "NABIL", "openPrice": "1.0"})
+
+
+def test_price_row_skips_null_first_alias():
+    # Legacy _pick skipped a None first-alias and fell through; preserve that.
+    row = RawPriceRow.model_validate(
+        {"symbol": "NABIL", "closePrice": None, "lastTradedPrice": "510"}
+    )
+    assert row.close == 510.0
+
+
+def test_price_row_skips_empty_first_alias():
+    row = RawPriceRow.model_validate(
+        {"symbol": "NABIL", "closePrice": "", "ltp": "510"}
+    )
+    assert row.close == 510.0
+
+
+def test_price_row_zero_is_not_sentinel():
+    row = RawPriceRow.model_validate({"symbol": "NABIL", "closePrice": 0})
+    assert row.close == 0.0

@@ -1,19 +1,21 @@
 """Inbound pydantic models — the ONLY place that maps raw NEPSE JSON keys.
 
-Each model mirrors one provider response row. `AliasChoices` reproduces the
-"first present key wins" behaviour; the shared `_coerce_number` before-validator
-reproduces the comma-stripping / "-"-sentinel coercion. Required fields are
-typed non-optional, so a sentinel/missing value raises ValidationError, which
-the provider re-raises as ProviderSchemaError.
+Each model mirrors one provider response row. A shared `mode="before"`
+model-validator resolves each canonical field to the first aliased key whose
+value is present (not None/""), reproducing the legacy `_pick`. The
+`_coerce_number` field-validator reproduces the comma-stripping / "-"-sentinel
+coercion. Required fields are typed non-optional, so a sentinel/missing value
+becomes None and fails validation -> ValidationError, which the provider
+re-raises as ProviderSchemaError.
 """
 from __future__ import annotations
 
-from typing import Optional
+from typing import ClassVar, Optional
 
-from pydantic import AliasChoices, BaseModel, ConfigDict, Field, field_validator
+from pydantic import BaseModel, ConfigDict, field_validator, model_validator
 
-# Candidate key names per logical field (first match wins). Single source of
-# truth shared with the provider's mapping intent.
+# Candidate key names per logical field (first present key wins). Single source
+# of truth for raw NEPSE field names.
 PRICE_ALIASES = {
     "symbol": ("symbol", "stockSymbol", "securitySymbol"),
     "close": ("closePrice", "lastTradedPrice", "ltp", "close"),
@@ -29,16 +31,17 @@ PRICE_ALIASES = {
     "weeks_52_low": ("fiftyTwoWeekLow", "weeks_52_low"),
 }
 
-_SENTINELS = (None, "", "-")
+_NUMERIC_SENTINELS = (None, "", "-")
+_ABSENT_VALUES = (None, "")
 
 
 def _coerce_number(value):
-    """Mirror the legacy `_num`: sentinels -> None, strip commas, else float.
+    """Mirror legacy `_num`: sentinels -> None, strip commas, else float.
 
-    Returns None for anything unparseable. On a required (non-optional) field a
-    None result fails validation -> ValidationError -> ProviderSchemaError.
+    Returns None for anything unparseable; on a required field that None fails
+    validation -> ValidationError -> ProviderSchemaError.
     """
-    if value in _SENTINELS:
+    if value in _NUMERIC_SENTINELS:
         return None
     try:
         return float(str(value).replace(",", ""))
@@ -46,27 +49,45 @@ def _coerce_number(value):
         return None
 
 
-def _alias(field_keys) -> AliasChoices:
-    return AliasChoices(*field_keys)
+def _pick_alias(row: dict, keys: tuple[str, ...]):
+    """First aliased key whose value is present (not None/""), else None.
+
+    Mirrors legacy `_pick`: a None/"" value is skipped so a later alias can
+    supply the value. "-" is NOT skipped here (numeric coercion handles it).
+    """
+    for key in keys:
+        if key in row and row[key] not in _ABSENT_VALUES:
+            return row[key]
+    return None
 
 
 class _RawRow(BaseModel):
-    model_config = ConfigDict(populate_by_name=True, extra="ignore")
+    model_config = ConfigDict(extra="ignore")
+    ALIASES: ClassVar[dict] = {}
+
+    @model_validator(mode="before")
+    @classmethod
+    def _resolve_aliases(cls, data):
+        if not isinstance(data, dict):
+            return data
+        return {field: _pick_alias(data, keys) for field, keys in cls.ALIASES.items()}
 
 
 class RawPriceRow(_RawRow):
-    symbol: str = Field(validation_alias=_alias(PRICE_ALIASES["symbol"]))
-    close: float = Field(validation_alias=_alias(PRICE_ALIASES["close"]))
-    open: Optional[float] = Field(default=None, validation_alias=_alias(PRICE_ALIASES["open"]))
-    high: Optional[float] = Field(default=None, validation_alias=_alias(PRICE_ALIASES["high"]))
-    low: Optional[float] = Field(default=None, validation_alias=_alias(PRICE_ALIASES["low"]))
-    volume: Optional[float] = Field(default=None, validation_alias=_alias(PRICE_ALIASES["volume"]))
-    turnover: Optional[float] = Field(default=None, validation_alias=_alias(PRICE_ALIASES["turnover"]))
-    prev_close: Optional[float] = Field(default=None, validation_alias=_alias(PRICE_ALIASES["prev_close"]))
-    vwap: Optional[float] = Field(default=None, validation_alias=_alias(PRICE_ALIASES["vwap"]))
-    trans: Optional[int] = Field(default=None, validation_alias=_alias(PRICE_ALIASES["trans"]))
-    weeks_52_high: Optional[float] = Field(default=None, validation_alias=_alias(PRICE_ALIASES["weeks_52_high"]))
-    weeks_52_low: Optional[float] = Field(default=None, validation_alias=_alias(PRICE_ALIASES["weeks_52_low"]))
+    ALIASES: ClassVar[dict] = PRICE_ALIASES
+
+    symbol: str
+    close: float
+    open: Optional[float] = None
+    high: Optional[float] = None
+    low: Optional[float] = None
+    volume: Optional[float] = None
+    turnover: Optional[float] = None
+    prev_close: Optional[float] = None
+    vwap: Optional[float] = None
+    trans: Optional[int] = None
+    weeks_52_high: Optional[float] = None
+    weeks_52_low: Optional[float] = None
 
     @field_validator(
         "close", "open", "high", "low", "volume", "turnover",

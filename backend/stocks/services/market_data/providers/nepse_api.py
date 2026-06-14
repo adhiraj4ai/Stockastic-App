@@ -86,21 +86,6 @@ def _req_num(row: dict, keys: tuple[str, ...], ctx: str) -> float:
 class NepseApiProvider:
     name = "nepseapi"
 
-    # Candidate key names per logical field (first match wins).
-    PRICE_MAP = {
-        "symbol": ("symbol", "stockSymbol", "securitySymbol"),
-        "close": ("closePrice", "lastTradedPrice", "ltp", "close"),
-        "open": ("openPrice", "open"),
-        "high": ("highPrice", "high"),
-        "low": ("lowPrice", "low"),
-        "volume": ("totalTradedQuantity", "totalTradeQuantity", "volume"),
-        "turnover": ("totalTradedValue", "totalTradeValue", "amount", "turnover"),
-        "prev_close": ("previousClose", "previousDayClosePrice", "prev_close"),
-        "vwap": ("averageTradedPrice", "vwap"),
-        "trans": ("totalTrades", "totalTransactions", "trans"),
-        "weeks_52_high": ("fiftyTwoWeekHigh", "weeks_52_high"),
-        "weeks_52_low": ("fiftyTwoWeekLow", "weeks_52_low"),
-    }
     FLOOR_MAP = {
         "transaction_id": ("contractId", "transactionId", "id"),
         "symbol": ("stockSymbol", "securityCode", "symbol"),
