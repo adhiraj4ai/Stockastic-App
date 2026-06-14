@@ -15,16 +15,20 @@ from django.contrib.auth.models import User
 @pytest.fixture(scope="session")
 def django_db_setup(django_db_setup, django_db_blocker):
     from django.db import connection
-    from stocks.models.market import Company, DailyStockPrice
+    from stocks.models.market import (
+        Company,
+        DailyStockPrice,
+        DailyFloorsheet,
+        DailyCumulativeAccumulation,
+    )
 
+    unmanaged_models = [Company, DailyStockPrice, DailyFloorsheet, DailyCumulativeAccumulation]
     with django_db_blocker.unblock():
         existing = connection.introspection.table_names()
-        if DailyStockPrice._meta.db_table not in existing:
-            with connection.schema_editor() as schema_editor:
-                schema_editor.create_model(DailyStockPrice)
-        if Company._meta.db_table not in existing:
-            with connection.schema_editor() as schema_editor:
-                schema_editor.create_model(Company)
+        for model in unmanaged_models:
+            if model._meta.db_table not in existing:
+                with connection.schema_editor() as schema_editor:
+                    schema_editor.create_model(model)
     yield
 
 

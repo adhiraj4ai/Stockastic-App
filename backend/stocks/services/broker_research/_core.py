@@ -184,13 +184,13 @@ _BROKER_TRENDS_SQL_TEMPLATE = """
         COALESCE(ts.net_range, 0) as range_net,
         ROUND(la.cumulative_buy_amount / NULLIF(la.cumulative_buy, 0), 2) as wac,
         CASE WHEN COALESCE(ts.net_5d, 0) > 0 THEN 'Increasing' WHEN COALESCE(ts.net_5d, 0) < 0 THEN 'Decreasing' ELSE 'Stable' END AS trend_5d,
-        ROUND(ABS(COALESCE(ts.net_5d, 0)) / NULLIF(ABS(la.cumulative_net), 1) * 100, 2) AS change_5d,
+        ROUND(ABS(COALESCE(ts.net_5d, 0)) / NULLIF(ABS(la.cumulative_net), 0) * 100, 2) AS change_5d,
         CASE WHEN COALESCE(ts.net_10d, 0) > 0 THEN 'Increasing' WHEN COALESCE(ts.net_10d, 0) < 0 THEN 'Decreasing' ELSE 'Stable' END AS trend_10d,
-        ROUND(ABS(COALESCE(ts.net_10d, 0)) / NULLIF(ABS(la.cumulative_net), 1) * 100, 2) AS change_10d,
+        ROUND(ABS(COALESCE(ts.net_10d, 0)) / NULLIF(ABS(la.cumulative_net), 0) * 100, 2) AS change_10d,
         CASE WHEN COALESCE(ts.net_20d, 0) > 0 THEN 'Increasing' WHEN COALESCE(ts.net_20d, 0) < 0 THEN 'Decreasing' ELSE 'Stable' END AS trend_20d,
-        ROUND(ABS(COALESCE(ts.net_20d, 0)) / NULLIF(ABS(la.cumulative_net), 1) * 100, 2) AS change_20d,
+        ROUND(ABS(COALESCE(ts.net_20d, 0)) / NULLIF(ABS(la.cumulative_net), 0) * 100, 2) AS change_20d,
         CASE WHEN COALESCE(ts.net_50d, 0) > 0 THEN 'Increasing' WHEN COALESCE(ts.net_50d, 0) < 0 THEN 'Decreasing' ELSE 'Stable' END AS trend_50d,
-        ROUND(ABS(COALESCE(ts.net_50d, 0)) / NULLIF(ABS(la.cumulative_net), 1) * 100, 2) AS change_50d,
+        ROUND(ABS(COALESCE(ts.net_50d, 0)) / NULLIF(ABS(la.cumulative_net), 0) * 100, 2) AS change_50d,
         dsp.close as ltp
     FROM latest_accumulation la
     LEFT JOIN trend_stats ts ON la.symbol = ts.symbol AND la.entity_id = CAST(ts.broker AS VARCHAR)
@@ -259,15 +259,15 @@ _BELOW_COST_SQL_TEMPLATE = """
         ROUND((dsp.close - wd.wac) / NULLIF(wd.wac, 0) * 100, 2) as roc,
         c."companyName" as name, c."sectorName" as sector, COALESCE(rc.rsi, 0) as rsi,
         CASE WHEN COALESCE(ts.net_5d,0) > 0 THEN 'Increasing' WHEN COALESCE(ts.net_5d,0) < 0 THEN 'Decreasing' ELSE 'Stable' END AS trend_5d,
-        ROUND(ABS(COALESCE(ts.net_5d,0)) / NULLIF(ABS(wd.cumulative_net),1) * 100, 2) AS change_5d,
+        ROUND(ABS(COALESCE(ts.net_5d,0)) / NULLIF(ABS(wd.cumulative_net),0) * 100, 2) AS change_5d,
         CASE WHEN COALESCE(ts.net_10d,0) > 0 THEN 'Increasing' WHEN COALESCE(ts.net_10d,0) < 0 THEN 'Decreasing' ELSE 'Stable' END AS trend_10d,
-        ROUND(ABS(COALESCE(ts.net_10d,0)) / NULLIF(ABS(wd.cumulative_net),1) * 100, 2) AS change_10d,
+        ROUND(ABS(COALESCE(ts.net_10d,0)) / NULLIF(ABS(wd.cumulative_net),0) * 100, 2) AS change_10d,
         CASE WHEN COALESCE(ts.net_15d,0) > 0 THEN 'Increasing' WHEN COALESCE(ts.net_15d,0) < 0 THEN 'Decreasing' ELSE 'Stable' END AS trend_15d,
-        ROUND(ABS(COALESCE(ts.net_15d,0)) / NULLIF(ABS(wd.cumulative_net),1) * 100, 2) AS change_15d,
+        ROUND(ABS(COALESCE(ts.net_15d,0)) / NULLIF(ABS(wd.cumulative_net),0) * 100, 2) AS change_15d,
         CASE WHEN COALESCE(ts.net_20d,0) > 0 THEN 'Increasing' WHEN COALESCE(ts.net_20d,0) < 0 THEN 'Decreasing' ELSE 'Stable' END AS trend_20d,
-        ROUND(ABS(COALESCE(ts.net_20d,0)) / NULLIF(ABS(wd.cumulative_net),1) * 100, 2) AS change_20d,
+        ROUND(ABS(COALESCE(ts.net_20d,0)) / NULLIF(ABS(wd.cumulative_net),0) * 100, 2) AS change_20d,
         CASE WHEN COALESCE(ts.net_50d,0) > 0 THEN 'Increasing' WHEN COALESCE(ts.net_50d,0) < 0 THEN 'Decreasing' ELSE 'Stable' END AS trend_50d,
-        ROUND(ABS(COALESCE(ts.net_50d,0)) / NULLIF(ABS(wd.cumulative_net),1) * 100, 2) AS change_50d
+        ROUND(ABS(COALESCE(ts.net_50d,0)) / NULLIF(ABS(wd.cumulative_net),0) * 100, 2) AS change_50d
     FROM wac_data wd
     LEFT JOIN trend_stats ts ON wd.symbol = ts.symbol AND wd.broker = CAST(ts.broker AS VARCHAR)
     LEFT JOIN rsi_calc rc ON wd.symbol = rc.symbol
