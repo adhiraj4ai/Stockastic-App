@@ -36,6 +36,7 @@ django-cryptography==1.1
 # Chat agent — Claude Agent SDK (replaces the LangChain/LangGraph/Groq/Ollama stack)
 claude-agent-sdk>=0.1.0
 anthropic>=0.45.0
+pydantic>=2.6,<3
 pytest==8.2.0
 pytest-django==4.8.0
 pytest-asyncio==0.24.0
