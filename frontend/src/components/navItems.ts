@@ -1,8 +1,17 @@
-import { Home, CalendarClock, Layers, Radar, Lightbulb, History, Building2, Activity, LayoutDashboard, Zap, BarChart3, Target, Share2, FileText, GitMerge, Wallet, Briefcase, TrendingUp, DollarSign, Eye, Star, Brain, Users, TrendingDown, MessageSquare, NotebookPen, Shield } from 'lucide-react';
+import { Home, CalendarClock, Layers, Radar, Lightbulb, History, Building2, Activity, LayoutDashboard, Zap, BarChart3, Target, Share2, FileText, GitMerge, Wallet, Briefcase, TrendingUp, DollarSign, Eye, Star, Brain, Users, TrendingDown, MessageSquare, NotebookPen, Shield, ClipboardList } from 'lucide-react';
 
 export const navItems = [
     { name: 'Home', href: '/', icon: Home, permission: 'home', color: 'text-blue-500' },
-    { name: "Tomorrow's Plan", href: '/plan', icon: CalendarClock, permission: 'daily_plan', color: 'text-orange-500' },
+    {
+        name: 'Plan',
+        icon: ClipboardList,
+        color: 'text-orange-500',
+        subItems: [
+            { name: "Tomorrow's plan", href: '/plan', icon: CalendarClock, permission: 'daily_plan' },
+            { name: 'Trade plans', href: '/plan/trade-plans', icon: Layers, permission: 'portfolio_trade_plans' },
+            { name: 'Watchlist', href: '/plan/watchlist', icon: Eye, permission: 'portfolio_watchlist' },
+        ]
+    },
     {
         name: 'Signals',
         icon: Layers,
@@ -47,8 +56,6 @@ export const navItems = [
             { name: 'Performance', href: '/portfolio/performance', icon: TrendingUp, permission: 'portfolio_performance' },
             { name: 'Income', href: '/portfolio/income', icon: DollarSign, permission: 'portfolio_income' },
             { name: 'Transactions', href: '/portfolio/transactions', icon: History, permission: 'portfolio_transactions' },
-            { name: 'Watchlist', href: '/portfolio/watchlist', icon: Eye, permission: 'portfolio_watchlist' },
-            { name: 'Trade Plans', href: '/portfolio/plans', icon: Layers, permission: 'portfolio_trade_plans' },
             { name: 'Paper Trading', href: '/paper-trading', icon: LayoutDashboard, permission: 'paper_trading' },
         ]
     },

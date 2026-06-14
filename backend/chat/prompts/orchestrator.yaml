@@ -124,6 +124,12 @@ user: |
   [User memory]
   {memory}
 
+  [Conversation summary]
+  {summary}
+
+  [Recent conversation]
+  {history}
+
   [Saved analyses]
   {saved_hint}
 

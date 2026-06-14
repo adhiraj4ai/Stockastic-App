@@ -233,7 +233,7 @@ async def _dispatch_session(
     """Drive run_chat_session and fan out SSE frames; stores final_session_id in ref[0]."""
     try:
         async for msg in run_chat_session(
-            user=user, sdk_session_id=session.sdk_session_id, prompt=prompt
+            user=user, session=session, prompt=prompt
         ):
             if isinstance(msg, StreamEvent):
                 async for frame in _handle_stream_event(msg, blocks, seen_subagents):
@@ -286,6 +286,13 @@ async def stream_chat(
         )
     except Exception:
         log.exception("failed to persist assistant turn")
+
+    try:
+        from .tasks import update_session_summary
+        update_session_summary.delay(str(session.id))
+    except Exception:  # pylint: disable=broad-except
+        log.exception("failed to enqueue session-summary update")
+
     yield _sse("done", {"session_id": str(session.id),
                         "sdk_session_id": final_session_id_ref[0],
                         "message_id": persisted_message_id})

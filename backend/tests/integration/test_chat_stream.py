@@ -130,7 +130,7 @@ class TestStreamChatFrameEmission:
     def test_yields_assistant_start_as_first_frame(self, create_user):
         user, session = self._make_session(create_user)
 
-        async def mock_run(*, user, sdk_session_id, prompt):
+        async def mock_run(*, user, session, prompt):
             return
             yield  # make it an async generator
 
@@ -149,7 +149,7 @@ class TestStreamChatFrameEmission:
         """Text is streamed live via StreamEvent content_block_delta, not AssistantMessage."""
         user, session = self._make_session(create_user)
 
-        async def mock_run(*, user, sdk_session_id, prompt):
+        async def mock_run(*, user, session, prompt):
             # Emit a StreamEvent delta — this is how the real SDK delivers token-level text.
             yield _StreamEvent({"type": "content_block_delta", "delta": {"type": "text_delta", "text": "NABIL closed at 1250"}})
             # Follow up with the full AssistantMessage (streaming.py persists from here but doesn't re-yield text).
@@ -175,7 +175,7 @@ class TestStreamChatFrameEmission:
         """Thinking is streamed live via StreamEvent thinking_delta, not AssistantMessage."""
         user, session = self._make_session(create_user)
 
-        async def mock_run(*, user, sdk_session_id, prompt):
+        async def mock_run(*, user, session, prompt):
             # Emit a StreamEvent thinking delta.
             yield _StreamEvent({"type": "content_block_delta", "delta": {"type": "thinking_delta", "thinking": "Let me analyze the RSI..."}})
             yield _AssistantMessage(
@@ -199,7 +199,7 @@ class TestStreamChatFrameEmission:
     def test_tool_use_block_emits_tool_use_frame(self, create_user):
         user, session = self._make_session(create_user)
 
-        async def mock_run(*, user, sdk_session_id, prompt):
+        async def mock_run(*, user, session, prompt):
             yield _AssistantMessage(
                 content=[_ToolUseBlock(name="get_stock_quote", input={"ticker": "NABIL"}, id="tu_01")],
                 session_id="sdk-003",
@@ -222,7 +222,7 @@ class TestStreamChatFrameEmission:
     def test_tool_result_block_emits_tool_result_frame(self, create_user):
         user, session = self._make_session(create_user)
 
-        async def mock_run(*, user, sdk_session_id, prompt):
+        async def mock_run(*, user, session, prompt):
             yield _AssistantMessage(
                 content=[
                     _ToolUseBlock("get_stock_quote", {"ticker": "NABIL"}, "tu_01"),
@@ -248,7 +248,7 @@ class TestStreamChatFrameEmission:
     def test_error_tool_result_sets_is_error_true(self, create_user):
         user, session = self._make_session(create_user)
 
-        async def mock_run(*, user, sdk_session_id, prompt):
+        async def mock_run(*, user, session, prompt):
             yield _AssistantMessage(
                 content=[
                     _ToolUseBlock("get_stock_quote", {}, "tu_err"),
@@ -272,7 +272,7 @@ class TestStreamChatFrameEmission:
     def test_subagent_message_emits_subagent_start(self, create_user):
         user, session = self._make_session(create_user)
 
-        async def mock_run(*, user, sdk_session_id, prompt):
+        async def mock_run(*, user, session, prompt):
             yield _AssistantMessage(
                 content=[_TextBlock("Market is bullish")],
                 session_id="sdk-006",
@@ -296,7 +296,7 @@ class TestStreamChatFrameEmission:
     def test_usage_frame_emitted_on_result_message(self, create_user):
         user, session = self._make_session(create_user)
 
-        async def mock_run(*, user, sdk_session_id, prompt):
+        async def mock_run(*, user, session, prompt):
             yield _AssistantMessage(content=[], session_id="sdk-007")
             yield _ResultMessage(
                 session_id="sdk-007",
@@ -324,7 +324,7 @@ class TestStreamChatFrameEmission:
     def test_exception_in_run_emits_error_frame(self, create_user):
         user, session = self._make_session(create_user)
 
-        async def mock_run(*, user, sdk_session_id, prompt):
+        async def mock_run(*, user, session, prompt):
             raise RuntimeError("Claude SDK unavailable")
             yield  # never reached — forces async generator
 
@@ -348,7 +348,7 @@ class TestStreamChatFrameEmission:
     def test_done_frame_is_last(self, create_user):
         user, session = self._make_session(create_user)
 
-        async def mock_run(*, user, sdk_session_id, prompt):
+        async def mock_run(*, user, session, prompt):
             yield _AssistantMessage(content=[_TextBlock("ok")], session_id="sdk-end")
             yield _ResultMessage(session_id="sdk-end")
 
@@ -373,7 +373,7 @@ class TestStreamChatPersistence:
     def test_assistant_message_persisted_after_stream(self, create_user):
         user, session = self._make_session(create_user)
 
-        async def mock_run(*, user, sdk_session_id, prompt):
+        async def mock_run(*, user, session, prompt):
             yield _AssistantMessage(content=[_TextBlock("Hello world")], session_id="sdk-p1")
             yield _ResultMessage(session_id="sdk-p1")
 
@@ -390,7 +390,7 @@ class TestStreamChatPersistence:
     def test_sdk_session_id_saved_to_session(self, create_user):
         user, session = self._make_session(create_user, username="persist2")
 
-        async def mock_run(*, user, sdk_session_id, prompt):
+        async def mock_run(*, user, session, prompt):
             yield _AssistantMessage(content=[], session_id="sdk-new-xyz")
             yield _ResultMessage(session_id="sdk-new-xyz")
 
@@ -406,7 +406,7 @@ class TestStreamChatPersistence:
     def test_blocks_stored_with_correct_structure(self, create_user):
         user, session = self._make_session(create_user, username="persist3")
 
-        async def mock_run(*, user, sdk_session_id, prompt):
+        async def mock_run(*, user, session, prompt):
             yield _AssistantMessage(
                 content=[
                     _TextBlock("First chunk"),
@@ -433,7 +433,7 @@ class TestStreamChatPersistence:
         user, session = self._make_session(create_user, username="persist4")
         from chat import _user_context
 
-        async def mock_run(*, user, sdk_session_id, prompt):
+        async def mock_run(*, user, session, prompt):
             # 1. Yield the tool use
             yield _AssistantMessage(
                 content=[_ToolUseBlock("get_stock_quote", {"ticker": "NABIL"}, "tu_card")],
