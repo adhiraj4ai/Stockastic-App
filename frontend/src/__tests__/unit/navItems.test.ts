@@ -12,7 +12,7 @@ describe('sidebar navItems structure', () => {
     it('orders top-level sections Plan → Watch → Act → Review', () => {
         expect(items.map((i) => i.name)).toEqual([
             'Home',
-            "Tomorrow's Plan",
+            'Plan',
             'Signals',
             'Market',
             'Floorsheet',
@@ -82,8 +82,8 @@ describe('sidebar navItems structure', () => {
                 '/portfolio/performance',
                 '/portfolio/income',
                 '/portfolio/transactions',
-                '/portfolio/watchlist',
-                '/portfolio/plans',
+                '/plan/trade-plans',
+                '/plan/watchlist',
                 '/paper-trading',
                 '/accumulation/dashboard',
                 '/accumulation/smart-money',
