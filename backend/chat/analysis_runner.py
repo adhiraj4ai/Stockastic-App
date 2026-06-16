@@ -30,3 +30,30 @@ def apply_analysis_result(user, symbol: str, prior, result, source_message=None)
         fields.append("source_message")
     prior.save(update_fields=fields)
     return prior
+
+
+def run_market_analysis(user, symbol: str):
+    """Ad-hoc, data-driven analysis: fold the company's current market verdict into
+    the user's timeline. Returns the written/updated latest entry, or the existing
+    latest (or None) if nothing could be produced. Never raises."""
+    from chat.models import CompanyAnalysisEntry
+    from chat import summary_service
+
+    symbol = symbol.upper()
+    try:
+        from stocks.services.ticker_verdict import build_verdict
+        verdict = build_verdict(symbol)
+    except Exception:  # pylint: disable=broad-except
+        log.exception("build_verdict failed for %s", symbol)
+        verdict = {}
+    prior = (
+        CompanyAnalysisEntry.objects.filter(user=user, symbol=symbol)
+        .order_by("-created_at")
+        .first()
+    )
+    try:
+        result = summary_service.build_company_analysis_from_market(prior, symbol, verdict)
+    except Exception:  # pylint: disable=broad-except
+        log.exception("market analysis build failed for %s", symbol)
+        return prior
+    return apply_analysis_result(user, symbol, prior, result, source_message=None)

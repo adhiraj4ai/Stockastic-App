@@ -49,3 +49,64 @@ def test_refine_preserves_existing_source_when_none_passed(user):
     assert returned.pk == existing.pk
     returned.refresh_from_db()
     assert returned.summary == "y"
+
+
+def test_run_market_analysis_creates_first_entry(user, monkeypatch):
+    import stocks.services.ticker_verdict as tv
+    from chat import summary_service
+    from chat.analysis_runner import run_market_analysis
+
+    monkeypatch.setattr(tv, "build_verdict", lambda sym: {"confluence_score": 70, "episodes": []})
+    monkeypatch.setattr(summary_service, "build_company_analysis_from_market",
+                        lambda prior, sym, verdict: _result(True, summary="data view"))
+    entry = run_market_analysis(user, "nmb")
+    assert entry is not None
+    assert CompanyAnalysisEntry.objects.filter(user=user, symbol="NMB").count() == 1
+    assert entry.summary == "data view"
+
+
+def test_run_market_analysis_material_change_appends(user, monkeypatch):
+    import stocks.services.ticker_verdict as tv
+    from chat import summary_service
+    from chat.analysis_runner import run_market_analysis
+
+    CompanyAnalysisEntry.objects.create(user=user, symbol="NMB", summary="old")
+    monkeypatch.setattr(tv, "build_verdict", lambda sym: {})
+    monkeypatch.setattr(summary_service, "build_company_analysis_from_market",
+                        lambda prior, sym, verdict: _result(True, summary="changed"))
+    run_market_analysis(user, "NMB")
+    assert CompanyAnalysisEntry.objects.filter(user=user, symbol="NMB").count() == 2
+
+
+def test_run_market_analysis_survives_verdict_failure(user, monkeypatch):
+    import stocks.services.ticker_verdict as tv
+    from chat import summary_service
+    from chat.analysis_runner import run_market_analysis
+
+    def boom(sym):
+        raise RuntimeError("no prices")
+
+    monkeypatch.setattr(tv, "build_verdict", boom)
+    captured = {}
+    monkeypatch.setattr(summary_service, "build_company_analysis_from_market",
+                        lambda prior, sym, verdict: captured.setdefault("verdict", verdict) or _result(True, summary="ok"))
+    entry = run_market_analysis(user, "NMB")
+    assert entry is not None  # did not raise; proceeded with empty verdict
+    assert captured["verdict"] == {}
+
+
+def test_run_market_analysis_survives_build_failure(user, monkeypatch):
+    import stocks.services.ticker_verdict as tv
+    from chat import summary_service
+    from chat.analysis_runner import run_market_analysis
+
+    prior = CompanyAnalysisEntry.objects.create(user=user, symbol="NMB", summary="prior")
+    monkeypatch.setattr(tv, "build_verdict", lambda sym: {})
+
+    def boom(prior_entry, sym, verdict):
+        raise RuntimeError("model down")
+
+    monkeypatch.setattr(summary_service, "build_company_analysis_from_market", boom)
+    entry = run_market_analysis(user, "NMB")
+    assert entry.pk == prior.pk  # returns existing latest, no new row, no raise
+    assert CompanyAnalysisEntry.objects.filter(user=user, symbol="NMB").count() == 1
