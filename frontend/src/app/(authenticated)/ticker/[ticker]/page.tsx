@@ -43,6 +43,8 @@ import TickerVerdict from '@/components/ticker/TickerVerdict';
 
 import PriceActionTerminal from '@/components/ticker/PriceActionTerminal';
 import TickerLiquidity from '@/components/ticker/TickerLiquidity';
+import { ChatNotesCard, ChatNotes } from '@/components/ticker/ChatNotesCard';
+import { CompanyAnalysisTimeline, AnalysisEntry } from '@/components/ticker/CompanyAnalysisTimeline';
 
 interface StockDetailData {
     company: {
@@ -141,6 +143,9 @@ export default function StockDetailPage() {
     ]));
 
     const [latestSignal, setLatestSignal] = useState<'BUY' | 'SELL' | undefined>(undefined);
+    const [chatNotes, setChatNotes] = useState<ChatNotes | null>(null);
+    const [analysisTimeline, setAnalysisTimeline] = useState<AnalysisEntry[]>([]);
+    const [runningAnalysis, setRunningAnalysis] = useState(false);
     const [currentUser, setCurrentUser] = useState<any>(null);
 
     const toggleCollapse = (id: string) => {
@@ -237,6 +242,18 @@ export default function StockDetailPage() {
                         }
                     }
                 } catch (sErr) { console.error("Signal fetch failed", sErr); }
+
+                // Fetch the user's AI chat notes for this ticker (204 = none)
+                try {
+                    const notesRes = await api.get(`/api/stocks/company-summary/${ticker}/`);
+                    setChatNotes(notesRes.data && notesRes.data.summary ? notesRes.data : null);
+                } catch (nErr) { console.error("Chat notes fetch failed", nErr); }
+
+                // Fetch the AI analysis timeline for this ticker
+                try {
+                    const tlRes = await api.get(`/api/stocks/company-analysis/${ticker}/`);
+                    setAnalysisTimeline(Array.isArray(tlRes.data) ? tlRes.data : []);
+                } catch (tErr) { console.error("Analysis timeline fetch failed", tErr); }
 
             } catch (err) {
                 console.error("Failed to fetch stock data", err);
@@ -656,6 +673,23 @@ export default function StockDetailPage() {
 
     const isPositive = (data.price?.change ?? 0) >= 0;
 
+    const runAnalysis = async () => {
+        setRunningAnalysis(true);
+        try {
+            await api.post(`/api/stocks/company-analysis/${ticker}/run/`);
+            const [tlRes, sumRes] = await Promise.all([
+                api.get(`/api/stocks/company-analysis/${ticker}/`),
+                api.get(`/api/stocks/company-summary/${ticker}/`),
+            ]);
+            setAnalysisTimeline(Array.isArray(tlRes.data) ? tlRes.data : []);
+            setChatNotes(sumRes.data && sumRes.data.summary ? sumRes.data : null);
+        } catch (e) {
+            console.error("Run analysis failed", e);
+        } finally {
+            setRunningAnalysis(false);
+        }
+    };
+
     // ... (inside the component return)
 
     return (
@@ -688,6 +722,9 @@ export default function StockDetailPage() {
                         </div>
                     </div>
 
+                    {/* 1b. YOUR AI NOTES (from chat) — hidden when empty */}
+                    <ChatNotesCard notes={chatNotes} />
+
                     {/* 2. CORE ANALYTICS HUB */}
                     <div className="space-y-8">
                         <Tabs
@@ -714,6 +751,7 @@ export default function StockDetailPage() {
                                         {(currentUser?.permissions === 'all' || currentUser?.permissions?.['ticker_funds']) && (
                                             <TabsTrigger value="fundamentals" className="rounded-lg px-4 text-xs font-bold data-[state=active]:bg-white dark:data-[state=active]:bg-slate-800 data-[state=active]:shadow-sm transition-all">Fundamentals</TabsTrigger>
                                         )}
+                                            <TabsTrigger value="ai_analysis" className="rounded-lg px-4 text-xs font-bold data-[state=active]:bg-white dark:data-[state=active]:bg-slate-800 data-[state=active]:shadow-sm transition-all">AI Analysis</TabsTrigger>
                                     </TabsList>
                                 </div>
                             </div>
@@ -1039,6 +1077,10 @@ export default function StockDetailPage() {
 
                                 <TabsContent value="accumulation" className="mt-0">
                                     <TickerAccumulation symbol={ticker} />
+                                </TabsContent>
+
+                                <TabsContent value="ai_analysis" className="mt-0">
+                                    <CompanyAnalysisTimeline entries={analysisTimeline} onRun={runAnalysis} running={runningAnalysis} />
                                 </TabsContent>
 
                             </div>

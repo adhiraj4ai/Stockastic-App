@@ -1,0 +1,73 @@
+'use client';
+
+import ReactMarkdown from 'react-markdown';
+import remarkGfm from 'remark-gfm';
+import { format } from 'date-fns';
+import { MarkdownComponents } from '@/components/chat/markdownComponents';
+import { StanceBadge, AspectBadge } from '@/components/ticker/stanceBadge';
+
+export interface AnalysisEntry {
+    summary: string;
+    stance: string;
+    aspect: string;
+    change_note: string;
+    created_at: string;
+}
+
+function TimelineRow({ entry }: { entry: AnalysisEntry }) {
+    return (
+        <li className="border-l-2 border-slate-200 dark:border-slate-700 pl-4 pb-6 relative">
+            <span className="absolute -left-[5px] top-1.5 h-2 w-2 rounded-full bg-slate-400" />
+            <div className="flex flex-wrap items-center gap-2">
+                <span className="text-xs text-muted-foreground">{format(new Date(entry.created_at), 'd MMM yyyy')}</span>
+                <StanceBadge stance={entry.stance} />
+                <AspectBadge aspect={entry.aspect} />
+            </div>
+            {entry.change_note && (
+                <p className="mt-1 text-sm font-medium text-foreground">{entry.change_note}</p>
+            )}
+            <div className="prose prose-sm max-w-none text-muted-foreground mt-2">
+                <ReactMarkdown remarkPlugins={[remarkGfm]} components={MarkdownComponents}>
+                    {entry.summary}
+                </ReactMarkdown>
+            </div>
+        </li>
+    );
+}
+
+export function CompanyAnalysisTimeline({ entries, onRun, running }: {
+    entries: AnalysisEntry[];
+    onRun?: () => void;
+    running?: boolean;
+}) {
+    return (
+        <div className="space-y-3">
+            {onRun && (
+                <div className="flex items-center gap-3">
+                    <button
+                        type="button"
+                        onClick={onRun}
+                        disabled={running}
+                        className="rounded-lg bg-primary text-primary-foreground px-3 py-1.5 text-xs font-medium disabled:opacity-60"
+                    >
+                        {running ? 'Running…' : 'Run analysis'}
+                    </button>
+                    <span className="text-xs text-muted-foreground">
+                        Analyzes current technical &amp; fundamental data.
+                    </span>
+                </div>
+            )}
+            {!entries || entries.length === 0 ? (
+                <p className="text-sm text-muted-foreground py-8">
+                    No AI analysis yet — run an analysis or discuss this stock in chat to build one.
+                </p>
+            ) : (
+                <ul className="mt-2">
+                    {entries.map((entry, i) => (
+                        <TimelineRow key={`${entry.created_at}-${i}`} entry={entry} />
+                    ))}
+                </ul>
+            )}
+        </div>
+    );
+}

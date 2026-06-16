@@ -87,6 +87,20 @@ def _names_fresh_ticker(text: str) -> bool:
     return any(tok not in _TICKER_STOPWORDS for tok in _TICKER.findall(text))
 
 
+def extract_tickers(text: str) -> list[str]:
+    """Return candidate NEPSE symbols named in `text`, in first-seen order.
+
+    Pure: regex + stopword filtering only, no DB. Callers validate against the
+    Company table before acting on these.
+    """
+    seen: list[str] = []
+    for tok in _TICKER.findall(text or ""):
+        if tok in _TICKER_STOPWORDS or tok in seen:
+            continue
+        seen.append(tok)
+    return seen
+
+
 def references_prior_context(message: str) -> bool:
     """True when the message reaches back to earlier turns rather than standing alone.
 

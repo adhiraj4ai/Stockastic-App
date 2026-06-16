@@ -163,3 +163,49 @@ class SavedAnalysis(models.Model):
     def __str__(self) -> str:
         return f"{self.user.username} · {self.title}"
 
+
+
+class CompanyAnalysisEntry(models.Model):
+    """One point in a user's evolving AI analysis of a NEPSE company. The most
+    recent entry per (user, symbol) is the current view; older entries are frozen
+    milestones forming a timeline."""
+
+    STANCE_BULLISH = "bullish"
+    STANCE_NEUTRAL = "neutral"
+    STANCE_BEARISH = "bearish"
+    STANCE_CHOICES = [
+        (STANCE_BULLISH, "Bullish"),
+        (STANCE_NEUTRAL, "Neutral"),
+        (STANCE_BEARISH, "Bearish"),
+    ]
+
+    ASPECT_TECHNICAL = "technical"
+    ASPECT_FUNDAMENTAL = "fundamental"
+    ASPECT_BOTH = "both"
+    ASPECT_CHOICES = [
+        (ASPECT_TECHNICAL, "Technical"),
+        (ASPECT_FUNDAMENTAL, "Fundamental"),
+        (ASPECT_BOTH, "Both"),
+    ]
+
+    user = models.ForeignKey(
+        User, on_delete=models.CASCADE, related_name="company_analysis_entries"
+    )
+    symbol = models.CharField(max_length=20, db_index=True)
+    summary = models.TextField(blank=True, default="")
+    stance = models.CharField(max_length=8, choices=STANCE_CHOICES, default=STANCE_NEUTRAL)
+    aspect = models.CharField(max_length=12, choices=ASPECT_CHOICES, default=ASPECT_BOTH)
+    change_note = models.CharField(max_length=240, blank=True, default="")
+    source_message = models.ForeignKey(
+        "ChatMessage", on_delete=models.SET_NULL, null=True, blank=True, related_name="+"
+    )
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ["-created_at"]
+        indexes = [models.Index(fields=["user", "symbol", "-created_at"])]
+
+    def __str__(self) -> str:
+        return f"{self.user_id}:{self.symbol}@{self.created_at:%Y-%m-%d}"
+

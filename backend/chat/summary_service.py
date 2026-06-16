@@ -4,7 +4,9 @@ Haiku call. Reuses the Agent SDK + OAuth auth already configured for chat.
 from __future__ import annotations
 
 import asyncio
+import json
 import logging
+from dataclasses import dataclass
 
 from chat.history import format_exchanges
 
@@ -33,14 +35,14 @@ def _summary_prompt(prior_summary: str, exchanges) -> str:
     )
 
 
-async def _run_summary(prompt: str) -> str:
+async def _run_summary(prompt: str, system: str) -> str:
     from claude_agent_sdk import (
         AssistantMessage, ClaudeAgentOptions, ClaudeSDKClient, TextBlock,
     )
     from chat.agent import _sdk_env
 
     options = ClaudeAgentOptions(
-        system_prompt=SUMMARY_SYSTEM,
+        system_prompt=system,
         model=SUMMARY_MODEL,
         tools=[],
         allowed_tools=[],
@@ -63,6 +65,146 @@ async def _run_summary(prompt: str) -> str:
 def build_summary(prior_summary: str, exchanges) -> str:
     """Return an updated rolling summary. Falls back to the prior summary on empty output."""
     prompt = _summary_prompt(prior_summary, exchanges)
-    text = asyncio.run(_run_summary(prompt))
+    text = asyncio.run(_run_summary(prompt, SUMMARY_SYSTEM))
     updated = text.strip() or (prior_summary or "").strip()
     return updated[:MAX_SUMMARY_CHARS]
+
+
+MAX_COMPANY_SUMMARY_CHARS = 1200
+MAX_CHANGE_NOTE_CHARS = 240
+COMPANY_ANALYSIS_SYSTEM = (
+    "You track one user's evolving analysis of a single NEPSE-listed company across "
+    "their chat. Given the company's ticker, the prior analysis, and the newest "
+    "user/assistant exchange, return ONLY a JSON object (no markdown fences, no "
+    "preamble) with keys: "
+    '"materially_changed" (boolean: true only if the view shifted meaningfully — a '
+    "verdict flip, a new thesis, or a major technical/fundamental development — not "
+    'for minor elaboration), "summary" (plain prose under 200 words capturing the '
+    'current view of this company), "stance" (one of "bullish", "neutral", '
+    '"bearish"), "aspect" (one of "technical", "fundamental", "both" — what drove '
+    'this update), "change_note" (one short sentence on what changed since the prior '
+    "analysis). Ignore other companies and pleasantries."
+)
+
+
+@dataclass(frozen=True)
+class CompanyAnalysisResult:
+    materially_changed: bool
+    summary: str
+    stance: str
+    aspect: str
+    change_note: str
+
+
+def _company_analysis_prompt(prior_entry, exchanges, symbol: str) -> str:
+    if prior_entry is not None and (prior_entry.summary or "").strip():
+        prior = f"stance={prior_entry.stance}; {prior_entry.summary.strip()}"
+    else:
+        prior = "(no prior analysis)"
+    return (
+        f"Company: {symbol}\n\n"
+        "Prior analysis:\n"
+        f"{prior}\n\n"
+        "Newest exchange(s):\n"
+        f"{format_exchanges(exchanges)}\n\n"
+        "Return the JSON object."
+    )
+
+
+def _fallback_result(prior_entry) -> CompanyAnalysisResult:
+    from chat.models import CompanyAnalysisEntry as Entry
+
+    if prior_entry is not None:
+        return CompanyAnalysisResult(
+            False, prior_entry.summary or "", prior_entry.stance, prior_entry.aspect, ""
+        )
+    return CompanyAnalysisResult(False, "", Entry.STANCE_NEUTRAL, Entry.ASPECT_BOTH, "")
+
+
+def _parse_analysis(text: str, prior_entry) -> CompanyAnalysisResult:
+    from chat.models import CompanyAnalysisEntry as Entry
+
+    stances = {c[0] for c in Entry.STANCE_CHOICES}
+    aspects = {c[0] for c in Entry.ASPECT_CHOICES}
+    cleaned = (text or "").strip().removeprefix("```json").removeprefix("```").removesuffix("```").strip()
+    try:
+        data = json.loads(cleaned)
+        summary = data["summary"]
+        stance, aspect = data["stance"], data["aspect"]
+    except (ValueError, TypeError, KeyError):
+        return _fallback_result(prior_entry)
+    if not isinstance(summary, str) or not summary.strip() or stance not in stances or aspect not in aspects:
+        return _fallback_result(prior_entry)
+    summary = summary.strip()
+    return CompanyAnalysisResult(
+        materially_changed=bool(data.get("materially_changed", False)),
+        summary=summary[:MAX_COMPANY_SUMMARY_CHARS],
+        stance=stance,
+        aspect=aspect,
+        change_note=str(data.get("change_note", "")).strip()[:MAX_CHANGE_NOTE_CHARS],
+    )
+
+
+def build_company_analysis(prior_entry, exchanges, symbol: str) -> CompanyAnalysisResult:
+    """Return a structured analysis update. Safe-falls back to prior on bad output."""
+    prompt = _company_analysis_prompt(prior_entry, exchanges, symbol)
+    text = asyncio.run(_run_summary(prompt, COMPANY_ANALYSIS_SYSTEM))
+    return _parse_analysis(text, prior_entry)
+
+
+MARKET_ANALYSIS_SYSTEM = (
+    "You track one user's evolving analysis of a single NEPSE-listed company. "
+    "Given the company's ticker, the user's prior analysis, and a snapshot of the "
+    "company's CURRENT technical/fundamental market data, return ONLY a JSON object "
+    "(no markdown fences, no preamble) with keys: "
+    '"materially_changed" (boolean: true only if the current data shifts the view '
+    "meaningfully versus the prior analysis — a verdict flip or a notable new "
+    'development — not for trivial drift), "summary" (plain prose under 200 words '
+    'capturing the current view), "stance" (one of "bullish", "neutral", "bearish"), '
+    '"aspect" (one of "technical", "fundamental", "both"), "change_note" (one short '
+    "sentence on what changed). Base the assessment on the supplied data."
+)
+
+
+def _summarize_verdict(verdict) -> str:
+    """Compact, LLM-friendly one-liner from a build_verdict dict. Defensive: tolerates
+    an empty/None verdict and missing keys."""
+    if not verdict:
+        return "(no market data available)"
+    parts = [f"confluence score {verdict.get('confluence_score', 'n/a')}/100"]
+    entry = verdict.get("entry") or {}
+    if entry.get("status"):
+        parts.append(f"entry status {entry['status']}")
+    if entry.get("latest_close") is not None:
+        parts.append(f"close {entry['latest_close']}")
+    targets = verdict.get("targets") or {}
+    if targets.get("tp1") is not None:
+        parts.append(f"target {targets['tp1']}")
+    if targets.get("sl") is not None:
+        parts.append(f"stop {targets['sl']}")
+    parts.append(f"{len(verdict.get('episodes') or [])} active signal(s)")
+    if verdict.get("catalyst"):
+        parts.append("catalyst upcoming")
+    return "; ".join(parts)
+
+
+def _market_analysis_prompt(prior_entry, symbol: str, verdict) -> str:
+    if prior_entry is not None and (prior_entry.summary or "").strip():
+        prior = f"stance={prior_entry.stance}; {prior_entry.summary.strip()}"
+    else:
+        prior = "(no prior analysis)"
+    return (
+        f"Company: {symbol}\n\n"
+        "Prior analysis:\n"
+        f"{prior}\n\n"
+        "Current market data:\n"
+        f"{_summarize_verdict(verdict)}\n\n"
+        "Return the JSON object."
+    )
+
+
+def build_company_analysis_from_market(prior_entry, symbol: str, verdict) -> CompanyAnalysisResult:
+    """Structured analysis from the live market verdict. Safe-falls back on bad output."""
+    prompt = _market_analysis_prompt(prior_entry, symbol, verdict)
+    text = asyncio.run(_run_summary(prompt, MARKET_ANALYSIS_SYSTEM))
+    return _parse_analysis(text, prior_entry)

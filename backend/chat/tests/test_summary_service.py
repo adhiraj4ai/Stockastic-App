@@ -18,7 +18,7 @@ def test_prompt_handles_empty_prior_summary():
 
 
 def test_build_summary_truncates_to_max(monkeypatch):
-    async def fake_run(_prompt):
+    async def fake_run(_prompt, _system):
         return "y" * (MAX_SUMMARY_CHARS + 100)
 
     monkeypatch.setattr(summary_service, "_run_summary", fake_run)
@@ -27,7 +27,7 @@ def test_build_summary_truncates_to_max(monkeypatch):
 
 
 def test_build_summary_falls_back_to_prior_when_model_returns_empty(monkeypatch):
-    async def fake_run(_prompt):
+    async def fake_run(_prompt, _system):
         return "   "
 
     monkeypatch.setattr(summary_service, "_run_summary", fake_run)
