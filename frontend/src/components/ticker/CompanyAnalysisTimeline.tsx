@@ -35,19 +35,39 @@ function TimelineRow({ entry }: { entry: AnalysisEntry }) {
     );
 }
 
-export function CompanyAnalysisTimeline({ entries }: { entries: AnalysisEntry[] }) {
-    if (!entries || entries.length === 0) {
-        return (
-            <p className="text-sm text-muted-foreground py-8">
-                No AI analysis yet — discuss this stock in chat to build one.
-            </p>
-        );
-    }
+export function CompanyAnalysisTimeline({ entries, onRun, running }: {
+    entries: AnalysisEntry[];
+    onRun?: () => void;
+    running?: boolean;
+}) {
     return (
-        <ul className="mt-2">
-            {entries.map((entry, i) => (
-                <TimelineRow key={`${entry.created_at}-${i}`} entry={entry} />
-            ))}
-        </ul>
+        <div className="space-y-3">
+            {onRun && (
+                <div className="flex items-center gap-3">
+                    <button
+                        type="button"
+                        onClick={onRun}
+                        disabled={running}
+                        className="rounded-lg bg-primary text-primary-foreground px-3 py-1.5 text-xs font-medium disabled:opacity-60"
+                    >
+                        {running ? 'Running…' : 'Run analysis'}
+                    </button>
+                    <span className="text-xs text-muted-foreground">
+                        Analyzes current technical &amp; fundamental data.
+                    </span>
+                </div>
+            )}
+            {!entries || entries.length === 0 ? (
+                <p className="text-sm text-muted-foreground py-8">
+                    No AI analysis yet — run an analysis or discuss this stock in chat to build one.
+                </p>
+            ) : (
+                <ul className="mt-2">
+                    {entries.map((entry, i) => (
+                        <TimelineRow key={`${entry.created_at}-${i}`} entry={entry} />
+                    ))}
+                </ul>
+            )}
+        </div>
     );
 }

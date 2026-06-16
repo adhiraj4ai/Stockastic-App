@@ -145,6 +145,7 @@ export default function StockDetailPage() {
     const [latestSignal, setLatestSignal] = useState<'BUY' | 'SELL' | undefined>(undefined);
     const [chatNotes, setChatNotes] = useState<ChatNotes | null>(null);
     const [analysisTimeline, setAnalysisTimeline] = useState<AnalysisEntry[]>([]);
+    const [runningAnalysis, setRunningAnalysis] = useState(false);
     const [currentUser, setCurrentUser] = useState<any>(null);
 
     const toggleCollapse = (id: string) => {
@@ -672,6 +673,23 @@ export default function StockDetailPage() {
 
     const isPositive = (data.price?.change ?? 0) >= 0;
 
+    const runAnalysis = async () => {
+        setRunningAnalysis(true);
+        try {
+            await api.post(`/api/stocks/company-analysis/${ticker}/run/`);
+            const [tlRes, sumRes] = await Promise.all([
+                api.get(`/api/stocks/company-analysis/${ticker}/`),
+                api.get(`/api/stocks/company-summary/${ticker}/`),
+            ]);
+            setAnalysisTimeline(Array.isArray(tlRes.data) ? tlRes.data : []);
+            setChatNotes(sumRes.data && sumRes.data.summary ? sumRes.data : null);
+        } catch (e) {
+            console.error("Run analysis failed", e);
+        } finally {
+            setRunningAnalysis(false);
+        }
+    };
+
     // ... (inside the component return)
 
     return (
@@ -1062,7 +1080,7 @@ export default function StockDetailPage() {
                                 </TabsContent>
 
                                 <TabsContent value="ai_analysis" className="mt-0">
-                                    <CompanyAnalysisTimeline entries={analysisTimeline} />
+                                    <CompanyAnalysisTimeline entries={analysisTimeline} onRun={runAnalysis} running={runningAnalysis} />
                                 </TabsContent>
 
                             </div>
