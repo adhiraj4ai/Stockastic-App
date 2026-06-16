@@ -66,6 +66,7 @@ def _fold_company_analysis(user, symbol: str, exchange, latest_message) -> None:
     refines the latest entry in place. Idempotent via the latest entry's source."""
     from chat.models import CompanyAnalysisEntry
     from chat import summary_service
+    from chat.analysis_runner import apply_analysis_result
 
     prior = (
         CompanyAnalysisEntry.objects.filter(user=user, symbol=symbol)
@@ -75,20 +76,7 @@ def _fold_company_analysis(user, symbol: str, exchange, latest_message) -> None:
     if prior is not None and prior.source_message_id == latest_message.id:
         return
     result = summary_service.build_company_analysis(prior, [exchange], symbol)
-    if prior is None or result.materially_changed:
-        CompanyAnalysisEntry.objects.create(
-            user=user, symbol=symbol, summary=result.summary, stance=result.stance,
-            aspect=result.aspect, change_note=result.change_note, source_message=latest_message,
-        )
-        return
-    prior.summary = result.summary
-    prior.stance = result.stance
-    prior.aspect = result.aspect
-    prior.change_note = result.change_note
-    prior.source_message = latest_message
-    prior.save(update_fields=[
-        "summary", "stance", "aspect", "change_note", "source_message", "updated_at",
-    ])
+    apply_analysis_result(user, symbol, prior, result, source_message=latest_message)
 
 
 @shared_task(name="chat.compile_company_analysis")
