@@ -89,3 +89,43 @@ def test_build_company_analysis_uses_run_summary(monkeypatch):
     assert result.stance == "bullish"
     assert "NMB" in captured["prompt"]
     assert "How is NMB?" in captured["prompt"]
+
+
+def test_summarize_verdict_compact_and_defensive():
+    from chat.summary_service import _summarize_verdict
+    verdict = {
+        "confluence_score": 72,
+        "entry": {"status": "ACTIVE", "latest_close": 410},
+        "targets": {"tp1": 460, "sl": 380},
+        "episodes": [{"x": 1}, {"x": 2}],
+        "catalyst": {"type": "earnings"},
+    }
+    text = _summarize_verdict(verdict)
+    assert "72" in text
+    assert "2 active" in text
+    # tolerates empties without raising
+    assert _summarize_verdict({}) != ""
+    assert _summarize_verdict(None) != ""
+
+
+def test_build_from_market_parses_and_includes_context(monkeypatch):
+    from chat import summary_service
+    from chat.summary_service import build_company_analysis_from_market, CompanyAnalysisResult
+
+    captured = {}
+
+    async def fake_run(prompt, system):
+        captured["prompt"] = prompt
+        return (
+            '{"materially_changed": true, "summary": "Momentum improving.", '
+            '"stance": "bullish", "aspect": "technical", "change_note": "Score rose."}'
+        )
+
+    monkeypatch.setattr(summary_service, "_run_summary", fake_run)
+    verdict = {"confluence_score": 80, "episodes": []}
+    result = build_company_analysis_from_market(None, "NMB", verdict)
+    assert isinstance(result, CompanyAnalysisResult)
+    assert result.stance == "bullish"
+    assert result.aspect == "technical"
+    assert "NMB" in captured["prompt"]
+    assert "80" in captured["prompt"]

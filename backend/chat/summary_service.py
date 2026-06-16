@@ -150,3 +150,61 @@ def build_company_analysis(prior_entry, exchanges, symbol: str) -> CompanyAnalys
     prompt = _company_analysis_prompt(prior_entry, exchanges, symbol)
     text = asyncio.run(_run_summary(prompt, COMPANY_ANALYSIS_SYSTEM))
     return _parse_analysis(text, prior_entry)
+
+
+MARKET_ANALYSIS_SYSTEM = (
+    "You track one user's evolving analysis of a single NEPSE-listed company. "
+    "Given the company's ticker, the user's prior analysis, and a snapshot of the "
+    "company's CURRENT technical/fundamental market data, return ONLY a JSON object "
+    "(no markdown fences, no preamble) with keys: "
+    '"materially_changed" (boolean: true only if the current data shifts the view '
+    "meaningfully versus the prior analysis — a verdict flip or a notable new "
+    'development — not for trivial drift), "summary" (plain prose under 200 words '
+    'capturing the current view), "stance" (one of "bullish", "neutral", "bearish"), '
+    '"aspect" (one of "technical", "fundamental", "both"), "change_note" (one short '
+    "sentence on what changed). Base the assessment on the supplied data."
+)
+
+
+def _summarize_verdict(verdict) -> str:
+    """Compact, LLM-friendly one-liner from a build_verdict dict. Defensive: tolerates
+    an empty/None verdict and missing keys."""
+    if not verdict:
+        return "(no market data available)"
+    parts = [f"confluence score {verdict.get('confluence_score', 'n/a')}/100"]
+    entry = verdict.get("entry") or {}
+    if entry.get("status"):
+        parts.append(f"entry status {entry['status']}")
+    if entry.get("latest_close") is not None:
+        parts.append(f"close {entry['latest_close']}")
+    targets = verdict.get("targets") or {}
+    if targets.get("tp1") is not None:
+        parts.append(f"target {targets['tp1']}")
+    if targets.get("sl") is not None:
+        parts.append(f"stop {targets['sl']}")
+    parts.append(f"{len(verdict.get('episodes') or [])} active signal(s)")
+    if verdict.get("catalyst"):
+        parts.append("catalyst upcoming")
+    return "; ".join(parts)
+
+
+def _market_analysis_prompt(prior_entry, symbol: str, verdict) -> str:
+    if prior_entry is not None and (prior_entry.summary or "").strip():
+        prior = f"stance={prior_entry.stance}; {prior_entry.summary.strip()}"
+    else:
+        prior = "(no prior analysis)"
+    return (
+        f"Company: {symbol}\n\n"
+        "Prior analysis:\n"
+        f"{prior}\n\n"
+        "Current market data:\n"
+        f"{_summarize_verdict(verdict)}\n\n"
+        "Return the JSON object."
+    )
+
+
+def build_company_analysis_from_market(prior_entry, symbol: str, verdict) -> CompanyAnalysisResult:
+    """Structured analysis from the live market verdict. Safe-falls back on bad output."""
+    prompt = _market_analysis_prompt(prior_entry, symbol, verdict)
+    text = asyncio.run(_run_summary(prompt, MARKET_ANALYSIS_SYSTEM))
+    return _parse_analysis(text, prior_entry)
