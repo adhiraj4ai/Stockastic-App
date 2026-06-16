@@ -163,3 +163,35 @@ class SavedAnalysis(models.Model):
     def __str__(self) -> str:
         return f"{self.user.username} · {self.title}"
 
+
+class CompanyChatSummary(models.Model):
+    """A rolling, per-user AI summary of everything the user has discussed about
+    one NEPSE company in chat. Surfaced on that company's ticker page."""
+
+    user = models.ForeignKey(
+        User,
+        on_delete=models.CASCADE,
+        related_name="company_chat_summaries",
+    )
+    symbol = models.CharField(max_length=20, db_index=True)
+    summary = models.TextField(blank=True, default="")
+    last_message = models.ForeignKey(
+        "ChatMessage",
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="+",
+    )
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        constraints = [
+            models.UniqueConstraint(
+                fields=["user", "symbol"], name="uniq_user_symbol_chat_summary"
+            )
+        ]
+
+    def __str__(self) -> str:
+        return f"{self.user_id}:{self.symbol}"
+
