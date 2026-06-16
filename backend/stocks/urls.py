@@ -39,6 +39,7 @@ urlpatterns = [
     path('activity/', market.analyze_activity, name='market_activity'),
     path('history/<str:ticker>/', market.stock_history, name='stock_history'),
     path('details/<str:ticker>/', market.stock_detail, name='stock_detail'),
+    path('company-summary/<str:ticker>/', market.company_chat_summary, name='company_chat_summary'),
     path('floorsheet/<str:ticker>/', market.stock_floorsheet, name='stock_floorsheet'),
     path('dividends/<str:ticker>/', market.stock_dividends, name='stock_dividends'),
     path('financials/<str:ticker>/', market.stock_financials, name='stock_financials'),

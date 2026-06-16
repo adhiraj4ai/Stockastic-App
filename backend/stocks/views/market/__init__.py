@@ -16,6 +16,7 @@ from .stock_dividends import stock_dividends
 from .stock_financials import stock_financials
 from .floorsheet_list import floorsheet_list
 from .stock_detail import stock_detail
+from .company_chat_summary import company_chat_summary
 from .company_viewset import CompanyViewSet
 from .financial_report_viewset import FinancialReportViewSet
 from .stock_fundamental_viewset import StockFundamentalViewSet
@@ -36,6 +37,7 @@ __all__ = [
     'stock_financials',
     'floorsheet_list',
     'stock_detail',
+    'company_chat_summary',
     'CompanyViewSet',
     'FinancialReportViewSet',
     'StockFundamentalViewSet',
