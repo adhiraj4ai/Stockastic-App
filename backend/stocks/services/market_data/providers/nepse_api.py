@@ -13,6 +13,7 @@ from datetime import date as _date, datetime
 from typing import Iterator, List, Optional
 
 from django.conf import settings
+from pydantic import ValidationError
 
 from ..contracts import (
     CompanyRecord,
@@ -23,6 +24,7 @@ from ..contracts import (
     ProviderSchemaError,
 )
 from .http_client import NepseHttpClient
+from .nepse_schemas import RawPriceRow
 
 
 def _num(v) -> Optional[float]:
@@ -84,21 +86,6 @@ def _req_num(row: dict, keys: tuple[str, ...], ctx: str) -> float:
 class NepseApiProvider:
     name = "nepseapi"
 
-    # Candidate key names per logical field (first match wins).
-    PRICE_MAP = {
-        "symbol": ("symbol", "stockSymbol", "securitySymbol"),
-        "close": ("closePrice", "lastTradedPrice", "ltp", "close"),
-        "open": ("openPrice", "open"),
-        "high": ("highPrice", "high"),
-        "low": ("lowPrice", "low"),
-        "volume": ("totalTradedQuantity", "totalTradeQuantity", "volume"),
-        "turnover": ("totalTradedValue", "totalTradeValue", "amount", "turnover"),
-        "prev_close": ("previousClose", "previousDayClosePrice", "prev_close"),
-        "vwap": ("averageTradedPrice", "vwap"),
-        "trans": ("totalTrades", "totalTransactions", "trans"),
-        "weeks_52_high": ("fiftyTwoWeekHigh", "weeks_52_high"),
-        "weeks_52_low": ("fiftyTwoWeekLow", "weeks_52_low"),
-    }
     FLOOR_MAP = {
         "transaction_id": ("contractId", "transactionId", "id"),
         "symbol": ("stockSymbol", "securityCode", "symbol"),
@@ -151,32 +138,18 @@ class NepseApiProvider:
     def fetch_daily_prices(self, on: _date) -> List[PriceRecord]:
         payload = self.client.get_json("/PriceVolume")
         rows = self._rows(payload, "PriceVolume")
-        out: List[PriceRecord] = []
-        for row in rows:
-            symbol = _pick(row, self.PRICE_MAP["symbol"], required=True, ctx="PriceVolume.symbol")
-            # NEPSE uses "-" for no-trade rows; _pick sees it as "present" but _num() yields None.
-            # A required price that cannot be parsed is treated as schema drift, not silently dropped.
-            close = _num(_pick(row, self.PRICE_MAP["close"], required=True, ctx="PriceVolume.close"))
-            if close is None:
-                raise ProviderSchemaError(
-                    f"PriceVolume.close: unparseable/sentinel value for {symbol!r}; row keys={sorted(row.keys())}"
-                )
-            out.append(PriceRecord(
-                symbol=str(symbol),
-                date=on,
-                close=close,
-                open=_num(_pick(row, self.PRICE_MAP["open"], required=False, ctx="")),
-                high=_num(_pick(row, self.PRICE_MAP["high"], required=False, ctx="")),
-                low=_num(_pick(row, self.PRICE_MAP["low"], required=False, ctx="")),
-                volume=_num(_pick(row, self.PRICE_MAP["volume"], required=False, ctx="")),
-                turnover=_num(_pick(row, self.PRICE_MAP["turnover"], required=False, ctx="")),
-                prev_close=_num(_pick(row, self.PRICE_MAP["prev_close"], required=False, ctx="")),
-                vwap=_num(_pick(row, self.PRICE_MAP["vwap"], required=False, ctx="")),
-                trans=(int(t) if (t := _num(_pick(row, self.PRICE_MAP["trans"], required=False, ctx=""))) is not None else None),
-                weeks_52_high=_num(_pick(row, self.PRICE_MAP["weeks_52_high"], required=False, ctx="")),
-                weeks_52_low=_num(_pick(row, self.PRICE_MAP["weeks_52_low"], required=False, ctx="")),
-            ))
-        return out
+        return [self._price_record(row, on) for row in rows]
+
+    @staticmethod
+    def _price_record(row: dict, on: _date) -> PriceRecord:
+        try:
+            raw = RawPriceRow.model_validate(row)
+        except ValidationError as exc:
+            raise ProviderSchemaError(
+                f"PriceVolume: {exc.error_count()} invalid field(s); "
+                f"row keys={sorted(row.keys())}"
+            ) from exc
+        return PriceRecord(date=on, **raw.model_dump())
 
     def fetch_floorsheet(self, on: _date) -> Iterator[FloorsheetRecord]:
         payload = self.client.get_json("/Floorsheet")

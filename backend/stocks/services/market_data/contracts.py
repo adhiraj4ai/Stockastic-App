@@ -6,9 +6,10 @@ adapters map raw responses into these; the ingestion service consumes only these
 """
 from __future__ import annotations
 
-from dataclasses import dataclass, field
 from datetime import date as _date, datetime
 from typing import Iterator, List, Optional, Protocol, runtime_checkable
+
+from pydantic import BaseModel, ConfigDict, Field
 
 
 # ── Exceptions ─────────────────────────────────────────────────────────────
@@ -29,8 +30,13 @@ class ProviderSchemaError(ProviderError):
 
 
 # ── Canonical DTOs ─────────────────────────────────────────────────────────
-@dataclass(frozen=True)
-class PriceRecord:
+class _FrozenRecord(BaseModel):
+    """Immutable, validated value object. Subclasses are the ingestion boundary."""
+
+    model_config = ConfigDict(frozen=True)
+
+
+class PriceRecord(_FrozenRecord):
     symbol: str
     date: _date
     close: float
@@ -46,8 +52,7 @@ class PriceRecord:
     weeks_52_low: Optional[float] = None
 
 
-@dataclass(frozen=True)
-class FloorsheetRecord:
+class FloorsheetRecord(_FrozenRecord):
     transaction_id: int
     symbol: str
     buyer_id: int
@@ -64,29 +69,26 @@ class FloorsheetRecord:
     security_name: Optional[str] = None
 
 
-@dataclass(frozen=True)
-class MarketSummaryRecord:
+class MarketSummaryRecord(_FrozenRecord):
     date: _date
     total_turnover: float
     total_volume: int
     total_transactions: int
-    top_gainers: List[dict] = field(default_factory=list)
-    top_losers: List[dict] = field(default_factory=list)
-    top_turnovers: List[dict] = field(default_factory=list)
-    top_volumes: List[dict] = field(default_factory=list)
-    sector_turnover: dict = field(default_factory=dict)
+    top_gainers: List[dict] = Field(default_factory=list)
+    top_losers: List[dict] = Field(default_factory=list)
+    top_turnovers: List[dict] = Field(default_factory=list)
+    top_volumes: List[dict] = Field(default_factory=list)
+    sector_turnover: dict = Field(default_factory=dict)
 
 
-@dataclass(frozen=True)
-class CompanyRecord:
+class CompanyRecord(_FrozenRecord):
     symbol: str
     name: str
     sector: Optional[str] = None
     status: Optional[str] = None
 
 
-@dataclass(frozen=True)
-class IndexRecord:
+class IndexRecord(_FrozenRecord):
     index_name: str
     date: _date
     value: float

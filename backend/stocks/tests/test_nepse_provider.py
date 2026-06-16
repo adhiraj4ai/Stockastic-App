@@ -95,6 +95,13 @@ def test_map_prices_raises_schema_error_on_dash_close():
         prov.fetch_daily_prices(date(2026, 6, 10))
 
 
+def test_fetch_daily_prices_wraps_validation_as_schema_error():
+    # A bad row must surface as ProviderSchemaError, never raw ValidationError.
+    prov = _provider_returning([{"symbol": "NABIL"}])  # close missing entirely
+    with pytest.raises(ProviderSchemaError):
+        prov.fetch_daily_prices(date(2026, 6, 10))
+
+
 # ── Task 5: NepseApiProvider floorsheet/summary/company/index tests ────────
 
 from datetime import date as _d
