@@ -43,6 +43,7 @@ import TickerVerdict from '@/components/ticker/TickerVerdict';
 
 import PriceActionTerminal from '@/components/ticker/PriceActionTerminal';
 import TickerLiquidity from '@/components/ticker/TickerLiquidity';
+import { ChatNotesCard, ChatNotes } from '@/components/ticker/ChatNotesCard';
 
 interface StockDetailData {
     company: {
@@ -141,6 +142,7 @@ export default function StockDetailPage() {
     ]));
 
     const [latestSignal, setLatestSignal] = useState<'BUY' | 'SELL' | undefined>(undefined);
+    const [chatNotes, setChatNotes] = useState<ChatNotes | null>(null);
     const [currentUser, setCurrentUser] = useState<any>(null);
 
     const toggleCollapse = (id: string) => {
@@ -237,6 +239,12 @@ export default function StockDetailPage() {
                         }
                     }
                 } catch (sErr) { console.error("Signal fetch failed", sErr); }
+
+                // Fetch the user's AI chat notes for this ticker (204 = none)
+                try {
+                    const notesRes = await api.get(`/api/stocks/company-summary/${ticker}/`);
+                    setChatNotes(notesRes.data && notesRes.data.summary ? notesRes.data : null);
+                } catch (nErr) { console.error("Chat notes fetch failed", nErr); }
 
             } catch (err) {
                 console.error("Failed to fetch stock data", err);
@@ -687,6 +695,9 @@ export default function StockDetailPage() {
                             <BentoMetrics fundamental={data.fundamental} />
                         </div>
                     </div>
+
+                    {/* 1b. YOUR AI NOTES (from chat) — hidden when empty */}
+                    <ChatNotesCard notes={chatNotes} />
 
                     {/* 2. CORE ANALYTICS HUB */}
                     <div className="space-y-8">
