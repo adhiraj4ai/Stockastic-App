@@ -91,6 +91,8 @@ def compile_company_summaries(session_id: str) -> None:
         return None
 
     exchanges = recent_exchanges(session, hops=1)
+    # The latest assistant message is the close of exchanges[-1]; it is the
+    # idempotency key (last_message) guarding the fold below.
     latest_message = (
         session.messages.filter(role=ChatMessage.ROLE_ASSISTANT).order_by("created_at").last()
     )
