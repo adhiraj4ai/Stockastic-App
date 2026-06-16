@@ -81,3 +81,41 @@ def test_timeline_does_not_leak_other_user(auth_user, other_user, db):
 def test_endpoints_require_auth(api_client, db):
     assert api_client.get("/api/stocks/company-summary/NMB/").status_code in (401, 403)
     assert api_client.get("/api/stocks/company-analysis/NMB/").status_code in (401, 403)
+
+
+# --- run endpoint: POST /api/stocks/company-analysis/<ticker>/run/ ---
+
+def test_run_creates_and_returns_latest_entry(auth_user, monkeypatch, db):
+    import stocks.services.ticker_verdict as tv
+    from chat import summary_service
+    from chat.summary_service import CompanyAnalysisResult
+
+    client, user = auth_user
+    monkeypatch.setattr(tv, "build_verdict", lambda sym: {"confluence_score": 65, "episodes": []})
+    monkeypatch.setattr(summary_service, "build_company_analysis_from_market",
+                        lambda prior, sym, verdict: CompanyAnalysisResult(True, "fresh data view", "bullish", "technical", "score up"))
+    res = client.post("/api/stocks/company-analysis/NMB/run/")
+    assert res.status_code == 200
+    assert res.data["summary"] == "fresh data view"
+    assert res.data["stance"] == "bullish"
+    assert res.data["aspect"] == "technical"
+    assert res.data["symbol"] == "NMB"
+    assert CompanyAnalysisEntry.objects.filter(user=user, symbol="NMB").count() == 1
+
+
+def test_run_requires_auth(api_client, db):
+    assert api_client.post("/api/stocks/company-analysis/NMB/run/").status_code in (401, 403)
+
+
+def test_run_scoped_to_request_user(auth_user, other_user, monkeypatch, db):
+    import stocks.services.ticker_verdict as tv
+    from chat import summary_service
+    from chat.summary_service import CompanyAnalysisResult
+
+    client, user = auth_user
+    monkeypatch.setattr(tv, "build_verdict", lambda sym: {})
+    monkeypatch.setattr(summary_service, "build_company_analysis_from_market",
+                        lambda prior, sym, verdict: CompanyAnalysisResult(True, "mine", "neutral", "both", ""))
+    client.post("/api/stocks/company-analysis/NMB/run/")
+    assert CompanyAnalysisEntry.objects.filter(user=user, symbol="NMB").count() == 1
+    assert CompanyAnalysisEntry.objects.filter(user=other_user, symbol="NMB").count() == 0
