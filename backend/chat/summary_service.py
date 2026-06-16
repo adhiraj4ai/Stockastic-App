@@ -71,37 +71,6 @@ def build_summary(prior_summary: str, exchanges) -> str:
 
 
 MAX_COMPANY_SUMMARY_CHARS = 1200
-COMPANY_SUMMARY_SYSTEM = (
-    "You maintain a running, company-specific set of notes capturing everything "
-    "one user has discussed about a single NEPSE-listed company in chat. Given the "
-    "company's ticker, the current notes, and the newest user/assistant exchange, "
-    "return updated notes as plain prose (no markdown headers, no preamble). Keep it "
-    "under 200 words. Preserve durable facts about this company: the user's theses, "
-    "verdicts given, key numbers, risks, and open questions. Ignore content about "
-    "other companies and drop pleasantries."
-)
-
-
-def _company_summary_prompt(prior_summary: str, exchanges, symbol: str) -> str:
-    prior = prior_summary.strip() or "(no prior notes)"
-    return (
-        f"Company: {symbol}\n\n"
-        "Current notes:\n"
-        f"{prior}\n\n"
-        "Newest exchange(s):\n"
-        f"{format_exchanges(exchanges)}\n\n"
-        f"Return the updated notes about {symbol}."
-    )
-
-
-def build_company_summary(prior_summary: str, exchanges, symbol: str) -> str:
-    """Return updated per-company notes. Falls back to prior notes on empty output."""
-    prompt = _company_summary_prompt(prior_summary, exchanges, symbol)
-    text = asyncio.run(_run_summary(prompt, COMPANY_SUMMARY_SYSTEM))
-    updated = text.strip() or (prior_summary or "").strip()
-    return updated[:MAX_COMPANY_SUMMARY_CHARS]
-
-
 MAX_CHANGE_NOTE_CHARS = 240
 COMPANY_ANALYSIS_SYSTEM = (
     "You track one user's evolving analysis of a single NEPSE-listed company across "

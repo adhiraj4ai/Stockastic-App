@@ -59,29 +59,41 @@ def _tracked_symbols(text: str) -> list[str]:
     return [c for c in candidates if c in existing]
 
 
-def _fold_company_summary(user, symbol: str, exchange, latest_message) -> None:
-    """Fold the newest exchange into one company's rolling summary. Idempotent."""
-    from chat.models import CompanyChatSummary
+def _fold_company_analysis(user, symbol: str, exchange, latest_message) -> None:
+    """Fold the newest exchange into the user's analysis timeline for one company.
+
+    Creates a new entry on first mention or AI-judged material change; otherwise
+    refines the latest entry in place. Idempotent via the latest entry's source."""
+    from chat.models import CompanyAnalysisEntry
     from chat import summary_service
 
-    existing = CompanyChatSummary.objects.filter(user=user, symbol=symbol).first()
-    if existing is not None and existing.last_message_id == latest_message.id:
+    prior = (
+        CompanyAnalysisEntry.objects.filter(user=user, symbol=symbol)
+        .order_by("-created_at")
+        .first()
+    )
+    if prior is not None and prior.source_message_id == latest_message.id:
         return
-    prior = (existing.summary if existing is not None else "") or ""
-    new_summary = summary_service.build_company_summary(prior, [exchange], symbol)
-    if existing is not None:
-        existing.summary = new_summary
-        existing.last_message = latest_message
-        existing.save(update_fields=["summary", "last_message", "updated_at"])
-    else:
-        CompanyChatSummary.objects.create(
-            user=user, symbol=symbol, summary=new_summary, last_message=latest_message,
+    result = summary_service.build_company_analysis(prior, [exchange], symbol)
+    if prior is None or result.materially_changed:
+        CompanyAnalysisEntry.objects.create(
+            user=user, symbol=symbol, summary=result.summary, stance=result.stance,
+            aspect=result.aspect, change_note=result.change_note, source_message=latest_message,
         )
+        return
+    prior.summary = result.summary
+    prior.stance = result.stance
+    prior.aspect = result.aspect
+    prior.change_note = result.change_note
+    prior.source_message = latest_message
+    prior.save(update_fields=[
+        "summary", "stance", "aspect", "change_note", "source_message", "updated_at",
+    ])
 
 
-@shared_task(name="chat.compile_company_summaries")
-def compile_company_summaries(session_id: str) -> None:
-    """Update per-company summaries for every active ticker named in the newest turn."""
+@shared_task(name="chat.compile_company_analysis")
+def compile_company_analysis(session_id: str) -> None:
+    """Update each active ticker's analysis timeline from the newest chat turn."""
     from chat.models import ChatSession, ChatMessage
     from chat.history import recent_exchanges
 
@@ -92,7 +104,7 @@ def compile_company_summaries(session_id: str) -> None:
 
     exchanges = recent_exchanges(session, hops=1)
     # The latest assistant message is the close of exchanges[-1]; it is the
-    # idempotency key (last_message) guarding the fold below.
+    # idempotency key (source_message) guarding the fold below.
     latest_message = (
         session.messages.filter(role=ChatMessage.ROLE_ASSISTANT).order_by("created_at").last()
     )
@@ -102,7 +114,7 @@ def compile_company_summaries(session_id: str) -> None:
     exchange = exchanges[-1]
     for symbol in _tracked_symbols(exchange.user_text):
         try:
-            _fold_company_summary(session.user, symbol, exchange, latest_message)
+            _fold_company_analysis(session.user, symbol, exchange, latest_message)
         except Exception:  # pylint: disable=broad-except
-            log.exception("company-summary fold failed for %s / %s", session_id, symbol)
+            log.exception("company-analysis fold failed for %s / %s", session_id, symbol)
     return None
