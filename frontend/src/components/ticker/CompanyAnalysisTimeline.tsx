@@ -1,6 +1,5 @@
 'use client';
 
-import { useState } from 'react';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import { format } from 'date-fns';
@@ -16,7 +15,6 @@ export interface AnalysisEntry {
 }
 
 function TimelineRow({ entry }: { entry: AnalysisEntry }) {
-    const [open, setOpen] = useState(false);
     return (
         <li className="border-l-2 border-slate-200 dark:border-slate-700 pl-4 pb-6 relative">
             <span className="absolute -left-[5px] top-1.5 h-2 w-2 rounded-full bg-slate-400" />
@@ -28,20 +26,11 @@ function TimelineRow({ entry }: { entry: AnalysisEntry }) {
             {entry.change_note && (
                 <p className="mt-1 text-sm font-medium text-foreground">{entry.change_note}</p>
             )}
-            <button
-                type="button"
-                onClick={() => setOpen((v) => !v)}
-                className="mt-1 text-xs text-muted-foreground underline-offset-2 hover:underline"
-            >
-                {open ? 'Hide detail' : 'Show detail'}
-            </button>
-            {open && (
-                <div className="prose prose-sm max-w-none text-muted-foreground mt-2">
-                    <ReactMarkdown remarkPlugins={[remarkGfm]} components={MarkdownComponents}>
-                        {entry.summary}
-                    </ReactMarkdown>
-                </div>
-            )}
+            <div className="prose prose-sm max-w-none text-muted-foreground mt-2">
+                <ReactMarkdown remarkPlugins={[remarkGfm]} components={MarkdownComponents}>
+                    {entry.summary}
+                </ReactMarkdown>
+            </div>
         </li>
     );
 }
