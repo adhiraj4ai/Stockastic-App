@@ -288,10 +288,11 @@ async def stream_chat(
         log.exception("failed to persist assistant turn")
 
     try:
-        from .tasks import update_session_summary
+        from .tasks import update_session_summary, compile_company_summaries
         update_session_summary.delay(str(session.id))
+        compile_company_summaries.delay(str(session.id))
     except Exception:  # pylint: disable=broad-except
-        log.exception("failed to enqueue session-summary update")
+        log.exception("failed to enqueue post-turn summary updates")
 
     yield _sse("done", {"session_id": str(session.id),
                         "sdk_session_id": final_session_id_ref[0],
