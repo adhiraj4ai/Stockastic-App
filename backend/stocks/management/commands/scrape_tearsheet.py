@@ -3,7 +3,7 @@ from __future__ import annotations
 from django.core.management.base import BaseCommand, CommandError
 
 from stocks.services.tearsheet.exceptions import TearsheetError
-from stocks.services.tearsheet.pipeline import scrape_annual
+from stocks.services.tearsheet.pipeline import fetch_datasets, load_datasets
 from stocks.services.tearsheet.session import TearsheetBrowser
 
 
@@ -20,8 +20,9 @@ class Command(BaseCommand):
         self.stdout.write(f"Scraping tearsheet for {symbol}...")
         try:
             with TearsheetBrowser(symbol) as browser:
-                counts = scrape_annual(symbol, browser,
-                                       use_cache=not options["no_cache"])
+                raw = fetch_datasets(symbol, browser,
+                                     use_cache=not options["no_cache"])
+            counts = load_datasets(symbol, raw)
         except TearsheetError as exc:
             raise CommandError(str(exc)) from exc
         self.stdout.write(self.style.SUCCESS(
