@@ -1,4 +1,3 @@
-backend/.env.example
 backend/backtest_html/
 **/backtest_html/
 scripts/seed_strategies.py
@@ -6,3 +5,5 @@ scripts/seed_strategies.py
 # Database backups (nightly pg_dump, never commit)
 backups/
 .superpowers/
+backend/.env
+.env
