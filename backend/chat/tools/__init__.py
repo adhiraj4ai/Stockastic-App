@@ -209,6 +209,36 @@ def tool_id(name: str) -> str:
     return f"mcp__stockastic__{name}"
 
 
+# Read-only research tools given directly to the notebook "quick" agent. It runs
+# a single agent (no Task orchestrator), so it gets the common analysis tools
+# across domains — but NOT mutation/action tools (proposals, watchlist edits,
+# user-memory writes), which belong to the deliberate chat flow.
+QUICK_TOOL_NAMES = [
+    # Market
+    "get_market_summary", "get_top_movers", "get_index_history", "get_floorsheet_whales",
+    "get_sector_breakdown", "get_broker_trades_for_stock", "search_stocks",
+    # Stock
+    "get_stock_quote", "get_price_history", "get_technicals", "get_fundamentals",
+    "get_dividend_history", "get_accumulation", "get_financial_reports", "compare_stocks",
+    "get_price_levels", "get_financial_statements", "get_ticker_verdict",
+    # Signals / strategy (read-only)
+    "get_signals_for_ticker", "get_signal_track_record", "get_active_signals",
+    "get_strategy_performance", "get_closed_signals", "scan_strategies_for_symbol", "screen_stocks",
+    # Opportunities & plan
+    "get_top_opportunities", "explain_opportunity", "get_tomorrows_plan", "get_upcoming_catalysts",
+    # Portfolio (read-only)
+    "get_portfolio_overview", "get_holdings", "get_watchlist", "get_risk_profile",
+    "get_realized_pnl", "get_sector_allocation", "get_portfolio_history", "calc_position_size",
+    # Broker intelligence
+    "get_accumulation_flows", "get_smart_money_flows", "get_broker_trends",
+    "get_navigator_signals", "get_accumulation_forecast", "get_accumulation_history",
+    # Saved analyses
+    "search_saved_analyses", "get_saved_analysis",
+]
+
+QUICK_ALLOWED_TOOLS = [tool_id(name) for name in QUICK_TOOL_NAMES]
+
+
 __all__ = [
     # Base
     "_jsonable", "_result", "_resolve_account", "_rank_strategy_signals", "score_candidate",
@@ -246,4 +276,5 @@ __all__ = [
     "search_saved_analyses", "get_saved_analysis",
     # Server
     "ALL_TOOLS", "STOCKASTIC_MCP_SERVER", "tool_id",
+    "QUICK_TOOL_NAMES", "QUICK_ALLOWED_TOOLS",
 ]

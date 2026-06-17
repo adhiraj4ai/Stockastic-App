@@ -17,12 +17,13 @@ from claude_agent_sdk import ClaudeAgentOptions, ClaudeSDKClient
 
 from . import _user_context
 from .subagents import AGENTS
-from .tools import STOCKASTIC_MCP_SERVER
+from .tools import STOCKASTIC_MCP_SERVER, QUICK_ALLOWED_TOOLS
 
-_PROMPT_FILE = Path(__file__).parent / "prompts" / "orchestrator.yaml"
-_ORCHESTRATOR_YAML = yaml.safe_load(_PROMPT_FILE.read_text(encoding="utf-8"))
+_PROMPTS_DIR = Path(__file__).parent / "prompts"
+_ORCHESTRATOR_YAML = yaml.safe_load((_PROMPTS_DIR / "orchestrator.yaml").read_text(encoding="utf-8"))
 _ORCHESTRATOR_SYSTEM: str = _ORCHESTRATOR_YAML["system"]
 _ORCHESTRATOR_USER_TEMPLATE: str = _ORCHESTRATOR_YAML.get("user", "{message}")
+_QUICK_SYSTEM: str = yaml.safe_load((_PROMPTS_DIR / "notebook_quick.yaml").read_text(encoding="utf-8"))["system"]
 
 
 def _safe_prompt_value(value, max_len: int = 64) -> str:
@@ -112,6 +113,33 @@ def _build_options(sdk_session_id: str = "") -> ClaudeAgentOptions:
     )
 
 
+def _build_quick_options(sdk_session_id: str = "") -> ClaudeAgentOptions:
+    """Fast single-agent path for notebook cells: direct MCP tool access, no
+    Task orchestrator or subagent team, on a cheaper model at lower effort."""
+    return ClaudeAgentOptions(
+        system_prompt=_QUICK_SYSTEM,
+        mcp_servers={"stockastic": STOCKASTIC_MCP_SERVER},
+        tools=QUICK_ALLOWED_TOOLS,
+        allowed_tools=QUICK_ALLOWED_TOOLS,
+        permission_mode="bypassPermissions",
+        setting_sources=[],
+        max_turns=12,
+        thinking={"type": "adaptive"},
+        effort="medium",
+        model="sonnet",
+        include_partial_messages=True,  # token-level streaming via StreamEvent deltas
+        env=_sdk_env(),
+        resume=sdk_session_id or None,
+    )
+
+
+def _build_session_options(session, sdk_session_id: str = "") -> ClaudeAgentOptions:
+    """Notebook sessions use the quick single-agent path; all others orchestrate."""
+    if session.is_notebook:
+        return _build_quick_options(sdk_session_id)
+    return _build_options(sdk_session_id)
+
+
 _STALE_SESSION_PHRASES = (
     "no conversation found",
     "conversation not found",
@@ -180,7 +208,7 @@ async def run_chat_session(user, session, prompt: str) -> AsyncIterator:
     sdk_session_id = session.sdk_session_id
     session_ids = [sdk_session_id, ""] if sdk_session_id else [""]
     for attempt_id in session_ids:
-        options = _build_options(sdk_session_id=attempt_id)
+        options = _build_session_options(session, sdk_session_id=attempt_id)
         try:
             async for message in _run_sdk_turn(options, formatted_prompt):
                 yield message

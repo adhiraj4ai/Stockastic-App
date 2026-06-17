@@ -1,8 +1,8 @@
 'use client';
 
-import React, { useEffect, useState, useRef } from 'react';
+import React, { useEffect, useState, useRef, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
-import { Play, Plus, Trash2, RotateCcw, AlertCircle, Loader2, StopCircle, ArrowLeft, Pencil, Check, Brain, Wrench, CheckCircle2, XCircle } from 'lucide-react';
+import { Play, Plus, Trash2, RotateCcw, AlertCircle, Loader2, StopCircle, ArrowLeft, Pencil, Check, Brain, Wrench, CheckCircle2, XCircle, ChevronUp, ChevronDown, Copy } from 'lucide-react';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import api from '@/lib/api';
@@ -14,6 +14,8 @@ import { WorkbenchContext, useWorkbench, type WorkbenchTool } from './WorkbenchC
 import { WorkbenchPanel } from './WorkbenchPanel';
 import type { ChatBlock, ToolResultBlock, ToolUseBlock } from './types';
 import { getColorConfig, getIconComponent } from './NotebookDashboard';
+import { notebookSessionTitle, resolveNotebookSessionId } from '@/lib/notebookSession';
+import { moveItem, formatRunDuration, extractAnswerText } from '@/lib/notebookCells';
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
 
@@ -23,13 +25,14 @@ interface NotebookCell {
     running: boolean;
     outputs: ChatBlock[];
     executionCount: number | null;
+    startedAt?: number | null;
+    durationMs?: number | null;
 }
 
-const DEFAULT_PROMPTS = [
-    "What's NEPSE doing today?",
-    "How is my portfolio performing?",
-    "Give me technicals on NABIL",
-];
+/** A fresh, unsaved cell with an empty prompt. */
+function makeEmptyCell(): NotebookCell {
+    return { id: `temp-${Date.now()}`, prompt: '', running: false, outputs: [], executionCount: null };
+}
 
 const MarkdownComponents = {
     p: ({ children }: any) => <p className="mb-2 last:mb-0 leading-relaxed">{children}</p>,
@@ -114,39 +117,26 @@ export function NotebookInterface({ notebookId }: { notebookId: string }) {
         fetchNotebook();
     }, [notebookId]);
 
-    // Ensure we have a backend session to run cells in
-    useEffect(() => {
-        const getOrCreateSession = async () => {
-            try {
-                const sessionKey = `stockastic_nb_session_${notebookId}`;
-                const savedId = localStorage.getItem(sessionKey);
-                if (savedId) {
-                    setSessionId(savedId);
-                    setLoadingSession(false);
-                    return;
-                }
-
-                const listRes = await api.get('/api/chat/sessions/');
-                const sessions = listRes.data?.results || listRes.data || [];
-                const existing = sessions.find((s: any) => s.title === `Notebook Session: ${notebookId}`);
-
-                if (existing) {
-                    localStorage.setItem(sessionKey, existing.id);
-                    setSessionId(existing.id);
-                } else {
-                    const createRes = await api.post('/api/chat/sessions/', { title: `Notebook Session: ${notebookId}` });
-                    localStorage.setItem(sessionKey, createRes.data.id);
-                    setSessionId(createRes.data.id);
-                }
-            } catch (err) {
-                console.error('Failed to resolve notebook session', err);
-            } finally {
-                setLoadingSession(false);
-            }
-        };
-
-        getOrCreateSession();
+    // Resolve (and cache) a backend session to run cells in. The cached id is
+    // validated against the live session list so a dead id — e.g. left over from
+    // a backend reseed — is discarded rather than silently breaking every cell.
+    const ensureSession = useCallback(async (): Promise<string | null> => {
+        const sessionKey = `stockastic_nb_session_${notebookId}`;
+        const listRes = await api.get('/api/chat/sessions/');
+        const sessions = listRes.data?.results || listRes.data || [];
+        const resolved = resolveNotebookSessionId(sessions, localStorage.getItem(sessionKey), notebookId);
+        const id = resolved
+            ?? (await api.post('/api/chat/sessions/', { title: notebookSessionTitle(notebookId) })).data.id;
+        localStorage.setItem(sessionKey, id);
+        setSessionId(id);
+        return id;
     }, [notebookId]);
+
+    useEffect(() => {
+        ensureSession()
+            .catch(err => console.error('Failed to resolve notebook session', err))
+            .finally(() => setLoadingSession(false));
+    }, [ensureSession]);
 
     // Load persisted cells from Database on mount
     useEffect(() => {
@@ -171,14 +161,8 @@ export function NotebookInterface({ notebookId }: { notebookId: string }) {
                         }))
                     );
                 } else {
-                    // Initialize with default cells and save to DB
-                    const initial = DEFAULT_PROMPTS.map((prompt, idx) => ({
-                        id: `temp-${Date.now()}-${idx}`,
-                        prompt,
-                        running: false,
-                        outputs: [],
-                        executionCount: null,
-                    }));
+                    // A new notebook starts with a single empty cell, not seeded prompts.
+                    const initial = [makeEmptyCell()];
                     setCells(initial);
                     triggerSync(initial, true); // immediate sync
                 }
@@ -227,13 +211,7 @@ export function NotebookInterface({ notebookId }: { notebookId: string }) {
     };
 
     const insertCell = (atIndex: number) => {
-        const newCell: NotebookCell = {
-            id: `temp-${Date.now()}`,
-            prompt: '',
-            running: false,
-            outputs: [],
-            executionCount: null,
-        };
+        const newCell = makeEmptyCell();
         const updated = [...cells];
         updated.splice(atIndex, 0, newCell);
         pendingFocusRef.current = newCell.id;
@@ -254,6 +232,14 @@ export function NotebookInterface({ notebookId }: { notebookId: string }) {
         const updated = cells.map(c => (c.id === id ? { ...c, prompt: text } : c));
         setCells(updated);
         triggerSync(updated); // debounced sync
+    };
+
+    const reorderCell = (id: string, direction: -1 | 1) => {
+        const index = cells.findIndex(c => c.id === id);
+        const updated = moveItem(cells, index, direction);
+        if (updated === cells) return; // boundary — no change
+        setCells(updated);
+        triggerSync(updated, true); // persist the new order
     };
 
     const clearOutputs = (id: string) => {
@@ -277,13 +263,7 @@ export function NotebookInterface({ notebookId }: { notebookId: string }) {
             setGlobalExecutionCount(0);
             localStorage.removeItem(`stockastic_nb_exec_${notebookId}`);
 
-            const initial = DEFAULT_PROMPTS.map((prompt, idx) => ({
-                id: `temp-${Date.now()}-${idx}`,
-                prompt,
-                running: false,
-                outputs: [],
-                executionCount: null,
-            }));
+            const initial = [makeEmptyCell()];
             setCells(initial);
             triggerSync(initial, true);
         }
@@ -315,6 +295,8 @@ export function NotebookInterface({ notebookId }: { notebookId: string }) {
                           running: true,
                           executionCount: count,
                           outputs: [],
+                          startedAt: Date.now(),
+                          durationMs: null,
                       }
                     : c,
             ),
@@ -335,21 +317,22 @@ export function NotebookInterface({ notebookId }: { notebookId: string }) {
                 applyFrame(id, frame.event, frame.data);
             }
         } catch (err: any) {
-            if (!ac.signal.aborted) {
-                appendBlock(id, {
-                    kind: 'text',
-                    text: `\n\nError: ${err?.message || 'Execution failed'}`,
-                });
+            if (ac.signal.aborted) {
+                appendBlock(id, { kind: 'text', text: '\n\n[Execution stopped]' });
+            } else if (err?.message?.includes('404')) {
+                // The session disappeared (e.g. backend reseed) — refresh it so a re-run works.
+                localStorage.removeItem(`stockastic_nb_session_${notebookId}`);
+                await ensureSession().catch(() => {});
+                appendBlock(id, { kind: 'text', text: '\n\nSession expired — please run this cell again.' });
             } else {
-                appendBlock(id, {
-                    kind: 'text',
-                    text: '\n\n[Execution stopped]',
-                });
+                appendBlock(id, { kind: 'text', text: `\n\nError: ${err?.message || 'Execution failed'}` });
             }
         } finally {
             delete abortControllersRef.current[id];
             setCells(prev => {
-                const updated = prev.map(c => (c.id === id ? { ...c, running: false } : c));
+                const updated = prev.map(c => (c.id === id
+                    ? { ...c, running: false, durationMs: c.startedAt ? Date.now() - c.startedAt : null }
+                    : c));
                 // Sync the outputs and state immediately to the backend
                 triggerSync(updated, true);
                 return updated;
@@ -558,7 +541,7 @@ export function NotebookInterface({ notebookId }: { notebookId: string }) {
 
             {/* Scrollable Cell List */}
             <div className="flex-1 overflow-y-auto px-6 py-6 custom-scrollbar">
-                <div className="max-w-5xl mx-auto">
+                <div className="w-full">
                     <AddCellDivider onClick={() => insertCell(0)} />
                     {cells.map((cell, idx) => (
                         <React.Fragment key={cell.id}>
@@ -567,9 +550,18 @@ export function NotebookInterface({ notebookId }: { notebookId: string }) {
                         >
                             {/* Card Header — the cell prompt */}
                             <div className="flex items-start gap-3 px-4 py-3 bg-muted/30 border-b border-border focus-within:bg-muted/50 transition-colors">
-                                <span className="shrink-0 text-[11px] font-mono text-muted-foreground pt-[3px] select-none min-w-[2rem] text-right">
-                                    [{cell.executionCount !== null ? cell.executionCount : ' '}]
-                                </span>
+                                <div className="shrink-0 flex flex-col items-end pt-[3px] min-w-[2.5rem] select-none">
+                                    <span className="text-[11px] font-mono text-muted-foreground">
+                                        [{cell.executionCount !== null ? cell.executionCount : ' '}]
+                                    </span>
+                                    {cell.running && cell.startedAt ? (
+                                        <RunTimer startedAt={cell.startedAt} />
+                                    ) : cell.durationMs != null ? (
+                                        <span className="text-[10px] font-mono text-muted-foreground/60 tabular-nums">
+                                            {formatRunDuration(cell.durationMs)}
+                                        </span>
+                                    ) : null}
+                                </div>
                                 <textarea
                                     ref={(el) => { cellRefsMap.current[cell.id] = el; }}
                                     value={cell.prompt}
@@ -616,6 +608,24 @@ export function NotebookInterface({ notebookId }: { notebookId: string }) {
                                             <Play size={14} fill={cell.prompt.trim() ? "currentColor" : "none"} />
                                         </button>
                                     )}
+                                    {idx > 0 && (
+                                        <button
+                                            onClick={() => reorderCell(cell.id, -1)}
+                                            className="p-1.5 rounded-md text-muted-foreground hover:text-foreground opacity-0 group-hover/cell:opacity-100 transition-opacity hover:bg-accent"
+                                            title="Move cell up"
+                                        >
+                                            <ChevronUp size={14} />
+                                        </button>
+                                    )}
+                                    {idx < cells.length - 1 && (
+                                        <button
+                                            onClick={() => reorderCell(cell.id, 1)}
+                                            className="p-1.5 rounded-md text-muted-foreground hover:text-foreground opacity-0 group-hover/cell:opacity-100 transition-opacity hover:bg-accent"
+                                            title="Move cell down"
+                                        >
+                                            <ChevronDown size={14} />
+                                        </button>
+                                    )}
                                     <button
                                         onClick={() => clearOutputs(cell.id)}
                                         className="p-1.5 rounded-md text-muted-foreground hover:text-foreground opacity-0 group-hover/cell:opacity-100 transition-opacity hover:bg-accent"
@@ -642,6 +652,11 @@ export function NotebookInterface({ notebookId }: { notebookId: string }) {
                             )}
                             {cell.outputs.length > 0 && (
                                 <div className="px-5 py-4 space-y-2">
+                                    {!cell.running && (
+                                        <div className="flex justify-end">
+                                            <CopyAnswerButton outputs={cell.outputs} />
+                                        </div>
+                                    )}
                                     <CellOutput outputs={cell.outputs} />
                                 </div>
                             )}
@@ -673,6 +688,46 @@ function AddCellDivider({ onClick }: { onClick: () => void }) {
             </button>
             <div className="flex-1 h-px bg-border/40 group-hover/divider:bg-border transition-colors" />
         </div>
+    );
+}
+
+// ─── Run status helpers ─────────────────────────────────────────────────────────
+
+/** Live, self-ticking elapsed-time readout shown while a cell is running. */
+function RunTimer({ startedAt }: { startedAt: number }) {
+    const [now, setNow] = useState(() => Date.now());
+    useEffect(() => {
+        const timer = setInterval(() => setNow(Date.now()), 1000);
+        return () => clearInterval(timer);
+    }, []);
+    return (
+        <span className="text-[10px] font-mono text-amber-500 tabular-nums">
+            {formatRunDuration(now - startedAt)}
+        </span>
+    );
+}
+
+/** Copies the cell's final answer text to the clipboard, with brief feedback. */
+function CopyAnswerButton({ outputs }: { outputs: ChatBlock[] }) {
+    const [copied, setCopied] = useState(false);
+    const answer = extractAnswerText(outputs);
+    if (!answer) return null;
+    const copy = async () => {
+        try {
+            await navigator.clipboard.writeText(answer);
+            setCopied(true);
+            setTimeout(() => setCopied(false), 1500);
+        } catch { /* clipboard unavailable */ }
+    };
+    return (
+        <button
+            onClick={copy}
+            title="Copy answer"
+            className="inline-flex items-center gap-1 text-[11px] text-muted-foreground hover:text-foreground transition-colors"
+        >
+            {copied ? <Check size={12} /> : <Copy size={12} />}
+            {copied ? 'Copied' : 'Copy answer'}
+        </button>
     );
 }
 
