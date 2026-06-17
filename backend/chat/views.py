@@ -162,7 +162,7 @@ class ChatSessionViewSet(viewsets.ModelViewSet):
         _auto_title(session, prompt)
 
         # Notebook cells never resume an SDK session — start fresh each time.
-        if session.title.startswith("Notebook Session:"):
+        if session.is_notebook:
             session.sdk_session_id = ""
 
         return _sse_response(_byte_iter(request.user, session, prompt))
