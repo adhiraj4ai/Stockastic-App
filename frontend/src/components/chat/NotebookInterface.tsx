@@ -2,7 +2,7 @@
 
 import React, { useEffect, useState, useRef, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
-import { Play, Plus, Trash2, RotateCcw, AlertCircle, Loader2, StopCircle, ArrowLeft, Pencil, Check, Brain, Wrench, CheckCircle2, XCircle } from 'lucide-react';
+import { Play, Plus, Trash2, RotateCcw, AlertCircle, Loader2, StopCircle, ArrowLeft, Pencil, Check, Brain, Wrench, CheckCircle2, XCircle, ChevronUp, ChevronDown, Copy } from 'lucide-react';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import api from '@/lib/api';
@@ -15,6 +15,7 @@ import { WorkbenchPanel } from './WorkbenchPanel';
 import type { ChatBlock, ToolResultBlock, ToolUseBlock } from './types';
 import { getColorConfig, getIconComponent } from './NotebookDashboard';
 import { notebookSessionTitle, resolveNotebookSessionId } from '@/lib/notebookSession';
+import { moveItem, formatRunDuration, extractAnswerText } from '@/lib/notebookCells';
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
 
@@ -24,6 +25,8 @@ interface NotebookCell {
     running: boolean;
     outputs: ChatBlock[];
     executionCount: number | null;
+    startedAt?: number | null;
+    durationMs?: number | null;
 }
 
 /** A fresh, unsaved cell with an empty prompt. */
@@ -231,6 +234,14 @@ export function NotebookInterface({ notebookId }: { notebookId: string }) {
         triggerSync(updated); // debounced sync
     };
 
+    const reorderCell = (id: string, direction: -1 | 1) => {
+        const index = cells.findIndex(c => c.id === id);
+        const updated = moveItem(cells, index, direction);
+        if (updated === cells) return; // boundary — no change
+        setCells(updated);
+        triggerSync(updated, true); // persist the new order
+    };
+
     const clearOutputs = (id: string) => {
         const updated = cells.map(c => (c.id === id ? { ...c, outputs: [], executionCount: null } : c));
         setCells(updated);
@@ -284,6 +295,8 @@ export function NotebookInterface({ notebookId }: { notebookId: string }) {
                           running: true,
                           executionCount: count,
                           outputs: [],
+                          startedAt: Date.now(),
+                          durationMs: null,
                       }
                     : c,
             ),
@@ -317,7 +330,9 @@ export function NotebookInterface({ notebookId }: { notebookId: string }) {
         } finally {
             delete abortControllersRef.current[id];
             setCells(prev => {
-                const updated = prev.map(c => (c.id === id ? { ...c, running: false } : c));
+                const updated = prev.map(c => (c.id === id
+                    ? { ...c, running: false, durationMs: c.startedAt ? Date.now() - c.startedAt : null }
+                    : c));
                 // Sync the outputs and state immediately to the backend
                 triggerSync(updated, true);
                 return updated;
@@ -535,9 +550,18 @@ export function NotebookInterface({ notebookId }: { notebookId: string }) {
                         >
                             {/* Card Header — the cell prompt */}
                             <div className="flex items-start gap-3 px-4 py-3 bg-muted/30 border-b border-border focus-within:bg-muted/50 transition-colors">
-                                <span className="shrink-0 text-[11px] font-mono text-muted-foreground pt-[3px] select-none min-w-[2rem] text-right">
-                                    [{cell.executionCount !== null ? cell.executionCount : ' '}]
-                                </span>
+                                <div className="shrink-0 flex flex-col items-end pt-[3px] min-w-[2.5rem] select-none">
+                                    <span className="text-[11px] font-mono text-muted-foreground">
+                                        [{cell.executionCount !== null ? cell.executionCount : ' '}]
+                                    </span>
+                                    {cell.running && cell.startedAt ? (
+                                        <RunTimer startedAt={cell.startedAt} />
+                                    ) : cell.durationMs != null ? (
+                                        <span className="text-[10px] font-mono text-muted-foreground/60 tabular-nums">
+                                            {formatRunDuration(cell.durationMs)}
+                                        </span>
+                                    ) : null}
+                                </div>
                                 <textarea
                                     ref={(el) => { cellRefsMap.current[cell.id] = el; }}
                                     value={cell.prompt}
@@ -584,6 +608,24 @@ export function NotebookInterface({ notebookId }: { notebookId: string }) {
                                             <Play size={14} fill={cell.prompt.trim() ? "currentColor" : "none"} />
                                         </button>
                                     )}
+                                    {idx > 0 && (
+                                        <button
+                                            onClick={() => reorderCell(cell.id, -1)}
+                                            className="p-1.5 rounded-md text-muted-foreground hover:text-foreground opacity-0 group-hover/cell:opacity-100 transition-opacity hover:bg-accent"
+                                            title="Move cell up"
+                                        >
+                                            <ChevronUp size={14} />
+                                        </button>
+                                    )}
+                                    {idx < cells.length - 1 && (
+                                        <button
+                                            onClick={() => reorderCell(cell.id, 1)}
+                                            className="p-1.5 rounded-md text-muted-foreground hover:text-foreground opacity-0 group-hover/cell:opacity-100 transition-opacity hover:bg-accent"
+                                            title="Move cell down"
+                                        >
+                                            <ChevronDown size={14} />
+                                        </button>
+                                    )}
                                     <button
                                         onClick={() => clearOutputs(cell.id)}
                                         className="p-1.5 rounded-md text-muted-foreground hover:text-foreground opacity-0 group-hover/cell:opacity-100 transition-opacity hover:bg-accent"
@@ -610,6 +652,11 @@ export function NotebookInterface({ notebookId }: { notebookId: string }) {
                             )}
                             {cell.outputs.length > 0 && (
                                 <div className="px-5 py-4 space-y-2">
+                                    {!cell.running && (
+                                        <div className="flex justify-end">
+                                            <CopyAnswerButton outputs={cell.outputs} />
+                                        </div>
+                                    )}
                                     <CellOutput outputs={cell.outputs} />
                                 </div>
                             )}
@@ -641,6 +688,46 @@ function AddCellDivider({ onClick }: { onClick: () => void }) {
             </button>
             <div className="flex-1 h-px bg-border/40 group-hover/divider:bg-border transition-colors" />
         </div>
+    );
+}
+
+// ─── Run status helpers ─────────────────────────────────────────────────────────
+
+/** Live, self-ticking elapsed-time readout shown while a cell is running. */
+function RunTimer({ startedAt }: { startedAt: number }) {
+    const [now, setNow] = useState(() => Date.now());
+    useEffect(() => {
+        const timer = setInterval(() => setNow(Date.now()), 1000);
+        return () => clearInterval(timer);
+    }, []);
+    return (
+        <span className="text-[10px] font-mono text-amber-500 tabular-nums">
+            {formatRunDuration(now - startedAt)}
+        </span>
+    );
+}
+
+/** Copies the cell's final answer text to the clipboard, with brief feedback. */
+function CopyAnswerButton({ outputs }: { outputs: ChatBlock[] }) {
+    const [copied, setCopied] = useState(false);
+    const answer = extractAnswerText(outputs);
+    if (!answer) return null;
+    const copy = async () => {
+        try {
+            await navigator.clipboard.writeText(answer);
+            setCopied(true);
+            setTimeout(() => setCopied(false), 1500);
+        } catch { /* clipboard unavailable */ }
+    };
+    return (
+        <button
+            onClick={copy}
+            title="Copy answer"
+            className="inline-flex items-center gap-1 text-[11px] text-muted-foreground hover:text-foreground transition-colors"
+        >
+            {copied ? <Check size={12} /> : <Copy size={12} />}
+            {copied ? 'Copied' : 'Copy answer'}
+        </button>
     );
 }
 
