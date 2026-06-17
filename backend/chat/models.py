@@ -8,6 +8,10 @@ User = get_user_model()
 class ChatSession(models.Model):
     """A multi-turn conversation between a user and the Stockastic agent."""
 
+    # Notebook cells run in dedicated sessions titled with this prefix. They use
+    # the fast single-agent path and never resume a prior SDK session.
+    NOTEBOOK_SESSION_PREFIX = "Notebook Session:"
+
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     user = models.ForeignKey(User, on_delete=models.CASCADE, related_name="chat_sessions")
     title = models.CharField(max_length=255, default="New chat")
@@ -24,6 +28,11 @@ class ChatSession(models.Model):
 
     def __str__(self) -> str:
         return f"{self.user.username} · {self.title}"
+
+    @property
+    def is_notebook(self) -> bool:
+        """True for sessions backing a notebook cell run."""
+        return (self.title or "").startswith(self.NOTEBOOK_SESSION_PREFIX)
 
 
 class ChatMessage(models.Model):
