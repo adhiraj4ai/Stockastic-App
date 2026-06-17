@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useEffect, useState, useRef } from 'react';
+import React, { useEffect, useState, useRef, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import { Play, Plus, Trash2, RotateCcw, AlertCircle, Loader2, StopCircle, ArrowLeft, Pencil, Check, Brain, Wrench, CheckCircle2, XCircle } from 'lucide-react';
 import ReactMarkdown from 'react-markdown';
@@ -14,6 +14,7 @@ import { WorkbenchContext, useWorkbench, type WorkbenchTool } from './WorkbenchC
 import { WorkbenchPanel } from './WorkbenchPanel';
 import type { ChatBlock, ToolResultBlock, ToolUseBlock } from './types';
 import { getColorConfig, getIconComponent } from './NotebookDashboard';
+import { notebookSessionTitle, resolveNotebookSessionId } from '@/lib/notebookSession';
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
 
@@ -114,39 +115,26 @@ export function NotebookInterface({ notebookId }: { notebookId: string }) {
         fetchNotebook();
     }, [notebookId]);
 
-    // Ensure we have a backend session to run cells in
-    useEffect(() => {
-        const getOrCreateSession = async () => {
-            try {
-                const sessionKey = `stockastic_nb_session_${notebookId}`;
-                const savedId = localStorage.getItem(sessionKey);
-                if (savedId) {
-                    setSessionId(savedId);
-                    setLoadingSession(false);
-                    return;
-                }
-
-                const listRes = await api.get('/api/chat/sessions/');
-                const sessions = listRes.data?.results || listRes.data || [];
-                const existing = sessions.find((s: any) => s.title === `Notebook Session: ${notebookId}`);
-
-                if (existing) {
-                    localStorage.setItem(sessionKey, existing.id);
-                    setSessionId(existing.id);
-                } else {
-                    const createRes = await api.post('/api/chat/sessions/', { title: `Notebook Session: ${notebookId}` });
-                    localStorage.setItem(sessionKey, createRes.data.id);
-                    setSessionId(createRes.data.id);
-                }
-            } catch (err) {
-                console.error('Failed to resolve notebook session', err);
-            } finally {
-                setLoadingSession(false);
-            }
-        };
-
-        getOrCreateSession();
+    // Resolve (and cache) a backend session to run cells in. The cached id is
+    // validated against the live session list so a dead id — e.g. left over from
+    // a backend reseed — is discarded rather than silently breaking every cell.
+    const ensureSession = useCallback(async (): Promise<string | null> => {
+        const sessionKey = `stockastic_nb_session_${notebookId}`;
+        const listRes = await api.get('/api/chat/sessions/');
+        const sessions = listRes.data?.results || listRes.data || [];
+        const resolved = resolveNotebookSessionId(sessions, localStorage.getItem(sessionKey), notebookId);
+        const id = resolved
+            ?? (await api.post('/api/chat/sessions/', { title: notebookSessionTitle(notebookId) })).data.id;
+        localStorage.setItem(sessionKey, id);
+        setSessionId(id);
+        return id;
     }, [notebookId]);
+
+    useEffect(() => {
+        ensureSession()
+            .catch(err => console.error('Failed to resolve notebook session', err))
+            .finally(() => setLoadingSession(false));
+    }, [ensureSession]);
 
     // Load persisted cells from Database on mount
     useEffect(() => {
@@ -335,16 +323,15 @@ export function NotebookInterface({ notebookId }: { notebookId: string }) {
                 applyFrame(id, frame.event, frame.data);
             }
         } catch (err: any) {
-            if (!ac.signal.aborted) {
-                appendBlock(id, {
-                    kind: 'text',
-                    text: `\n\nError: ${err?.message || 'Execution failed'}`,
-                });
+            if (ac.signal.aborted) {
+                appendBlock(id, { kind: 'text', text: '\n\n[Execution stopped]' });
+            } else if (err?.message?.includes('404')) {
+                // The session disappeared (e.g. backend reseed) — refresh it so a re-run works.
+                localStorage.removeItem(`stockastic_nb_session_${notebookId}`);
+                await ensureSession().catch(() => {});
+                appendBlock(id, { kind: 'text', text: '\n\nSession expired — please run this cell again.' });
             } else {
-                appendBlock(id, {
-                    kind: 'text',
-                    text: '\n\n[Execution stopped]',
-                });
+                appendBlock(id, { kind: 'text', text: `\n\nError: ${err?.message || 'Execution failed'}` });
             }
         } finally {
             delete abortControllersRef.current[id];
