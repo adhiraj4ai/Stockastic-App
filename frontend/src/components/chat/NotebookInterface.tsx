@@ -526,7 +526,7 @@ export function NotebookInterface({ notebookId }: { notebookId: string }) {
 
             {/* Scrollable Cell List */}
             <div className="flex-1 overflow-y-auto px-6 py-6 custom-scrollbar">
-                <div className="max-w-5xl mx-auto">
+                <div className="w-full">
                     <AddCellDivider onClick={() => insertCell(0)} />
                     {cells.map((cell, idx) => (
                         <React.Fragment key={cell.id}>
