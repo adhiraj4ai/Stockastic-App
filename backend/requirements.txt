@@ -52,3 +52,6 @@ PyYAML>=6.0
 # Async task queue (settings.py CELERY_*, stocks/tasks.py; worker in docker-compose)
 celery[redis]==5.6.3
 redis==6.4.0
+# Headless browser for the nepsealpha tearsheet scraper (local, on-demand).
+# Uses system Chrome via channel="chrome"; if absent run: python -m playwright install chromium
+playwright==1.49.1

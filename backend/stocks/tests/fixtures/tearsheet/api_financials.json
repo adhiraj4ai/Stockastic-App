@@ -1,0 +1,2732 @@
+[
+  {
+    "id": 52373,
+    "order": 1,
+    "sector": "HYDROPOWER",
+    "symbol": "API",
+    "particular": "Property,PlantAndEquipment",
+    "fiscal_year": "072-073",
+    "fiscal_year_value": 72073,
+    "value": 0
+  },
+  {
+    "id": 52374,
+    "order": 2,
+    "sector": "HYDROPOWER",
+    "symbol": "API",
+    "particular": "Wip(ProjectWorkInProgress,UnderDevelopment)",
+    "fiscal_year": "072-073",
+    "fiscal_year_value": 72073,
+    "value": 0
+  },
+  {
+    "id": 52375,
+    "order": 3,
+    "sector": "HYDROPOWER",
+    "symbol": "API",
+    "particular": "InvestmentAndFinancialAssets",
+    "fiscal_year": "072-073",
+    "fiscal_year_value": 72073,
+    "value": 0
+  },
+  {
+    "id": 52376,
+    "order": 4,
+    "sector": "HYDROPOWER",
+    "symbol": "API",
+    "particular": "TotalNon-CurrentAssets",
+    "fiscal_year": "072-073",
+    "fiscal_year_value": 72073,
+    "value": 0
+  },
+  {
+    "id": 52377,
+    "order": 5,
+    "sector": "HYDROPOWER",
+    "symbol": "API",
+    "particular": "TotalCurrentAssets",
+    "fiscal_year": "072-073",
+    "fiscal_year_value": 72073,
+    "value": 0
+  },
+  {
+    "id": 52378,
+    "order": 6,
+    "sector": "HYDROPOWER",
+    "symbol": "API",
+    "particular": "TotalAssets",
+    "fiscal_year": "072-073",
+    "fiscal_year_value": 72073,
+    "value": 0
+  },
+  {
+    "id": 52379,
+    "order": 7,
+    "sector": "HYDROPOWER",
+    "symbol": "API",
+    "particular": "ShareCapital",
+    "fiscal_year": "072-073",
+    "fiscal_year_value": 72073,
+    "value": 0
+  },
+  {
+    "id": 52380,
+    "order": 8,
+    "sector": "HYDROPOWER",
+    "symbol": "API",
+    "particular": "ReserveAndSurplus",
+    "fiscal_year": "072-073",
+    "fiscal_year_value": 72073,
+    "value": 0
+  },
+  {
+    "id": 52381,
+    "order": 9,
+    "sector": "HYDROPOWER",
+    "symbol": "API",
+    "particular": "TotalEquity",
+    "fiscal_year": "072-073",
+    "fiscal_year_value": 72073,
+    "value": 0
+  },
+  {
+    "id": 52382,
+    "order": 10,
+    "sector": "HYDROPOWER",
+    "symbol": "API",
+    "particular": "LongTermLoans&Borrowings",
+    "fiscal_year": "072-073",
+    "fiscal_year_value": 72073,
+    "value": 0
+  },
+  {
+    "id": 52383,
+    "order": 11,
+    "sector": "HYDROPOWER",
+    "symbol": "API",
+    "particular": "TotalNon-CurrentLiabilities",
+    "fiscal_year": "072-073",
+    "fiscal_year_value": 72073,
+    "value": 0
+  },
+  {
+    "id": 52384,
+    "order": 12,
+    "sector": "HYDROPOWER",
+    "symbol": "API",
+    "particular": "ShortTermLoans&Borrowings",
+    "fiscal_year": "072-073",
+    "fiscal_year_value": 72073,
+    "value": 0
+  },
+  {
+    "id": 52385,
+    "order": 13,
+    "sector": "HYDROPOWER",
+    "symbol": "API",
+    "particular": "TotalCurrentLiabilities",
+    "fiscal_year": "072-073",
+    "fiscal_year_value": 72073,
+    "value": 0
+  },
+  {
+    "id": 52386,
+    "order": 14,
+    "sector": "HYDROPOWER",
+    "symbol": "API",
+    "particular": "TotalLiabilities",
+    "fiscal_year": "072-073",
+    "fiscal_year_value": 72073,
+    "value": 0
+  },
+  {
+    "id": 52387,
+    "order": 15,
+    "sector": "HYDROPOWER",
+    "symbol": "API",
+    "particular": "TotalEquityAndLiabilities",
+    "fiscal_year": "072-073",
+    "fiscal_year_value": 72073,
+    "value": 0
+  },
+  {
+    "id": 52388,
+    "order": 16,
+    "sector": "HYDROPOWER",
+    "symbol": "API",
+    "particular": "Revenue(PowerSales)",
+    "fiscal_year": "072-073",
+    "fiscal_year_value": 72073,
+    "value": 0
+  },
+  {
+    "id": 52389,
+    "order": 17,
+    "sector": "HYDROPOWER",
+    "symbol": "API",
+    "particular": "Cogs(Generation,Distribution,Royalty&ProjectExpenses)",
+    "fiscal_year": "072-073",
+    "fiscal_year_value": 72073,
+    "value": 0
+  },
+  {
+    "id": 52390,
+    "order": 18,
+    "sector": "HYDROPOWER",
+    "symbol": "API",
+    "particular": "GrossProfit",
+    "fiscal_year": "072-073",
+    "fiscal_year_value": 72073,
+    "value": 0
+  },
+  {
+    "id": 52391,
+    "order": 19,
+    "sector": "HYDROPOWER",
+    "symbol": "API",
+    "particular": "Depreciation",
+    "fiscal_year": "072-073",
+    "fiscal_year_value": 72073,
+    "value": 0
+  },
+  {
+    "id": 52392,
+    "order": 20,
+    "sector": "HYDROPOWER",
+    "symbol": "API",
+    "particular": "AdministrativeAndOtherOperatingExpenses",
+    "fiscal_year": "072-073",
+    "fiscal_year_value": 72073,
+    "value": 0
+  },
+  {
+    "id": 52393,
+    "order": 21,
+    "sector": "HYDROPOWER",
+    "symbol": "API",
+    "particular": "ProfitFromOperation(OperatingProfit)",
+    "fiscal_year": "072-073",
+    "fiscal_year_value": 72073,
+    "value": 0
+  },
+  {
+    "id": 52394,
+    "order": 22,
+    "sector": "HYDROPOWER",
+    "symbol": "API",
+    "particular": "FinanceCost",
+    "fiscal_year": "072-073",
+    "fiscal_year_value": 72073,
+    "value": 0
+  },
+  {
+    "id": 52395,
+    "order": 23,
+    "sector": "HYDROPOWER",
+    "symbol": "API",
+    "particular": "ProfitBeforeTax",
+    "fiscal_year": "072-073",
+    "fiscal_year_value": 72073,
+    "value": 0
+  },
+  {
+    "id": 52396,
+    "order": 24,
+    "sector": "HYDROPOWER",
+    "symbol": "API",
+    "particular": "ProfitForTheYear(NetProfit)",
+    "fiscal_year": "072-073",
+    "fiscal_year_value": 72073,
+    "value": 0
+  },
+  {
+    "id": 51245,
+    "order": 1,
+    "sector": "HYDROPOWER",
+    "symbol": "API",
+    "particular": "Property,PlantAndEquipment",
+    "fiscal_year": "073-074",
+    "fiscal_year_value": 73074,
+    "value": 0
+  },
+  {
+    "id": 51246,
+    "order": 2,
+    "sector": "HYDROPOWER",
+    "symbol": "API",
+    "particular": "Wip(ProjectWorkInProgress,UnderDevelopment)",
+    "fiscal_year": "073-074",
+    "fiscal_year_value": 73074,
+    "value": 0
+  },
+  {
+    "id": 51247,
+    "order": 3,
+    "sector": "HYDROPOWER",
+    "symbol": "API",
+    "particular": "InvestmentAndFinancialAssets",
+    "fiscal_year": "073-074",
+    "fiscal_year_value": 73074,
+    "value": 0
+  },
+  {
+    "id": 51248,
+    "order": 4,
+    "sector": "HYDROPOWER",
+    "symbol": "API",
+    "particular": "TotalNon-CurrentAssets",
+    "fiscal_year": "073-074",
+    "fiscal_year_value": 73074,
+    "value": 0
+  },
+  {
+    "id": 51249,
+    "order": 5,
+    "sector": "HYDROPOWER",
+    "symbol": "API",
+    "particular": "TotalCurrentAssets",
+    "fiscal_year": "073-074",
+    "fiscal_year_value": 73074,
+    "value": 0
+  },
+  {
+    "id": 51250,
+    "order": 6,
+    "sector": "HYDROPOWER",
+    "symbol": "API",
+    "particular": "TotalAssets",
+    "fiscal_year": "073-074",
+    "fiscal_year_value": 73074,
+    "value": 0
+  },
+  {
+    "id": 51251,
+    "order": 7,
+    "sector": "HYDROPOWER",
+    "symbol": "API",
+    "particular": "ShareCapital",
+    "fiscal_year": "073-074",
+    "fiscal_year_value": 73074,
+    "value": 0
+  },
+  {
+    "id": 51252,
+    "order": 8,
+    "sector": "HYDROPOWER",
+    "symbol": "API",
+    "particular": "ReserveAndSurplus",
+    "fiscal_year": "073-074",
+    "fiscal_year_value": 73074,
+    "value": 0
+  },
+  {
+    "id": 51253,
+    "order": 9,
+    "sector": "HYDROPOWER",
+    "symbol": "API",
+    "particular": "TotalEquity",
+    "fiscal_year": "073-074",
+    "fiscal_year_value": 73074,
+    "value": 0
+  },
+  {
+    "id": 51254,
+    "order": 10,
+    "sector": "HYDROPOWER",
+    "symbol": "API",
+    "particular": "LongTermLoans&Borrowings",
+    "fiscal_year": "073-074",
+    "fiscal_year_value": 73074,
+    "value": 0
+  },
+  {
+    "id": 51255,
+    "order": 11,
+    "sector": "HYDROPOWER",
+    "symbol": "API",
+    "particular": "TotalNon-CurrentLiabilities",
+    "fiscal_year": "073-074",
+    "fiscal_year_value": 73074,
+    "value": 0
+  },
+  {
+    "id": 51256,
+    "order": 12,
+    "sector": "HYDROPOWER",
+    "symbol": "API",
+    "particular": "ShortTermLoans&Borrowings",
+    "fiscal_year": "073-074",
+    "fiscal_year_value": 73074,
+    "value": 0
+  },
+  {
+    "id": 51257,
+    "order": 13,
+    "sector": "HYDROPOWER",
+    "symbol": "API",
+    "particular": "TotalCurrentLiabilities",
+    "fiscal_year": "073-074",
+    "fiscal_year_value": 73074,
+    "value": 0
+  },
+  {
+    "id": 51258,
+    "order": 14,
+    "sector": "HYDROPOWER",
+    "symbol": "API",
+    "particular": "TotalLiabilities",
+    "fiscal_year": "073-074",
+    "fiscal_year_value": 73074,
+    "value": 0
+  },
+  {
+    "id": 51259,
+    "order": 15,
+    "sector": "HYDROPOWER",
+    "symbol": "API",
+    "particular": "TotalEquityAndLiabilities",
+    "fiscal_year": "073-074",
+    "fiscal_year_value": 73074,
+    "value": 0
+  },
+  {
+    "id": 51260,
+    "order": 16,
+    "sector": "HYDROPOWER",
+    "symbol": "API",
+    "particular": "Revenue(PowerSales)",
+    "fiscal_year": "073-074",
+    "fiscal_year_value": 73074,
+    "value": 0
+  },
+  {
+    "id": 51261,
+    "order": 17,
+    "sector": "HYDROPOWER",
+    "symbol": "API",
+    "particular": "Cogs(Generation,Distribution,Royalty&ProjectExpenses)",
+    "fiscal_year": "073-074",
+    "fiscal_year_value": 73074,
+    "value": 0
+  },
+  {
+    "id": 51262,
+    "order": 18,
+    "sector": "HYDROPOWER",
+    "symbol": "API",
+    "particular": "GrossProfit",
+    "fiscal_year": "073-074",
+    "fiscal_year_value": 73074,
+    "value": 0
+  },
+  {
+    "id": 51263,
+    "order": 19,
+    "sector": "HYDROPOWER",
+    "symbol": "API",
+    "particular": "Depreciation",
+    "fiscal_year": "073-074",
+    "fiscal_year_value": 73074,
+    "value": 0
+  },
+  {
+    "id": 51264,
+    "order": 20,
+    "sector": "HYDROPOWER",
+    "symbol": "API",
+    "particular": "AdministrativeAndOtherOperatingExpenses",
+    "fiscal_year": "073-074",
+    "fiscal_year_value": 73074,
+    "value": 0
+  },
+  {
+    "id": 51265,
+    "order": 21,
+    "sector": "HYDROPOWER",
+    "symbol": "API",
+    "particular": "ProfitFromOperation(OperatingProfit)",
+    "fiscal_year": "073-074",
+    "fiscal_year_value": 73074,
+    "value": 0
+  },
+  {
+    "id": 51266,
+    "order": 22,
+    "sector": "HYDROPOWER",
+    "symbol": "API",
+    "particular": "FinanceCost",
+    "fiscal_year": "073-074",
+    "fiscal_year_value": 73074,
+    "value": 0
+  },
+  {
+    "id": 51267,
+    "order": 23,
+    "sector": "HYDROPOWER",
+    "symbol": "API",
+    "particular": "ProfitBeforeTax",
+    "fiscal_year": "073-074",
+    "fiscal_year_value": 73074,
+    "value": 0
+  },
+  {
+    "id": 51268,
+    "order": 24,
+    "sector": "HYDROPOWER",
+    "symbol": "API",
+    "particular": "ProfitForTheYear(NetProfit)",
+    "fiscal_year": "073-074",
+    "fiscal_year_value": 73074,
+    "value": 0
+  },
+  {
+    "id": 50117,
+    "order": 1,
+    "sector": "HYDROPOWER",
+    "symbol": "API",
+    "particular": "Property,PlantAndEquipment",
+    "fiscal_year": "074-075",
+    "fiscal_year_value": 74075,
+    "value": 0
+  },
+  {
+    "id": 50118,
+    "order": 2,
+    "sector": "HYDROPOWER",
+    "symbol": "API",
+    "particular": "Wip(ProjectWorkInProgress,UnderDevelopment)",
+    "fiscal_year": "074-075",
+    "fiscal_year_value": 74075,
+    "value": 0
+  },
+  {
+    "id": 50119,
+    "order": 3,
+    "sector": "HYDROPOWER",
+    "symbol": "API",
+    "particular": "InvestmentAndFinancialAssets",
+    "fiscal_year": "074-075",
+    "fiscal_year_value": 74075,
+    "value": 0
+  },
+  {
+    "id": 50120,
+    "order": 4,
+    "sector": "HYDROPOWER",
+    "symbol": "API",
+    "particular": "TotalNon-CurrentAssets",
+    "fiscal_year": "074-075",
+    "fiscal_year_value": 74075,
+    "value": 0
+  },
+  {
+    "id": 50121,
+    "order": 5,
+    "sector": "HYDROPOWER",
+    "symbol": "API",
+    "particular": "TotalCurrentAssets",
+    "fiscal_year": "074-075",
+    "fiscal_year_value": 74075,
+    "value": 0
+  },
+  {
+    "id": 50122,
+    "order": 6,
+    "sector": "HYDROPOWER",
+    "symbol": "API",
+    "particular": "TotalAssets",
+    "fiscal_year": "074-075",
+    "fiscal_year_value": 74075,
+    "value": 0
+  },
+  {
+    "id": 50123,
+    "order": 7,
+    "sector": "HYDROPOWER",
+    "symbol": "API",
+    "particular": "ShareCapital",
+    "fiscal_year": "074-075",
+    "fiscal_year_value": 74075,
+    "value": 0
+  },
+  {
+    "id": 50124,
+    "order": 8,
+    "sector": "HYDROPOWER",
+    "symbol": "API",
+    "particular": "ReserveAndSurplus",
+    "fiscal_year": "074-075",
+    "fiscal_year_value": 74075,
+    "value": 0
+  },
+  {
+    "id": 50125,
+    "order": 9,
+    "sector": "HYDROPOWER",
+    "symbol": "API",
+    "particular": "TotalEquity",
+    "fiscal_year": "074-075",
+    "fiscal_year_value": 74075,
+    "value": 0
+  },
+  {
+    "id": 50126,
+    "order": 10,
+    "sector": "HYDROPOWER",
+    "symbol": "API",
+    "particular": "LongTermLoans&Borrowings",
+    "fiscal_year": "074-075",
+    "fiscal_year_value": 74075,
+    "value": 0
+  },
+  {
+    "id": 50127,
+    "order": 11,
+    "sector": "HYDROPOWER",
+    "symbol": "API",
+    "particular": "TotalNon-CurrentLiabilities",
+    "fiscal_year": "074-075",
+    "fiscal_year_value": 74075,
+    "value": 0
+  },
+  {
+    "id": 50128,
+    "order": 12,
+    "sector": "HYDROPOWER",
+    "symbol": "API",
+    "particular": "ShortTermLoans&Borrowings",
+    "fiscal_year": "074-075",
+    "fiscal_year_value": 74075,
+    "value": 0
+  },
+  {
+    "id": 50129,
+    "order": 13,
+    "sector": "HYDROPOWER",
+    "symbol": "API",
+    "particular": "TotalCurrentLiabilities",
+    "fiscal_year": "074-075",
+    "fiscal_year_value": 74075,
+    "value": 0
+  },
+  {
+    "id": 50130,
+    "order": 14,
+    "sector": "HYDROPOWER",
+    "symbol": "API",
+    "particular": "TotalLiabilities",
+    "fiscal_year": "074-075",
+    "fiscal_year_value": 74075,
+    "value": 0
+  },
+  {
+    "id": 50131,
+    "order": 15,
+    "sector": "HYDROPOWER",
+    "symbol": "API",
+    "particular": "TotalEquityAndLiabilities",
+    "fiscal_year": "074-075",
+    "fiscal_year_value": 74075,
+    "value": 0
+  },
+  {
+    "id": 50132,
+    "order": 16,
+    "sector": "HYDROPOWER",
+    "symbol": "API",
+    "particular": "Revenue(PowerSales)",
+    "fiscal_year": "074-075",
+    "fiscal_year_value": 74075,
+    "value": 0
+  },
+  {
+    "id": 50133,
+    "order": 17,
+    "sector": "HYDROPOWER",
+    "symbol": "API",
+    "particular": "Cogs(Generation,Distribution,Royalty&ProjectExpenses)",
+    "fiscal_year": "074-075",
+    "fiscal_year_value": 74075,
+    "value": 0
+  },
+  {
+    "id": 50134,
+    "order": 18,
+    "sector": "HYDROPOWER",
+    "symbol": "API",
+    "particular": "GrossProfit",
+    "fiscal_year": "074-075",
+    "fiscal_year_value": 74075,
+    "value": 0
+  },
+  {
+    "id": 50135,
+    "order": 19,
+    "sector": "HYDROPOWER",
+    "symbol": "API",
+    "particular": "Depreciation",
+    "fiscal_year": "074-075",
+    "fiscal_year_value": 74075,
+    "value": 0
+  },
+  {
+    "id": 50136,
+    "order": 20,
+    "sector": "HYDROPOWER",
+    "symbol": "API",
+    "particular": "AdministrativeAndOtherOperatingExpenses",
+    "fiscal_year": "074-075",
+    "fiscal_year_value": 74075,
+    "value": 0
+  },
+  {
+    "id": 50137,
+    "order": 21,
+    "sector": "HYDROPOWER",
+    "symbol": "API",
+    "particular": "ProfitFromOperation(OperatingProfit)",
+    "fiscal_year": "074-075",
+    "fiscal_year_value": 74075,
+    "value": 0
+  },
+  {
+    "id": 50138,
+    "order": 22,
+    "sector": "HYDROPOWER",
+    "symbol": "API",
+    "particular": "FinanceCost",
+    "fiscal_year": "074-075",
+    "fiscal_year_value": 74075,
+    "value": 0
+  },
+  {
+    "id": 50139,
+    "order": 23,
+    "sector": "HYDROPOWER",
+    "symbol": "API",
+    "particular": "ProfitBeforeTax",
+    "fiscal_year": "074-075",
+    "fiscal_year_value": 74075,
+    "value": 0
+  },
+  {
+    "id": 50140,
+    "order": 24,
+    "sector": "HYDROPOWER",
+    "symbol": "API",
+    "particular": "ProfitForTheYear(NetProfit)",
+    "fiscal_year": "074-075",
+    "fiscal_year_value": 74075,
+    "value": 0
+  },
+  {
+    "id": 48989,
+    "order": 1,
+    "sector": "HYDROPOWER",
+    "symbol": "API",
+    "particular": "Property,PlantAndEquipment",
+    "fiscal_year": "075-076",
+    "fiscal_year_value": 75076,
+    "value": 1508964785
+  },
+  {
+    "id": 48990,
+    "order": 2,
+    "sector": "HYDROPOWER",
+    "symbol": "API",
+    "particular": "Wip(ProjectWorkInProgress,UnderDevelopment)",
+    "fiscal_year": "075-076",
+    "fiscal_year_value": 75076,
+    "value": 1665643838
+  },
+  {
+    "id": 48991,
+    "order": 3,
+    "sector": "HYDROPOWER",
+    "symbol": "API",
+    "particular": "InvestmentAndFinancialAssets",
+    "fiscal_year": "075-076",
+    "fiscal_year_value": 75076,
+    "value": 144134168
+  },
+  {
+    "id": 48992,
+    "order": 4,
+    "sector": "HYDROPOWER",
+    "symbol": "API",
+    "particular": "TotalNon-CurrentAssets",
+    "fiscal_year": "075-076",
+    "fiscal_year_value": 75076,
+    "value": 3318742791
+  },
+  {
+    "id": 48993,
+    "order": 5,
+    "sector": "HYDROPOWER",
+    "symbol": "API",
+    "particular": "TotalCurrentAssets",
+    "fiscal_year": "075-076",
+    "fiscal_year_value": 75076,
+    "value": 93653159
+  },
+  {
+    "id": 48994,
+    "order": 6,
+    "sector": "HYDROPOWER",
+    "symbol": "API",
+    "particular": "TotalAssets",
+    "fiscal_year": "075-076",
+    "fiscal_year_value": 75076,
+    "value": 3412395950
+  },
+  {
+    "id": 48995,
+    "order": 7,
+    "sector": "HYDROPOWER",
+    "symbol": "API",
+    "particular": "ShareCapital",
+    "fiscal_year": "075-076",
+    "fiscal_year_value": 75076,
+    "value": 1190700000
+  },
+  {
+    "id": 48996,
+    "order": 8,
+    "sector": "HYDROPOWER",
+    "symbol": "API",
+    "particular": "ReserveAndSurplus",
+    "fiscal_year": "075-076",
+    "fiscal_year_value": 75076,
+    "value": 74231057
+  },
+  {
+    "id": 48997,
+    "order": 9,
+    "sector": "HYDROPOWER",
+    "symbol": "API",
+    "particular": "TotalEquity",
+    "fiscal_year": "075-076",
+    "fiscal_year_value": 75076,
+    "value": 1264931057
+  },
+  {
+    "id": 48998,
+    "order": 10,
+    "sector": "HYDROPOWER",
+    "symbol": "API",
+    "particular": "LongTermLoans&Borrowings",
+    "fiscal_year": "075-076",
+    "fiscal_year_value": 75076,
+    "value": 1736091383
+  },
+  {
+    "id": 48999,
+    "order": 11,
+    "sector": "HYDROPOWER",
+    "symbol": "API",
+    "particular": "TotalNon-CurrentLiabilities",
+    "fiscal_year": "075-076",
+    "fiscal_year_value": 75076,
+    "value": 1736091383
+  },
+  {
+    "id": 49000,
+    "order": 12,
+    "sector": "HYDROPOWER",
+    "symbol": "API",
+    "particular": "ShortTermLoans&Borrowings",
+    "fiscal_year": "075-076",
+    "fiscal_year_value": 75076,
+    "value": 189199442
+  },
+  {
+    "id": 49001,
+    "order": 13,
+    "sector": "HYDROPOWER",
+    "symbol": "API",
+    "particular": "TotalCurrentLiabilities",
+    "fiscal_year": "075-076",
+    "fiscal_year_value": 75076,
+    "value": 411373510
+  },
+  {
+    "id": 49002,
+    "order": 14,
+    "sector": "HYDROPOWER",
+    "symbol": "API",
+    "particular": "TotalLiabilities",
+    "fiscal_year": "075-076",
+    "fiscal_year_value": 75076,
+    "value": 2147464893
+  },
+  {
+    "id": 49003,
+    "order": 15,
+    "sector": "HYDROPOWER",
+    "symbol": "API",
+    "particular": "TotalEquityAndLiabilities",
+    "fiscal_year": "075-076",
+    "fiscal_year_value": 75076,
+    "value": 3412395950
+  },
+  {
+    "id": 49004,
+    "order": 16,
+    "sector": "HYDROPOWER",
+    "symbol": "API",
+    "particular": "Revenue(PowerSales)",
+    "fiscal_year": "075-076",
+    "fiscal_year_value": 75076,
+    "value": 178740059
+  },
+  {
+    "id": 49005,
+    "order": 17,
+    "sector": "HYDROPOWER",
+    "symbol": "API",
+    "particular": "Cogs(Generation,Distribution,Royalty&ProjectExpenses)",
+    "fiscal_year": "075-076",
+    "fiscal_year_value": 75076,
+    "value": 14207036
+  },
+  {
+    "id": 49006,
+    "order": 18,
+    "sector": "HYDROPOWER",
+    "symbol": "API",
+    "particular": "GrossProfit",
+    "fiscal_year": "075-076",
+    "fiscal_year_value": 75076,
+    "value": 164533023
+  },
+  {
+    "id": 49007,
+    "order": 19,
+    "sector": "HYDROPOWER",
+    "symbol": "API",
+    "particular": "Depreciation",
+    "fiscal_year": "075-076",
+    "fiscal_year_value": 75076,
+    "value": 17805270
+  },
+  {
+    "id": 49008,
+    "order": 20,
+    "sector": "HYDROPOWER",
+    "symbol": "API",
+    "particular": "AdministrativeAndOtherOperatingExpenses",
+    "fiscal_year": "075-076",
+    "fiscal_year_value": 75076,
+    "value": 10210341
+  },
+  {
+    "id": 49009,
+    "order": 21,
+    "sector": "HYDROPOWER",
+    "symbol": "API",
+    "particular": "ProfitFromOperation(OperatingProfit)",
+    "fiscal_year": "075-076",
+    "fiscal_year_value": 75076,
+    "value": 0
+  },
+  {
+    "id": 49010,
+    "order": 22,
+    "sector": "HYDROPOWER",
+    "symbol": "API",
+    "particular": "FinanceCost",
+    "fiscal_year": "075-076",
+    "fiscal_year_value": 75076,
+    "value": 72390410
+  },
+  {
+    "id": 49011,
+    "order": 23,
+    "sector": "HYDROPOWER",
+    "symbol": "API",
+    "particular": "ProfitBeforeTax",
+    "fiscal_year": "075-076",
+    "fiscal_year_value": 75076,
+    "value": 71034765
+  },
+  {
+    "id": 49012,
+    "order": 24,
+    "sector": "HYDROPOWER",
+    "symbol": "API",
+    "particular": "ProfitForTheYear(NetProfit)",
+    "fiscal_year": "075-076",
+    "fiscal_year_value": 75076,
+    "value": 70922012
+  },
+  {
+    "id": 47909,
+    "order": 1,
+    "sector": "HYDROPOWER",
+    "symbol": "API",
+    "particular": "Property,PlantAndEquipment",
+    "fiscal_year": "076-077",
+    "fiscal_year_value": 76077,
+    "value": 3229882181
+  },
+  {
+    "id": 47910,
+    "order": 2,
+    "sector": "HYDROPOWER",
+    "symbol": "API",
+    "particular": "Wip(ProjectWorkInProgress,UnderDevelopment)",
+    "fiscal_year": "076-077",
+    "fiscal_year_value": 76077,
+    "value": 42180071
+  },
+  {
+    "id": 47911,
+    "order": 3,
+    "sector": "HYDROPOWER",
+    "symbol": "API",
+    "particular": "InvestmentAndFinancialAssets",
+    "fiscal_year": "076-077",
+    "fiscal_year_value": 76077,
+    "value": 134037868
+  },
+  {
+    "id": 47912,
+    "order": 4,
+    "sector": "HYDROPOWER",
+    "symbol": "API",
+    "particular": "TotalNon-CurrentAssets",
+    "fiscal_year": "076-077",
+    "fiscal_year_value": 76077,
+    "value": 3406100120
+  },
+  {
+    "id": 47913,
+    "order": 5,
+    "sector": "HYDROPOWER",
+    "symbol": "API",
+    "particular": "TotalCurrentAssets",
+    "fiscal_year": "076-077",
+    "fiscal_year_value": 76077,
+    "value": 150649471
+  },
+  {
+    "id": 47914,
+    "order": 6,
+    "sector": "HYDROPOWER",
+    "symbol": "API",
+    "particular": "TotalAssets",
+    "fiscal_year": "076-077",
+    "fiscal_year_value": 76077,
+    "value": 3556749591
+  },
+  {
+    "id": 47915,
+    "order": 7,
+    "sector": "HYDROPOWER",
+    "symbol": "API",
+    "particular": "ShareCapital",
+    "fiscal_year": "076-077",
+    "fiscal_year_value": 76077,
+    "value": 1190700000
+  },
+  {
+    "id": 47916,
+    "order": 8,
+    "sector": "HYDROPOWER",
+    "symbol": "API",
+    "particular": "ReserveAndSurplus",
+    "fiscal_year": "076-077",
+    "fiscal_year_value": 76077,
+    "value": 182890532
+  },
+  {
+    "id": 47917,
+    "order": 9,
+    "sector": "HYDROPOWER",
+    "symbol": "API",
+    "particular": "TotalEquity",
+    "fiscal_year": "076-077",
+    "fiscal_year_value": 76077,
+    "value": 1373590532
+  },
+  {
+    "id": 47918,
+    "order": 10,
+    "sector": "HYDROPOWER",
+    "symbol": "API",
+    "particular": "LongTermLoans&Borrowings",
+    "fiscal_year": "076-077",
+    "fiscal_year_value": 76077,
+    "value": 1733106615
+  },
+  {
+    "id": 47919,
+    "order": 11,
+    "sector": "HYDROPOWER",
+    "symbol": "API",
+    "particular": "TotalNon-CurrentLiabilities",
+    "fiscal_year": "076-077",
+    "fiscal_year_value": 76077,
+    "value": 1733107615
+  },
+  {
+    "id": 47920,
+    "order": 12,
+    "sector": "HYDROPOWER",
+    "symbol": "API",
+    "particular": "ShortTermLoans&Borrowings",
+    "fiscal_year": "076-077",
+    "fiscal_year_value": 76077,
+    "value": 243032432
+  },
+  {
+    "id": 47921,
+    "order": 13,
+    "sector": "HYDROPOWER",
+    "symbol": "API",
+    "particular": "TotalCurrentLiabilities",
+    "fiscal_year": "076-077",
+    "fiscal_year_value": 76077,
+    "value": 450052444
+  },
+  {
+    "id": 47922,
+    "order": 14,
+    "sector": "HYDROPOWER",
+    "symbol": "API",
+    "particular": "TotalLiabilities",
+    "fiscal_year": "076-077",
+    "fiscal_year_value": 76077,
+    "value": 2183159059
+  },
+  {
+    "id": 47923,
+    "order": 15,
+    "sector": "HYDROPOWER",
+    "symbol": "API",
+    "particular": "TotalEquityAndLiabilities",
+    "fiscal_year": "076-077",
+    "fiscal_year_value": 76077,
+    "value": 3556749591
+  },
+  {
+    "id": 47924,
+    "order": 16,
+    "sector": "HYDROPOWER",
+    "symbol": "API",
+    "particular": "Revenue(PowerSales)",
+    "fiscal_year": "076-077",
+    "fiscal_year_value": 76077,
+    "value": 324437259
+  },
+  {
+    "id": 47925,
+    "order": 17,
+    "sector": "HYDROPOWER",
+    "symbol": "API",
+    "particular": "Cogs(Generation,Distribution,Royalty&ProjectExpenses)",
+    "fiscal_year": "076-077",
+    "fiscal_year_value": 76077,
+    "value": 27990906
+  },
+  {
+    "id": 47926,
+    "order": 18,
+    "sector": "HYDROPOWER",
+    "symbol": "API",
+    "particular": "GrossProfit",
+    "fiscal_year": "076-077",
+    "fiscal_year_value": 76077,
+    "value": 296446353
+  },
+  {
+    "id": 47927,
+    "order": 19,
+    "sector": "HYDROPOWER",
+    "symbol": "API",
+    "particular": "Depreciation",
+    "fiscal_year": "076-077",
+    "fiscal_year_value": 76077,
+    "value": 26257310
+  },
+  {
+    "id": 47928,
+    "order": 20,
+    "sector": "HYDROPOWER",
+    "symbol": "API",
+    "particular": "AdministrativeAndOtherOperatingExpenses",
+    "fiscal_year": "076-077",
+    "fiscal_year_value": 76077,
+    "value": 15028942
+  },
+  {
+    "id": 47929,
+    "order": 21,
+    "sector": "HYDROPOWER",
+    "symbol": "API",
+    "particular": "ProfitFromOperation(OperatingProfit)",
+    "fiscal_year": "076-077",
+    "fiscal_year_value": 76077,
+    "value": 0
+  },
+  {
+    "id": 47930,
+    "order": 22,
+    "sector": "HYDROPOWER",
+    "symbol": "API",
+    "particular": "FinanceCost",
+    "fiscal_year": "076-077",
+    "fiscal_year_value": 76077,
+    "value": 150648258
+  },
+  {
+    "id": 47931,
+    "order": 23,
+    "sector": "HYDROPOWER",
+    "symbol": "API",
+    "particular": "ProfitBeforeTax",
+    "fiscal_year": "076-077",
+    "fiscal_year_value": 76077,
+    "value": 108966003
+  },
+  {
+    "id": 47932,
+    "order": 24,
+    "sector": "HYDROPOWER",
+    "symbol": "API",
+    "particular": "ProfitForTheYear(NetProfit)",
+    "fiscal_year": "076-077",
+    "fiscal_year_value": 76077,
+    "value": 108659474
+  },
+  {
+    "id": 46925,
+    "order": 1,
+    "sector": "HYDROPOWER",
+    "symbol": "API",
+    "particular": "Property,PlantAndEquipment",
+    "fiscal_year": "077-078",
+    "fiscal_year_value": 77078,
+    "value": 3200780188
+  },
+  {
+    "id": 46926,
+    "order": 2,
+    "sector": "HYDROPOWER",
+    "symbol": "API",
+    "particular": "Wip(ProjectWorkInProgress,UnderDevelopment)",
+    "fiscal_year": "077-078",
+    "fiscal_year_value": 77078,
+    "value": 1090894312
+  },
+  {
+    "id": 46927,
+    "order": 3,
+    "sector": "HYDROPOWER",
+    "symbol": "API",
+    "particular": "InvestmentAndFinancialAssets",
+    "fiscal_year": "077-078",
+    "fiscal_year_value": 77078,
+    "value": 107372149
+  },
+  {
+    "id": 46928,
+    "order": 4,
+    "sector": "HYDROPOWER",
+    "symbol": "API",
+    "particular": "TotalNon-CurrentAssets",
+    "fiscal_year": "077-078",
+    "fiscal_year_value": 77078,
+    "value": 4399046649
+  },
+  {
+    "id": 46929,
+    "order": 5,
+    "sector": "HYDROPOWER",
+    "symbol": "API",
+    "particular": "TotalCurrentAssets",
+    "fiscal_year": "077-078",
+    "fiscal_year_value": 77078,
+    "value": 1538636247
+  },
+  {
+    "id": 46930,
+    "order": 6,
+    "sector": "HYDROPOWER",
+    "symbol": "API",
+    "particular": "TotalAssets",
+    "fiscal_year": "077-078",
+    "fiscal_year_value": 77078,
+    "value": 5937682896
+  },
+  {
+    "id": 46931,
+    "order": 7,
+    "sector": "HYDROPOWER",
+    "symbol": "API",
+    "particular": "ShareCapital",
+    "fiscal_year": "077-078",
+    "fiscal_year_value": 77078,
+    "value": 2475196250
+  },
+  {
+    "id": 46932,
+    "order": 8,
+    "sector": "HYDROPOWER",
+    "symbol": "API",
+    "particular": "ReserveAndSurplus",
+    "fiscal_year": "077-078",
+    "fiscal_year_value": 77078,
+    "value": 279943285
+  },
+  {
+    "id": 46933,
+    "order": 9,
+    "sector": "HYDROPOWER",
+    "symbol": "API",
+    "particular": "TotalEquity",
+    "fiscal_year": "077-078",
+    "fiscal_year_value": 77078,
+    "value": 2755139535
+  },
+  {
+    "id": 46934,
+    "order": 10,
+    "sector": "HYDROPOWER",
+    "symbol": "API",
+    "particular": "LongTermLoans&Borrowings",
+    "fiscal_year": "077-078",
+    "fiscal_year_value": 77078,
+    "value": 3010369763
+  },
+  {
+    "id": 46935,
+    "order": 11,
+    "sector": "HYDROPOWER",
+    "symbol": "API",
+    "particular": "TotalNon-CurrentLiabilities",
+    "fiscal_year": "077-078",
+    "fiscal_year_value": 77078,
+    "value": 3010369763
+  },
+  {
+    "id": 46936,
+    "order": 12,
+    "sector": "HYDROPOWER",
+    "symbol": "API",
+    "particular": "ShortTermLoans&Borrowings",
+    "fiscal_year": "077-078",
+    "fiscal_year_value": 77078,
+    "value": 93764750
+  },
+  {
+    "id": 46937,
+    "order": 13,
+    "sector": "HYDROPOWER",
+    "symbol": "API",
+    "particular": "TotalCurrentLiabilities",
+    "fiscal_year": "077-078",
+    "fiscal_year_value": 77078,
+    "value": 172173598
+  },
+  {
+    "id": 46938,
+    "order": 14,
+    "sector": "HYDROPOWER",
+    "symbol": "API",
+    "particular": "TotalLiabilities",
+    "fiscal_year": "077-078",
+    "fiscal_year_value": 77078,
+    "value": 3182543361
+  },
+  {
+    "id": 46939,
+    "order": 15,
+    "sector": "HYDROPOWER",
+    "symbol": "API",
+    "particular": "TotalEquityAndLiabilities",
+    "fiscal_year": "077-078",
+    "fiscal_year_value": 77078,
+    "value": 5937682896
+  },
+  {
+    "id": 46940,
+    "order": 16,
+    "sector": "HYDROPOWER",
+    "symbol": "API",
+    "particular": "Revenue(PowerSales)",
+    "fiscal_year": "077-078",
+    "fiscal_year_value": 77078,
+    "value": 367288448
+  },
+  {
+    "id": 46941,
+    "order": 17,
+    "sector": "HYDROPOWER",
+    "symbol": "API",
+    "particular": "Cogs(Generation,Distribution,Royalty&ProjectExpenses)",
+    "fiscal_year": "077-078",
+    "fiscal_year_value": 77078,
+    "value": 44823715
+  },
+  {
+    "id": 46942,
+    "order": 18,
+    "sector": "HYDROPOWER",
+    "symbol": "API",
+    "particular": "GrossProfit",
+    "fiscal_year": "077-078",
+    "fiscal_year_value": 77078,
+    "value": 322464733
+  },
+  {
+    "id": 46943,
+    "order": 19,
+    "sector": "HYDROPOWER",
+    "symbol": "API",
+    "particular": "Depreciation",
+    "fiscal_year": "077-078",
+    "fiscal_year_value": 77078,
+    "value": 51610491
+  },
+  {
+    "id": 46944,
+    "order": 20,
+    "sector": "HYDROPOWER",
+    "symbol": "API",
+    "particular": "AdministrativeAndOtherOperatingExpenses",
+    "fiscal_year": "077-078",
+    "fiscal_year_value": 77078,
+    "value": 14440634
+  },
+  {
+    "id": 46945,
+    "order": 21,
+    "sector": "HYDROPOWER",
+    "symbol": "API",
+    "particular": "ProfitFromOperation(OperatingProfit)",
+    "fiscal_year": "077-078",
+    "fiscal_year_value": 77078,
+    "value": 0
+  },
+  {
+    "id": 46946,
+    "order": 22,
+    "sector": "HYDROPOWER",
+    "symbol": "API",
+    "particular": "FinanceCost",
+    "fiscal_year": "077-078",
+    "fiscal_year_value": 77078,
+    "value": 171026049
+  },
+  {
+    "id": 46947,
+    "order": 23,
+    "sector": "HYDROPOWER",
+    "symbol": "API",
+    "particular": "ProfitBeforeTax",
+    "fiscal_year": "077-078",
+    "fiscal_year_value": 77078,
+    "value": 139984221
+  },
+  {
+    "id": 46948,
+    "order": 24,
+    "sector": "HYDROPOWER",
+    "symbol": "API",
+    "particular": "ProfitForTheYear(NetProfit)",
+    "fiscal_year": "077-078",
+    "fiscal_year_value": 77078,
+    "value": 126074668
+  },
+  {
+    "id": 68970,
+    "order": 1,
+    "sector": "HYDROPOWER",
+    "symbol": "API",
+    "particular": "Property,PlantAndEquipment",
+    "fiscal_year": "078-079",
+    "fiscal_year_value": 78079,
+    "value": 41626959
+  },
+  {
+    "id": 68971,
+    "order": 2,
+    "sector": "HYDROPOWER",
+    "symbol": "API",
+    "particular": "Wip(ProjectWorkInProgress,UnderDevelopment)",
+    "fiscal_year": "078-079",
+    "fiscal_year_value": 78079,
+    "value": 3405501069
+  },
+  {
+    "id": 68972,
+    "order": 3,
+    "sector": "HYDROPOWER",
+    "symbol": "API",
+    "particular": "InvestmentAndFinancialAssets",
+    "fiscal_year": "078-079",
+    "fiscal_year_value": 78079,
+    "value": 220550000
+  },
+  {
+    "id": 68973,
+    "order": 4,
+    "sector": "HYDROPOWER",
+    "symbol": "API",
+    "particular": "TotalNon-CurrentAssets",
+    "fiscal_year": "078-079",
+    "fiscal_year_value": 78079,
+    "value": 7149882430
+  },
+  {
+    "id": 68974,
+    "order": 5,
+    "sector": "HYDROPOWER",
+    "symbol": "API",
+    "particular": "TotalCurrentAssets",
+    "fiscal_year": "078-079",
+    "fiscal_year_value": 78079,
+    "value": 1840566572
+  },
+  {
+    "id": 68975,
+    "order": 6,
+    "sector": "HYDROPOWER",
+    "symbol": "API",
+    "particular": "TotalAssets",
+    "fiscal_year": "078-079",
+    "fiscal_year_value": 78079,
+    "value": 8990449002
+  },
+  {
+    "id": 68976,
+    "order": 7,
+    "sector": "HYDROPOWER",
+    "symbol": "API",
+    "particular": "ShareCapital",
+    "fiscal_year": "078-079",
+    "fiscal_year_value": 78079,
+    "value": 3844915546
+  },
+  {
+    "id": 68977,
+    "order": 8,
+    "sector": "HYDROPOWER",
+    "symbol": "API",
+    "particular": "ReserveAndSurplus",
+    "fiscal_year": "078-079",
+    "fiscal_year_value": 78079,
+    "value": 308895682
+  },
+  {
+    "id": 68978,
+    "order": 9,
+    "sector": "HYDROPOWER",
+    "symbol": "API",
+    "particular": "TotalEquity",
+    "fiscal_year": "078-079",
+    "fiscal_year_value": 78079,
+    "value": 4153811228
+  },
+  {
+    "id": 68979,
+    "order": 10,
+    "sector": "HYDROPOWER",
+    "symbol": "API",
+    "particular": "LongTermLoans&Borrowings",
+    "fiscal_year": "078-079",
+    "fiscal_year_value": 78079,
+    "value": 4218920622
+  },
+  {
+    "id": 68980,
+    "order": 11,
+    "sector": "HYDROPOWER",
+    "symbol": "API",
+    "particular": "TotalNon-CurrentLiabilities",
+    "fiscal_year": "078-079",
+    "fiscal_year_value": 78079,
+    "value": 4218920622
+  },
+  {
+    "id": 68981,
+    "order": 12,
+    "sector": "HYDROPOWER",
+    "symbol": "API",
+    "particular": "ShortTermLoans&Borrowings",
+    "fiscal_year": "078-079",
+    "fiscal_year_value": 78079,
+    "value": 547502649
+  },
+  {
+    "id": 68982,
+    "order": 13,
+    "sector": "HYDROPOWER",
+    "symbol": "API",
+    "particular": "TotalCurrentLiabilities",
+    "fiscal_year": "078-079",
+    "fiscal_year_value": 78079,
+    "value": 617717152
+  },
+  {
+    "id": 68983,
+    "order": 14,
+    "sector": "HYDROPOWER",
+    "symbol": "API",
+    "particular": "TotalLiabilities",
+    "fiscal_year": "078-079",
+    "fiscal_year_value": 78079,
+    "value": 4836637774
+  },
+  {
+    "id": 68984,
+    "order": 15,
+    "sector": "HYDROPOWER",
+    "symbol": "API",
+    "particular": "TotalEquityAndLiabilities",
+    "fiscal_year": "078-079",
+    "fiscal_year_value": 78079,
+    "value": 8990449002
+  },
+  {
+    "id": 68985,
+    "order": 16,
+    "sector": "HYDROPOWER",
+    "symbol": "API",
+    "particular": "Revenue(PowerSales)",
+    "fiscal_year": "078-079",
+    "fiscal_year_value": 78079,
+    "value": 518521323
+  },
+  {
+    "id": 68986,
+    "order": 17,
+    "sector": "HYDROPOWER",
+    "symbol": "API",
+    "particular": "Cogs(Generation,Distribution,Royalty&ProjectExpenses)",
+    "fiscal_year": "078-079",
+    "fiscal_year_value": 78079,
+    "value": 87486129
+  },
+  {
+    "id": 68987,
+    "order": 18,
+    "sector": "HYDROPOWER",
+    "symbol": "API",
+    "particular": "GrossProfit",
+    "fiscal_year": "078-079",
+    "fiscal_year_value": 78079,
+    "value": 431035194
+  },
+  {
+    "id": 68988,
+    "order": 19,
+    "sector": "HYDROPOWER",
+    "symbol": "API",
+    "particular": "Depreciation",
+    "fiscal_year": "078-079",
+    "fiscal_year_value": 78079,
+    "value": 133523508
+  },
+  {
+    "id": 68989,
+    "order": 20,
+    "sector": "HYDROPOWER",
+    "symbol": "API",
+    "particular": "AdministrativeAndOtherOperatingExpenses",
+    "fiscal_year": "078-079",
+    "fiscal_year_value": 78079,
+    "value": 7839019
+  },
+  {
+    "id": 68990,
+    "order": 21,
+    "sector": "HYDROPOWER",
+    "symbol": "API",
+    "particular": "ProfitFromOperation(OperatingProfit)",
+    "fiscal_year": "078-079",
+    "fiscal_year_value": 78079,
+    "value": 298027805
+  },
+  {
+    "id": 68991,
+    "order": 22,
+    "sector": "HYDROPOWER",
+    "symbol": "API",
+    "particular": "FinanceCost",
+    "fiscal_year": "078-079",
+    "fiscal_year_value": 78079,
+    "value": 188799534
+  },
+  {
+    "id": 68992,
+    "order": 23,
+    "sector": "HYDROPOWER",
+    "symbol": "API",
+    "particular": "ProfitBeforeTax",
+    "fiscal_year": "078-079",
+    "fiscal_year_value": 78079,
+    "value": 109228271
+  },
+  {
+    "id": 68993,
+    "order": 24,
+    "sector": "HYDROPOWER",
+    "symbol": "API",
+    "particular": "ProfitForTheYear(NetProfit)",
+    "fiscal_year": "078-079",
+    "fiscal_year_value": 78079,
+    "value": 106142234
+  },
+  {
+    "id": 82204,
+    "order": 1001,
+    "sector": "HYDROPOWER",
+    "symbol": "API",
+    "particular": "CashFlowsFromOperatingActivities",
+    "fiscal_year": "078-079",
+    "fiscal_year_value": 78079,
+    "value": 377776304
+  },
+  {
+    "id": 82205,
+    "order": 1002,
+    "sector": "HYDROPOWER",
+    "symbol": "API",
+    "particular": "CashFlowsFromInvestingActivities",
+    "fiscal_year": "078-079",
+    "fiscal_year_value": 78079,
+    "value": -2925114371
+  },
+  {
+    "id": 82206,
+    "order": 1003,
+    "sector": "HYDROPOWER",
+    "symbol": "API",
+    "particular": "CashFlowsFromFinancingActivities",
+    "fiscal_year": "078-079",
+    "fiscal_year_value": 78079,
+    "value": 2765163359
+  },
+  {
+    "id": 84703,
+    "order": 1,
+    "sector": "HYDROPOWER",
+    "symbol": "API",
+    "particular": "Property,PlantAndEquipment",
+    "fiscal_year": "079-080",
+    "fiscal_year_value": 79080,
+    "value": 18615109
+  },
+  {
+    "id": 84704,
+    "order": 2,
+    "sector": "HYDROPOWER",
+    "symbol": "API",
+    "particular": "Wip(ProjectWorkInProgress,UnderDevelopment)",
+    "fiscal_year": "079-080",
+    "fiscal_year_value": 79080,
+    "value": 7471356586
+  },
+  {
+    "id": 84705,
+    "order": 3,
+    "sector": "HYDROPOWER",
+    "symbol": "API",
+    "particular": "InvestmentAndFinancialAssets",
+    "fiscal_year": "079-080",
+    "fiscal_year_value": 79080,
+    "value": 388134298
+  },
+  {
+    "id": 84706,
+    "order": 4,
+    "sector": "HYDROPOWER",
+    "symbol": "API",
+    "particular": "TotalNon-CurrentAssets",
+    "fiscal_year": "079-080",
+    "fiscal_year_value": 79080,
+    "value": 11330771074
+  },
+  {
+    "id": 84707,
+    "order": 5,
+    "sector": "HYDROPOWER",
+    "symbol": "API",
+    "particular": "TotalCurrentAssets",
+    "fiscal_year": "079-080",
+    "fiscal_year_value": 79080,
+    "value": 547303380
+  },
+  {
+    "id": 84708,
+    "order": 6,
+    "sector": "HYDROPOWER",
+    "symbol": "API",
+    "particular": "TotalAssets",
+    "fiscal_year": "079-080",
+    "fiscal_year_value": 79080,
+    "value": 11878074454
+  },
+  {
+    "id": 84709,
+    "order": 7,
+    "sector": "HYDROPOWER",
+    "symbol": "API",
+    "particular": "ShareCapital",
+    "fiscal_year": "079-080",
+    "fiscal_year_value": 79080,
+    "value": 4133284212
+  },
+  {
+    "id": 84710,
+    "order": 8,
+    "sector": "HYDROPOWER",
+    "symbol": "API",
+    "particular": "ReserveAndSurplus",
+    "fiscal_year": "079-080",
+    "fiscal_year_value": 79080,
+    "value": 52826504
+  },
+  {
+    "id": 84711,
+    "order": 9,
+    "sector": "HYDROPOWER",
+    "symbol": "API",
+    "particular": "TotalEquity",
+    "fiscal_year": "079-080",
+    "fiscal_year_value": 79080,
+    "value": 4186110715
+  },
+  {
+    "id": 84712,
+    "order": 10,
+    "sector": "HYDROPOWER",
+    "symbol": "API",
+    "particular": "LongTermLoans&Borrowings",
+    "fiscal_year": "079-080",
+    "fiscal_year_value": 79080,
+    "value": 6250604976
+  },
+  {
+    "id": 84713,
+    "order": 11,
+    "sector": "HYDROPOWER",
+    "symbol": "API",
+    "particular": "TotalNon-CurrentLiabilities",
+    "fiscal_year": "079-080",
+    "fiscal_year_value": 79080,
+    "value": 7098904689
+  },
+  {
+    "id": 84714,
+    "order": 12,
+    "sector": "HYDROPOWER",
+    "symbol": "API",
+    "particular": "ShortTermLoans&Borrowings",
+    "fiscal_year": "079-080",
+    "fiscal_year_value": 79080,
+    "value": 352704256
+  },
+  {
+    "id": 84715,
+    "order": 13,
+    "sector": "HYDROPOWER",
+    "symbol": "API",
+    "particular": "TotalCurrentLiabilities",
+    "fiscal_year": "079-080",
+    "fiscal_year_value": 79080,
+    "value": 593059050
+  },
+  {
+    "id": 84716,
+    "order": 14,
+    "sector": "HYDROPOWER",
+    "symbol": "API",
+    "particular": "TotalLiabilities",
+    "fiscal_year": "079-080",
+    "fiscal_year_value": 79080,
+    "value": 7691963739
+  },
+  {
+    "id": 84717,
+    "order": 15,
+    "sector": "HYDROPOWER",
+    "symbol": "API",
+    "particular": "TotalEquityAndLiabilities",
+    "fiscal_year": "079-080",
+    "fiscal_year_value": 79080,
+    "value": 11878074454
+  },
+  {
+    "id": 84718,
+    "order": 16,
+    "sector": "HYDROPOWER",
+    "symbol": "API",
+    "particular": "Revenue(PowerSales)",
+    "fiscal_year": "079-080",
+    "fiscal_year_value": 79080,
+    "value": 446616023
+  },
+  {
+    "id": 84719,
+    "order": 17,
+    "sector": "HYDROPOWER",
+    "symbol": "API",
+    "particular": "Cogs(Generation,Distribution,Royalty&ProjectExpenses)",
+    "fiscal_year": "079-080",
+    "fiscal_year_value": 79080,
+    "value": -108312277
+  },
+  {
+    "id": 84720,
+    "order": 18,
+    "sector": "HYDROPOWER",
+    "symbol": "API",
+    "particular": "GrossProfit",
+    "fiscal_year": "079-080",
+    "fiscal_year_value": 79080,
+    "value": 338303746
+  },
+  {
+    "id": 84721,
+    "order": 19,
+    "sector": "HYDROPOWER",
+    "symbol": "API",
+    "particular": "Depreciation",
+    "fiscal_year": "079-080",
+    "fiscal_year_value": 79080,
+    "value": 139321615
+  },
+  {
+    "id": 84722,
+    "order": 20,
+    "sector": "HYDROPOWER",
+    "symbol": "API",
+    "particular": "AdministrativeAndOtherOperatingExpenses",
+    "fiscal_year": "079-080",
+    "fiscal_year_value": 79080,
+    "value": 38639559
+  },
+  {
+    "id": 84723,
+    "order": 21,
+    "sector": "HYDROPOWER",
+    "symbol": "API",
+    "particular": "ProfitFromOperation(OperatingProfit)",
+    "fiscal_year": "079-080",
+    "fiscal_year_value": 79080,
+    "value": 236073847
+  },
+  {
+    "id": 84724,
+    "order": 22,
+    "sector": "HYDROPOWER",
+    "symbol": "API",
+    "particular": "FinanceCost",
+    "fiscal_year": "079-080",
+    "fiscal_year_value": 79080,
+    "value": 201189796
+  },
+  {
+    "id": 84725,
+    "order": 23,
+    "sector": "HYDROPOWER",
+    "symbol": "API",
+    "particular": "ProfitBeforeTax",
+    "fiscal_year": "079-080",
+    "fiscal_year_value": 79080,
+    "value": 47182418
+  },
+  {
+    "id": 84726,
+    "order": 24,
+    "sector": "HYDROPOWER",
+    "symbol": "API",
+    "particular": "ProfitForTheYear(NetProfit)",
+    "fiscal_year": "079-080",
+    "fiscal_year_value": 79080,
+    "value": 44238624
+  },
+  {
+    "id": 82393,
+    "order": 1001,
+    "sector": "HYDROPOWER",
+    "symbol": "API",
+    "particular": "CashFlowsFromOperatingActivities",
+    "fiscal_year": "079-080",
+    "fiscal_year_value": 79080,
+    "value": 2187621604
+  },
+  {
+    "id": 82394,
+    "order": 1002,
+    "sector": "HYDROPOWER",
+    "symbol": "API",
+    "particular": "CashFlowsFromInvestingActivities",
+    "fiscal_year": "079-080",
+    "fiscal_year_value": 79080,
+    "value": -4185354485
+  },
+  {
+    "id": 82395,
+    "order": 1003,
+    "sector": "HYDROPOWER",
+    "symbol": "API",
+    "particular": "CashFlowsFromFinancingActivities",
+    "fiscal_year": "079-080",
+    "fiscal_year_value": 79080,
+    "value": 1611949924
+  },
+  {
+    "id": 85953,
+    "order": 1,
+    "sector": "HYDROPOWER",
+    "symbol": "API",
+    "particular": "Property,PlantAndEquipment",
+    "fiscal_year": "080-081",
+    "fiscal_year_value": 80081,
+    "value": 18669104
+  },
+  {
+    "id": 85929,
+    "order": 1,
+    "sector": "HYDROPOWER",
+    "symbol": "API",
+    "particular": "Property,PlantAndEquipment",
+    "fiscal_year": "080-081",
+    "fiscal_year_value": 80081,
+    "value": 18669104
+  },
+  {
+    "id": 85954,
+    "order": 2,
+    "sector": "HYDROPOWER",
+    "symbol": "API",
+    "particular": "Wip(ProjectWorkInProgress,UnderDevelopment)",
+    "fiscal_year": "080-081",
+    "fiscal_year_value": 80081,
+    "value": 111439181
+  },
+  {
+    "id": 85930,
+    "order": 2,
+    "sector": "HYDROPOWER",
+    "symbol": "API",
+    "particular": "Wip(ProjectWorkInProgress,UnderDevelopment)",
+    "fiscal_year": "080-081",
+    "fiscal_year_value": 80081,
+    "value": 111439181
+  },
+  {
+    "id": 85931,
+    "order": 3,
+    "sector": "HYDROPOWER",
+    "symbol": "API",
+    "particular": "InvestmentAndFinancialAssets",
+    "fiscal_year": "080-081",
+    "fiscal_year_value": 80081,
+    "value": 0
+  },
+  {
+    "id": 85955,
+    "order": 3,
+    "sector": "HYDROPOWER",
+    "symbol": "API",
+    "particular": "InvestmentAndFinancialAssets",
+    "fiscal_year": "080-081",
+    "fiscal_year_value": 80081,
+    "value": 0
+  },
+  {
+    "id": 85956,
+    "order": 4,
+    "sector": "HYDROPOWER",
+    "symbol": "API",
+    "particular": "TotalNon-CurrentAssets",
+    "fiscal_year": "080-081",
+    "fiscal_year_value": 80081,
+    "value": 12725616930
+  },
+  {
+    "id": 85932,
+    "order": 4,
+    "sector": "HYDROPOWER",
+    "symbol": "API",
+    "particular": "TotalNon-CurrentAssets",
+    "fiscal_year": "080-081",
+    "fiscal_year_value": 80081,
+    "value": 12725616930
+  },
+  {
+    "id": 85957,
+    "order": 5,
+    "sector": "HYDROPOWER",
+    "symbol": "API",
+    "particular": "TotalCurrentAssets",
+    "fiscal_year": "080-081",
+    "fiscal_year_value": 80081,
+    "value": 601018897
+  },
+  {
+    "id": 85933,
+    "order": 5,
+    "sector": "HYDROPOWER",
+    "symbol": "API",
+    "particular": "TotalCurrentAssets",
+    "fiscal_year": "080-081",
+    "fiscal_year_value": 80081,
+    "value": 601018897
+  },
+  {
+    "id": 85958,
+    "order": 6,
+    "sector": "HYDROPOWER",
+    "symbol": "API",
+    "particular": "TotalAssets",
+    "fiscal_year": "080-081",
+    "fiscal_year_value": 80081,
+    "value": 13326635827
+  },
+  {
+    "id": 85934,
+    "order": 6,
+    "sector": "HYDROPOWER",
+    "symbol": "API",
+    "particular": "TotalAssets",
+    "fiscal_year": "080-081",
+    "fiscal_year_value": 80081,
+    "value": 13326635827
+  },
+  {
+    "id": 85959,
+    "order": 7,
+    "sector": "HYDROPOWER",
+    "symbol": "API",
+    "particular": "ShareCapital",
+    "fiscal_year": "080-081",
+    "fiscal_year_value": 80081,
+    "value": 5786597912
+  },
+  {
+    "id": 85935,
+    "order": 7,
+    "sector": "HYDROPOWER",
+    "symbol": "API",
+    "particular": "ShareCapital",
+    "fiscal_year": "080-081",
+    "fiscal_year_value": 80081,
+    "value": 5786597912
+  },
+  {
+    "id": 85960,
+    "order": 8,
+    "sector": "HYDROPOWER",
+    "symbol": "API",
+    "particular": "ReserveAndSurplus",
+    "fiscal_year": "080-081",
+    "fiscal_year_value": 80081,
+    "value": 550509878
+  },
+  {
+    "id": 85936,
+    "order": 8,
+    "sector": "HYDROPOWER",
+    "symbol": "API",
+    "particular": "ReserveAndSurplus",
+    "fiscal_year": "080-081",
+    "fiscal_year_value": 80081,
+    "value": 550509878
+  },
+  {
+    "id": 85937,
+    "order": 9,
+    "sector": "HYDROPOWER",
+    "symbol": "API",
+    "particular": "TotalEquity",
+    "fiscal_year": "080-081",
+    "fiscal_year_value": 80081,
+    "value": 6337107790
+  },
+  {
+    "id": 85961,
+    "order": 9,
+    "sector": "HYDROPOWER",
+    "symbol": "API",
+    "particular": "TotalEquity",
+    "fiscal_year": "080-081",
+    "fiscal_year_value": 80081,
+    "value": 6337107790
+  },
+  {
+    "id": 85938,
+    "order": 10,
+    "sector": "HYDROPOWER",
+    "symbol": "API",
+    "particular": "LongTermLoans&Borrowings",
+    "fiscal_year": "080-081",
+    "fiscal_year_value": 80081,
+    "value": 5213162093
+  },
+  {
+    "id": 85962,
+    "order": 10,
+    "sector": "HYDROPOWER",
+    "symbol": "API",
+    "particular": "LongTermLoans&Borrowings",
+    "fiscal_year": "080-081",
+    "fiscal_year_value": 80081,
+    "value": 5213162093
+  },
+  {
+    "id": 85963,
+    "order": 11,
+    "sector": "HYDROPOWER",
+    "symbol": "API",
+    "particular": "TotalNon-CurrentLiabilities",
+    "fiscal_year": "080-081",
+    "fiscal_year_value": 80081,
+    "value": 5349085110
+  },
+  {
+    "id": 85939,
+    "order": 11,
+    "sector": "HYDROPOWER",
+    "symbol": "API",
+    "particular": "TotalNon-CurrentLiabilities",
+    "fiscal_year": "080-081",
+    "fiscal_year_value": 80081,
+    "value": 5349085110
+  },
+  {
+    "id": 85964,
+    "order": 12,
+    "sector": "HYDROPOWER",
+    "symbol": "API",
+    "particular": "ShortTermLoans&Borrowings",
+    "fiscal_year": "080-081",
+    "fiscal_year_value": 80081,
+    "value": 550404967
+  },
+  {
+    "id": 85940,
+    "order": 12,
+    "sector": "HYDROPOWER",
+    "symbol": "API",
+    "particular": "ShortTermLoans&Borrowings",
+    "fiscal_year": "080-081",
+    "fiscal_year_value": 80081,
+    "value": 550404967
+  },
+  {
+    "id": 85941,
+    "order": 13,
+    "sector": "HYDROPOWER",
+    "symbol": "API",
+    "particular": "TotalCurrentLiabilities",
+    "fiscal_year": "080-081",
+    "fiscal_year_value": 80081,
+    "value": 1640442927
+  },
+  {
+    "id": 85965,
+    "order": 13,
+    "sector": "HYDROPOWER",
+    "symbol": "API",
+    "particular": "TotalCurrentLiabilities",
+    "fiscal_year": "080-081",
+    "fiscal_year_value": 80081,
+    "value": 1640442927
+  },
+  {
+    "id": 85942,
+    "order": 14,
+    "sector": "HYDROPOWER",
+    "symbol": "API",
+    "particular": "TotalLiabilities",
+    "fiscal_year": "080-081",
+    "fiscal_year_value": 80081,
+    "value": 6989528037
+  },
+  {
+    "id": 85966,
+    "order": 14,
+    "sector": "HYDROPOWER",
+    "symbol": "API",
+    "particular": "TotalLiabilities",
+    "fiscal_year": "080-081",
+    "fiscal_year_value": 80081,
+    "value": 6989528037
+  },
+  {
+    "id": 85967,
+    "order": 15,
+    "sector": "HYDROPOWER",
+    "symbol": "API",
+    "particular": "TotalEquityAndLiabilities",
+    "fiscal_year": "080-081",
+    "fiscal_year_value": 80081,
+    "value": 13326635827
+  },
+  {
+    "id": 85943,
+    "order": 15,
+    "sector": "HYDROPOWER",
+    "symbol": "API",
+    "particular": "TotalEquityAndLiabilities",
+    "fiscal_year": "080-081",
+    "fiscal_year_value": 80081,
+    "value": 13326635827
+  },
+  {
+    "id": 85968,
+    "order": 16,
+    "sector": "HYDROPOWER",
+    "symbol": "API",
+    "particular": "Revenue(PowerSales)",
+    "fiscal_year": "080-081",
+    "fiscal_year_value": 80081,
+    "value": 1248646553
+  },
+  {
+    "id": 85944,
+    "order": 16,
+    "sector": "HYDROPOWER",
+    "symbol": "API",
+    "particular": "Revenue(PowerSales)",
+    "fiscal_year": "080-081",
+    "fiscal_year_value": 80081,
+    "value": 1248646553
+  },
+  {
+    "id": 85969,
+    "order": 17,
+    "sector": "HYDROPOWER",
+    "symbol": "API",
+    "particular": "Cogs(Generation,Distribution,Royalty&ProjectExpenses)",
+    "fiscal_year": "080-081",
+    "fiscal_year_value": 80081,
+    "value": -182089941
+  },
+  {
+    "id": 85945,
+    "order": 17,
+    "sector": "HYDROPOWER",
+    "symbol": "API",
+    "particular": "Cogs(Generation,Distribution,Royalty&ProjectExpenses)",
+    "fiscal_year": "080-081",
+    "fiscal_year_value": 80081,
+    "value": -182089941
+  },
+  {
+    "id": 85946,
+    "order": 18,
+    "sector": "HYDROPOWER",
+    "symbol": "API",
+    "particular": "GrossProfit",
+    "fiscal_year": "080-081",
+    "fiscal_year_value": 80081,
+    "value": 1066556612
+  },
+  {
+    "id": 85970,
+    "order": 18,
+    "sector": "HYDROPOWER",
+    "symbol": "API",
+    "particular": "GrossProfit",
+    "fiscal_year": "080-081",
+    "fiscal_year_value": 80081,
+    "value": 1066556612
+  },
+  {
+    "id": 85971,
+    "order": 19,
+    "sector": "HYDROPOWER",
+    "symbol": "API",
+    "particular": "Depreciation",
+    "fiscal_year": "080-081",
+    "fiscal_year_value": 80081,
+    "value": 334630704
+  },
+  {
+    "id": 85947,
+    "order": 19,
+    "sector": "HYDROPOWER",
+    "symbol": "API",
+    "particular": "Depreciation",
+    "fiscal_year": "080-081",
+    "fiscal_year_value": 80081,
+    "value": 334630704
+  },
+  {
+    "id": 85948,
+    "order": 20,
+    "sector": "HYDROPOWER",
+    "symbol": "API",
+    "particular": "AdministrativeAndOtherOperatingExpenses",
+    "fiscal_year": "080-081",
+    "fiscal_year_value": 80081,
+    "value": 24028757
+  },
+  {
+    "id": 85972,
+    "order": 20,
+    "sector": "HYDROPOWER",
+    "symbol": "API",
+    "particular": "AdministrativeAndOtherOperatingExpenses",
+    "fiscal_year": "080-081",
+    "fiscal_year_value": 80081,
+    "value": 24028757
+  },
+  {
+    "id": 85973,
+    "order": 21,
+    "sector": "HYDROPOWER",
+    "symbol": "API",
+    "particular": "ProfitFromOperation(OperatingProfit)",
+    "fiscal_year": "080-081",
+    "fiscal_year_value": 80081,
+    "value": 1070257103
+  },
+  {
+    "id": 85949,
+    "order": 21,
+    "sector": "HYDROPOWER",
+    "symbol": "API",
+    "particular": "ProfitFromOperation(OperatingProfit)",
+    "fiscal_year": "080-081",
+    "fiscal_year_value": 80081,
+    "value": 1070257103
+  },
+  {
+    "id": 85974,
+    "order": 22,
+    "sector": "HYDROPOWER",
+    "symbol": "API",
+    "particular": "FinanceCost",
+    "fiscal_year": "080-081",
+    "fiscal_year_value": 80081,
+    "value": 493540635
+  },
+  {
+    "id": 85950,
+    "order": 22,
+    "sector": "HYDROPOWER",
+    "symbol": "API",
+    "particular": "FinanceCost",
+    "fiscal_year": "080-081",
+    "fiscal_year_value": 80081,
+    "value": 493540635
+  },
+  {
+    "id": 85951,
+    "order": 23,
+    "sector": "HYDROPOWER",
+    "symbol": "API",
+    "particular": "ProfitBeforeTax",
+    "fiscal_year": "080-081",
+    "fiscal_year_value": 80081,
+    "value": 566501800
+  },
+  {
+    "id": 85975,
+    "order": 23,
+    "sector": "HYDROPOWER",
+    "symbol": "API",
+    "particular": "ProfitBeforeTax",
+    "fiscal_year": "080-081",
+    "fiscal_year_value": 80081,
+    "value": 566501800
+  },
+  {
+    "id": 85952,
+    "order": 24,
+    "sector": "HYDROPOWER",
+    "symbol": "API",
+    "particular": "ProfitForTheYear(NetProfit)",
+    "fiscal_year": "080-081",
+    "fiscal_year_value": 80081,
+    "value": 450112739
+  },
+  {
+    "id": 85976,
+    "order": 24,
+    "sector": "HYDROPOWER",
+    "symbol": "API",
+    "particular": "ProfitForTheYear(NetProfit)",
+    "fiscal_year": "080-081",
+    "fiscal_year_value": 80081,
+    "value": 450112739
+  },
+  {
+    "id": 113612,
+    "order": 1,
+    "sector": "HYDROPOWER",
+    "symbol": "API",
+    "particular": "Property,PlantAndEquipment",
+    "fiscal_year": "081-082",
+    "fiscal_year_value": 81082,
+    "value": 17741475
+  },
+  {
+    "id": 113613,
+    "order": 2,
+    "sector": "HYDROPOWER",
+    "symbol": "API",
+    "particular": "Wip(ProjectWorkInProgress,UnderDevelopment)",
+    "fiscal_year": "081-082",
+    "fiscal_year_value": 81082,
+    "value": 263580508
+  },
+  {
+    "id": 113614,
+    "order": 3,
+    "sector": "HYDROPOWER",
+    "symbol": "API",
+    "particular": "InvestmentAndFinancialAssets",
+    "fiscal_year": "081-082",
+    "fiscal_year_value": 81082,
+    "value": 38906706
+  },
+  {
+    "id": 113615,
+    "order": 4,
+    "sector": "HYDROPOWER",
+    "symbol": "API",
+    "particular": "TotalNon-CurrentAssets",
+    "fiscal_year": "081-082",
+    "fiscal_year_value": 81082,
+    "value": 13353042867
+  },
+  {
+    "id": 113616,
+    "order": 5,
+    "sector": "HYDROPOWER",
+    "symbol": "API",
+    "particular": "TotalCurrentAssets",
+    "fiscal_year": "081-082",
+    "fiscal_year_value": 81082,
+    "value": 668864729
+  },
+  {
+    "id": 113617,
+    "order": 6,
+    "sector": "HYDROPOWER",
+    "symbol": "API",
+    "particular": "TotalAssets",
+    "fiscal_year": "081-082",
+    "fiscal_year_value": 81082,
+    "value": 14021907597
+  },
+  {
+    "id": 113618,
+    "order": 7,
+    "sector": "HYDROPOWER",
+    "symbol": "API",
+    "particular": "ShareCapital",
+    "fiscal_year": "081-082",
+    "fiscal_year_value": 81082,
+    "value": 6075927807
+  },
+  {
+    "id": 113619,
+    "order": 8,
+    "sector": "HYDROPOWER",
+    "symbol": "API",
+    "particular": "ReserveAndSurplus",
+    "fiscal_year": "081-082",
+    "fiscal_year_value": 81082,
+    "value": 646407918
+  },
+  {
+    "id": 113620,
+    "order": 9,
+    "sector": "HYDROPOWER",
+    "symbol": "API",
+    "particular": "TotalEquity",
+    "fiscal_year": "081-082",
+    "fiscal_year_value": 81082,
+    "value": 6722335724
+  },
+  {
+    "id": 113621,
+    "order": 10,
+    "sector": "HYDROPOWER",
+    "symbol": "API",
+    "particular": "LongTermLoans&Borrowings",
+    "fiscal_year": "081-082",
+    "fiscal_year_value": 81082,
+    "value": 5727279666
+  },
+  {
+    "id": 113622,
+    "order": 11,
+    "sector": "HYDROPOWER",
+    "symbol": "API",
+    "particular": "TotalNon-CurrentLiabilities",
+    "fiscal_year": "081-082",
+    "fiscal_year_value": 81082,
+    "value": 5914702833
+  },
+  {
+    "id": 113623,
+    "order": 12,
+    "sector": "HYDROPOWER",
+    "symbol": "API",
+    "particular": "ShortTermLoans&Borrowings",
+    "fiscal_year": "081-082",
+    "fiscal_year_value": 81082,
+    "value": 981512693
+  },
+  {
+    "id": 113624,
+    "order": 13,
+    "sector": "HYDROPOWER",
+    "symbol": "API",
+    "particular": "TotalCurrentLiabilities",
+    "fiscal_year": "081-082",
+    "fiscal_year_value": 81082,
+    "value": 1384869039
+  },
+  {
+    "id": 113625,
+    "order": 14,
+    "sector": "HYDROPOWER",
+    "symbol": "API",
+    "particular": "TotalLiabilities",
+    "fiscal_year": "081-082",
+    "fiscal_year_value": 81082,
+    "value": 7299571872
+  },
+  {
+    "id": 113626,
+    "order": 15,
+    "sector": "HYDROPOWER",
+    "symbol": "API",
+    "particular": "TotalEquityAndLiabilities",
+    "fiscal_year": "081-082",
+    "fiscal_year_value": 81082,
+    "value": 14021907597
+  },
+  {
+    "id": 113627,
+    "order": 16,
+    "sector": "HYDROPOWER",
+    "symbol": "API",
+    "particular": "Revenue(PowerSales)",
+    "fiscal_year": "081-082",
+    "fiscal_year_value": 81082,
+    "value": 1650096373
+  },
+  {
+    "id": 113628,
+    "order": 17,
+    "sector": "HYDROPOWER",
+    "symbol": "API",
+    "particular": "Cogs(Generation,Distribution,Royalty&ProjectExpenses)",
+    "fiscal_year": "081-082",
+    "fiscal_year_value": 81082,
+    "value": -288331249
+  },
+  {
+    "id": 113629,
+    "order": 18,
+    "sector": "HYDROPOWER",
+    "symbol": "API",
+    "particular": "GrossProfit",
+    "fiscal_year": "081-082",
+    "fiscal_year_value": 81082,
+    "value": 1361765124
+  },
+  {
+    "id": 113630,
+    "order": 19,
+    "sector": "HYDROPOWER",
+    "symbol": "API",
+    "particular": "Depreciation",
+    "fiscal_year": "081-082",
+    "fiscal_year_value": 81082,
+    "value": 424034959
+  },
+  {
+    "id": 113631,
+    "order": 20,
+    "sector": "HYDROPOWER",
+    "symbol": "API",
+    "particular": "AdministrativeAndOtherOperatingExpenses",
+    "fiscal_year": "081-082",
+    "fiscal_year_value": 81082,
+    "value": 48805871
+  },
+  {
+    "id": 113632,
+    "order": 21,
+    "sector": "HYDROPOWER",
+    "symbol": "API",
+    "particular": "ProfitFromOperation(OperatingProfit)",
+    "fiscal_year": "081-082",
+    "fiscal_year_value": 81082,
+    "value": 1015980158
+  },
+  {
+    "id": 113633,
+    "order": 22,
+    "sector": "HYDROPOWER",
+    "symbol": "API",
+    "particular": "FinanceCost",
+    "fiscal_year": "081-082",
+    "fiscal_year_value": 81082,
+    "value": 570759332
+  },
+  {
+    "id": 113634,
+    "order": 23,
+    "sector": "HYDROPOWER",
+    "symbol": "API",
+    "particular": "ProfitBeforeTax",
+    "fiscal_year": "081-082",
+    "fiscal_year_value": 81082,
+    "value": 438335147
+  },
+  {
+    "id": 113635,
+    "order": 24,
+    "sector": "HYDROPOWER",
+    "symbol": "API",
+    "particular": "ProfitForTheYear(NetProfit)",
+    "fiscal_year": "081-082",
+    "fiscal_year_value": 81082,
+    "value": 406637203
+  },
+  {
+    "id": 113636,
+    "order": 1001.1,
+    "sector": "HYDROPOWER",
+    "symbol": "API",
+    "particular": "CashFlowsFromOperatingActivities",
+    "fiscal_year": "081-082",
+    "fiscal_year_value": 81082,
+    "value": 621263042
+  },
+  {
+    "id": 113637,
+    "order": 1002.2,
+    "sector": "HYDROPOWER",
+    "symbol": "API",
+    "particular": "CashFlowsFromInvestingActivities",
+    "fiscal_year": "081-082",
+    "fiscal_year_value": 81082,
+    "value": -942070327
+  },
+  {
+    "id": 113638,
+    "order": 1003.3,
+    "sector": "HYDROPOWER",
+    "symbol": "API",
+    "particular": "CashFlowsFromFinancingActivities",
+    "fiscal_year": "081-082",
+    "fiscal_year_value": 81082,
+    "value": 357584404
+  }
+]
