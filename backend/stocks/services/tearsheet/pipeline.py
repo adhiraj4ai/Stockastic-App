@@ -23,17 +23,29 @@ def _get(fetcher, symbol, dataset, params, use_cache):
     return payload
 
 
-def scrape_annual(symbol: str, fetcher, use_cache: bool = True) -> dict:
+def fetch_datasets(symbol: str, fetcher, use_cache: bool = True) -> dict:
+    """Fetch raw payloads while the browser is open. Must NOT touch the DB:
+    callers run this inside the Playwright (async) context, where Django's
+    synchronous ORM is unavailable."""
     symbol = symbol.upper()
-    fin = _get(fetcher, symbol, "financials", {"symbol": symbol}, use_cache)
-    div = _get(fetcher, symbol, "dividend", {"symbol": symbol}, use_cache)
-    info = _get(fetcher, symbol, "corporate_action",
-                {"symbols[]": symbol}, use_cache)
-    stock_info = RawStockInfo.model_validate(info["stockInfo"][0])
-    reports = build_annual_reports([RawFinancialRow.model_validate(r) for r in fin])
+    return {
+        "financials": _get(fetcher, symbol, "financials", {"symbol": symbol}, use_cache),
+        "dividend": _get(fetcher, symbol, "dividend", {"symbol": symbol}, use_cache),
+        "corporate_action": _get(
+            fetcher, symbol, "corporate_action", {"symbols[]": symbol}, use_cache),
+    }
+
+
+def load_datasets(symbol: str, raw: dict) -> dict:
+    """Validate, transform, and persist raw payloads. Runs after the browser is
+    closed, in a normal synchronous DB context."""
+    symbol = symbol.upper()
+    info = RawStockInfo.model_validate(raw["corporate_action"]["stockInfo"][0])
+    reports = build_annual_reports(
+        [RawFinancialRow.model_validate(r) for r in raw["financials"]])
     dividends = build_dividends(
-        [RawDividendRow.model_validate(r) for r in div["dividend"]])
-    load_company(stock_info)
+        [RawDividendRow.model_validate(r) for r in raw["dividend"]["dividend"]])
+    load_company(info)
     n_reports = load_annual_reports(symbol, reports)
     n_div = load_dividends(symbol, dividends)
-    return {"reports": n_reports, "dividends": n_div, "company": stock_info.full_name}
+    return {"reports": n_reports, "dividends": n_div, "company": info.full_name}

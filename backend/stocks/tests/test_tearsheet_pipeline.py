@@ -4,7 +4,7 @@ import os
 import pytest
 
 from stocks.models import Company, Dividend, FinancialReport
-from stocks.services.tearsheet.pipeline import scrape_annual
+from stocks.services.tearsheet.pipeline import fetch_datasets, load_datasets
 
 FIX = os.path.join(os.path.dirname(__file__), "fixtures", "tearsheet")
 
@@ -28,8 +28,9 @@ class FakeFetcher:
 
 
 @pytest.mark.django_db
-def test_scrape_annual_loads_everything():
-    counts = scrape_annual("API", FakeFetcher(), use_cache=False)
+def test_fetch_then_load_persists_everything():
+    raw = fetch_datasets("API", FakeFetcher(), use_cache=False)
+    counts = load_datasets("API", raw)
     assert counts == {"reports": 10, "dividends": 9, "company": "API Power Company Limited"}
     assert Company.all_objects.get(symbol="API").name == "API Power Company Limited"
     assert FinancialReport.objects.filter(ticker="API", report_type="ANNUAL").count() == 10
