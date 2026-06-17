@@ -26,11 +26,10 @@ interface NotebookCell {
     executionCount: number | null;
 }
 
-const DEFAULT_PROMPTS = [
-    "What's NEPSE doing today?",
-    "How is my portfolio performing?",
-    "Give me technicals on NABIL",
-];
+/** A fresh, unsaved cell with an empty prompt. */
+function makeEmptyCell(): NotebookCell {
+    return { id: `temp-${Date.now()}`, prompt: '', running: false, outputs: [], executionCount: null };
+}
 
 const MarkdownComponents = {
     p: ({ children }: any) => <p className="mb-2 last:mb-0 leading-relaxed">{children}</p>,
@@ -159,14 +158,8 @@ export function NotebookInterface({ notebookId }: { notebookId: string }) {
                         }))
                     );
                 } else {
-                    // Initialize with default cells and save to DB
-                    const initial = DEFAULT_PROMPTS.map((prompt, idx) => ({
-                        id: `temp-${Date.now()}-${idx}`,
-                        prompt,
-                        running: false,
-                        outputs: [],
-                        executionCount: null,
-                    }));
+                    // A new notebook starts with a single empty cell, not seeded prompts.
+                    const initial = [makeEmptyCell()];
                     setCells(initial);
                     triggerSync(initial, true); // immediate sync
                 }
@@ -215,13 +208,7 @@ export function NotebookInterface({ notebookId }: { notebookId: string }) {
     };
 
     const insertCell = (atIndex: number) => {
-        const newCell: NotebookCell = {
-            id: `temp-${Date.now()}`,
-            prompt: '',
-            running: false,
-            outputs: [],
-            executionCount: null,
-        };
+        const newCell = makeEmptyCell();
         const updated = [...cells];
         updated.splice(atIndex, 0, newCell);
         pendingFocusRef.current = newCell.id;
@@ -265,13 +252,7 @@ export function NotebookInterface({ notebookId }: { notebookId: string }) {
             setGlobalExecutionCount(0);
             localStorage.removeItem(`stockastic_nb_exec_${notebookId}`);
 
-            const initial = DEFAULT_PROMPTS.map((prompt, idx) => ({
-                id: `temp-${Date.now()}-${idx}`,
-                prompt,
-                running: false,
-                outputs: [],
-                executionCount: null,
-            }));
+            const initial = [makeEmptyCell()];
             setCells(initial);
             triggerSync(initial, true);
         }
