@@ -39,11 +39,11 @@ def _info():
 
 
 @pytest.mark.django_db
-def test_load_company_writes_correct_name_and_sector():
+def test_load_company_writes_correct_name_and_normalizes_sector():
     load_company(_info())
     c = Company.all_objects.get(symbol="API")
     assert c.name == "API Power Company Limited"
-    assert c.sector == "HYDROPOWER"
+    assert c.sector == "Hydro Power"
 
 
 @pytest.mark.django_db
