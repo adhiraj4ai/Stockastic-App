@@ -16,6 +16,7 @@ from stocks.services.ingest_validation import validate_price_rows
 from .contracts import (
     CompanyRecord, FloorsheetRecord, IndexRecord, MarketSummaryRecord, PriceRecord,
 )
+from .sectors import normalize_sector
 
 
 def _dec(v):
@@ -101,7 +102,11 @@ class IngestionService:
         for r in records:
             _, created = Company.all_objects.update_or_create(
                 symbol=r.symbol,
-                defaults=dict(name=r.name, sector=r.sector or "", status=r.status or "A"),
+                defaults=dict(
+                    name=r.name,
+                    sector=normalize_sector(r.sector) or "",
+                    status=r.status or "A",
+                ),
             )
             if created:
                 res.inserted += 1

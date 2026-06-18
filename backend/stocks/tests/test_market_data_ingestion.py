@@ -7,6 +7,21 @@ from stocks.services.market_data.contracts import (
     CompanyRecord, IndexRecord, MarketSummaryRecord, PriceRecord,
 )
 from stocks.services.market_data.ingestion import IngestionService
+from stocks.services.market_data.sectors import normalize_sector
+
+
+def test_normalize_sector_maps_hydropower_alias():
+    assert normalize_sector("HYDROPOWER") == "Hydro Power"
+
+
+def test_normalize_sector_passes_through_canonical_value():
+    assert normalize_sector("Hydro Power") == "Hydro Power"
+
+
+def test_normalize_sector_handles_blank_values():
+    assert normalize_sector("") == ""
+    assert normalize_sector(None) is None
+
 
 pytestmark = pytest.mark.django_db
 
@@ -29,6 +44,12 @@ def test_ingest_companies_upserts():
     svc = IngestionService()
     svc.ingest_companies([CompanyRecord(symbol="NABIL", name="Nabil Bank", sector="Banks")])
     assert Company.objects.filter(symbol="NABIL").exists()
+
+
+def test_ingest_companies_normalizes_sector_alias():
+    svc = IngestionService()
+    svc.ingest_companies([CompanyRecord(symbol="API", name="API Power", sector="HYDROPOWER")])
+    assert Company.all_objects.get(symbol="API").sector == "Hydro Power"
 
 
 def test_ingest_market_summary_upserts():
