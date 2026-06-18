@@ -20,3 +20,5 @@ logs
 backtesting_html
 # celery beat runtime schedule database
 celerybeat-schedule*
+
+.cache/

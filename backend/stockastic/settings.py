@@ -373,3 +373,10 @@ LOGGING = {
 NEPSE_API_BASE_URL = os.getenv("NEPSE_API_BASE_URL", "https://nepseapi.surajrimal.dev")
 NEPSE_API_PROVIDER = os.getenv("NEPSE_API_PROVIDER", "nepseapi")
 NEPSE_API_TIMEOUT = float(os.getenv("NEPSE_API_TIMEOUT", "30"))
+
+# ── NepseAlpha tearsheet scraper (authenticated Playwright browser session) ──
+NEPSEALPHA_BASE_URL = os.getenv("NEPSEALPHA_BASE_URL", "https://nepsealpha.com")
+NEPSEALPHA_EMAIL = os.getenv("NEPSEALPHA_EMAIL", "")
+NEPSEALPHA_PASSWORD = os.getenv("NEPSEALPHA_PASSWORD", "")
+NEPSEALPHA_REQUEST_DELAY = float(os.getenv("NEPSEALPHA_REQUEST_DELAY", "1.5"))
+NEPSEALPHA_MAX_REQUESTS = int(os.getenv("NEPSEALPHA_MAX_REQUESTS", "10"))
