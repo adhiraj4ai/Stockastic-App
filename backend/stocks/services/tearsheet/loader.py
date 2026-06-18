@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from stocks.models import Company, Dividend, FinancialReport
+from stocks.services.market_data.sectors import normalize_sector
 from stocks.utils import normalize_fiscal_year
 
 from .schemas import RawStockInfo
@@ -14,7 +15,7 @@ def load_company(info: RawStockInfo) -> None:
         symbol=info.symbol,
         defaults={
             "name": info.full_name,
-            "sector": info.formatted_sector or "",
+            "sector": normalize_sector(info.formatted_sector) or "",
             "instrument_type": "Equity",
             "status": "A",
         },
