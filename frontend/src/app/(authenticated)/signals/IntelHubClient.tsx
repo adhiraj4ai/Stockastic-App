@@ -12,7 +12,7 @@ import { num, fixed } from '@/lib/numbers';
 import { cn } from '@/lib/utils';
 import { StockLoader } from '@/components/ui/StockLoader';
 import Link from 'next/link';
-import { DailySignalStatus } from '@/components/signals/DailySignalStatus';
+import { AnalysisTabs } from '@/components/analysis/AnalysisTabs';
 import * as VisuallyHidden from '@radix-ui/react-visually-hidden';
 import {
     Dialog,
@@ -1080,19 +1080,17 @@ export default function IntelHubClient() {
                     </VisuallyHidden.Root>
                     {selectedSignal && (
                         <SignalDetailErrorBoundary symbol={selectedSignal.symbol} onReset={() => setSelectedSignal(null)}>
-                            <DailySignalStatus
+                            <AnalysisTabs
                                 symbol={selectedSignal.symbol}
-                                cmp={selectedSignal.currentPrice || selectedSignal.ltp || 0}
-                                entryPrice={selectedSignal.ltp || 0}
-                                strength={selectedSignal.strength || 50}
-                                direction={selectedSignal.direction}
-                                targetPrice={selectedSignal.targetPrice}
-                                stopLoss={selectedSignal.stopLoss}
-                                tp1={selectedSignal.tp1}
-                                tp2={selectedSignal.tp2}
-                                tp3={selectedSignal.tp3}
-                                status={selectedSignal.status}
-                                className="shadow-sm border-slate-200 dark:border-slate-800"
+                                ladder={{
+                                    cmp: selectedSignal.currentPrice || selectedSignal.ltp || undefined,
+                                    entry: selectedSignal.ltp || undefined,
+                                    stopLoss: selectedSignal.stopLoss,
+                                    tp1: selectedSignal.tp1 ?? selectedSignal.targetPrice,
+                                    tp2: selectedSignal.tp2,
+                                    tp3: selectedSignal.tp3,
+                                    direction: selectedSignal.direction,
+                                }}
                             />
                         </SignalDetailErrorBoundary>
                     )}
