@@ -15,6 +15,7 @@ import {
     TooltipTrigger,
 } from "@/components/ui/tooltip";
 import StockLink from '@/components/StockLink';
+import { ClassificationToggle, Classification } from '@/components/ClassificationToggle';
 import { formatNepaliNumber } from '@/lib/formatters';
 import { InfoTooltip } from '@/components/ui/InfoTooltip';
 import { SentimentBadge } from '@/components/portfolio/ui';
@@ -59,6 +60,7 @@ export interface PortfolioItem {
         de: number | null;
     };
     value_yield?: number;
+    classification?: Classification;
 }
 
 interface PortfolioTableProps {
@@ -71,6 +73,7 @@ interface PortfolioTableProps {
     onStrategies: (item: PortfolioItem) => void;
     selectedPortfolioItem: PortfolioItem | null;
     isExitPlanDialogOpen: boolean;
+    onClassificationChange?: (id: number, value: Classification) => void;
 }
 
 export function PortfolioTable({
@@ -82,7 +85,8 @@ export function PortfolioTable({
     onSell,
     onStrategies,
     selectedPortfolioItem,
-    isExitPlanDialogOpen
+    isExitPlanDialogOpen,
+    onClassificationChange,
 }: PortfolioTableProps) {
     if (items.length === 0) {
         return <div className="p-6 text-center text-sm text-muted-foreground">No holdings found for this account.</div>;
@@ -190,6 +194,11 @@ export function PortfolioTable({
                                         <div className="flex flex-col gap-1.5">
                                             <div className="flex items-center gap-2">
                                                 <StockLink ticker={item.ticker} />
+                                                <ClassificationToggle
+                                                    itemId={item.id}
+                                                    classification={item.classification ?? 'trading'}
+                                                    onChange={onClassificationChange}
+                                                />
                                                 {isUnderwater && (
                                                     <Badge variant="secondary" className="bg-rose-500/10 text-rose-600 dark:text-rose-400 border-rose-500/25 text-[9px] px-1.5 h-4 flex items-center gap-1">
                                                         Underwater

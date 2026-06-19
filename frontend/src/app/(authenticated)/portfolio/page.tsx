@@ -13,7 +13,7 @@ import {
     ShieldAlert, Activity, CheckCircle2, Zap, Wallet, DollarSign,
     BarChart3 as BarIcon, Grid3X3, Users, Wand2, PlusCircle, MinusCircle, Radio,
     ChevronDown, ChevronUp, ChevronLeft, ChevronRight, ArrowUp, X, Pencil,
-    PieChart as PieIcon, Check, Bell, Rocket, Info
+    Check, Bell, Rocket, Info, Landmark
 } from 'lucide-react';
 import TransactionModal, { PortfolioAccount } from '@/components/TransactionModal';
 import { CreateAccountDialog } from '@/components/CreateAccountDialog';
@@ -34,13 +34,14 @@ import {
     TooltipTrigger,
 } from "@/components/ui/tooltip";
 
-import { PieChart, Pie, Cell, ResponsiveContainer, BarChart, Bar, XAxis, YAxis, Tooltip as RechartsTooltip, Legend } from 'recharts';
+import { Cell, ResponsiveContainer, BarChart, Bar, XAxis, YAxis, Tooltip as RechartsTooltip } from 'recharts';
 import { AccountSettingsDialog } from '@/components/AccountSettingsDialog';
 import { Settings } from 'lucide-react';
 import { PortfolioTable, PortfolioItem } from '@/components/PortfolioTable';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { PortfolioPerformance } from '@/components/PortfolioPerformance';
 import { SectionCard, KpiCard, SentimentBadge, FadeIn, KpiSkeleton, CardSkeleton } from '@/components/portfolio/ui';
+import { splitTotalsByClassification } from '@/lib/portfolioTotals';
 
 interface WatchlistItem {
     id: number;
@@ -291,6 +292,11 @@ function PortfolioContent() {
         return Object.values(grouped);
     }, [items, selectedAccount]);
 
+    const splitTotals = useMemo(
+        () => splitTotalsByClassification(displayedItems),
+        [displayedItems],
+    );
+
     // Filter and Sort Items
     const sortedAndFilteredItems = useMemo(() => {
         let result = [...displayedItems];
@@ -451,11 +457,11 @@ function PortfolioContent() {
                 {/* Summary Cards - Only for Holdings */}
                 {activeTab === 'holdings' && (
                     loading && displayedItems.length === 0 ? (
-                        <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-                            {[0, 1, 2, 3].map(i => <KpiSkeleton key={i} />)}
+                        <div className="grid grid-cols-2 lg:grid-cols-5 gap-4">
+                            {[0, 1, 2, 3, 4].map(i => <KpiSkeleton key={i} />)}
                         </div>
                     ) : (
-                        <FadeIn className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+                        <FadeIn className="grid grid-cols-2 lg:grid-cols-5 gap-4">
                             <KpiCard
                                 accent="blue"
                                 icon={Wallet}
@@ -500,6 +506,17 @@ function PortfolioContent() {
                                 value={formatRupees(Math.abs(totalDayGainLoss))}
                                 valueClassName={totalDayGainLoss >= 0 ? 'text-emerald-600 dark:text-emerald-400' : 'text-rose-600 dark:text-rose-400'}
                                 sub={<SentimentBadge tone={totalDayGainLoss >= 0 ? 'up' : 'down'}>Intraday movement</SentimentBadge>}
+                            />
+                            <KpiCard
+                                accent="blue"
+                                icon={Landmark}
+                                label="Investment vs trading"
+                                value={`${formatRupees(splitTotals.investment.current)} / ${formatRupees(splitTotals.trading.current)}`}
+                                sub={
+                                    <SentimentBadge tone="neutral">
+                                        {`P/L ${formatRupees(splitTotals.investment.gainLoss)} / ${formatRupees(splitTotals.trading.gainLoss)}`}
+                                    </SentimentBadge>
+                                }
                             />
                         </FadeIn>
                     )
@@ -606,6 +623,9 @@ function PortfolioContent() {
                                                             }}
                                                             selectedPortfolioItem={selectedPortfolioItem}
                                                             isExitPlanDialogOpen={isExitPlanDialogOpen}
+                                                            onClassificationChange={(id, value) =>
+                                                                setItems(prev => prev.map(it => it.id === id ? { ...it, classification: value } : it))
+                                                            }
                                                         />
                                                     </div>
                                                 </div>
@@ -636,6 +656,9 @@ function PortfolioContent() {
                                         }}
                                         selectedPortfolioItem={selectedPortfolioItem}
                                         isExitPlanDialogOpen={isExitPlanDialogOpen}
+                                        onClassificationChange={(id, value) =>
+                                            setItems(prev => prev.map(it => it.id === id ? { ...it, classification: value } : it))
+                                        }
                                     />
                                 )
                             )}
@@ -709,7 +732,7 @@ function PortfolioContent() {
                     }}
                 />
 
-                {/* Risk Radar + Sector Allocation - Only for Holdings */}
+                {/* Risk Radar + P&L by Sector - Only for Holdings */}
                 {activeTab === 'holdings' && (
                     <FadeIn delay={0.1} className="grid grid-cols-1 lg:grid-cols-2 gap-6">
                         <div className={displayedItems.length > 0 ? '' : 'lg:col-span-2'}>
@@ -718,140 +741,44 @@ function PortfolioContent() {
                         {displayedItems.length > 0 && (
                             <SectionCard
                                 accent="indigo"
-                                icon={PieIcon}
-                                title="Sector Allocation"
-                                info="Graphical deep-dive into your asset allocation and sector diversification."
+                                icon={BarIcon}
+                                title="P&L by Sector"
+                                info="Performance contribution of each sector to overall profit and loss."
                                 badges={<SentimentBadge tone="neutral">{sectorData.length} sectors</SentimentBadge>}
                             >
-                                <div className="relative h-[260px]">
-                                    <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
-                                        <span className="text-[10px] uppercase tracking-wider text-muted-foreground font-semibold">Diversification</span>
-                                        <span className="text-lg font-semibold text-foreground">{sectorData.length} Sectors</span>
-                                    </div>
+                                <div className="h-[260px]">
                                     <ResponsiveContainer width="100%" height="100%">
-                                        <PieChart>
-                                            <Pie
-                                                data={sectorData}
-                                                cx="50%"
-                                                cy="50%"
-                                                innerRadius={60}
-                                                outerRadius={80}
-                                                paddingAngle={5}
-                                                dataKey="value"
+                                        <BarChart data={sectorData} layout="vertical" margin={{ left: 20, right: 20 }}>
+                                            <XAxis type="number" hide />
+                                            <YAxis
+                                                dataKey="name"
+                                                type="category"
+                                                axisLine={false}
+                                                tickLine={false}
+                                                tick={{ fontSize: 11, fontWeight: 600, fill: '#6B7280' }}
+                                                width={80}
+                                            />
+                                            <RechartsTooltip
+                                                cursor={{ fill: 'rgba(255, 255, 255, 0.05)' }}
+                                                contentStyle={{ borderRadius: '8px', border: 'none', boxShadow: '0 4px 12px rgba(0,0,0,0.1)', backgroundColor: 'rgba(0,0,0,0.8)' }}
+                                            />
+                                            <Bar
+                                                dataKey="pnl"
+                                                radius={[0, 4, 4, 0]}
+                                                barSize={20}
                                             >
                                                 {sectorData.map((entry, index) => (
-                                                    <Cell key={`cell-${index}`} fill={CHART_COLORS[index % CHART_COLORS.length]} stroke="rgba(255,255,255,0.2)" />
+                                                    <Cell
+                                                        key={`cell-${index}`}
+                                                        fill={CHART_COLORS[index % CHART_COLORS.length]}
+                                                    />
                                                 ))}
-                                            </Pie>
-                                            <RechartsTooltip />
-                                        </PieChart>
+                                            </Bar>
+                                        </BarChart>
                                     </ResponsiveContainer>
-                                </div>
-                                <div className="flex flex-wrap gap-x-4 gap-y-2 mt-4 pt-4 border-t border-border">
-                                    {sectorData.map((s, i) => (
-                                        <div key={s.name} className="flex items-center gap-2">
-                                            <div className="h-2 w-2 rounded-full" style={{ backgroundColor: CHART_COLORS[i % CHART_COLORS.length] }} />
-                                            <span className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
-                                                {s.name} ({((s.value / totalCurrentValue) * 100).toFixed(0)}%)
-                                            </span>
-                                        </div>
-                                    ))}
                                 </div>
                             </SectionCard>
                         )}
-                    </FadeIn>
-                )}
-
-                {/* P&L by Sector + P&L Heatmap - Only for Holdings */}
-                {activeTab === 'holdings' && displayedItems.length > 0 && (
-                    <FadeIn delay={0.15} className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                        <SectionCard
-                            accent="indigo"
-                            icon={BarIcon}
-                            title="P&L by Sector"
-                            info="Performance contribution of each sector to overall profit and loss."
-                        >
-                            <div className="h-[260px]">
-                                <ResponsiveContainer width="100%" height="100%">
-                                    <BarChart data={sectorData} layout="vertical" margin={{ left: 20, right: 20 }}>
-                                        <XAxis type="number" hide />
-                                        <YAxis
-                                            dataKey="name"
-                                            type="category"
-                                            axisLine={false}
-                                            tickLine={false}
-                                            tick={{ fontSize: 11, fontWeight: 600, fill: '#6B7280' }}
-                                            width={80}
-                                        />
-                                        <RechartsTooltip
-                                            cursor={{ fill: 'rgba(255, 255, 255, 0.05)' }}
-                                            contentStyle={{ borderRadius: '8px', border: 'none', boxShadow: '0 4px 12px rgba(0,0,0,0.1)', backgroundColor: 'rgba(0,0,0,0.8)' }}
-                                        />
-                                        <Bar
-                                            dataKey="pnl"
-                                            radius={[0, 4, 4, 0]}
-                                            barSize={20}
-                                        >
-                                            {sectorData.map((entry, index) => (
-                                                <Cell
-                                                    key={`cell-${index}`}
-                                                    fill={entry.pnl >= 0 ? '#10B981' : '#F43F5E'}
-                                                />
-                                            ))}
-                                        </Bar>
-                                    </BarChart>
-                                </ResponsiveContainer>
-                            </div>
-                        </SectionCard>
-
-                        <SectionCard
-                            accent="emerald"
-                            icon={Activity}
-                            title="P&L Heatmap"
-                            info="Each tile is a holding, colored by unrealized gain or loss intensity."
-                        >
-                            <div className="grid grid-cols-4 sm:grid-cols-5 gap-2">
-                                {displayedItems.map((item) => {
-                                    const pnlP = item.gain_loss_percent;
-                                    let bgColor = 'bg-gray-100 dark:bg-slate-800';
-                                    if (pnlP > 20) bgColor = 'bg-emerald-600 dark:bg-emerald-700';
-                                    else if (pnlP > 10) bgColor = 'bg-emerald-500 dark:bg-emerald-600';
-                                    else if (pnlP > 0) bgColor = 'bg-emerald-400 dark:bg-emerald-500';
-                                    else if (pnlP > -10) bgColor = 'bg-rose-400 dark:bg-rose-500';
-                                    else if (pnlP > -20) bgColor = 'bg-rose-500 dark:bg-rose-600';
-                                    else bgColor = 'bg-rose-600 dark:bg-rose-700';
-
-                                    return (
-                                        <div
-                                            key={item.id}
-                                            className={`aspect-square ${bgColor} rounded-xl flex flex-col items-center justify-center text-white shadow-inner group relative cursor-help transition-transform hover:scale-105 hover:z-20`}
-                                        >
-                                            <span className="text-sm font-semibold">{item.ticker}</span>
-                                            <span className="text-xs font-bold opacity-80 tabular-nums">{Number(pnlP).toFixed(0)}%</span>
-
-                                            {/* Tooltip on Hover */}
-                                            <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 w-32 bg-gray-900 dark:bg-slate-950 text-white p-2 rounded-lg text-xs opacity-0 group-hover:opacity-100 pointer-events-none transition-opacity shadow-sm z-30">
-                                                <p className="font-semibold border-b border-gray-700 dark:border-slate-800 pb-1 mb-1">{item.ticker}</p>
-                                                <p className="flex justify-between">Profit: <span className="font-mono">{formatRupees(item.gain_loss)}</span></p>
-                                                <p className="flex justify-between">Value: <span className="font-mono">{formatRupees(item.current_value)}</span></p>
-                                            </div>
-                                        </div>
-                                    );
-                                })}
-                            </div>
-                            <div className="mt-5 flex items-center justify-between text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
-                                <span>Bearish</span>
-                                <div className="flex gap-1">
-                                    <div className="h-2 w-2 rounded-sm bg-rose-600" />
-                                    <div className="h-2 w-2 rounded-sm bg-rose-500" />
-                                    <div className="h-2 w-2 rounded-sm bg-rose-400" />
-                                    <div className="h-2 w-2 rounded-sm bg-emerald-400" />
-                                    <div className="h-2 w-2 rounded-sm bg-emerald-500" />
-                                    <div className="h-2 w-2 rounded-sm bg-emerald-600" />
-                                </div>
-                                <span>Bullish</span>
-                            </div>
-                        </SectionCard>
                     </FadeIn>
                 )}
 

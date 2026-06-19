@@ -23,6 +23,10 @@ class PortfolioAccount(models.Model):
         return f"{self.user.username} - {self.name} ({self.get_account_type_display()})"
 
 class PortfolioItem(models.Model):
+    class Classification(models.TextChoices):
+        INVESTMENT = 'investment', 'Investment'
+        TRADING = 'trading', 'Trading'
+
     user = models.ForeignKey(User, on_delete=models.CASCADE)
     account = models.ForeignKey(PortfolioAccount, on_delete=models.CASCADE, null=True, blank=True)
     ticker = models.CharField(max_length=10)
@@ -36,6 +40,11 @@ class PortfolioItem(models.Model):
     target_price_3 = models.DecimalField(max_digits=10, decimal_places=2, null=True, blank=True)
     thesis = models.TextField(blank=True, null=True)
     strategy_type = models.CharField(max_length=50, default='MANUAL')
+    classification = models.CharField(
+        max_length=10,
+        choices=Classification.choices,
+        default=Classification.TRADING,
+    )
     tags = models.JSONField(default=list, blank=True, help_text='Custom tags like Core, Swing, Speculative')
     target_allocation_pct = models.DecimalField(max_digits=5, decimal_places=2, null=True, blank=True, help_text="Target allocation as % of total portfolio")
 

@@ -417,3 +417,16 @@ class PortfolioViewSet(viewsets.ModelViewSet):
             item.thesis = thesis
         item.save()
         return Response({"id": item.id, "ticker": item.ticker, "tags": item.tags, "thesis": item.thesis})
+
+    @action(detail=True, methods=['patch'])
+    def update_classification(self, request, pk=None):
+        item = self.get_object()
+        value = request.data.get('classification')
+        if value not in PortfolioItem.Classification.values:
+            return Response(
+                {"error": "classification must be 'investment' or 'trading'"},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+        item.classification = value
+        item.save(update_fields=['classification'])
+        return Response({"id": item.id, "ticker": item.ticker, "classification": item.classification})
