@@ -24,18 +24,30 @@ export const mlApi = axios.create({
 });
 
 // Helper to clear session
-const logoutAndRedirect = () => {
-    // Note: LocalStorage items are removed just in case of stale cache,
-    // but the primary tokens are now in HttpOnly cookies which JS cannot clear manually.
-    // The backend /api/auth/logout/ should be used to clear them properly.
+const logoutAndRedirect = async () => {
     localStorage.removeItem('access_token');
     localStorage.removeItem('refresh_token');
 
-    // Attempt to clear non-httpOnly cookies if any were set by mistake
+    // The auth tokens live in HttpOnly cookies, which JS cannot delete. Only the
+    // server can expire them (via Set-Cookie). Without this call the refresh_token
+    // survives, so the route middleware — which only checks the JWT exp, not
+    // backend validity — keeps treating the session as live and bounces
+    // /login → /market forever, hammering /api/auth/token/refresh/ into a 429 loop.
+    try {
+        await axios.post(
+            `${API_BASE_URL}/api/auth/logout/`,
+            {},
+            { withCredentials: true, headers: { 'X-CSRFToken': Cookies.get('csrftoken') || '' } },
+        );
+    } catch {
+        // Offline or throttled: still redirect. A stale cookie is better than
+        // trapping the user on a broken page.
+    }
+
+    // Best-effort clear of any non-HttpOnly cookies wrongly written in the past.
     document.cookie = 'access_token=; path=/; expires=Thu, 01 Jan 1970 00:00:01 GMT;';
     document.cookie = 'refresh_token=; path=/; expires=Thu, 01 Jan 1970 00:00:01 GMT;';
 
-    // Force redirect to login
     window.location.href = '/login';
 };
 
@@ -52,6 +64,60 @@ const addAuthInterceptor = (client: typeof api) => {
 addAuthInterceptor(api);
 addAuthInterceptor(mlApi);
 
+let isRefreshing = false;
+let failedQueue: Array<{
+    resolve: (value?: any) => void;
+    reject: (reason?: any) => void;
+}> = [];
+
+const processQueue = (error: any) => {
+    failedQueue.forEach((prom) => {
+        if (error) {
+            prom.reject(error);
+        } else {
+            prom.resolve();
+        }
+    });
+    failedQueue = [];
+};
+
+const refreshAccessToken = async () => {
+    try {
+        console.log('Attempting to refresh access token via HttpOnly cookies...');
+        await axios.post(`${API_BASE_URL}/api/auth/token/refresh/`, {}, { withCredentials: true });
+        processQueue(null);
+    } catch (refreshError) {
+        processQueue(refreshError);
+        console.error('Session expired or refresh failed. Logging out...');
+        await logoutAndRedirect();
+        throw refreshError;
+    } finally {
+        isRefreshing = false;
+    }
+};
+
+const handleNetworkError = async (error: any) => {
+    if (error.code !== 'ERR_NETWORK' && error.response) {
+        return;
+    }
+    console.error('Terminal backend connection error. Verifying system status...');
+    if (typeof window === 'undefined') {
+        return;
+    }
+    try {
+        const healthUrl = (process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000') + '/api/stocks/health-check/';
+        const healthCheck = await axios.get(healthUrl, { timeout: 2000 });
+        if (healthCheck.data.status === 'online') {
+            console.log('Backend is reachable. Treating previous error as transient.');
+        } else {
+            window.dispatchEvent(new CustomEvent('terminal-offline'));
+        }
+    } catch (healthErr) {
+        console.error('Health check failed. Signaling system offline.');
+        window.dispatchEvent(new CustomEvent('terminal-offline'));
+    }
+};
+
 // Response interceptor for global error handling and JWT refresh
 api.interceptors.response.use(
     (response) => response,
@@ -59,47 +125,33 @@ api.interceptors.response.use(
         const originalRequest = error.config;
         const status = error.response ? error.response.status : null;
 
-        // If 401 (Unauthorized) and not already retrying
         if (status === 401 && !originalRequest._retry) {
+            // Mark the request as retried BEFORE anything else. Both the leader
+            // and the queued followers share this guard: a request that 401s
+            // again after its single retry must NOT re-enter the refresh path,
+            // or concurrent pollers ping-pong queue→retry→401→queue forever and
+            // hammer /api/auth/token/refresh/ into a 429 storm.
             originalRequest._retry = true;
 
-            try {
-                console.log('Attempting to refresh access token via HttpOnly cookies...');
-                // Note: dj-rest-auth refresh endpoint automatically reads/writes 
-                // httpOnly cookies if configured.
-                await axios.post(`${API_BASE_URL}/api/auth/token/refresh/`, {}, { withCredentials: true });
+            if (isRefreshing) {
+                return new Promise((resolve, reject) => {
+                    failedQueue.push({ resolve, reject });
+                })
+                    .then(() => api(originalRequest))
+                    .catch((err) => Promise.reject(err));
+            }
 
-                // If successful, retry the original request which will now include the new cookie
+            isRefreshing = true;
+
+            try {
+                await refreshAccessToken();
                 return api(originalRequest);
             } catch (refreshError) {
-                console.error('Session expired or refresh failed. Logging out...');
-                logoutAndRedirect();
+                return Promise.reject(refreshError);
             }
         }
 
-        // Handle network/connection errors (backend down)
-        if (error.code === 'ERR_NETWORK' || !error.response) {
-            console.error('Terminal backend connection error. Verifying system status...');
-            
-            if (typeof window !== 'undefined') {
-                try {
-                    // Perform a secondary lightweight health check to verify if backend is truly unreachable
-                    // or if this was just a transient/blocked request
-                    const healthUrl = (process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000') + '/api/stocks/health-check/';
-                    const healthCheck = await axios.get(healthUrl, { timeout: 2000 });
-                    
-                    if (healthCheck.data.status === 'online') {
-                        console.log('Backend is reachable. Treating previous error as transient.');
-                    } else {
-                        window.dispatchEvent(new CustomEvent('terminal-offline'));
-                    }
-                } catch (healthErr) {
-                    console.error('Health check failed. Signaling system offline.');
-                    window.dispatchEvent(new CustomEvent('terminal-offline'));
-                }
-            }
-        }
-
+        await handleNetworkError(error);
         return Promise.reject(error);
     }
 );
@@ -144,7 +196,7 @@ export const chatApi = {
             console.error('Stream request failed:', response.status, response.statusText);
             if (response.status === 401) {
                 console.error('Token expired during streaming. Redirecting to login.');
-                logoutAndRedirect();
+                await logoutAndRedirect();
                 return;
             }
             throw new Error(`Failed to stream: ${response.statusText}`);

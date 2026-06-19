@@ -9,7 +9,6 @@ import api from '@/lib/api';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import Cookies from 'js-cookie';
 import { Mail, Lock, Eye, EyeOff, AlertCircle, LayoutDashboard, Chrome, Apple, Binary } from 'lucide-react';
 
 export default function LoginPage() {
@@ -48,12 +47,10 @@ export default function LoginPage() {
                 return;
             }
 
-            const { access, refresh } = response.data;
-
-            const isSecure = window.location.protocol === 'https:';
-            Cookies.set('access_token', access, { expires: 1, secure: isSecure, sameSite: 'lax' });
-            Cookies.set('refresh_token', refresh, { expires: 7, secure: isSecure, sameSite: 'lax' });
-
+            // The backend sets HttpOnly access/refresh cookies on the login
+            // response; the browser stores them automatically. The client must
+            // not write its own token cookies — doing so shadows the valid
+            // HttpOnly cookie with junk and breaks every authenticated request.
             router.push('/portfolio');
         } catch (err: any) {
             console.error('Login failed', err);

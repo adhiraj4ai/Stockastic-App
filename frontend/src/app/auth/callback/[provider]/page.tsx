@@ -3,7 +3,6 @@
 import { useEffect, useState } from 'react';
 import { useRouter, useParams, useSearchParams } from 'next/navigation';
 import api from '@/lib/api';
-import Cookies from 'js-cookie';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Loader2, AlertCircle, CheckCircle2 } from 'lucide-react';
 
@@ -25,16 +24,13 @@ export default function SocialCallbackPage() {
 
         const completeSocialLogin = async () => {
             try {
-                // Post the code to our backend social login view
-                const response = await api.post(`/api/users/auth/${provider}/`, {
+                // Post the code to our backend social login view. The backend
+                // sets HttpOnly access/refresh cookies on the response; the
+                // browser stores them automatically. Writing token cookies here
+                // would shadow the valid HttpOnly cookie with junk.
+                await api.post(`/api/users/auth/${provider}/`, {
                     code: code
                 });
-
-                const { access, refresh } = response.data;
-
-                const isSecure = window.location.protocol === 'https:';
-                Cookies.set('access_token', access, { expires: 1, secure: isSecure, sameSite: 'lax' });
-                Cookies.set('refresh_token', refresh, { expires: 7, secure: isSecure, sameSite: 'lax' });
 
                 setStatus('success');
 
