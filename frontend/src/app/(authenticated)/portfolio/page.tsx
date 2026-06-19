@@ -19,7 +19,7 @@ import TransactionModal, { PortfolioAccount } from '@/components/TransactionModa
 import { CreateAccountDialog } from '@/components/CreateAccountDialog';
 import StockLink from '@/components/StockLink';
 import { ExitStrategyDialog } from '@/components/ExitStrategyDialog';
-import { RiskRadar } from '@/components/RiskRadar';
+import { useRiskAnalysis, RiskRadarChart, RiskDiagnostics } from '@/components/RiskRadar';
 import { PositionSizingCalculator } from '@/components/PositionSizingCalculator';
 import { CompanySelect } from '@/components/CompanySelect';
 import { FullPageLoader } from '@/components/ui/StockLoader';
@@ -296,6 +296,8 @@ function PortfolioContent() {
         () => splitTotalsByClassification(displayedItems),
         [displayedItems],
     );
+
+    const riskState = useRiskAnalysis(selectedAccount);
 
     // Filter and Sort Items
     const sortedAndFilteredItems = useMemo(() => {
@@ -732,13 +734,12 @@ function PortfolioContent() {
                     }}
                 />
 
-                {/* Risk Radar + P&L by Sector - Only for Holdings */}
+                {/* Risk Radar + P&L by Sector (left) / Risk diagnostics (right) - Only for Holdings */}
                 {activeTab === 'holdings' && (
                     <FadeIn delay={0.1} className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                        <div className={displayedItems.length > 0 ? '' : 'lg:col-span-2'}>
-                            <RiskRadar accountId={selectedAccount} />
-                        </div>
-                        {displayedItems.length > 0 && (
+                        <div className="space-y-6">
+                            <RiskRadarChart state={riskState} />
+                            {displayedItems.length > 0 && (
                             <SectionCard
                                 accent="indigo"
                                 icon={BarIcon}
@@ -778,7 +779,9 @@ function PortfolioContent() {
                                     </ResponsiveContainer>
                                 </div>
                             </SectionCard>
-                        )}
+                            )}
+                        </div>
+                        <RiskDiagnostics state={riskState} />
                     </FadeIn>
                 )}
 
