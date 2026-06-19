@@ -19,6 +19,7 @@ import { ClassificationToggle, Classification } from '@/components/Classificatio
 import { formatNepaliNumber } from '@/lib/formatters';
 import { InfoTooltip } from '@/components/ui/InfoTooltip';
 import { SentimentBadge } from '@/components/portfolio/ui';
+import { HoldingSnapshot } from '@/components/HoldingSnapshot';
 
 export interface PortfolioItem {
     id: number;
@@ -60,6 +61,8 @@ export interface PortfolioItem {
         de: number | null;
     };
     value_yield?: number;
+    purchased_at?: string;
+    tags?: string[];
     classification?: Classification;
 }
 
@@ -255,34 +258,8 @@ export function PortfolioTable({
                                                         {item.health_score}
                                                     </Badge>
                                                 </TooltipTrigger>
-                                                <TooltipContent className="p-0 border-none shadow-xl bg-white dark:bg-card overflow-hidden">
-                                                    <div className="w-52 overflow-hidden rounded-xl border border-slate-200 dark:border-slate-800">
-                                                        <div className="p-3 bg-slate-50 dark:bg-slate-800/50 border-b border-slate-200 dark:border-slate-800">
-                                                            <h4 className="text-xs font-bold tracking-normal text-slate-500">Fundamental health</h4>
-                                                            <div className="flex items-center gap-2 mt-1">
-                                                                <span className="text-xl font-bold text-slate-900 dark:text-slate-100">{item.health_score}</span>
-                                                                <span className="text-[10px] font-medium text-slate-400">/ 100</span>
-                                                            </div>
-                                                        </div>
-                                                        <div className="p-3 space-y-2 pb-4">
-                                                            <div className="flex justify-between items-center text-[11px]">
-                                                                <span className="text-slate-500">P/E Ratio</span>
-                                                                <span className="font-bold text-slate-700 dark:text-slate-300">{item.fundamental_metrics?.pe?.toFixed(2) || 'N/A'}</span>
-                                                            </div>
-                                                            <div className="flex justify-between items-center text-[11px]">
-                                                                <span className="text-slate-500">P/B Ratio</span>
-                                                                <span className="font-bold text-slate-700 dark:text-slate-300">{item.fundamental_metrics?.pb?.toFixed(2) || 'N/A'}</span>
-                                                            </div>
-                                                            <div className="flex justify-between items-center text-[11px]">
-                                                                <span className="text-slate-500">ROE</span>
-                                                                <span className="font-bold text-slate-700 dark:text-slate-300">{item.fundamental_metrics?.roe ? `${item.fundamental_metrics.roe.toFixed(1)}%` : 'N/A'}</span>
-                                                            </div>
-                                                            <div className="flex justify-between items-center text-[11px]">
-                                                                <span className="text-slate-500">EPS Growth</span>
-                                                                <span className="font-bold text-slate-700 dark:text-slate-300">{item.fundamental_metrics?.growth ? `${item.fundamental_metrics.growth.toFixed(1)}%` : 'N/A'}</span>
-                                                            </div>
-                                                        </div>
-                                                    </div>
+                                                <TooltipContent className="p-0 border-none bg-transparent shadow-xl">
+                                                    <HoldingSnapshot item={item} />
                                                 </TooltipContent>
                                             </Tooltip>
                                         ) : (
