@@ -11,8 +11,12 @@ import TransactionModal from './TransactionModal';
 import { ExitDialogHeader } from '@/components/exit/ExitDialogHeader';
 import { PlanTab } from '@/components/exit/PlanTab';
 import { TransactionsTab } from '@/components/exit/TransactionsTab';
-import { DailySignalStatus } from '@/components/signals/DailySignalStatus';
+import { SignalsSection } from '@/components/analysis/SignalsSection';
+import { TechnicalsSection } from '@/components/analysis/TechnicalsSection';
+import { FundamentalsSection } from '@/components/analysis/FundamentalsSection';
+import { AccumulationSection } from '@/components/analysis/AccumulationSection';
 import { useExitStrategy } from '@/hooks/useExitStrategy';
+import { useTickerAnalysis } from '@/hooks/useTickerAnalysis';
 import type { PortfolioItem } from '@/components/PortfolioTable';
 
 const MANUAL = 'MANUAL';
@@ -27,9 +31,19 @@ interface ExitStrategyDialogProps {
 
 type FormField = 'sl' | 'tp' | 'tp2' | 'tp3' | 'thesis';
 
+function AnalysisUnavailable() {
+    return <p className="p-6 text-sm text-slate-400">Analysis unavailable.</p>;
+}
+
+function AnalysisLoading() {
+    return <div className="p-10"><PageLoader /></div>;
+}
+
 export function ExitStrategyDialog({ open, onOpenChange, portfolioItem, onSave, accounts }: ExitStrategyDialogProps) {
     const { loading, strategies, healthWarnings, currentPrice, wacc, isUnderwater, transactions, defaults, refresh } =
         useExitStrategy(portfolioItem, open);
+
+    const analysis = useTickerAnalysis(portfolioItem?.ticker);
 
     const [sl, setSl] = useState('');
     const [tp, setTp] = useState('');
@@ -107,6 +121,16 @@ export function ExitStrategyDialog({ open, onOpenChange, portfolioItem, onSave, 
 
     const handleClose = () => onOpenChange(false);
 
+    const ladder = {
+        cmp: currentPrice,
+        entry: wacc,
+        stopLoss: Number(sl) || undefined,
+        tp1: Number(tp) || undefined,
+        tp2: Number(tp2) || undefined,
+        tp3: Number(tp3) || undefined,
+        direction: 'BUY' as const,
+    };
+
     return (
         <Dialog open={open} onOpenChange={onOpenChange}>
             <DialogContent
@@ -124,7 +148,10 @@ export function ExitStrategyDialog({ open, onOpenChange, portfolioItem, onSave, 
                         <TabsList className="mt-4 bg-slate-100/50 dark:bg-slate-800/50 p-1 rounded-xl border border-border dark:border-slate-700/50 h-10 shrink-0">
                             <TabsTrigger value="plan" className="px-6 py-1.5 text-[11px] font-bold tracking-tight h-full">Plan</TabsTrigger>
                             <TabsTrigger value="transactions" className="px-6 py-1.5 text-[11px] font-bold tracking-tight h-full">Transactions</TabsTrigger>
-                            <TabsTrigger value="analysis" className="px-6 py-1.5 text-[11px] font-bold tracking-tight h-full">Analysis</TabsTrigger>
+                            <TabsTrigger value="signals" className="px-6 py-1.5 text-[11px] font-bold tracking-tight h-full">Signals</TabsTrigger>
+                            <TabsTrigger value="technicals" className="px-6 py-1.5 text-[11px] font-bold tracking-tight h-full">Technicals</TabsTrigger>
+                            <TabsTrigger value="fundamentals" className="px-6 py-1.5 text-[11px] font-bold tracking-tight h-full">Fundamentals</TabsTrigger>
+                            <TabsTrigger value="accumulation" className="px-6 py-1.5 text-[11px] font-bold tracking-tight h-full">Accumulation</TabsTrigger>
                         </TabsList>
                     </ExitDialogHeader>
 
@@ -158,23 +185,20 @@ export function ExitStrategyDialog({ open, onOpenChange, portfolioItem, onSave, 
                                     />
                                 </TabsContent>
 
-                                <TabsContent value="analysis" forceMount className="flex-1 w-full h-full overflow-hidden focus-visible:ring-0 data-[state=inactive]:hidden">
-                                    <div className="h-full rounded-[2rem] overflow-hidden border border-border dark:border-slate-800 shadow-inner bg-slate-50/30 dark:bg-card/30">
-                                        <DailySignalStatus
-                                            symbol={portfolioItem?.ticker}
-                                            cmp={currentPrice}
-                                            entryPrice={wacc}
-                                            strength={75}
-                                            direction="BUY"
-                                            targetPrice={tp ? parseFloat(tp) : undefined}
-                                            stopLoss={sl ? parseFloat(sl) : undefined}
-                                            tp1={tp ? parseFloat(tp) : undefined}
-                                            tp2={tp2 ? parseFloat(tp2) : undefined}
-                                            tp3={tp3 ? parseFloat(tp3) : undefined}
-                                            className="h-full border-none shadow-none"
-                                            hideHeader={true}
-                                        />
-                                    </div>
+                                <TabsContent value="signals" forceMount className="h-full data-[state=inactive]:hidden overflow-y-auto no-scrollbar px-6 py-4 focus-visible:ring-0">
+                                    {analysis.loading ? <AnalysisLoading /> : !analysis.data ? <AnalysisUnavailable /> : <SignalsSection data={analysis.data} ladder={ladder} />}
+                                </TabsContent>
+
+                                <TabsContent value="technicals" forceMount className="h-full data-[state=inactive]:hidden overflow-y-auto no-scrollbar px-6 py-4 focus-visible:ring-0">
+                                    {analysis.loading ? <AnalysisLoading /> : !analysis.data ? <AnalysisUnavailable /> : <TechnicalsSection data={analysis.data} />}
+                                </TabsContent>
+
+                                <TabsContent value="fundamentals" forceMount className="h-full data-[state=inactive]:hidden overflow-y-auto no-scrollbar px-6 py-4 focus-visible:ring-0">
+                                    {analysis.loading ? <AnalysisLoading /> : !analysis.data ? <AnalysisUnavailable /> : <FundamentalsSection data={analysis.data} />}
+                                </TabsContent>
+
+                                <TabsContent value="accumulation" forceMount className="h-full data-[state=inactive]:hidden overflow-y-auto no-scrollbar px-6 py-4 focus-visible:ring-0">
+                                    <AccumulationSection symbol={portfolioItem?.ticker} />
                                 </TabsContent>
                             </>
                         )}
