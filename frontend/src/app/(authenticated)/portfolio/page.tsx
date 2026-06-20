@@ -760,8 +760,10 @@ function PortfolioContent() {
                                                 width={80}
                                             />
                                             <RechartsTooltip
-                                                cursor={{ fill: 'rgba(255, 255, 255, 0.05)' }}
-                                                contentStyle={{ borderRadius: '8px', border: 'none', boxShadow: '0 4px 12px rgba(0,0,0,0.1)', backgroundColor: 'rgba(0,0,0,0.8)' }}
+                                                cursor={{ fill: 'rgba(100, 116, 139, 0.08)' }}
+                                                contentStyle={{ borderRadius: '8px', border: '1px solid rgba(100,116,139,0.2)', boxShadow: '0 4px 12px rgba(0,0,0,0.1)', backgroundColor: '#ffffff', color: '#0f172a' }}
+                                                labelStyle={{ color: '#64748b', fontWeight: 600 }}
+                                                itemStyle={{ color: '#0f172a' }}
                                             />
                                             <Bar
                                                 dataKey="pnl"
