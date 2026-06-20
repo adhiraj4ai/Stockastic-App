@@ -2,7 +2,7 @@
 
 import type { TickerAnalysisData } from '@/hooks/useTickerAnalysis';
 import { pctReturn, computeConfluence } from '@/lib/tickerAnalysis';
-import { formatRupees } from '@/lib/formatters';
+import { formatRupees, formatNepaliNumber } from '@/lib/formatters';
 
 // ── Prop types ────────────────────────────────────────────────────────────────
 export interface LadderProps {
@@ -58,12 +58,13 @@ function pctStr(price?: number | null, entry?: number | null): string {
 }
 
 // ── SignalLadder ──────────────────────────────────────────────────────────────
-function LadderNode({ label, variant, pct }: { label: string; variant: DotVariant; pct: number }) {
+function LadderNode({ label, variant, pct, price }: { label: string; variant: DotVariant; pct: number; price: number }) {
     const isLive = variant === 'live';
     return (
         <div className="absolute -translate-x-1/2" style={{ left: `${pct}%` }}>
             <div className={`w-3 h-3 rounded-full border-2 border-white mx-auto ${DOT_CLS[variant]} ${isLive ? 'animate-pulse' : ''}`} />
             <div className={`text-center mt-1 text-[10px] font-bold whitespace-nowrap ${LABEL_CLS[variant]}`}>{label}</div>
+            <div className="text-center text-[9px] font-semibold tabular-nums text-slate-500 dark:text-slate-400 whitespace-nowrap">{formatNepaliNumber(price)}</div>
         </div>
     );
 }
@@ -92,7 +93,7 @@ function SignalLadder({ ladder }: { ladder: LadderProps }) {
     const toPct = (v: number) => ((v - min) / range) * 100;
 
     return (
-        <div className="px-6 pt-4 pb-10 bg-slate-50/50 dark:bg-card rounded-2xl border border-border dark:border-slate-800/50">
+        <div className="px-6 pt-4 pb-14 bg-slate-50/50 dark:bg-card rounded-2xl border border-border dark:border-slate-800/50">
             <div className="text-[10px] font-bold text-slate-400 mb-3 tracking-wider">Price ladder</div>
             <div className="relative h-8">
                 <div className="absolute left-0 right-0 h-0.5 bg-slate-100 dark:bg-slate-800 rounded-full top-3" />
@@ -101,7 +102,7 @@ function SignalLadder({ ladder }: { ladder: LadderProps }) {
                 <div className="absolute h-0.5 bg-emerald-200 rounded-full top-3"
                     style={{ left: `${Math.min(toPct(entry), toPct(tp3))}%`, width: `${Math.abs(toPct(tp3) - toPct(entry))}%` }} />
                 {nodes.map(n => (
-                    <LadderNode key={n.label} label={n.label} variant={n.variant} pct={toPct(n.price)} />
+                    <LadderNode key={n.label} label={n.label} variant={n.variant} pct={toPct(n.price)} price={n.price} />
                 ))}
             </div>
         </div>
@@ -330,11 +331,11 @@ export function SignalsSection({ data, ladder }: SignalsSectionProps) {
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 flex-1 min-h-0">
                 <div className="flex flex-col gap-4 min-h-0">
                     <ConfluenceCard signals={data.generatedSignals} direction={ladder.direction} />
-                    <HistoryList history={data.history} />
-                </div>
-                <div className="flex flex-col gap-4 min-h-0">
                     {data.accumulation && <FlowCard accumulation={data.accumulation} />}
                     <TargetsCard ladder={ladder} />
+                </div>
+                <div className="flex flex-col gap-4 min-h-0">
+                    <HistoryList history={data.history} />
                 </div>
                 <div className="flex flex-col gap-4 min-h-0">
                     {data.fibonacci && <FibonacciCard fibonacci={data.fibonacci} />}
