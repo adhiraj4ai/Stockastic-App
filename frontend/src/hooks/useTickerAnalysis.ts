@@ -40,7 +40,7 @@ export interface TickerAnalysisData {
     fundamentals: { pe: number | null; eps: number | null; bookValue: number | null; priceToBook: number | null; roe: number | null; divYield: number | null; marketCap: number | null; yoyGrowth: number | null; qoqGrowth: number | null; debtEquity: number | null; sector: string | null; indicators: Array<{ name: string; value: string; sector_high: number; sector_low: number }> };
     technicals: { sma50: number | null; sma200: number | null; atr: number | null; adx: number | null; vwap: number | null; bbp: number | null; pivotP: number | null; pivotS1: number | null; pivotR1: number | null; cci: number | null; williamsR: number | null; mfi: number | null; ultimateOsc: number | null; stochK: number | null; stochD: number | null; aroonUp: number | null; aroonDown: number | null; psar: number | null; cmf: number | null; obv: number | null };
     accumulation: { ratio: number; netQty: number } | null;
-    fibonacci: { trend: string; nearestSupport: number; nearestResistance: number; levels: Array<{ ratio: number | null; price: number; is_above: boolean; distance_pct: number | null }> } | null;
+    fibonacci: { trend: string; nearestSupport: number | null; nearestResistance: number | null; levels: Array<{ ratio: number | null; price: number | null; is_above: boolean; distance_pct: number | null }> } | null;
     generatedSignals: Array<{ source: string; signal: string; signal_tier: string; strength: number }>;
     history: Array<{ date: string; signal: string; strategy_name: string; last_close: string }>;
     brokers: Array<{ broker: string | number; wac: number; type: string }>;
@@ -142,11 +142,17 @@ function parseAccumulation(accumList: any[], symbol: string): TickerAnalysisData
 
 function parseFibonacci(fibData: any): TickerAnalysisData['fibonacci'] {
     if (!fibData) return null;
+    const levels = (fibData.levels ?? []).map((lv: any) => ({
+        ratio: toNum(lv.ratio),
+        price: toNum(lv.price),
+        is_above: !!lv.is_above,
+        distance_pct: toNum(lv.distance_pct),
+    }));
     return {
         trend: fibData.trend,
-        nearestSupport: fibData.nearest_support,
-        nearestResistance: fibData.nearest_resistance,
-        levels: fibData.levels ?? [],
+        nearestSupport: toNum(fibData.nearest_support),
+        nearestResistance: toNum(fibData.nearest_resistance),
+        levels,
     };
 }
 

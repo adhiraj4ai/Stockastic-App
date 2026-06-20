@@ -30,8 +30,8 @@ function SignalPill({ summary }: { summary: string }) {
 }
 
 function MetricStrip({ currentPrice, wacc, item }: Pick<ExitDialogHeaderProps, 'currentPrice' | 'wacc' | 'item'>) {
-    const glPct = item.gain_loss_percent;
-    const tone = glPct >= 0 ? 'text-emerald-600 dark:text-emerald-400' : 'text-rose-600 dark:text-rose-400';
+    const glPct = item.gain_loss_percent != null ? Number(item.gain_loss_percent) : null;
+    const tone = (glPct ?? 0) >= 0 ? 'text-emerald-600 dark:text-emerald-400' : 'text-rose-600 dark:text-rose-400';
     return (
         <div className="hidden md:flex items-center gap-6 text-xs tabular-nums">
             <span className="text-slate-500">LTP <strong className="text-slate-800 dark:text-slate-200">{formatRupees(currentPrice)}</strong></span>
@@ -40,7 +40,7 @@ function MetricStrip({ currentPrice, wacc, item }: Pick<ExitDialogHeaderProps, '
             <span className="text-slate-300 dark:text-slate-700">·</span>
             <span className="text-slate-500">Qty <strong className="text-slate-800 dark:text-slate-200">{item.quantity}</strong></span>
             <span className="text-slate-300 dark:text-slate-700">·</span>
-            <span className={`font-bold ${tone}`}>P/L {glPct?.toFixed(2)}%</span>
+            <span className={`font-bold ${tone}`}>P/L {glPct != null ? `${glPct.toFixed(2)}%` : '—'}</span>
         </div>
     );
 }

@@ -211,13 +211,13 @@ function FibonacciCard({ fibonacci }: { fibonacci: NonNullable<TickerAnalysisDat
                 <span className={`px-1.5 py-0.5 rounded capitalize ${trendCls}`}>{fibonacci.trend.toLowerCase()}</span>
             </div>
             <div className="grid grid-cols-2 gap-2 mb-3">
-                {fibonacci.nearestSupport > 0 && (
+                {(fibonacci.nearestSupport ?? 0) > 0 && (
                     <div className="p-2 bg-rose-50/30 dark:bg-rose-950/10 rounded-xl">
                         <div className="text-[9px] text-rose-400 font-bold">Support</div>
                         <div className="text-[11px] font-semibold tabular-nums text-rose-600 dark:text-rose-400">{formatRupees(fibonacci.nearestSupport)}</div>
                     </div>
                 )}
-                {fibonacci.nearestResistance > 0 && (
+                {(fibonacci.nearestResistance ?? 0) > 0 && (
                     <div className="p-2 bg-emerald-50/30 dark:bg-emerald-950/10 rounded-xl">
                         <div className="text-[9px] text-emerald-500 font-bold">Resistance</div>
                         <div className="text-[11px] font-semibold tabular-nums text-emerald-600 dark:text-emerald-400">{formatRupees(fibonacci.nearestResistance)}</div>
