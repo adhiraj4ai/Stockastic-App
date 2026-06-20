@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useEffect, useState, useMemo } from 'react';
+import React, { useEffect, useState, useMemo, useRef } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import api from '@/lib/api';
 import DashboardLayout from '@/components/DashboardLayout';
@@ -42,6 +42,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { PortfolioPerformance } from '@/components/PortfolioPerformance';
 import { SectionCard, KpiCard, SentimentBadge, FadeIn, KpiSkeleton, CardSkeleton } from '@/components/portfolio/ui';
 import { splitTotalsByClassification } from '@/lib/portfolioTotals';
+import { defaultAccountId } from '@/lib/defaultAccount';
 
 interface WatchlistItem {
     id: number;
@@ -93,6 +94,7 @@ function PortfolioContent() {
     const [items, setItems] = useState<PortfolioItem[]>([]);
     const [accounts, setAccounts] = useState<PortfolioAccount[]>([]);
     const [selectedAccount, setSelectedAccount] = useState<string>('all');
+    const didInitAccount = useRef(false);
     const [loading, setLoading] = useState(true);
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [promoteTicker, setPromoteTicker] = useState<string>('');
@@ -124,6 +126,8 @@ function PortfolioContent() {
     const router = useRouter();
     const searchParams = useSearchParams();
     const activeTab = searchParams.get('tab') || 'holdings';
+
+    const defAcctId = defaultAccountId(accounts);
 
     const fetchAccounts = async () => {
         try {
@@ -194,7 +198,7 @@ function PortfolioContent() {
 
     const handlePromoteToPortfolio = (ticker: string) => {
         setPromoteTicker(ticker);
-        setDefaultModalAccount(selectedAccount !== 'all' ? selectedAccount : '');
+        setDefaultModalAccount(selectedAccount !== 'all' ? selectedAccount : (defAcctId ?? ''));
         setIsModalOpen(true);
     };
 
@@ -244,6 +248,13 @@ function PortfolioContent() {
         fetchAccounts();
         fetchWatchlist();
     }, []);
+
+    useEffect(() => {
+        if (didInitAccount.current || accounts.length === 0) return;
+        didInitAccount.current = true;
+        const def = defaultAccountId(accounts);
+        if (def) setSelectedAccount(def);
+    }, [accounts]);
 
     useEffect(() => {
         fetchPortfolio();
@@ -413,7 +424,7 @@ function PortfolioContent() {
                                     <option disabled>──────────</option>
                                     {accounts.map(acc => (
                                         <option key={acc.id} value={acc.id}>
-                                            {acc.name} {acc.account_type === 'PAPER' ? `(Virtual: Rs. ${Number(acc.balance).toLocaleString()})` : ''}
+                                            {acc.name}{acc.is_default ? ' · Default' : ''} {acc.account_type === 'PAPER' ? `(Virtual: Rs. ${Number(acc.balance).toLocaleString()})` : ''}
                                         </option>
                                     ))}
                                 </select>
@@ -582,6 +593,7 @@ function PortfolioContent() {
                                                     <div className="flex flex-wrap items-center justify-between gap-3 rounded-lg bg-primary/5 px-3 py-2">
                                                         <div className="flex items-center gap-3">
                                                             <h3 className="text-[11px] font-bold uppercase tracking-wider text-primary">{acc.name}</h3>
+                                                            {acc.is_default && <span className="ml-2 text-[9px] font-bold px-1.5 py-0.5 rounded-full bg-emerald-100 text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-400">Default</span>}
                                                             <Badge variant="outline" className="text-xs font-mono">
                                                                 {formatRupees(accTotalValue)}
                                                             </Badge>
@@ -643,13 +655,13 @@ function PortfolioContent() {
                                         onBuy={(ticker) => {
                                             setPromoteTicker(ticker);
                                             setTransactionType('BUY');
-                                            setDefaultModalAccount(selectedAccount !== 'all' ? selectedAccount : '');
+                                            setDefaultModalAccount(selectedAccount !== 'all' ? selectedAccount : (defAcctId ?? ''));
                                             setIsModalOpen(true);
                                         }}
                                         onSell={(ticker) => {
                                             setPromoteTicker(ticker);
                                             setTransactionType('SELL');
-                                            setDefaultModalAccount(selectedAccount !== 'all' ? selectedAccount : '');
+                                            setDefaultModalAccount(selectedAccount !== 'all' ? selectedAccount : (defAcctId ?? ''));
                                             setIsModalOpen(true);
                                         }}
                                         onStrategies={(item) => {

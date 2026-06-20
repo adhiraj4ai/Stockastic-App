@@ -3,6 +3,7 @@ from rest_framework.decorators import action
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from decimal import Decimal
+from django.db import transaction
 
 from ...models import (
     PortfolioAccount, PortfolioItem, PortfolioTransaction, DailyStockPrice,
@@ -21,6 +22,15 @@ class PortfolioAccountViewSet(viewsets.ModelViewSet):
 
     def perform_create(self, serializer):
         serializer.save(user=self.request.user)
+
+    @action(detail=True, methods=['post'])
+    def set_default(self, request, pk=None):
+        account = self.get_object()
+        with transaction.atomic():
+            PortfolioAccount.objects.filter(user=account.user).update(is_default=False)
+            account.is_default = True
+            account.save(update_fields=['is_default'])
+        return Response(PortfolioAccountSerializer(account).data)
 
     @action(detail=True, methods=['post'])
     def reset(self, request, pk=None):

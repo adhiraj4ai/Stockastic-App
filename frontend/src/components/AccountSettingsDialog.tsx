@@ -39,6 +39,7 @@ export function AccountSettingsDialog({
     const [loading, setLoading] = useState(false);
     const [deleteConfirm, setDeleteConfirm] = useState('');
     const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+    const [settingDefault, setSettingDefault] = useState(false);
 
     useEffect(() => {
         if (account) {
@@ -88,6 +89,19 @@ export function AccountSettingsDialog({
             alert('Failed to delete account. It might contain transactions.');
         } finally {
             setLoading(false);
+        }
+    };
+
+    const handleSetDefault = async () => {
+        if (!account) return;
+        setSettingDefault(true);
+        try {
+            await api.post(`/api/stocks/accounts/${account.id}/set_default/`);
+            onUpdate();
+        } catch (err) {
+            console.error('Failed to set default account', err);
+        } finally {
+            setSettingDefault(false);
         }
     };
 
@@ -175,6 +189,21 @@ export function AccountSettingsDialog({
                                     </div>
                                 </div>
                             </div>
+                        </div>
+
+                        <div className="flex items-center justify-between pt-1">
+                            {account?.is_default ? (
+                                <div className="text-[11px] font-semibold text-emerald-600 dark:text-emerald-400">Default account</div>
+                            ) : (
+                                <button
+                                    type="button"
+                                    onClick={handleSetDefault}
+                                    disabled={settingDefault}
+                                    className="text-[11px] font-semibold text-primary hover:underline disabled:opacity-50"
+                                >
+                                    Set as default account
+                                </button>
+                            )}
                         </div>
 
                         <div className="pt-2">

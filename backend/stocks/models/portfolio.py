@@ -12,11 +12,12 @@ class PortfolioAccount(models.Model):
     account_type = models.CharField(max_length=10, choices=AccountType.choices, default=AccountType.LIVE)
     balance = models.DecimalField(max_digits=12, decimal_places=2, default=0)
     default_risk_percentage = models.DecimalField(
-        max_digits=4, 
-        decimal_places=2, 
+        max_digits=4,
+        decimal_places=2,
         default=2.00,
         help_text="Default risk per trade as % of account balance"
     )
+    is_default = models.BooleanField(default=False)
     created_at = models.DateTimeField(auto_now_add=True)
 
     def __str__(self):

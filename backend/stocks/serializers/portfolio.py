@@ -11,8 +11,8 @@ from ..models.market import DailyStockPrice, Company
 class PortfolioAccountSerializer(serializers.ModelSerializer):
     class Meta:
         model = PortfolioAccount
-        fields = ['id', 'name', 'account_type', 'balance', 'default_risk_percentage', 'created_at']
-        read_only_fields = ['id', 'created_at']
+        fields = ['id', 'name', 'account_type', 'balance', 'default_risk_percentage', 'is_default', 'created_at']
+        read_only_fields = ['id', 'created_at', 'is_default']
 
 class PortfolioItemSerializer(serializers.ModelSerializer):
     current_price = serializers.DecimalField(max_digits=10, decimal_places=2, read_only=True)
