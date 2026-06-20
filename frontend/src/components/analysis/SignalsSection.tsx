@@ -325,15 +325,23 @@ function HistoryList({ history }: { history: TickerAnalysisData['history'] }) {
 // ── SignalsSection ────────────────────────────────────────────────────────────
 export function SignalsSection({ data, ladder }: SignalsSectionProps) {
     return (
-        <div className="flex flex-col gap-4">
+        <div className="h-full flex flex-col gap-4">
             <SignalLadder ladder={ladder} />
-            <ConfluenceCard signals={data.generatedSignals} direction={ladder.direction} />
-            {data.accumulation && <FlowCard accumulation={data.accumulation} />}
-            <TargetsCard ladder={ladder} />
-            {data.fibonacci && <FibonacciCard fibonacci={data.fibonacci} />}
-            <PivotCluster technicals={data.technicals} />
-            <VolatilityMini technicals={data.technicals} />
-            <HistoryList history={data.history} />
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 flex-1 min-h-0">
+                <div className="flex flex-col gap-4 min-h-0">
+                    <ConfluenceCard signals={data.generatedSignals} direction={ladder.direction} />
+                    <HistoryList history={data.history} />
+                </div>
+                <div className="flex flex-col gap-4 min-h-0">
+                    {data.accumulation && <FlowCard accumulation={data.accumulation} />}
+                    <TargetsCard ladder={ladder} />
+                </div>
+                <div className="flex flex-col gap-4 min-h-0">
+                    {data.fibonacci && <FibonacciCard fibonacci={data.fibonacci} />}
+                    <PivotCluster technicals={data.technicals} />
+                    <VolatilityMini technicals={data.technicals} />
+                </div>
+            </div>
         </div>
     );
 }

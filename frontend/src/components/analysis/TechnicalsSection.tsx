@@ -318,19 +318,17 @@ export function TechnicalsSection({ data }: { data: TickerAnalysisData }) {
         cmf: t.cmf, cmp: price.cmp,
     });
     return (
-        <div className="flex-1 min-h-0 overflow-y-auto p-4 bg-slate-50/10 dark:bg-slate-950/20 no-scrollbar">
-            <div className="max-w-5xl mx-auto space-y-4">
-                <div className="grid grid-cols-1 lg:grid-cols-12 gap-4">
-                    <BiasHero rating={bias.rating} bull={bias.bull} bear={bias.bear} neutral={bias.neutral} total={bias.total} />
-                    <MomentumGrid t={t} rsi={live.rsi} roc={live.roc} />
-                </div>
-                <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
-                    <TrendCard macd={live.macd} macdSignal={live.macdSignal} macdHist={live.macdHist}
-                        adx={t.adx} sma50={t.sma50} sma200={t.sma200} psar={t.psar}
-                        aroonUp={t.aroonUp} aroonDown={t.aroonDown} cmp={price.cmp} />
-                    <VolumeCard cmf={t.cmf} obv={t.obv} cmp={price.cmp} vwap={t.vwap} />
-                    <VolatilityCard atr={t.atr} cmp={price.cmp} bbp={t.bbp} />
-                </div>
+        <div className="h-full w-full flex flex-col gap-4 p-4 bg-slate-50/10 dark:bg-slate-950/20">
+            <div className="grid grid-cols-1 lg:grid-cols-12 gap-4 flex-1 min-h-0">
+                <BiasHero rating={bias.rating} bull={bias.bull} bear={bias.bear} neutral={bias.neutral} total={bias.total} />
+                <MomentumGrid t={t} rsi={live.rsi} roc={live.roc} />
+            </div>
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 flex-1 min-h-0">
+                <TrendCard macd={live.macd} macdSignal={live.macdSignal} macdHist={live.macdHist}
+                    adx={t.adx} sma50={t.sma50} sma200={t.sma200} psar={t.psar}
+                    aroonUp={t.aroonUp} aroonDown={t.aroonDown} cmp={price.cmp} />
+                <VolumeCard cmf={t.cmf} obv={t.obv} cmp={price.cmp} vwap={t.vwap} />
+                <VolatilityCard atr={t.atr} cmp={price.cmp} bbp={t.bbp} />
             </div>
         </div>
     );
