@@ -6,7 +6,7 @@ import {
 } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
 import {
-    ArrowUpDown, PlusCircle, MinusCircle, Target, Radio
+    ArrowUpDown, Radio
 } from 'lucide-react';
 import {
     Tooltip,
@@ -267,53 +267,25 @@ export function PortfolioTable({
                                         )}
                                     </TableCell>
                                     <TableCell className="text-center py-4">
-                                        <div className="flex justify-center gap-1">
-                                            <Tooltip>
-                                                <TooltipTrigger asChild>
-                                                    <button
-                                                        onClick={(e) => {
-                                                            e.stopPropagation();
-                                                            onBuy(item.ticker);
-                                                        }}
-                                                        className="p-2 text-muted-foreground/70 hover:text-emerald-600 dark:hover:text-emerald-400 hover:bg-emerald-500/10 rounded-lg transition-all"
-                                                    >
-                                                        <PlusCircle size={18} />
-                                                    </button>
-                                                </TooltipTrigger>
-                                                <TooltipContent>
-                                                    <p>Buy More</p>
-                                                </TooltipContent>
-                                            </Tooltip>
-
-                                            <Tooltip>
-                                                <TooltipTrigger asChild>
-                                                    <button
-                                                        onClick={(e) => {
-                                                            e.stopPropagation();
-                                                            onSell(item.ticker);
-                                                        }}
-                                                        className="p-2 text-muted-foreground/70 hover:text-rose-600 dark:hover:text-rose-400 hover:bg-rose-500/10 rounded-lg transition-all"
-                                                    >
-                                                        <MinusCircle size={18} />
-                                                    </button>
-                                                </TooltipTrigger>
-                                                <TooltipContent>
-                                                    <p>Sell</p>
-                                                </TooltipContent>
-                                            </Tooltip>
-
-                                            <Tooltip>
-                                                <TooltipTrigger asChild>
-                                                    <button
-                                                        className={`p-2 rounded-lg transition-all ${isExitPlanDialogOpen && selectedPortfolioItem?.ticker === item.ticker ? 'bg-primary text-primary-foreground shadow-sm rotate-0' : 'text-muted-foreground/70 hover:text-primary hover:bg-primary/10 rotate-[-45deg] hover:rotate-0'}`}
-                                                    >
-                                                        <Target size={18} />
-                                                    </button>
-                                                </TooltipTrigger>
-                                                <TooltipContent>
-                                                    <p>View Strategies</p>
-                                                </TooltipContent>
-                                            </Tooltip>
+                                        <div className="flex justify-center gap-2">
+                                            <button
+                                                onClick={(e) => {
+                                                    e.stopPropagation();
+                                                    onBuy(item.ticker);
+                                                }}
+                                                className="px-3 py-1.5 text-[11px] font-semibold rounded-lg border border-emerald-500/30 text-emerald-700 dark:text-emerald-400 hover:bg-emerald-500/10 transition-all"
+                                            >
+                                                Buy
+                                            </button>
+                                            <button
+                                                onClick={(e) => {
+                                                    e.stopPropagation();
+                                                    onSell(item.ticker);
+                                                }}
+                                                className="px-3 py-1.5 text-[11px] font-semibold rounded-lg border border-rose-500/30 text-rose-700 dark:text-rose-400 hover:bg-rose-500/10 transition-all"
+                                            >
+                                                Sell
+                                            </button>
                                         </div>
                                     </TableCell>
                                 </TableRow>
