@@ -129,6 +129,21 @@ services:
   #     - "8001:8000"   # host 8001 -> container 8000 (avoids Django's 8000)
   #   restart: unless-stopped
 
+  # Ngrok Tunnel Service
+  ngrok:
+    image: ngrok/ngrok:alpine
+    container_name: stockastic-ngrok
+    env_file:
+      - .env.docker
+    command: http frontend:3000 --log=stdout
+    ports:
+      - "4040:4040"
+    depends_on:
+      - frontend
+    networks:
+      - stockastic-network
+    restart: unless-stopped
+
 volumes:
   postgres_data:
     driver: local

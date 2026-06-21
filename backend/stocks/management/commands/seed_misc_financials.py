@@ -1,6 +1,9 @@
 from django.core.management.base import BaseCommand
 from stocks.models import FinancialReport, Company, StockFundamental
 import decimal  # noqa: F401 — kept for backward compatibility
+from decimal import Decimal
+from stocks.services.dividend_service import sync_dividends_from_financials
+from stocks.services.fundamental_calculator import recalculate_fundamentals
 
 
 # ─── ACLBSL quarterly reports data ────────────────────────────────────────────
@@ -183,6 +186,452 @@ _UPPER_BS = {
     },
 }
 
+_MLBSL_DATA = {
+    "074-075": {
+        "bs": {
+            "ASSETS": {
+                "other_assets": 39665633.00,
+                "total_assets": 39665633.00,
+            },
+            "LIABILITIES": {
+                "other_liabilities": 295700.00,
+                "total_liabilities": 295700.00,
+            },
+            "EQUITY": {
+                "share_capital": 39523606.00,
+                "reserves_reserves": -153673.00,
+                "total_equity": 39369933.00,
+                "total_liabilities_equity": 39665633.00,
+            }
+        },
+        "pl": {
+            "INCOME": {
+                "interest_income": 142027.00,
+                "net_interest_income": 142027.00,
+                "total_operating_income": 142027.00,
+            },
+            "EXPENSES": {
+                "personnel_expenses": 133300.00,
+                "other_operating_expenses": 162400.00,
+                "operating_profit": -153673.00,
+                "pbt": -153673.00,
+                "net_profit": -153673.00,
+            },
+            "REGULATORY": {
+                "total_employees": 2.0,
+            }
+        },
+        "cf": {},
+        "eps": -0.39,
+        "book_value": 99.61,
+    },
+    "075-076": {
+        "bs": {
+            "ASSETS": {
+                "cash_equivalent": 85918.00,
+                "due_from_nrb": 5874285.00,
+                "placement_bfis": 75653690.00,
+                "loans_customers": 1328143303.00,
+                "property_equipment": 10639264.00,
+                "other_assets": 6692682.00,
+                "total_assets": 1427089142.00,
+            },
+            "LIABILITIES": {
+                "borrowings": 778836200.00,
+                "deposits_customers": 480288929.00,
+                "other_liabilities": 12672151.00,
+                "total_liabilities": 1271797280.00,
+            },
+            "EQUITY": {
+                "share_capital": 60000000.00,
+                "reserves_reserves": 95291862.00,
+                "total_equity": 155291862.00,
+                "total_liabilities_equity": 1427089142.00,
+            }
+        },
+        "pl": {
+            "INCOME": {
+                "interest_income": 143783632.00,
+                "interest_expense": 78532845.00,
+                "net_interest_income": 65250787.00,
+                "fee_income": 41409425.00,
+                "net_fee_income": 41409425.00,
+                "net_int_fee_income": 106660212.00,
+                "total_operating_income": 106660212.00,
+            },
+            "EXPENSES": {
+                "impairment_charge": 13808259.00,
+                "net_operating_income": 92851953.00,
+                "personnel_expenses": 43619465.00,
+                "other_operating_expenses": 17622364.00,
+                "operating_profit": 31610124.00,
+                "non_operating_income": 5627791.00,
+                "pbt": 33852650.00,
+                "tax": 9616531.00,
+                "net_profit": 24236119.00,
+            },
+            "REGULATORY": {
+                "cd_ratio": 281.0,
+                "npl_ratio": 0.67,
+                "liquidity_crr": 0.51,
+                "spread": 3.92,
+                "core_capital": 9.11,
+                "supplementary_capital": 0.98,
+                "capital_fund": 10.09,
+                "total_employees": 215.0,
+            }
+        },
+        "cf": {},
+        "eps": 40.39,
+        "book_value": 258.82,
+    },
+    "076-077": {
+        "bs": {
+            "ASSETS": {
+                "cash_equivalent": 557144.00,
+                "due_from_nrb": 7842338.00,
+                "placement_bfis": 131896154.00,
+                "loans_customers": 1738262776.00,
+                "property_equipment": 10550123.00,
+                "other_assets": 3427195.00,
+                "total_assets": 1892535729.00,
+            },
+            "LIABILITIES": {
+                "borrowings": 1012398171.00,
+                "deposits_customers": 660555973.00,
+                "current_tax_liabilities": 10151265.00,
+                "other_liabilities": 21536695.00,
+                "total_liabilities": 1704642104.00,
+            },
+            "EQUITY": {
+                "share_capital": 60000000.00,
+                "reserves_reserves": 127893625.00,
+                "total_equity": 187893625.00,
+                "total_liabilities_equity": 1892535729.00,
+            }
+        },
+        "pl": {
+            "INCOME": {
+                "interest_income": 270395103.00,
+                "interest_expense": 142112647.00,
+                "net_interest_income": 128282455.00,
+                "fee_income": 50125586.00,
+                "net_fee_income": 50125586.00,
+                "net_int_fee_income": 178408042.00,
+                "total_operating_income": 178408042.00,
+            },
+            "EXPENSES": {
+                "impairment_charge": 40605415.00,
+                "net_operating_income": 137802627.00,
+                "personnel_expenses": 78390678.00,
+                "other_operating_expenses": 21235345.00,
+                "operating_profit": 38176603.00,
+                "non_operating_income": 17052031.00,
+                "pbt": 50207849.00,
+                "tax": 15494357.00,
+                "net_profit": 34713492.00,
+            },
+            "REGULATORY": {
+                "cd_ratio": 269.71,
+                "npl_ratio": 0.78,
+                "liquidity_crr": 0.51,
+                "spread": 4.44,
+                "core_capital": 8.53,
+                "supplementary_capital": 2.33,
+                "capital_fund": 10.86,
+                "total_employees": 241.0,
+            }
+        },
+        "cf": {},
+        "eps": 57.86,
+        "book_value": 313.16,
+    },
+    "077-078": {
+        "bs": {
+            "ASSETS": {
+                "cash_equivalent": 1831440.00,
+                "placement_bfis": 20425112.00,
+                "loans_bfis": 171587812.00,
+                "loans_customers": 3303092376.00,
+                "property_equipment": 10870171.00,
+                "other_assets": 10469099.00,
+                "total_assets": 3518276010.00,
+            },
+            "LIABILITIES": {
+                "borrowings": 2246391735.00,
+                "deposits_customers": 928090333.00,
+                "provisions": 2500000.00,
+                "other_liabilities": 43955218.00,
+                "total_liabilities": 3220937286.00,
+            },
+            "EQUITY": {
+                "share_capital": 147500000.00,
+                "reserves_reserves": 149838724.00,
+                "total_equity": 297338724.00,
+                "total_liabilities_equity": 3518276010.00,
+            }
+        },
+        "pl": {
+            "INCOME": {
+                "interest_income": 399602833.00,
+                "interest_expense": 160750165.00,
+                "net_interest_income": 238852668.00,
+                "fee_income": 84240192.00,
+                "net_fee_income": 84240192.00,
+                "net_int_fee_income": 323092860.00,
+                "total_operating_income": 323092860.00,
+            },
+            "EXPENSES": {
+                "impairment_charge": 152369320.00,
+                "net_operating_income": 170723540.00,
+                "personnel_expenses": 92611491.00,
+                "other_operating_expenses": 23685460.00,
+                "operating_profit": 51426589.00,
+                "non_operating_income": 60195822.00,
+                "pbt": 100460169.00,
+                "tax": 28534837.00,
+                "net_profit": 71925332.00,
+            },
+            "REGULATORY": {
+                "cd_ratio": 356.0,
+                "npl_ratio": 1.71,
+                "liquidity_crr": 0.49,
+                "spread": 5.0,
+                "core_capital": 7.14,
+                "supplementary_capital": 1.25,
+                "capital_fund": 8.39,
+                "total_employees": 287.0,
+            }
+        },
+        "cf": {},
+        "eps": 48.76,
+        "book_value": 201.59,
+        "bonus_share": 47.50,
+        "cash_dividend": 2.50,
+        "dividend_book_close_date": "2021-12-02",
+    },
+    "078-079": {
+        "bs": {
+            "ASSETS": {
+                "cash_equivalent": 1683862.00,
+                "due_from_nrb": 59931.00,
+                "placement_bfis": 25884077.00,
+                "loans_bfis": 102122948.00,
+                "investment_securities": 33500000.00,
+                "loans_customers": 4384779907.00,
+                "property_equipment": 17922372.00,
+                "other_assets": 31003223.00,
+                "total_assets": 4596956320.00,
+            },
+            "LIABILITIES": {
+                "borrowings": 2775866135.00,
+                "deposits_customers": 1340019569.00,
+                "provisions": 3687500.00,
+                "other_liabilities": 95150667.00,
+                "total_liabilities": 4214723871.00,
+            },
+            "EQUITY": {
+                "share_capital": 217562500.00,
+                "reserves_reserves": 164669947.00,
+                "retained_earnings": 2.00,
+                "total_equity": 382232449.00,
+                "total_liabilities_equity": 4596956320.00,
+            }
+        },
+        "pl": {
+            "INCOME": {
+                "interest_income": 586868909.00,
+                "interest_expense": 308379619.00,
+                "net_interest_income": 278489290.00,
+                "fee_income": 59050507.00,
+                "net_fee_income": 59050507.00,
+                "net_int_fee_income": 337539797.00,
+                "total_operating_income": 337539797.00,
+            },
+            "EXPENSES": {
+                "impairment_charge": 184416724.00,
+                "net_operating_income": 153123073.00,
+                "personnel_expenses": 129111968.00,
+                "other_operating_expenses": 34125446.00,
+                "operating_profit": -10114341.00,
+                "non_operating_income": 152078171.00,
+                "pbt": 127767447.00,
+                "tax": 38419629.00,
+                "net_profit": 89347818.00,
+            },
+            "REGULATORY": {
+                "cd_ratio": 3.27,
+                "npl_ratio": 0.03,
+                "liquidity_crr": 0.01,
+                "core_capital": 0.07,
+                "supplementary_capital": 0.02,
+                "capital_fund": 0.08,
+                "total_employees": 350.0,
+                "branches": 70.0,
+            }
+        },
+        "cf": {
+            "OPERATING": {
+                "net_operating_cash": -22126967.47,
+            },
+            "INVESTING": {
+                "net_investing_cash": -10915411.66,
+            },
+            "FINANCING": {
+                "net_financing_cash": -2572831.99,
+            },
+            "SUMMARY": {
+                "net_change_cash": -35615211.12,
+            }
+        },
+        "eps": 41.07,
+        "book_value": 175.69,
+        "bonus_share": 47.50,
+        "cash_dividend": 2.50,
+        "dividend_book_close_date": "2023-02-17",
+    },
+    "079-080": {
+        "bs": {
+            "ASSETS": {
+                "cash_equivalent": 128550826.83,
+                "due_from_nrb": 21508746.39,
+                "loans_customers": 4216687393.83,
+                "property_equipment": 14195063.95,
+                "other_assets": 5857407.88,
+                "total_assets": 4404855575.51,
+            },
+            "LIABILITIES": {
+                "borrowings": 2466719315.92,
+                "deposits_customers": 1429394942.00,
+                "other_liabilities": 72629488.05,
+                "total_liabilities": 3968743745.97,
+            },
+            "EQUITY": {
+                "share_capital": 217562500.00,
+                "reserves_reserves": 182880014.60,
+                "retained_earnings": 35669314.94,
+                "total_equity": 436111829.54,
+                "total_liabilities_equity": 4404855575.51,
+            }
+        },
+        "pl": {
+            "INCOME": {
+                "interest_income": 686646168.22,
+                "interest_expense": 422635076.59,
+                "net_interest_income": 264011091.63,
+                "fee_income": 56105603.95,
+                "net_fee_income": 56105603.95,
+                "net_int_fee_income": 320116695.58,
+                "total_operating_income": 316876352.65,
+            },
+            "EXPENSES": {
+                "impairment_charge": 96227101.02,
+                "net_operating_income": 220649251.63,
+                "personnel_expenses": 164598420.47,
+                "other_operating_expenses": 28658420.21,
+                "operating_profit": 21422683.69,
+                "non_operating_income": 84000.00,
+                "pbt": 21506683.69,
+                "tax": 7167405.76,
+                "net_profit": 14339277.93,
+            },
+            "REGULATORY": {
+                "npl_ratio": 5.69,
+                "core_capital": 6.50,
+                "supplementary_capital": 1.65,
+                "capital_fund": 8.15,
+                "total_employees": 356.0,
+            }
+        },
+        "cf": {
+            "OPERATING": {
+                "net_operating_cash": 6778883.62,
+            },
+            "INVESTING": {
+                "net_investing_cash": -3327847.62,
+            },
+            "FINANCING": {
+                "net_financing_cash": -4148886.00,
+            },
+            "SUMMARY": {
+                "net_change_cash": -697850.00,
+            }
+        },
+        "eps": 6.59,
+        "book_value": 200.45,
+    },
+    "080-081": {
+        "bs": {
+            "ASSETS": {
+                "cash_equivalent": 118205292.13,
+                "due_from_nrb": 23094550.20,
+                "loans_customers": 4893588371.94,
+                "property_equipment": 14333219.00,
+                "other_assets": 6197768.97,
+                "total_assets": 5082524749.95,
+            },
+            "LIABILITIES": {
+                "borrowings": 2963374860.76,
+                "deposits_customers": 1573799755.82,
+                "other_liabilities": 107120921.75,
+                "total_liabilities": 4644295538.33,
+            },
+            "EQUITY": {
+                "share_capital": 217562500.00,
+                "reserves_reserves": 220666711.63,
+                "total_equity": 438229211.63,
+                "total_liabilities_equity": 5082524749.95,
+            }
+        },
+        "pl": {
+            "INCOME": {
+                "interest_income": 640396297.06,
+                "interest_expense": 423491388.09,
+                "net_interest_income": 216904908.97,
+                "fee_income": 65684005.79,
+                "net_fee_income": 65684005.79,
+                "net_int_fee_income": 282588914.76,
+                "total_operating_income": 278846141.46,
+            },
+            "EXPENSES": {
+                "personnel_expenses": 192369119.62,
+                "other_operating_expenses": 31216119.75,
+                "operating_profit": 68749949.30,
+                "non_operating_income": -18007117.43,
+                "pbt": 68766449.30,
+                "tax": 20629788.00,
+                "net_profit": 48136661.30,
+            },
+            "REGULATORY": {
+                "cd_ratio": 326.62,
+                "npl_ratio": 3.93,
+                "liquidity_crr": 0.51,
+                "spread": 5.13,
+                "core_capital": 6.47,
+                "supplementary_capital": 1.65,
+                "capital_fund": 8.12,
+                "total_employees": 365.0,
+            }
+        },
+        "cf": {
+            "OPERATING": {
+                "net_operating_cash": -5611693.00,
+            },
+            "INVESTING": {
+                "net_investing_cash": -4750341.71,
+            },
+            "FINANCING": {
+                "net_financing_cash": 16500.00,
+            },
+            "SUMMARY": {
+                "net_change_cash": -10345534.71,
+            }
+        },
+        "eps": 22.13,
+        "book_value": 201.43,
+    }
+}
+
 
 def _clean_val(v):
     if v == "-" or v is None:
@@ -358,10 +807,52 @@ class Command(BaseCommand):
             )
             self.stdout.write(self.style.SUCCESS(f"Seeded {ticker} - {year}"))
 
+    def seed_mlbsl(self):
+        ticker = 'MLBSL'
+        Company.all_objects.get_or_create(
+            symbol=ticker,
+            defaults={
+                'name': 'Mahila Laghubitta Bittiya Sanstha Ltd',
+                'sector': 'Microfinance',
+                'instrument_type': 'Equity',
+                'status': 'A',
+            }
+        )
+        self.stdout.write("Seeding MLBSL Data...")
+        for fy, raw in _MLBSL_DATA.items():
+            FinancialReport.objects.update_or_create(
+                ticker=ticker,
+                fiscal_year=fy,
+                report_type=FinancialReport.ReportType.ANNUAL,
+                defaults={
+                    'report_template': 'BANK',
+                    'is_audited': True,
+                    'balance_sheet': raw['bs'],
+                    'profit_loss': raw['pl'],
+                    'cash_flow': raw['cf'],
+                    'net_profit': Decimal(str(raw['pl']['EXPENSES']['net_profit'])),
+                    'revenue': Decimal(str(raw['pl']['INCOME']['total_operating_income'])),
+                    'paid_up_capital': Decimal(str(raw['bs']['EQUITY']['share_capital'])),
+                    'reserves_and_surplus': Decimal(str(raw['bs']['EQUITY']['reserves_reserves'])),
+                    'eps': Decimal(str(raw['eps'])),
+                    'book_value': Decimal(str(raw['book_value'])),
+                    'bonus_share': Decimal(str(raw.get('bonus_share', 0))),
+                    'cash_dividend': Decimal(str(raw.get('cash_dividend', 0))),
+                    'dividend_book_close_date': raw.get('dividend_book_close_date'),
+                }
+            )
+            self.stdout.write(f"Seeded MLBSL - {fy}")
+
+        sync_dividends_from_financials(ticker)
+        from django.core.management import call_command
+        call_command('backfill_corporate_actions', ticker=ticker)
+        recalculate_fundamentals(ticker)
+
     def handle(self, *args, **kwargs):
         self.seed_nabil()
         self.seed_upper()
         self.seed_shpc()
         self.seed_aclbsl_quarterly()
         self.seed_aclbsl_fundamentals()
+        self.seed_mlbsl()
         self.stdout.write(self.style.SUCCESS("Successfully seeded multi-sector financials"))
