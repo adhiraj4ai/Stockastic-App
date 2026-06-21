@@ -103,12 +103,12 @@ services:
       context: ./frontend
       dockerfile: Dockerfile
       args:
-        NEXT_PUBLIC_API_URL: http://localhost:8000
+        NEXT_PUBLIC_API_URL: /
     container_name: stockastic-frontend
     ports:
       - "3000:3000"
     environment:
-      - NEXT_PUBLIC_API_URL=http://localhost:8000
+      - NEXT_PUBLIC_API_URL=/
     depends_on:
       - backend
     networks:
@@ -129,17 +129,47 @@ services:
   #     - "8001:8000"   # host 8001 -> container 8000 (avoids Django's 8000)
   #   restart: unless-stopped
 
-  # Ngrok Tunnel Service
+  # Nginx Gateway (Unified Reverse Proxy)
+  nginx:
+    image: nginx:alpine
+    container_name: stockastic-nginx
+    volumes:
+      - ./nginx.conf:/etc/nginx/nginx.conf:ro
+    ports:
+      - "8080:80"
+    depends_on:
+      - frontend
+      - backend
+    networks:
+      - stockastic-network
+    restart: unless-stopped
+
+  # Ngrok Tunnel Service (Tunneling Nginx)
   ngrok:
     image: ngrok/ngrok:alpine
     container_name: stockastic-ngrok
     env_file:
       - .env.docker
-    command: http frontend:3000 --log=stdout
+    command: http nginx:80 --log=stdout
     ports:
       - "4040:4040"
     depends_on:
-      - frontend
+      - nginx
+    networks:
+      - stockastic-network
+    restart: unless-stopped
+
+  # Ngrok Backend Tunnel Service
+  ngrok-backend:
+    image: ngrok/ngrok:alpine
+    container_name: stockastic-ngrok-backend
+    env_file:
+      - .env.docker
+    command: http backend:8000 --log=stdout
+    ports:
+      - "4041:4040"
+    depends_on:
+      - backend
     networks:
       - stockastic-network
     restart: unless-stopped
