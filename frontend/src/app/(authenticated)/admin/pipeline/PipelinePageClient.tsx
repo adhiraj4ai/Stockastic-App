@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect, useRef } from 'react';
-import api from '@/lib/api';
+import api, { API_BASE_URL } from '@/lib/api';
 import {
     Play,
     TrendingUp, TrendingDown, Activity, DollarSign, Zap, BarChart3, Globe, ShieldAlert,
@@ -143,8 +143,7 @@ export default function PipelinePage() {
         setIndicatorLogs([]);
         setShowIndicatorLogs(true);
 
-        const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
-        const url = `${apiUrl}/api/stocks/pipeline/trigger_indicators_stream/`;
+        const url = `${API_BASE_URL}/api/stocks/pipeline/trigger_indicators_stream/`;
 
         // Create abort controller
         indicatorAbortController.current = new AbortController();
@@ -241,8 +240,7 @@ export default function PipelinePage() {
         setSignalLogs([]);
         setShowSignalLogs(true);
 
-        const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
-        const url = `${apiUrl}/api/stocks/pipeline/generate_signals_stream/`;
+        const url = `${API_BASE_URL}/api/stocks/pipeline/generate_signals_stream/`;
 
         // Create abort controller
         signalAbortController.current = new AbortController();
@@ -342,8 +340,7 @@ export default function PipelinePage() {
         setOptimizationLogs([]);
         setShowOptimizationLogs(true);
 
-        const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
-        const url = `${apiUrl}/api/stocks/pipeline/optimize_strategies_stream/?all_symbols=true`;
+        const url = `${API_BASE_URL}/api/stocks/pipeline/optimize_strategies_stream/?all_symbols=true`;
 
         // Create abort controller
         optimizationAbortController.current = new AbortController();
@@ -427,8 +424,7 @@ export default function PipelinePage() {
         setBrokerLogs([]);
         setShowBrokerLogs(true);
 
-        const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
-        const url = `${apiUrl}/api/stocks/pipeline/update_broker_analysis_stream/?mode=${brokerMode}`;
+        const url = `${API_BASE_URL}/api/stocks/pipeline/update_broker_analysis_stream/?mode=${brokerMode}`;
 
         brokerAbortController.current = new AbortController();
 
@@ -508,8 +504,7 @@ export default function PipelinePage() {
         setIntelLogs([]);
         setShowIntelLogs(true);
 
-        const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
-        const url = `${apiUrl}/api/stocks/pipeline/generate_all_signals_stream/`;
+        const url = `${API_BASE_URL}/api/stocks/pipeline/generate_all_signals_stream/`;
 
         intelAbortController.current = new AbortController();
 
@@ -589,8 +584,7 @@ export default function PipelinePage() {
         setEvaluationLogs([]);
         setShowEvaluationLogs(true);
 
-        const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
-        const url = `${apiUrl}/api/stocks/pipeline/trigger_evaluation_stream/`;
+        const url = `${API_BASE_URL}/api/stocks/pipeline/trigger_evaluation_stream/`;
 
         evaluationAbortController.current = new AbortController();
 
@@ -672,9 +666,8 @@ export default function PipelinePage() {
         setApiIngestLogs([]);
         setShowApiIngestLogs(true);
 
-        const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
         const qs = new URLSearchParams({ datasets: selected.join(','), date: apiDate });
-        const url = `${apiUrl}/api/stocks/pipeline/ingest_market_data_stream/?${qs.toString()}`;
+        const url = `${API_BASE_URL}/api/stocks/pipeline/ingest_market_data_stream/?${qs.toString()}`;
         apiIngestAbortController.current = new AbortController();
 
         try {

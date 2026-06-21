@@ -4,6 +4,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, AreaChart, Area } from 'recharts';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import axios from 'axios';
+import { API_BASE_URL } from '@/lib/api';
 import { TrendingUp } from 'lucide-react';
 import { useTheme } from 'next-themes';
 
@@ -23,8 +24,7 @@ export function SectorGraph() {
         const fetchHistory = async () => {
             setLoading(true);
             try {
-                const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
-                const response = await axios.get(`${apiUrl}/api/stocks/sector-history/${sector}/`);
+                const response = await axios.get(`${API_BASE_URL}/api/stocks/sector-history/${sector}/`);
                 // Format dates lightly? Recharts can parse timestamps but string is okay for category
                 setData(response.data);
             } catch (err) {

@@ -2,7 +2,13 @@ import axios from 'axios';
 import Cookies from 'js-cookie';
 import type { SavedAnalysis, SavedAnalysisDraft } from '@/components/chat/types';
 
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
+const getApiBaseUrl = () => {
+    const url = process.env.NEXT_PUBLIC_API_URL;
+    if (url === '/') return '';
+    return url || 'http://localhost:8000';
+};
+
+export const API_BASE_URL = getApiBaseUrl();
 const ML_SERVICE_URL = process.env.NEXT_PUBLIC_ML_SERVICE_URL || 'http://localhost:8001';
 
 // Main backend API client
@@ -105,7 +111,7 @@ const handleNetworkError = async (error: any) => {
         return;
     }
     try {
-        const healthUrl = (process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000') + '/api/stocks/health-check/';
+        const healthUrl = API_BASE_URL + '/api/stocks/health-check/';
         const healthCheck = await axios.get(healthUrl, { timeout: 2000 });
         if (healthCheck.data.status === 'online') {
             console.log('Backend is reachable. Treating previous error as transient.');
@@ -180,7 +186,7 @@ export const chatApi = {
     addMessage: (sessionId: string, role: string, content: string) =>
         api.post<ChatMessage[]>(`/api/chat/sessions/${sessionId}/add_message/`, { role, content }),
     streamMessage: async (sessionId: string, role: string, content: string, onChunk: (chunk: string) => void) => {
-        const baseURL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
+        const baseURL = API_BASE_URL;
 
         const response = await fetch(`${baseURL}/api/chat/sessions/${sessionId}/stream_message/`, {
             method: 'POST',

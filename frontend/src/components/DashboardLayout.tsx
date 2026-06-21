@@ -23,6 +23,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import Cookies from 'js-cookie';
 import { SettingsDialog } from './SettingsDialog';
+import { API_BASE_URL } from '@/lib/api';
 
 const stocks = [
     { symbol: 'NABIL', name: 'Nabil Bank Ltd.' },
@@ -134,7 +135,7 @@ function DashboardContent({
         if (isOffline) {
             recoveryInterval = setInterval(async () => {
                 try {
-                    const healthUrl = (process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000') + '/api/stocks/health-check/';
+                    const healthUrl = API_BASE_URL + '/api/stocks/health-check/';
                     const controller = new AbortController();
                     const timeoutId = setTimeout(() => controller.abort(), 3000);
                     const res = await fetch(healthUrl, { signal: controller.signal });

@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation';
 import { useTheme } from 'next-themes';
 import Image from 'next/image';
 import Link from 'next/link';
-import api from '@/lib/api';
+import api, { API_BASE_URL } from '@/lib/api';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -61,7 +61,7 @@ export default function LoginPage() {
 
     const handleSocialLogin = (provider: string) => {
         // Redirect to backend social auth endpoint
-        window.location.href = `${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'}/api/users/auth/${provider}/`;
+        window.location.href = `${API_BASE_URL}/api/users/auth/${provider}/`;
     };
 
     return (

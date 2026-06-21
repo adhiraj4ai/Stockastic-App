@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation';
 import { Play, Plus, Trash2, RotateCcw, AlertCircle, Loader2, StopCircle, ArrowLeft, Pencil, Check, Brain, Wrench, CheckCircle2, XCircle, ChevronUp, ChevronDown, Copy } from 'lucide-react';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
-import api from '@/lib/api';
+import api, { API_BASE_URL } from '@/lib/api';
 import { openChatStream } from '@/lib/chat-sse';
 import { cn } from '@/lib/utils';
 import { SubagentBadge } from './SubagentBadge';
@@ -17,7 +17,7 @@ import { getColorConfig, getIconComponent } from './NotebookDashboard';
 import { notebookSessionTitle, resolveNotebookSessionId } from '@/lib/notebookSession';
 import { moveItem, formatRunDuration, extractAnswerText } from '@/lib/notebookCells';
 
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
+
 
 interface NotebookCell {
     id: string;

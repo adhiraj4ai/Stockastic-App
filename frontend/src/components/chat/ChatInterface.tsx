@@ -2,7 +2,7 @@
 
 import { useEffect, useLayoutEffect, useRef, useState, useCallback } from 'react';
 import { Send, StopCircle, Loader2 } from 'lucide-react';
-import api, { savedApi } from '@/lib/api';
+import api, { savedApi, API_BASE_URL } from '@/lib/api';
 import { openChatStream } from '@/lib/chat-sse';
 import { cn } from '@/lib/utils';
 import { MessageBubble } from './MessageBubble';
@@ -21,7 +21,6 @@ interface ChatInterfaceProps {
     initialPrompt?: string;
 }
 
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
 const TIMELINE_WINDOW = 10;
 const RENDER_WINDOW = 20; // ~10 Q&A pairs rendered at a time
 const PAGE_SIZE = 20;     // messages to prepend per scroll-to-top
