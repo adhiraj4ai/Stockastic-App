@@ -102,3 +102,22 @@ def test_list_with_account_returns_suggested_qty():
     resp = client.get(f"/api/stocks/accumulation-candidates/?account={account.id}")
     assert resp.status_code == 200
     assert resp.data[0]["suggested_qty"] == 100
+
+
+@pytest.mark.django_db
+def test_account_from_different_user_returns_no_sizing():
+    owner = User.objects.create_user("owner", password="x")
+    attacker = User.objects.create_user("attacker", password="x")
+    account = PortfolioAccount.objects.create(
+        user=owner, name="Main", balance=Decimal("100000"),
+        default_risk_percentage=Decimal("2"), account_type=AccountType.LIVE)
+    AccumulationCandidate.objects.create(
+        symbol="MBL", scan_date=date(2026, 6, 26), score=Decimal("88"),
+        factors={}, suggested_entry=Decimal("520"),
+        suggested_stop=Decimal("500"), suggested_target=Decimal("560"),
+        validation_state="validated", status=AccumulationCandidate.Status.ACTIVE)
+    client = APIClient()
+    client.force_authenticate(user=attacker)
+    resp = client.get(f"/api/stocks/accumulation-candidates/?account={account.id}")
+    assert resp.status_code == 200
+    assert resp.data[0]["suggested_qty"] is None

@@ -44,10 +44,11 @@ class AccumulationCandidateViewSet(viewsets.ReadOnlyModelViewSet):
             id=account_id, user=self.request.user
         ).first()
         if account:
+            qs = self.get_queryset()
             ctx["qty_by_symbol"] = {
                 c.symbol: suggested_quantity(
                     account, c.suggested_entry, c.suggested_stop
                 )
-                for c in self.get_queryset()
+                for c in qs
             }
         return ctx
