@@ -562,12 +562,7 @@ def _score_ticker(strat_class, df, objective_type):
             finalize_trades=True,
         )
         stats = bt.run()
-        if objective_type == 'win_rate':
-            metric_key = 'Win Rate [%]'
-        elif objective_type == 'sortino':
-            metric_key = 'Sortino Ratio'
-        else:
-            metric_key = 'Return [%]'
+        metric_key = 'Win Rate [%]' if objective_type == 'win_rate' else 'Return [%]'
         return stats.get(metric_key, 0) or 0
     except Exception:
         return None
