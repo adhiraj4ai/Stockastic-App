@@ -1,6 +1,7 @@
 import React from 'react';
 import { motion } from 'framer-motion';
 import { TrendingUp, TrendingDown, LayoutGrid, ArrowUpRight, ArrowDownRight } from 'lucide-react';
+import MoversBarChart from './charts/MoversBarChart';
 
 interface MarketSummaryProps {
     market_index?: number;
@@ -45,6 +46,12 @@ const MarketSummary: React.FC<MarketSummaryProps> = ({
                         )}
                     </div>
                 </div>
+
+                {(gainers.length > 0 || losers.length > 0) && (
+                    <div className="mb-6">
+                        <MoversBarChart gainers={gainers} losers={losers} />
+                    </div>
+                )}
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                     {/* Top Gainers */}

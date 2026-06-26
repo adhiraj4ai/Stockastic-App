@@ -2,6 +2,7 @@ import React from 'react';
 import { Shield, AlertTriangle } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { MarketRiskCards, MarketRisk } from '@/components/RiskRadar';
+import RiskRadarChart from './charts/RiskRadarChart';
 
 interface RiskCardData {
     radar_data?: Array<{ axis: string; value: number; fullMark: number }>;
@@ -29,6 +30,9 @@ export default function RiskCard(data: RiskCardData) {
                     {level}
                 </span>
             </div>
+            {data.radar_data && data.radar_data.length >= 3 && (
+                <div className="mb-3"><RiskRadarChart radar_data={data.radar_data} /></div>
+            )}
             {data.radar_data && data.radar_data.length > 0 && (
                 <div className="grid grid-cols-2 gap-2 mb-3">
                     {data.radar_data.map((r) => (

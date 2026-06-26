@@ -97,7 +97,7 @@ export const GenUIContainer: React.FC<GenUIContainerProps> = ({ type, data }) =>
         case 'dividends':
             return <SimpleCards.DividendsCard symbol={data.symbol} rows={data.rows || []} />;
         case 'accumulation':
-            return <SimpleCards.AccumulationCard symbol={data.symbol} rows={data.rows || []} />;
+            return <SimpleCards.AccumulationCard symbol={data.symbol} rows={data.rows || []} series={data.series || []} />;
         case 'price_history':
             return <SimpleCards.PriceHistoryCard symbol={data.symbol} rows={data.rows || []} />;
         case 'position_sizing':

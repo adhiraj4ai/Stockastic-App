@@ -11,6 +11,8 @@
 
 import React from 'react';
 import { cn } from '@/lib/utils';
+import CandlestickChart from './charts/CandlestickChart';
+import AccumulationTrendChart, { NetPoint } from './charts/AccumulationTrendChart';
 
 const npr = (n: number) => `Rs ${n.toLocaleString(undefined, { maximumFractionDigits: 0 })}`;
 
@@ -125,13 +127,14 @@ interface AccumulationRow {
     cumulative_net: number;
 }
 
-export function AccumulationCard({ symbol, rows }: { symbol: string; rows: AccumulationRow[] }) {
+export function AccumulationCard({ symbol, rows, series }: { symbol: string; rows: AccumulationRow[]; series?: NetPoint[] }) {
     const sorted = [...rows].sort((a, b) => Math.abs(b.cumulative_net) - Math.abs(a.cumulative_net)).slice(0, 10);
     return (
         <div className="surface overflow-hidden text-sm">
             <div className="px-4 py-2.5 border-b border-border">
                 <span className="font-medium text-foreground">{symbol} · Broker accumulation</span>
             </div>
+            {series && series.length > 1 && <div className="px-4 pt-3"><AccumulationTrendChart series={series} /></div>}
             <div className="overflow-x-auto">
                 <table className="w-full text-[12px]">
                     <thead className="bg-muted/40 text-muted-foreground">
@@ -175,29 +178,47 @@ interface PriceHistoryRow {
     diff_percent?: number | string;
 }
 
+function OhlcvTable({ rows }: { rows: PriceHistoryRow[] }) {
+    const recent = [...rows].slice(-8).reverse();
+    return (
+        <div className="overflow-x-auto">
+            <table className="w-full text-[12px]">
+                <thead className="bg-muted/40 text-muted-foreground">
+                    <tr><Th>Date</Th><Th align="right">Open</Th><Th align="right">High</Th><Th align="right">Low</Th><Th align="right">Close</Th><Th align="right">Volume</Th></tr>
+                </thead>
+                <tbody>
+                    {recent.map((r) => (
+                        <tr key={r.date} className="border-t border-border">
+                            <Td>{r.date}</Td>
+                            <Td align="right" mono>{Number(r.open || 0).toFixed(2)}</Td>
+                            <Td align="right" mono>{Number(r.high || 0).toFixed(2)}</Td>
+                            <Td align="right" mono>{Number(r.low || 0).toFixed(2)}</Td>
+                            <Td align="right" mono>{Number(r.close || 0).toFixed(2)}</Td>
+                            <Td align="right" mono>{Math.round(Number(r.volume || 0)).toLocaleString()}</Td>
+                        </tr>
+                    ))}
+                </tbody>
+            </table>
+        </div>
+    );
+}
+
 export function PriceHistoryCard({ symbol, rows }: { symbol: string; rows: PriceHistoryRow[] }) {
     if (!rows.length) return null;
     const closes = rows.map((r) => Number(r.close || 0));
     const first = closes[0];
     const last = closes[closes.length - 1];
-    const change = last - first;
-    const changePct = first ? (change / first) * 100 : 0;
-    const high = Math.max(...closes);
-    const low = Math.min(...closes.filter((v) => v > 0));
+    const changePct = first ? ((last - first) / first) * 100 : 0;
     return (
-        <div className="surface p-4 text-sm">
-            <div className="flex items-center justify-between mb-3">
+        <div className="surface p-4 text-sm space-y-3">
+            <div className="flex items-center justify-between">
                 <span className="font-medium text-foreground">{symbol} · {rows.length}-day history</span>
                 <span className={cn('text-[12px] font-medium tabular-nums', toneFor(changePct))}>
                     {changePct >= 0 ? '+' : ''}{changePct.toFixed(2)}%
                 </span>
             </div>
-            <div className="grid grid-cols-4 gap-3 tabular-nums">
-                <Stat label="Start" value={first.toFixed(2)} />
-                <Stat label="End" value={last.toFixed(2)} />
-                <Stat label="High" value={high.toFixed(2)} />
-                <Stat label="Low" value={low.toFixed(2)} />
-            </div>
+            <CandlestickChart rows={rows} />
+            <OhlcvTable rows={rows} />
         </div>
     );
 }

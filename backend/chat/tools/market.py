@@ -539,6 +539,15 @@ async def get_dividend_history(args: dict) -> dict:
     return await _run()
 
 
+def _series_from_rows(rows: list[dict]) -> list[dict]:
+    """Map date-aggregated ORM rows to chart-ready series points.
+
+    Expects rows already aggregated by date (each row is one date),
+    ordered ascending. No aggregation happens here — the ORM did it.
+    """
+    return [{"date": str(r["transaction_date"]), "net": float(r["net"] or 0)} for r in rows]
+
+
 @tool(
     "get_accumulation",
     "Cumulative buy/sell/net by broker for a ticker over the last N days (default 30).",
@@ -564,13 +573,23 @@ async def get_accumulation(args: dict) -> dict:
         net_sellers = sorted(
             [r for r in rows if (r["cumulative_net"] or 0) < 0], key=lambda r: r["cumulative_net"]
         )[:5]
+        series_qs = (
+            DailyCumulativeAccumulation.objects
+            .filter(symbol=ticker, transaction_date__gte=cutoff)
+            .values("transaction_date")
+            .annotate(net=Sum("cumulative_net"))
+            .order_by("transaction_date")
+        )
+        series = _series_from_rows(list(series_qs))
         lines = [f"{ticker} accumulation (last {days} days):"]
         if net_buyers:
             lines.append("  Top net buyers: " + ", ".join(f"#{r['entity_id']}" for r in net_buyers))
         if net_sellers:
             lines.append("  Top net sellers: " + ", ".join(f"#{r['entity_id']}" for r in net_sellers))
         return _result("\n".join(lines), card={"type": "accumulation", "data": {
-            "symbol": ticker, "rows": _jsonable(rows[:20]),
+            "symbol": ticker,
+            "rows": _jsonable(rows[:20]),
+            "series": series,
         }})
 
     return await _run()

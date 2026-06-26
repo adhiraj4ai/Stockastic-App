@@ -1,5 +1,6 @@
 import React from 'react';
 import { cn } from '@/lib/utils';
+import AllocationDonut from './charts/AllocationDonut';
 
 interface HoldingRow {
     ticker: string;
@@ -21,53 +22,44 @@ interface HoldingsCardData {
 
 const npr = (n: number) => `Rs ${n.toLocaleString(undefined, { maximumFractionDigits: 0 })}`;
 
+function HoldingTableRow({ r, total }: { r: HoldingRow; total: number }) {
+    const weight = total > 0 ? `${((r.current_value / total) * 100).toFixed(1)}%` : '—';
+    const plClass = r.gain_loss >= 0 ? 'text-emerald-600 dark:text-emerald-400' : 'text-rose-600 dark:text-rose-400';
+    return (
+        <tr key={r.ticker} className="border-t border-border">
+            <Td><div className="font-medium text-foreground">{r.ticker}</div>{r.sector && <div className="text-[10px] text-muted-foreground">{r.sector}</div>}</Td>
+            <Td align="right" mono>{r.quantity}</Td>
+            <Td align="right" mono>{r.wacc.toFixed(2)}</Td>
+            <Td align="right" mono>{r.current_price.toFixed(2)}</Td>
+            <Td align="right" mono>{npr(r.current_value)}</Td>
+            <Td align="right" mono>{weight}</Td>
+            <Td align="right" mono><span className={cn(plClass)}>{r.gain_loss_pct >= 0 ? '+' : ''}{r.gain_loss_pct.toFixed(2)}%</span></Td>
+            <Td>{r.signal ? <SignalChip s={r.signal} /> : <span className="text-muted-foreground">—</span>}</Td>
+        </tr>
+    );
+}
+
 export default function HoldingsCard(data: HoldingsCardData) {
     const rows = data.holdings || [];
+    const total = rows.reduce((s, r) => s + (r.current_value || 0), 0);
     return (
         <div className="surface overflow-hidden text-sm">
             <div className="px-4 py-2.5 border-b border-border flex items-center justify-between">
                 <span className="font-medium text-foreground">Holdings</span>
                 <span className="text-[11px] text-muted-foreground">{rows.length} positions</span>
             </div>
+            {rows.length > 0 && <div className="px-4 pt-3"><AllocationDonut rows={rows} /></div>}
             <div className="overflow-x-auto">
                 <table className="w-full text-[12px]">
                     <thead className="bg-muted/40 text-muted-foreground">
                         <tr>
-                            <Th>Ticker</Th>
-                            <Th align="right">Qty</Th>
-                            <Th align="right">WACC</Th>
-                            <Th align="right">LTP</Th>
-                            <Th align="right">Value</Th>
-                            <Th align="right">P/L</Th>
-                            <Th>Signal</Th>
+                            <Th>Ticker</Th><Th align="right">Qty</Th><Th align="right">WACC</Th>
+                            <Th align="right">LTP</Th><Th align="right">Value</Th><Th align="right">Weight</Th>
+                            <Th align="right">P/L</Th><Th>Signal</Th>
                         </tr>
                     </thead>
                     <tbody>
-                        {rows.map((r) => (
-                            <tr key={r.ticker} className="border-t border-border">
-                                <Td>
-                                    <div className="font-medium text-foreground">{r.ticker}</div>
-                                    {r.sector && <div className="text-[10px] text-muted-foreground">{r.sector}</div>}
-                                </Td>
-                                <Td align="right" mono>{r.quantity}</Td>
-                                <Td align="right" mono>{r.wacc.toFixed(2)}</Td>
-                                <Td align="right" mono>{r.current_price.toFixed(2)}</Td>
-                                <Td align="right" mono>{npr(r.current_value)}</Td>
-                                <Td align="right" mono>
-                                    <span
-                                        className={cn(
-                                            r.gain_loss >= 0 ? 'text-emerald-600 dark:text-emerald-400' : 'text-rose-600 dark:text-rose-400',
-                                        )}
-                                    >
-                                        {r.gain_loss_pct >= 0 ? '+' : ''}
-                                        {r.gain_loss_pct.toFixed(2)}%
-                                    </span>
-                                </Td>
-                                <Td>
-                                    {r.signal ? <SignalChip s={r.signal} /> : <span className="text-muted-foreground">—</span>}
-                                </Td>
-                            </tr>
-                        ))}
+                        {rows.map((r) => <HoldingTableRow key={r.ticker} r={r} total={total} />)}
                     </tbody>
                 </table>
             </div>
