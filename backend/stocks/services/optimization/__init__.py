@@ -6,6 +6,8 @@ from stocks.services.optimization.optimizers import OPTIMIZER_REGISTRY, _DEFAULT
 from stocks.services.optimization.single_stock import single_stock_result
 from stocks.services.optimization.trade_calculator import calculate_trades
 
+TRADING_DAYS_PER_YEAR = 252
+
 
 def perform_portfolio_optimization(
     tickers: list[str],
@@ -26,10 +28,13 @@ def perform_portfolio_optimization(
     except Exception as exc:
         return {"error": f"Optimization failed: {exc}"}
     trades = calculate_trades(result.weight_map, df_pivoted, current_holdings)
+    annualized_returns = returns.mean() * TRADING_DAYS_PER_YEAR
+    expected_returns_dict = {t: float(r) for t, r in annualized_returns.items()}
     return {
         "success": True,
         "weights": {t: float(w) for t, w in result.weight_map.items()},
         "metrics": result.metrics,
         "trades": trades,
+        "expected_returns": expected_returns_dict,
         "note": result.note,
     }

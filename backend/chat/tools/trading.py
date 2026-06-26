@@ -25,7 +25,12 @@ from stocks.utils import (
     calculate_sebon_fee,
 )
 
+from chat.tools import rebalance_economics as econ
 from .base import _result, _resolve_account
+
+
+# ─── Module-level constants ───────────────────────────────────────────────────
+_ERR_EMPTY_WEIGHTS = "optimizer returned no target weights"
 
 
 # ─── Position sizing ──────────────────────────────────────────────────────────
@@ -283,40 +288,60 @@ def _run_optimizer(holdings, method):
     tickers = list(holdings.keys())
     opt = perform_portfolio_optimization(tickers, current_holdings=holdings, method=method)
     if not opt.get("success"):
-        return None, None, None, opt.get("error", "unknown")
-    weights = opt.get("optimal_weights") or {}
-    prices = opt.get("latest_prices") or {t: holdings[t]["price"] for t in tickers}
-    total_value = sum(
-        holdings[t]["quantity"] * float(prices.get(t, holdings[t]["price"]))
-        for t in tickers
-    )
-    return weights, prices, total_value, None
+        return None, None, None, None, opt.get("error", "unknown")
+    weights = opt.get("weights") or {}
+    if not weights:
+        return None, None, None, None, _ERR_EMPTY_WEIGHTS
+    expected_returns = opt.get("expected_returns") or {}
+    prices = {t: holdings[t]["price"] for t in tickers}
+    total_value = sum(holdings[t]["quantity"] * float(prices[t]) for t in tickers)
+    return weights, prices, total_value, expected_returns, None
 
 
-def _compute_rebalance_trades(holdings, weights, prices, total_value, user, account):
-    trades, lines, all_warnings = [], [], []
+def _compute_rebalance_trades(holdings, weights, prices, total_value, user, account, expected_returns):
+    trades, lines, all_warnings, suppressed = [], [], [], []
+    total_friction = 0.0
     for t in list(holdings.keys()):
         price = float(prices.get(t, holdings[t]["price"]) or 0)
         if price <= 0:
             continue
-        target_value = total_value * float(weights.get(t, 0))
-        target_qty = int(target_value // price)
-        delta = target_qty - holdings[t]["quantity"]
+        delta = int((total_value * float(weights.get(t, 0))) // price) - holdings[t]["quantity"]
         if delta == 0:
             continue
-        txn_type = "BUY" if delta > 0 else "SELL"
-        qty = abs(delta)
-        pv = _trade_preview(user, account, t, txn_type, qty, price)
-        all_warnings.extend(pv["warnings"])
-        trades.append({"ticker": t, "txn_type": txn_type, "quantity": qty, "rate": price})
-        lines.append({
-            "label": f"{txn_type} {qty} {t}", "ticker": t,
-            "action": txn_type, "quantity": qty, "rate": price,
-            "fees": {"commission": pv["commission"], "sebon_fee": pv["sebon_fee"],
-                     "dp_charge": pv["dp_charge"], "cgt": pv["cgt"]},
-            "net": pv["net"],
-        })
-    return trades, lines, all_warnings
+        leg = _evaluate_rebalance_leg(t, delta, price, total_value, expected_returns, user, account)
+        if leg["suppressed"]:
+            suppressed.append(leg["suppressed"])
+            continue
+        trades.append(leg["trade"])
+        lines.append(leg["line"])
+        all_warnings.extend(leg["warnings"])
+        total_friction += leg["friction"]
+    return trades, lines, all_warnings, suppressed, round(total_friction, 2)
+
+
+def _evaluate_rebalance_leg(ticker, delta, price, total_value, expected_returns, user, account):
+    txn_type = "BUY" if delta > 0 else "SELL"
+    qty = abs(delta)
+    pv = _trade_preview(user, account, ticker, txn_type, qty, price)
+    friction = econ.leg_friction(pv)
+    benefit = econ.expected_annual_benefit(qty * price, expected_returns.get(ticker, 0.0))
+    if econ.is_net_negative(friction, benefit):
+        reason = (f"fees + CGT (Rs {friction:,.0f}) exceed estimated 1-year benefit "
+                  f"(Rs {benefit:,.0f})")
+        return {"suppressed": {"ticker": ticker, "action": txn_type, "quantity": qty,
+                               "friction": round(friction, 2), "benefit": round(benefit, 2),
+                               "reason": reason}, "trade": None, "line": None,
+                "warnings": [], "friction": 0.0}
+    return {
+        "suppressed": None,
+        "trade": {"ticker": ticker, "txn_type": txn_type, "quantity": qty, "rate": price},
+        "line": {"label": f"{txn_type} {qty} {ticker}", "ticker": ticker, "action": txn_type,
+                 "quantity": qty, "rate": price,
+                 "fees": {"commission": pv["commission"], "sebon_fee": pv["sebon_fee"],
+                          "dp_charge": pv["dp_charge"], "cgt": pv["cgt"]},
+                 "net": pv["net"], "net_benefit": round(benefit - friction, 2)},
+        "warnings": pv["warnings"], "friction": friction,
+    }
 
 
 def _run_propose_rebalance(user, account_id, method):
@@ -328,22 +353,30 @@ def _run_propose_rebalance(user, account_id, method):
     if not items:
         return _result("Your portfolio is empty — nothing to rebalance.", is_error=True)
     holdings = _build_holdings_map(items)
-    weights, prices, total_value, err = _run_optimizer(holdings, method)
+    weights, prices, total_value, expected_returns, err = _run_optimizer(holdings, method)
     if err is not None:
         return _result(f"Optimizer could not produce a result: {err}.", is_error=True)
-    trades, lines, all_warnings = _compute_rebalance_trades(holdings, weights, prices, total_value, user, account)
+    trades, lines, all_warnings, suppressed, total_friction = _compute_rebalance_trades(
+        holdings, weights, prices, total_value, user, account, expected_returns)
+    if not trades and suppressed:
+        return _result("Optimal allocation is within rebalancing costs — no cost-justified "
+                       "trades.", is_error=True)
     if not trades:
-        return _result("Your portfolio is already at the optimal allocation — no trades needed.", is_error=True)
+        return _result("Your portfolio is already at the optimal allocation — no trades needed.",
+                       is_error=True)
     title = f"Rebalance ({method}) — {len(trades)} trade(s)"
-    payload = {"account_id": account.id if account else None, "method": method, "targets": [], "trades": trades}
-    card_preview = {"title": title, "lines": lines, "warnings": all_warnings}
+    payload = {"account_id": account.id if account else None, "method": method,
+               "targets": [], "trades": trades}
+    card_preview = {"title": title, "lines": lines, "warnings": all_warnings,
+                    "total_friction": total_friction, "suppressed": suppressed}
     draft = create_draft(
         user=user, account=account, kind=PortfolioActionDraft.Kind.REBALANCE,
         title=title, payload=payload, preview=card_preview,
     )
+    suppressed_note = f" Skipped {len(suppressed)} net-negative leg(s)." if suppressed else ""
     return _result(
-        f"Drafted a {method} rebalance: {len(trades)} trade(s) to reach the optimal allocation. "
-        f"Awaiting your confirmation.",
+        f"Drafted a {method} rebalance: {len(trades)} trade(s), estimated friction "
+        f"Rs {total_friction:,.0f} (fees + CGT).{suppressed_note} Awaiting your confirmation.",
         card={"type": "proposal",
               "data": {"draft_id": draft.id, "kind": "REBALANCE", "title": title,
                        "status": "PENDING", "preview": card_preview}},

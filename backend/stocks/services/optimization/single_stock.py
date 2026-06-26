@@ -21,6 +21,7 @@ def single_stock_result(
         "weights": {ticker: 1.0},
         "metrics": _ZERO_METRICS,
         "trades": trades,
+        "expected_returns": {},
         "note": "Single stock portfolio.",
     }
 
