@@ -16,10 +16,32 @@ interface Props {
     onClose: () => void;
 }
 
-export function PlaceTradeDialog({ candidate, accountId, api, onClose }: Props) {
+function TradeLevels({ candidate }: { candidate: AccumulationCandidate }) {
+    const canTrade = candidate.suggested_qty !== null && candidate.suggested_qty !== undefined;
+    return (
+        <div className="space-y-4 py-2 text-sm">
+            <div className="grid grid-cols-2 gap-x-4 gap-y-1 text-muted-foreground">
+                <span>Entry</span>
+                <span className="text-foreground font-medium">{fixed(candidate.suggested_entry, 2)}</span>
+                <span>Stop</span>
+                <span className="text-foreground">{fixed(candidate.suggested_stop, 2)}</span>
+                <span>Target</span>
+                <span className="text-foreground">{fixed(candidate.suggested_target, 2)}</span>
+                <span>Qty</span>
+                <span className="text-foreground">{candidate.suggested_qty ?? '—'}</span>
+            </div>
+            {!canTrade && (
+                <p className="text-muted-foreground text-xs">
+                    Quantity not available — select a paper account on the page to size this trade.
+                </p>
+            )}
+        </div>
+    );
+}
+
+function useConfirmTrade(candidate: AccumulationCandidate, accountId: number, api: AxiosInstance, onClose: () => void) {
     const [busy, setBusy] = useState(false);
     const [error, setError] = useState('');
-
     const canTrade = candidate.suggested_qty !== null && candidate.suggested_qty !== undefined;
 
     const handleConfirm = async () => {
@@ -42,30 +64,20 @@ export function PlaceTradeDialog({ candidate, accountId, api, onClose }: Props) 
         }
     };
 
+    return { busy, error, canTrade, handleConfirm };
+}
+
+export function PlaceTradeDialog({ candidate, accountId, api, onClose }: Props) {
+    const { busy, error, canTrade, handleConfirm } = useConfirmTrade(candidate, accountId, api, onClose);
+
     return (
         <Dialog open onOpenChange={(open) => { if (!open) onClose(); }}>
             <DialogContent className="max-w-sm">
                 <DialogHeader>
                     <DialogTitle>Place paper buy — {candidate.symbol}</DialogTitle>
                 </DialogHeader>
-                <div className="space-y-4 py-2 text-sm">
-                    <div className="grid grid-cols-2 gap-x-4 gap-y-1 text-muted-foreground">
-                        <span>Entry</span>
-                        <span className="text-foreground font-medium">{fixed(candidate.suggested_entry, 2)}</span>
-                        <span>Stop</span>
-                        <span className="text-foreground">{fixed(candidate.suggested_stop, 2)}</span>
-                        <span>Target</span>
-                        <span className="text-foreground">{fixed(candidate.suggested_target, 2)}</span>
-                        <span>Qty</span>
-                        <span className="text-foreground">{candidate.suggested_qty ?? '—'}</span>
-                    </div>
-                    {!canTrade && (
-                        <p className="text-muted-foreground text-xs">
-                            Quantity not available — select a paper account on the page to size this trade.
-                        </p>
-                    )}
-                    {error && <p className="text-destructive text-xs">{error}</p>}
-                </div>
+                <TradeLevels candidate={candidate} />
+                {error && <p className="text-destructive text-xs">{error}</p>}
                 <DialogFooter>
                     <Button variant="outline" onClick={onClose} disabled={busy}>Cancel</Button>
                     <Button onClick={handleConfirm} disabled={busy || !canTrade}>

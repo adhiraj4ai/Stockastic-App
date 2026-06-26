@@ -71,7 +71,9 @@ export default function AccumulationTradingPage() {
 
     const handleAccountChange = useCallback((id: number) => {
         dispatch({ type: 'ACCOUNT_CHANGED', accountId: id });
-        fetchCandidates(id).then((cands) => dispatch({ type: 'CANDIDATES_DONE', candidates: cands }));
+        fetchCandidates(id)
+            .then((cands) => dispatch({ type: 'CANDIDATES_DONE', candidates: cands }))
+            .catch(() => dispatch({ type: 'CANDIDATES_DONE', candidates: [] }));
     }, []);
 
     if (loading) return <PageLoader />;

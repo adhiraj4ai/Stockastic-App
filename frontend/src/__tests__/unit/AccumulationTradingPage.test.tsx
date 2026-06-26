@@ -50,6 +50,22 @@ describe('AccumulationTradingPage', () => {
         );
     });
 
+    it('disables confirm buy and shows note when suggested_qty is null', async () => {
+        const nullQtyCandidate = { ...VALIDATED_CANDIDATE, suggested_qty: null };
+        mockGet.mockResolvedValue({ data: PAPER_ACCOUNTS });
+        (accumulationApi.listCandidates as ReturnType<typeof vi.fn>).mockResolvedValue({
+            data: [nullQtyCandidate],
+        });
+        render(<AccumulationTradingPage />);
+        await waitFor(() => screen.getByText('NABIL'));
+
+        fireEvent.click(screen.getByRole('button', { name: /place paper trade/i }));
+        await waitFor(() => screen.getByRole('button', { name: /confirm buy/i }));
+
+        expect(screen.getByRole('button', { name: /confirm buy/i })).toBeDisabled();
+        expect(screen.getByText(/quantity not available/i)).toBeInTheDocument();
+    });
+
     it('posts the trade when confirm buy is clicked', async () => {
         mockGet.mockResolvedValue({ data: PAPER_ACCOUNTS });
         (accumulationApi.listCandidates as ReturnType<typeof vi.fn>).mockResolvedValue({
