@@ -187,7 +187,8 @@ _reg(L.AccumulationStrength, "alpha", "Accumulation Strength", "Broker flow", [
     _p("w_coiling", "float", 1.0, 0.0, 3.0, 0.1, "Coiling weight"),
     _p("w_breakout", "float", 1.0, 0.0, 3.0, 0.1, "Breakout weight"),
     _p("conc_lookback", "int", 10, 5, 30, 1, "Concentration lookback"),
-    _p("coil_lookback", "int", 20, 10, 40, 1, "Coiling lookback")],
+    _p("coil_lookback", "int", 20, 10, 40, 1, "Coiling lookback"),
+    _p("breakout_lookback", "int", 20, 10, 40, 1, "Breakout lookback")],
     "Composite broker-accumulation strength score with distribution-flip exit.",
     needs_symbol=True)
 _reg(L.AccumulationDivergence, "alpha", "Accumulation Divergence", "Broker flow", [

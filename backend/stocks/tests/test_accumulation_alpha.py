@@ -20,7 +20,7 @@ def _seed_buy_then_distribute(symbol, dates):
         DailyCumulativeAccumulation.objects.create(
             symbol=symbol, transaction_date=d.date(), entity_id="1",
             cumulative_buy=max(net, 0), cumulative_sell=0, cumulative_buy_amount=0,
-            cumulative_sell_amount=0, cumulative_net=net)
+            cumulative_sell_amount=0, cumulative_net=max(net, 0))
 
 
 def _coiling_then_breakout_df(n=60):
