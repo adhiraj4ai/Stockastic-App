@@ -65,6 +65,7 @@ export const navItems = [
         color: 'text-rose-500',
         subItems: [
             { name: 'Command Center', href: '/accumulation/dashboard', icon: Layers, permission: 'accumulation_dash' },
+            { name: 'Trading', href: '/accumulation/trading', icon: TrendingUp, permission: 'accumulation_dash' },
             { name: 'Smart Money', href: '/accumulation/smart-money', icon: Brain, permission: 'smart_money' },
             { name: 'Broker Trends', href: '/accumulation/trends', icon: BarChart3, permission: 'broker_trends' },
             { name: 'Focus Ranking', href: '/accumulation/focus-ranking', icon: Target, permission: 'focus_ranking' },

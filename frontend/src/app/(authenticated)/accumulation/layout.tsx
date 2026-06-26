@@ -14,6 +14,7 @@ const titles: Record<string, string> = {
     '/accumulation/smart-money': 'Smart Money Intelligence',
     '/accumulation/focus-ranking': 'Broker Focus Ranking',
     '/accumulation/below-cost': 'Below Cost Positions',
+    '/accumulation/trading': 'Accumulation trading',
 };
 
 export default function AccumulationLayout({

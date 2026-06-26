@@ -35,6 +35,7 @@ describe('sidebar navItems structure', () => {
     it('moves Accumulation History and Share Transfer into Broker Research', () => {
         expect(subNames('Broker Research')).toEqual([
             'Command Center',
+            'Trading',
             'Smart Money',
             'Broker Trends',
             'Focus Ranking',
@@ -57,7 +58,7 @@ describe('sidebar navItems structure', () => {
         expect(byHref['/admin/users']).toBe('Users');
     });
 
-    it('keeps the exact route set unchanged (38 unique hrefs)', () => {
+    it('keeps the exact route set unchanged (39 unique hrefs)', () => {
         const hrefs = allLeaves().map((l) => l.href).sort();
         expect(new Set(hrefs).size).toBe(hrefs.length);
         expect(hrefs).toEqual(
@@ -86,6 +87,7 @@ describe('sidebar navItems structure', () => {
                 '/plan/watchlist',
                 '/paper-trading',
                 '/accumulation/dashboard',
+                '/accumulation/trading',
                 '/accumulation/smart-money',
                 '/accumulation/trends',
                 '/accumulation/focus-ranking',
