@@ -3,6 +3,7 @@ from rest_framework.routers import DefaultRouter
 from .views import (
     market, portfolio, strategy, broker, pipeline, watchlist, notifications, recommendations, chart, fibonacci, floorsheet, dividends, risk, sector_rotation, price_forecast, price_action, volume_profile, signal_alerts, opportunity, plan, ticker_verdict, entry_statuses
 )
+from .views.accumulation_candidate_viewset import AccumulationCandidateViewSet
 
 
 router = DefaultRouter()
@@ -27,6 +28,7 @@ router.register(r'generated-signals', strategy.GeneratedSignalViewSet, basename=
 router.register(r'broker-analysis', broker.BrokerViewSet, basename='broker-analysis')
 router.register(r'floorsheet', floorsheet.FloorsheetViewSet, basename='floorsheet-analytics')
 router.register(r'market/volume-profile', volume_profile.VolumeProfileView, basename='volume-profile')
+router.register(r'accumulation-candidates', AccumulationCandidateViewSet, basename='accumulation-candidates')
 
 urlpatterns = [
     path('', include(router.urls)),
