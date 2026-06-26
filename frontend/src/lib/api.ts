@@ -1,6 +1,7 @@
 import axios from 'axios';
 import Cookies from 'js-cookie';
 import type { SavedAnalysis, SavedAnalysisDraft } from '@/components/chat/types';
+import type { AccumulationCandidate } from '@/types/accumulation-trading';
 
 const getApiBaseUrl = () => {
     const url = process.env.NEXT_PUBLIC_API_URL;
@@ -264,6 +265,16 @@ export const savedApi = {
             `/api/chat/sessions/${sessionId}/bookmark_draft/`,
             messageId ? { message_id: messageId } : {},
         ),
+};
+
+export const accumulationApi = {
+    listCandidates: (params: Record<string, string> = {}) => {
+        const qs = new URLSearchParams(params).toString();
+        return api.get<AccumulationCandidate[]>(
+            `/api/stocks/accumulation-candidates/${qs ? `?${qs}` : ''}`);
+    },
+    getCandidate: (symbol: string) =>
+        api.get<AccumulationCandidate>(`/api/stocks/accumulation-candidates/${symbol}/`),
 };
 
 export default api;
