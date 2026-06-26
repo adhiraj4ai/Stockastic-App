@@ -1,45 +1,29 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import type { AxiosInstance } from 'axios';
 import {
     Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter,
 } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
-import { Label } from '@/components/ui/label';
-import {
-    Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
-} from '@/components/ui/select';
 import { fixed } from '@/lib/numbers';
 import type { AccumulationCandidate } from '@/types/accumulation-trading';
-import type { PortfolioAccount } from '@/components/TransactionModal';
-
-const PAPER_TYPE = 'PAPER';
 
 interface Props {
     candidate: AccumulationCandidate;
+    accountId: number;
     api: AxiosInstance;
     onClose: () => void;
 }
 
-export function PlaceTradeDialog({ candidate, api, onClose }: Props) {
-    const [accounts, setAccounts] = useState<PortfolioAccount[]>([]);
-    const [accountId, setAccountId] = useState('');
+export function PlaceTradeDialog({ candidate, accountId, api, onClose }: Props) {
     const [busy, setBusy] = useState(false);
     const [error, setError] = useState('');
 
-    useEffect(() => {
-        api.get<PortfolioAccount[]>('/api/stocks/accounts/')
-            .then((r) => {
-                const paper = r.data.filter((a) => a.account_type === PAPER_TYPE);
-                setAccounts(paper);
-                if (paper.length > 0) setAccountId(String(paper[0].id));
-            })
-            .catch(() => setError('Could not load accounts.'));
-    }, [api]);
+    const canTrade = candidate.suggested_qty !== null && candidate.suggested_qty !== undefined;
 
     const handleConfirm = async () => {
-        if (!accountId) return;
+        if (!canTrade) return;
         setBusy(true);
         setError('');
         try {
@@ -48,7 +32,7 @@ export function PlaceTradeDialog({ candidate, api, onClose }: Props) {
                 transaction_type: 'BUY',
                 quantity: candidate.suggested_qty,
                 rate: candidate.suggested_entry,
-                account: Number(accountId),
+                account: accountId,
             });
             onClose();
         } catch {
@@ -66,29 +50,25 @@ export function PlaceTradeDialog({ candidate, api, onClose }: Props) {
                 </DialogHeader>
                 <div className="space-y-4 py-2 text-sm">
                     <div className="grid grid-cols-2 gap-x-4 gap-y-1 text-muted-foreground">
-                        <span>Entry</span><span className="text-foreground font-medium">{fixed(candidate.suggested_entry, 2)}</span>
-                        <span>Stop</span><span className="text-foreground">{fixed(candidate.suggested_stop, 2)}</span>
-                        <span>Target</span><span className="text-foreground">{fixed(candidate.suggested_target, 2)}</span>
-                        <span>Qty</span><span className="text-foreground">{candidate.suggested_qty ?? '—'}</span>
+                        <span>Entry</span>
+                        <span className="text-foreground font-medium">{fixed(candidate.suggested_entry, 2)}</span>
+                        <span>Stop</span>
+                        <span className="text-foreground">{fixed(candidate.suggested_stop, 2)}</span>
+                        <span>Target</span>
+                        <span className="text-foreground">{fixed(candidate.suggested_target, 2)}</span>
+                        <span>Qty</span>
+                        <span className="text-foreground">{candidate.suggested_qty ?? '—'}</span>
                     </div>
-                    <div className="space-y-1">
-                        <Label htmlFor="account-select">Paper account</Label>
-                        <Select value={accountId} onValueChange={setAccountId}>
-                            <SelectTrigger id="account-select">
-                                <SelectValue placeholder="Select account" />
-                            </SelectTrigger>
-                            <SelectContent>
-                                {accounts.map((a) => (
-                                    <SelectItem key={a.id} value={String(a.id)}>{a.name}</SelectItem>
-                                ))}
-                            </SelectContent>
-                        </Select>
-                    </div>
+                    {!canTrade && (
+                        <p className="text-muted-foreground text-xs">
+                            Quantity not available — select a paper account on the page to size this trade.
+                        </p>
+                    )}
                     {error && <p className="text-destructive text-xs">{error}</p>}
                 </div>
                 <DialogFooter>
                     <Button variant="outline" onClick={onClose} disabled={busy}>Cancel</Button>
-                    <Button onClick={handleConfirm} disabled={busy || !accountId}>
+                    <Button onClick={handleConfirm} disabled={busy || !canTrade}>
                         {busy ? 'Placing…' : 'Confirm buy'}
                     </Button>
                 </DialogFooter>
