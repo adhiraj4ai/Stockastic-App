@@ -205,6 +205,38 @@ class AccumulationMaCross(Alpha):
         return f[-1] < s[-1]
 
 
+class AccumulationStrength(Alpha):
+    """Composite accumulation-strength alpha: enter when the 0-100 score clears a
+    threshold; exit when the top brokers start distributing (flow slope turns down)."""
+
+    def __init__(self, symbol, top_n=5, entry_threshold=70,
+                 w_concentration=1.0, w_coiling=1.0, w_breakout=1.0,
+                 conc_lookback=10, coil_lookback=20, breakout_lookback=20):
+        self.symbol, self.entry_threshold = symbol, entry_threshold
+        self._params = dict(top_n=top_n, w_concentration=w_concentration,
+                            w_coiling=w_coiling, w_breakout=w_breakout,
+                            conc_lookback=conc_lookback, coil_lookback=coil_lookback,
+                            breakout_lookback=breakout_lookback)
+
+    def register(self, strat):
+        from stocks.services.accumulation.score_service import (
+            AccumulationScoreService, ScoreParams)
+        price_df = pd.DataFrame({"Open": strat.data.Open, "High": strat.data.High,
+                                 "Low": strat.data.Low, "Close": strat.data.Close,
+                                 "Volume": strat.data.Volume}, index=strat.data.index)
+        params = ScoreParams(**self._params)
+        score = AccumulationScoreService.score_series(self.symbol, price_df, params)
+        flip = AccumulationScoreService.distribution_flipping(self.symbol, price_df, params)
+        self._put(strat, score=strat.I(lambda: score.values),
+                  flip=strat.I(lambda: flip.astype(float).values))
+
+    def entry(self, strat):
+        return self._get(strat, "score")[-1] >= self.entry_threshold
+
+    def exit(self, strat):
+        return self._get(strat, "flip")[-1] > 0.5
+
+
 class StochRsiCross(Alpha):
     """StochRSI K-over-D cross from oversold; exit on bearish cross from overbought."""
 

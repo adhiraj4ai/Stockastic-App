@@ -31,7 +31,7 @@ def concentration_factor(pivot, top_sum, lookback):
     """Top-3 share of net-buyers' positive cumulative_net, gated on rising flow."""
     if pivot.empty:
         return pd.Series(0.0, index=top_sum.index)
-    positive = pivot.clip(lower=0)
+    positive = pivot.astype(float).clip(lower=0)
     total_pos = positive.sum(axis=1).replace(0, np.nan)
     top3 = positive.apply(lambda row: row.nlargest(TOP_CONCENTRATION_N).sum(), axis=1)
     share = (top3 / total_pos).fillna(0).clip(0, 1)

@@ -180,6 +180,16 @@ _reg(L.AccumulationMaCross, "alpha", "Accumulation MA Cross", "Broker flow", [
     _p("fast_period", "int", 10, 3, 30, 1, "Fast flow MA", arg="fast"),
     _p("slow_period", "int", 50, 20, 120, 5, "Slow flow MA", arg="slow")],
     "Fast/slow MA crossover of top brokers' flow.", needs_symbol=True)
+_reg(L.AccumulationStrength, "alpha", "Accumulation Strength", "Broker flow", [
+    _p("top_brokers", "int", 5, 1, 30, 1, "Top brokers tracked", arg="top_n"),
+    _p("entry_threshold", "int", 70, 40, 90, 1, "Entry score threshold"),
+    _p("w_concentration", "float", 1.0, 0.0, 3.0, 0.1, "Concentration weight"),
+    _p("w_coiling", "float", 1.0, 0.0, 3.0, 0.1, "Coiling weight"),
+    _p("w_breakout", "float", 1.0, 0.0, 3.0, 0.1, "Breakout weight"),
+    _p("conc_lookback", "int", 10, 5, 30, 1, "Concentration lookback"),
+    _p("coil_lookback", "int", 20, 10, 40, 1, "Coiling lookback")],
+    "Composite broker-accumulation strength score with distribution-flip exit.",
+    needs_symbol=True)
 _reg(L.AccumulationDivergence, "alpha", "Accumulation Divergence", "Broker flow", [
     _p("lookback_window", "int", 10, 3, 40, 1, "Divergence lookback", arg="lookback")],
     "Contrarian: price falling while broker accumulation rises.", needs_symbol=True)
