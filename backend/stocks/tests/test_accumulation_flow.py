@@ -38,4 +38,4 @@ def test_load_broker_flow_empty_symbol_returns_zeros():
     dates = pd.date_range("2021-01-01", periods=3, freq="D")
     flow = load_broker_flow("NOPE", dates, top_n=5)
     assert list(flow.top_sum.values) == [0.0, 0.0, 0.0]
-    assert flow.pivot.empty is False  # zero-filled frame aligned to dates
+    assert flow.top_sum.index.equals(dates)

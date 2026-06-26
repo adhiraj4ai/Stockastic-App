@@ -14,24 +14,16 @@ class BrokerFlow:
     pivot: pd.DataFrame  # per-broker cumulative_net level (all brokers)
 
 
-_NO_DATA_COL = "_no_data"
-
-
 def _empty_flow(dates):
-    """Return a zero BrokerFlow when the symbol has no accumulation records.
-
-    The pivot has a sentinel column so callers can detect it is date-aligned
-    (pivot.empty is False) rather than completely degenerate.
-    """
-    pivot = pd.DataFrame({_NO_DATA_COL: np.zeros(len(dates))}, index=dates)
+    """Return a zero BrokerFlow when the symbol has no accumulation records."""
     return BrokerFlow(
         top_sum=pd.Series(np.zeros(len(dates)), index=dates),
-        pivot=pivot,
+        pivot=pd.DataFrame(0.0, index=dates, columns=[]),
     )
 
 
-def _aligned_pivot(qs, dates, lag):
-    df = pd.DataFrame(list(qs))
+def _aligned_pivot(rows, dates, lag):
+    df = pd.DataFrame(rows)
     df["transaction_date"] = pd.to_datetime(df["transaction_date"])
     pivot = df.pivot_table(index="transaction_date", columns="entity_id",
                            values="cumulative_net", aggfunc="last").ffill().fillna(0)
@@ -41,10 +33,10 @@ def _aligned_pivot(qs, dates, lag):
 def load_broker_flow(symbol, dates, top_n=5, lag=LAG_BARS):
     """Top-N brokers' summed cumulative_net level, lagged `lag` bars onto `dates`."""
     from stocks.models import DailyCumulativeAccumulation
-    qs = DailyCumulativeAccumulation.objects.filter(symbol=symbol).values(
-        "transaction_date", "entity_id", "cumulative_net")
-    if not qs:
+    rows = list(DailyCumulativeAccumulation.objects.filter(symbol=symbol).values(
+        "transaction_date", "entity_id", "cumulative_net"))
+    if not rows:
         return _empty_flow(dates)
-    pivot = _aligned_pivot(qs, dates, lag)
+    pivot = _aligned_pivot(rows, dates, lag)
     top = pivot.iloc[-1].sort_values(ascending=False).head(top_n).index
     return BrokerFlow(top_sum=pivot[top].sum(axis=1).astype(float), pivot=pivot)
