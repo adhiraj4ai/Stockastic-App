@@ -318,6 +318,11 @@ CELERY_BEAT_SCHEDULE = {
         "task": "stocks.check_notifications",
         "schedule": crontab(minute=30),
     },
+    # Accumulation scan: after broker analysis + signals have landed (17:00).
+    "scan-accumulation-candidates-daily": {
+        "task": "stocks.scan_accumulation_candidates",
+        "schedule": crontab(hour=17, minute=15),
+    },
 }
 
 # Email Backend

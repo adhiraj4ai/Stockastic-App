@@ -195,3 +195,10 @@ def refresh_fundamentals_task():
     price-dependent ratios track the latest close instead of going stale."""
     from stocks.services.fundamental_calculator import recalculate_all_fundamentals
     return {"tickers_updated": recalculate_all_fundamentals()}
+
+
+@shared_task(bind=True, name="stocks.scan_accumulation_candidates")
+def scan_accumulation_candidates_task(self):
+    """Daily: rank accumulation candidates after broker analysis lands."""
+    from stocks.services.accumulation.scanner import AccumulationScanner
+    return {"candidates_identified": AccumulationScanner.scan_and_save_candidates()}
