@@ -29,7 +29,32 @@ def django_db_setup(django_db_setup, django_db_blocker):
             if model._meta.db_table not in existing:
                 with connection.schema_editor() as schema_editor:
                     schema_editor.create_model(model)
+        _fix_accumulation_pk(connection)
     yield
+
+
+def _fix_accumulation_pk(connection):
+    """Recreate daily_cumulative_accumulation with a composite PK matching production.
+
+    Django's schema_editor uses the model's primary_key field (symbol) as the sole PK.
+    The real table has a composite PK (symbol, transaction_date, entity_id), which is
+    required for inserting multiple rows per symbol in tests.
+    """
+    table = 'daily_cumulative_accumulation'
+    with connection.cursor() as cursor:
+        cursor.execute(
+            "SELECT constraint_name FROM information_schema.table_constraints "
+            "WHERE table_name=%s AND constraint_type='PRIMARY KEY'",
+            [table],
+        )
+        pk_constraint = cursor.fetchone()
+        if pk_constraint:
+            cursor.execute(
+                f'ALTER TABLE "{table}" DROP CONSTRAINT "{pk_constraint[0]}"'
+            )
+        cursor.execute(
+            f'ALTER TABLE "{table}" ADD PRIMARY KEY (symbol, transaction_date, entity_id)'
+        )
 
 
 @pytest.fixture
