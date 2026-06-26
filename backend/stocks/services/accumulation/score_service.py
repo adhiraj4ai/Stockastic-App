@@ -77,13 +77,20 @@ class AccumulationScoreService:
         return (composite * SCORE_MAX).clip(0, SCORE_MAX).fillna(0)
 
     @staticmethod
+    def _composite_score(f1, f2, f3, p):
+        """Compute composite score from pre-computed factors without a DB load."""
+        w = AccumulationScoreService._normalized_weights(p)
+        composite = w[0] * f1 + w[1] * f2 + w[2] * f3
+        return (composite * SCORE_MAX).clip(0, SCORE_MAX).fillna(0)
+
+    @staticmethod
     def factor_breakdown(symbol, price_df, params=None):
         p = params or ScoreParams()
         flow = load_broker_flow(symbol, price_df.index, top_n=p.top_n)
         f1 = concentration_factor(flow.pivot, flow.top_sum, p.conc_lookback)
         f2 = coiling_factor(flow.top_sum, price_df, p.coil_lookback)
         f3 = breakout_factor(price_df, p.breakout_lookback)
-        score = AccumulationScoreService.score_series(symbol, price_df, p)
+        score = AccumulationScoreService._composite_score(f1, f2, f3, p)
         return {"concentration": float(f1.iloc[-1]), "coiling": float(f2.iloc[-1]),
                 "breakout": float(f3.iloc[-1]), "score": float(score.iloc[-1])}
 

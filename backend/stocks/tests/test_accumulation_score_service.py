@@ -46,3 +46,13 @@ def test_breakout_factor_fires_on_new_high():
     f = breakout_factor(_price_df(closes), lookback=20)
     assert f.iloc[-1] == 1.0
     assert f.iloc[-2] == 0.0
+
+
+def test_coiling_factor_low_when_price_volatile():
+    # Expanding alternating swings: volatility is NOT compressed, price is NOT range-bound.
+    closes = [100.0 + ((-1) ** i) * i * 3 for i in range(30)]
+    price_df = _price_df(closes)
+    # Rising top_sum so accumulation-rising gate is open; coiling should still be low.
+    top_sum = pd.Series(np.arange(30, dtype=float), index=price_df.index)
+    f = coiling_factor(top_sum, price_df, lookback=20)
+    assert f.iloc[-1] < 0.5
