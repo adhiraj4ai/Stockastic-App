@@ -19,6 +19,7 @@ from stocks.models.system import Notification
 from stocks.services.fundamental_service import FundamentalService
 from stocks.services.portfolio_service import PortfolioService
 from stocks.services.risk_service import RiskAnalysisService
+from stocks.services.total_return_service import TotalReturnService
 from stocks.services.watchlist_service import WatchlistService
 
 from .base import _jsonable, _result, _resolve_account
@@ -35,6 +36,20 @@ def _build_overview_card(items):
     best = max(items, key=lambda it: float(it.gain_loss_percent or 0))
     worst = min(items, key=lambda it: float(it.gain_loss_percent or 0))
     return invested, current, total_pl, day_pl, best, worst
+
+
+def _build_overview_prose(invested, current, total_pl, day_pl, best, worst, tr):
+    total_pl_pct = (total_pl / invested * 100) if invested else 0
+    return (
+        f"Portfolio: Rs {current:,.0f} (Rs {invested:,.0f} invested). "
+        f"Total P/L Rs {total_pl:+,.0f} ({total_pl_pct:+.2f}%), "
+        f"day P/L Rs {day_pl:+,.0f}. "
+        f"Total return incl. dividends: Rs {tr['portfolio_total_return']:+,.0f} "
+        f"({tr['portfolio_total_return_pct']:+.1f}%). "
+        f"Dividend and realized figures reflect your live-account history. "
+        f"Best: {best.ticker} {float(best.gain_loss_percent):+.2f}%. "
+        f"Worst: {worst.ticker} {float(worst.gain_loss_percent):+.2f}%."
+    )
 
 
 @tool(
@@ -57,17 +72,13 @@ async def get_portfolio_overview(args: dict) -> dict:
         if not items:
             return _result("Your portfolio is empty.", is_error=True)
         invested, current, total_pl, day_pl, best, worst = _build_overview_card(items)
-        prose = (
-            f"Portfolio: Rs {current:,.0f} (Rs {invested:,.0f} invested). "
-            f"Total P/L Rs {total_pl:+,.0f} ({(total_pl/invested*100 if invested else 0):+.2f}%), "
-            f"day P/L Rs {day_pl:+,.0f}. "
-            f"Best: {best.ticker} {float(best.gain_loss_percent):+.2f}%. "
-            f"Worst: {worst.ticker} {float(worst.gain_loss_percent):+.2f}%."
-        )
+        tr = TotalReturnService.compute(user, account_id)["summary"]
+        prose = _build_overview_prose(invested, current, total_pl, day_pl, best, worst, tr)
         return _result(prose, card={"type": "portfolio", "data": {
             "invested": invested, "current": current, "total_pl": total_pl,
             "total_pl_pct": (total_pl / invested * 100) if invested else 0,
             "day_pl": day_pl, "holdings_count": len(items),
+            "total_return": tr,
             "best": {"ticker": best.ticker, "pct": float(best.gain_loss_percent or 0)},
             "worst": {"ticker": worst.ticker, "pct": float(worst.gain_loss_percent or 0)},
         }})
@@ -94,8 +105,11 @@ async def get_holdings(args: dict) -> dict:
         items = PortfolioService.get_portfolio_metrics(qs)
         if not items:
             return _result("No holdings to display.", is_error=True)
-        rows = [_build_holding_row(it) for it in items]
-        rows.sort(key=lambda r: r["current_value"], reverse=True)
+        tr_by_ticker = {
+            h["ticker"]: h
+            for h in TotalReturnService.compute(user, account_id)["holdings"]
+        }
+        rows = _build_enriched_holding_rows(items, tr_by_ticker)
         prose = f"{len(rows)} holdings totalling Rs {sum(r['current_value'] for r in rows):,.0f}."
         return _result(prose, card={"type": "holdings", "data": {"holdings": rows}})
 
@@ -117,6 +131,16 @@ def _build_holding_row(it):
         "health_score": getattr(it, "health_score", None),
         "signal": (getattr(it, "signals", None) or {}).get("summary"),
     }
+
+
+def _build_enriched_holding_rows(items, tr_by_ticker):
+    rows = [_build_holding_row(it) for it in items]
+    for row in rows:
+        tr = tr_by_ticker.get(row["ticker"], {})
+        row["total_return_abs"] = tr.get("total_return_abs", 0.0)
+        row["total_return_pct"] = tr.get("total_return_pct", 0.0)
+    rows.sort(key=lambda r: r["current_value"], reverse=True)
+    return rows
 
 
 # ─── Watchlist ────────────────────────────────────────────────────────────────
