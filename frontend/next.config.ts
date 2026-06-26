@@ -11,7 +11,7 @@ const cspHeader = `
     base-uri 'self';
     form-action 'self';
     frame-ancestors 'none';
-    connect-src 'self' ${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'} ${process.env.NEXT_PUBLIC_ML_SERVICE_URL || 'http://localhost:8001'} https://*;
+    connect-src 'self' http://localhost:8000 http://localhost:8001 https://*;
     upgrade-insecure-requests;
 `.replace(/\s{2,}/g, ' ').trim();
 

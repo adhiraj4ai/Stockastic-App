@@ -195,41 +195,74 @@ type RenderGroup =
 function groupBlocks(blocks: ChatBlock[]): RenderGroup[] {
     const groups: RenderGroup[] = [];
 
-    const firstThinkingIdx = blocks.findIndex(b => b.kind === 'thinking');
-    if (firstThinkingIdx === -1) {
+    const firstReasoningIdx = blocks.findIndex(
+        b => b.kind === 'thinking' || b.kind === 'tool_use' || b.kind === 'tool_result'
+    );
+    if (firstReasoningIdx === -1) {
         for (const block of blocks) groups.push({ kind: 'block', block });
         return groups;
     }
 
-    // Blocks before first thinking — standalone
-    for (let i = 0; i < firstThinkingIdx; i++) {
+    // Blocks before first reasoning — standalone
+    for (let i = 0; i < firstReasoningIdx; i++) {
         groups.push({ kind: 'block', block: blocks[i] });
     }
 
     // Find the last text block — that is the final output
     let lastTextIdx = -1;
-    for (let i = blocks.length - 1; i >= firstThinkingIdx; i--) {
+    for (let i = blocks.length - 1; i >= firstReasoningIdx; i--) {
         if (blocks[i].kind === 'text') { lastTextIdx = i; break; }
     }
 
-    const innerBlocks = lastTextIdx > firstThinkingIdx
-        ? blocks.slice(firstThinkingIdx, lastTextIdx)
-        : blocks.slice(firstThinkingIdx);
+    const innerBlocks: ChatBlock[] = [];
+    const trailingBlocks: ChatBlock[] = [];
+
+    if (lastTextIdx !== -1) {
+        // We have a final text output block
+        for (let i = firstReasoningIdx; i < blocks.length; i++) {
+            if (i === lastTextIdx) {
+                continue;
+            }
+            if (i < lastTextIdx) {
+                innerBlocks.push(blocks[i]);
+            } else {
+                // After the output block
+                const b = blocks[i];
+                if (b.kind === 'thinking' || b.kind === 'tool_use' || b.kind === 'tool_result') {
+                    innerBlocks.push(b);
+                } else {
+                    trailingBlocks.push(b);
+                }
+            }
+        }
+    } else {
+        // No text block at all yet (still in initial reasoning/tools phase)
+        for (let i = firstReasoningIdx; i < blocks.length; i++) {
+            innerBlocks.push(blocks[i]);
+        }
+    }
 
     const outputBlock = lastTextIdx !== -1 ? blocks[lastTextIdx] : null;
+
+    let subagent = (outputBlock as any)?.subagent;
+    if (!subagent) {
+        for (let i = innerBlocks.length - 1; i >= 0; i--) {
+            if ((innerBlocks[i] as any)?.subagent) {
+                subagent = (innerBlocks[i] as any).subagent;
+                break;
+            }
+        }
+    }
 
     groups.push({
         kind: 'reasoning',
         innerBlocks,
         text: outputBlock?.kind === 'text' ? outputBlock.text : '',
-        subagent: (outputBlock as any)?.subagent,
+        subagent,
     });
 
-    // Anything after the output (e.g. cards)
-    if (lastTextIdx !== -1) {
-        for (let i = lastTextIdx + 1; i < blocks.length; i++) {
-            groups.push({ kind: 'block', block: blocks[i] });
-        }
+    for (const block of trailingBlocks) {
+        groups.push({ kind: 'block', block });
     }
 
     return groups;

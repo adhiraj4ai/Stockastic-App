@@ -159,20 +159,7 @@ services:
       - stockastic-network
     restart: unless-stopped
 
-  # Ngrok Backend Tunnel Service
-  ngrok-backend:
-    image: ngrok/ngrok:alpine
-    container_name: stockastic-ngrok-backend
-    env_file:
-      - .env.docker
-    command: http backend:8000 --log=stdout
-    ports:
-      - "4041:4040"
-    depends_on:
-      - backend
-    networks:
-      - stockastic-network
-    restart: unless-stopped
+
 
 
 volumes:

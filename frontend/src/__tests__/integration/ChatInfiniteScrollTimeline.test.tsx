@@ -12,6 +12,10 @@ import userEvent from '@testing-library/user-event';
 
 vi.mock('@/lib/api', () => ({
     default: { get: vi.fn(), post: vi.fn() },
+    savedApi: {
+        list: vi.fn().mockResolvedValue({ data: [] }),
+    },
+    API_BASE_URL: 'http://localhost:8000',
 }));
 vi.mock('@/lib/chat-sse', () => ({
     openChatStream: vi.fn(),

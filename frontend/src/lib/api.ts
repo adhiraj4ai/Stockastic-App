@@ -4,8 +4,8 @@ import type { SavedAnalysis, SavedAnalysisDraft } from '@/components/chat/types'
 
 const getApiBaseUrl = () => {
     const url = process.env.NEXT_PUBLIC_API_URL;
-    if (url === '/') return '';
-    return url || 'http://localhost:8000';
+    if (!url || url === '/') return 'http://localhost:8000';
+    return url;
 };
 
 export const API_BASE_URL = getApiBaseUrl();
@@ -112,9 +112,10 @@ const handleNetworkError = async (error: any) => {
     }
     try {
         const healthUrl = API_BASE_URL + '/api/stocks/health-check/';
-        const healthCheck = await axios.get(healthUrl, { timeout: 2000 });
+        const healthCheck = await axios.get(healthUrl, { timeout: 2000, withCredentials: true });
         if (healthCheck.data.status === 'online') {
             console.log('Backend is reachable. Treating previous error as transient.');
+            window.dispatchEvent(new CustomEvent('terminal-online'));
         } else {
             window.dispatchEvent(new CustomEvent('terminal-offline'));
         }
