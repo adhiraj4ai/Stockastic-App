@@ -3,8 +3,6 @@ from datetime import timedelta
 
 import numpy as np
 
-from django.db.models import Count
-
 MIN_MEDIAN_TURNOVER = 500_000.0
 MIN_ACTIVE_BROKERS = 5
 TURNOVER_LOOKBACK_DAYS = 30
