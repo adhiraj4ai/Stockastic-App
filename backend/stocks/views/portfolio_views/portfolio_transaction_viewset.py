@@ -45,6 +45,7 @@ class PortfolioTransactionViewSet(TaxReportMixin, viewsets.ModelViewSet):
                 dp_charge=metrics['dp_charge'],
                 cgt=metrics['cgt'],
                 receivable_amount=metrics['receivable_amount'],
+                settlement_date=metrics['settlement_date'],
             )
         except ValueError as e:
             from rest_framework import serializers

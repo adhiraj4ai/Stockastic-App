@@ -148,8 +148,15 @@ class TestConfirmRebalance:
     def test_sets_targets_and_executes_trades(self, create_user):
         user = create_user(username="rb1", password="p")
         acct = _paper_account(user)
-        # Seed a holding so a SELL leg is executable.
+        # Seed a holding so a SELL leg is executable. The matching BUY is back-dated and
+        # settled (T+2 elapsed) so the paper-account settlement guard permits the SELL.
         PortfolioItem.objects.create(user=user, account=acct, ticker="NABIL", quantity=20, buy_price=Decimal("500"), wacc=Decimal("500"))
+        settled_day = timezone.now() - timedelta(days=10)
+        PortfolioTransaction.objects.create(
+            user=user, account=acct, ticker="NABIL", transaction_type=TransactionType.BUY,
+            quantity=20, rate=Decimal("500"), amount=Decimal("10000"), receivable_amount=Decimal("10000"),
+            transaction_date=settled_day, settlement_date=settled_day.date(),
+        )
         draft = create_draft(
             user=user, account=acct, kind=PortfolioActionDraft.Kind.REBALANCE,
             title="Rebalance",

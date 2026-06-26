@@ -5,6 +5,7 @@ from ..models.market import DailyStockPrice, Company
 from ..models.fundamentals import StockFundamental
 from ..models.signal import SignalEpisode
 from .fundamental_service import FundamentalService
+from .settlement_service import SettlementService
 from ..utils import (
     calculate_broker_commission, calculate_sebon_fee,
     calculate_dp_charge, calculate_cgt
@@ -13,6 +14,43 @@ from decimal import Decimal
 import pandas as pd
 from django.utils import timezone
 from datetime import timedelta
+
+SHORT_SELL_WARNING = "Short selling is simulation-only and not permitted on NEPSE."
+_SHORT_TYPES = (TransactionType.SHORT_SELL, TransactionType.BUY_TO_COVER)
+_SETTLEMENT_GATED_SELL = (TransactionType.SELL,)
+_SETTLEMENT_GATED_BUY = (TransactionType.BUY, TransactionType.RIGHTS)
+
+
+# ---------------------------------------------------------------------------
+# Settlement helpers
+# ---------------------------------------------------------------------------
+
+def _is_paper(account):
+    return account is not None and account.account_type == AccountType.PAPER
+
+
+def _settlement_for(account, today):
+    return SettlementService.next_settlement_date(today) if _is_paper(account) else None
+
+
+def _enforce_settlement(user, ticker, txn_type, quantity, amount, account, today):
+    """Raise ValueError if a PAPER trade would use unsettled shares or cash."""
+    if not _is_paper(account):
+        return
+    if txn_type in _SETTLEMENT_GATED_SELL:
+        settled = SettlementService.settled_quantity(user, account, ticker, today)
+        if quantity > settled:
+            settle_on = SettlementService.next_settlement_date(today)
+            raise ValueError(
+                f"Cannot sell unsettled shares — only {settled} settled; "
+                f"recent buys settle ~{settle_on} (T+2).")
+    elif txn_type in _SETTLEMENT_GATED_BUY:
+        unsettled = SettlementService.unsettled_sale_proceeds(user, account, today)
+        available = Decimal(account.balance) - unsettled
+        if Decimal(amount) > available:
+            raise ValueError(
+                f"Insufficient settled balance — Rs {unsettled:,.2f} of proceeds is "
+                f"unsettled until T+2.")
 
 
 # ---------------------------------------------------------------------------
@@ -379,6 +417,8 @@ class PortfolioService:
         amount, commission, sebon_fee, dp_charge = _resolve_fees(
             quantity, rate, commission, sebon_fee, dp_charge
         )
+        today = timezone.now().date()
+        _enforce_settlement(user, ticker, txn_type, quantity, amount, account, today)
         portfolio_item, _created = PortfolioItem.objects.get_or_create(
             user=user, ticker=ticker, account=account,
             defaults={'quantity': 0, 'buy_price': 0, 'wacc': 0}
@@ -387,6 +427,7 @@ class PortfolioService:
             txn_type, user, ticker, quantity, rate, amount,
             commission, sebon_fee, dp_charge, account, portfolio_item
         )
+        warnings = [SHORT_SELL_WARNING] if txn_type in _SHORT_TYPES else []
         return {
             'amount': amount,
             'commission': commission,
@@ -394,6 +435,8 @@ class PortfolioService:
             'dp_charge': dp_charge,
             'cgt': cgt,
             'receivable_amount': receivable_amount,
+            'settlement_date': _settlement_for(account, today),
+            'warnings': warnings,
         }
 
     @staticmethod

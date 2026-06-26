@@ -103,6 +103,7 @@ class TradePlanViewSet(viewsets.ModelViewSet):
                 quantity=int(quantity),
                 rate=Decimal(str(rate)),
                 transaction_date=timezone.now(),
+                settlement_date=metrics['settlement_date'],
                 amount=metrics['amount'],
                 commission=metrics['commission'],
                 sebon_fee=metrics['sebon_fee'],

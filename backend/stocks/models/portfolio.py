@@ -88,6 +88,7 @@ class PortfolioTransaction(models.Model):
     cgt = models.DecimalField(max_digits=10, decimal_places=2, default=0)
     receivable_amount = models.DecimalField(max_digits=12, decimal_places=2)
     transaction_date = models.DateTimeField()
+    settlement_date = models.DateField(null=True, blank=True, db_index=True)
     created_at = models.DateTimeField(auto_now_add=True)
 
     def __str__(self):

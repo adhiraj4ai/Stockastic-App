@@ -59,7 +59,7 @@ def _process_one_trade(user, account, t):
         amount=metrics["amount"], commission=metrics["commission"],
         sebon_fee=metrics["sebon_fee"], dp_charge=metrics["dp_charge"],
         cgt=metrics["cgt"], receivable_amount=metrics["receivable_amount"],
-        transaction_date=timezone.now(),
+        transaction_date=timezone.now(), settlement_date=metrics["settlement_date"],
     )
     msg = f"{t['txn_type']} {qty} {t['ticker']} @ Rs {rate:,.2f}"
     return txn.id, msg
