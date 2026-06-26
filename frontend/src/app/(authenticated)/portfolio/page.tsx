@@ -19,7 +19,8 @@ import TransactionModal, { PortfolioAccount } from '@/components/TransactionModa
 import { CreateAccountDialog } from '@/components/CreateAccountDialog';
 import StockLink from '@/components/StockLink';
 import { ExitStrategyDialog } from '@/components/ExitStrategyDialog';
-import { useRiskAnalysis, RiskRadarChart, RiskDiagnostics } from '@/components/RiskRadar';
+import { useRiskAnalysis, RiskRadarChart, RiskDiagnostics, MarketRiskCards } from '@/components/RiskRadar';
+import CorrelationHeatmap from '@/components/CorrelationHeatmap';
 import { PositionSizingCalculator } from '@/components/PositionSizingCalculator';
 import { CompanySelect } from '@/components/CompanySelect';
 import { FullPageLoader } from '@/components/ui/StockLoader';
@@ -751,6 +752,13 @@ function PortfolioContent() {
                     <FadeIn delay={0.1} className="grid grid-cols-1 lg:grid-cols-2 gap-6">
                         <div className="space-y-6">
                             <RiskRadarChart state={riskState} />
+                            {riskState.data?.market_risk && <MarketRiskCards data={riskState.data.market_risk} />}
+                            {riskState.data?.market_risk && riskState.data.market_risk.correlation.tickers.length > 1 && (
+                                <CorrelationHeatmap
+                                    tickers={riskState.data.market_risk.correlation.tickers}
+                                    matrix={riskState.data.market_risk.correlation.matrix}
+                                />
+                            )}
                             {displayedItems.length > 0 && (
                             <SectionCard
                                 accent="indigo"

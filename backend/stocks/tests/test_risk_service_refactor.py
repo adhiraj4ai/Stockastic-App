@@ -128,21 +128,29 @@ class TestScoreConcentration:
         assert sector_alerts == []
 
 
+_DUMMY_MARKET_RISK = {"portfolio_beta": 1.0, "window": 180}
+
+
 class TestBuildResponse:
     def test_response_has_required_keys(self):
         holdings = [_make_holding()]
         result = RiskAnalysisService._build_response(
-            holdings, Decimal('50000'), 3.0, 2.0, 5.0, []
+            holdings, Decimal('50000'), 3.0, 2.0, 5.0, 5.0, [], _DUMMY_MARKET_RISK
         )
         assert 'radar_data' in result
         assert 'alerts' in result
         assert 'holdings_metrics' in result
         assert 'summary' in result
+        assert 'market_risk' in result
 
     def test_risk_level_low_when_scores_low(self):
-        result = RiskAnalysisService._build_response([], Decimal('50000'), 1.0, 1.0, 1.0, [])
+        result = RiskAnalysisService._build_response(
+            [], Decimal('50000'), 1.0, 1.0, 1.0, 5.0, [], _DUMMY_MARKET_RISK
+        )
         assert result['summary']['risk_level'] == 'LOW'
 
     def test_risk_level_high_when_concentration_high(self):
-        result = RiskAnalysisService._build_response([], Decimal('50000'), 8.0, 1.0, 1.0, [])
+        result = RiskAnalysisService._build_response(
+            [], Decimal('50000'), 8.0, 1.0, 1.0, 5.0, [], _DUMMY_MARKET_RISK
+        )
         assert result['summary']['risk_level'] == 'HIGH'

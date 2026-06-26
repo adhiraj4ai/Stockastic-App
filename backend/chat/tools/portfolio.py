@@ -166,6 +166,23 @@ def _build_watchlist_row(it):
 # ─── Risk, realized PnL ───────────────────────────────────────────────────────
 
 
+def _market_risk_lines(market_risk):
+    """Return prose lines summarising beta, VaR, and max-drawdown from market_risk block."""
+    if not market_risk:
+        return []
+    lines = []
+    beta = market_risk.get("portfolio_beta")
+    if beta is not None:
+        lines.append(f"  Market beta {beta} ({market_risk.get('beta_confidence')} confidence).")
+    var = (market_risk.get("value_at_risk") or {}).get("var_95_1d")
+    if var is not None:
+        lines.append(f"  1-day 95% VaR: {var * 100:.1f}% of portfolio value.")
+    dd = market_risk.get("max_drawdown")
+    if dd is not None:
+        lines.append(f"  Max drawdown over window: {abs(dd) * 100:.1f}%.")
+    return lines
+
+
 @tool(
     "get_risk_profile",
     "Concentration, liquidity, and volatility radar with alerts for the user's portfolio.",
@@ -182,9 +199,9 @@ async def get_risk_profile(args: dict) -> dict:
         if not result.get("radar_data"):
             return _result("No risk data — portfolio is empty.", is_error=True)
         summary = result["summary"]
-        alerts = result["alerts"]
         prose_lines = [f"Portfolio risk: {summary['risk_level']} (value Rs {summary['total_value']:,.0f})."]
-        for a in alerts[:5]:
+        prose_lines.extend(_market_risk_lines(result.get("market_risk")))
+        for a in result["alerts"][:5]:
             prose_lines.append(f"  [{a['level']}] {a['message']}")
         return _result("\n".join(prose_lines), card={"type": "risk", "data": result})
 

@@ -21,9 +21,20 @@ interface RadarData {
     fullMark: number;
 }
 
+export interface MarketRisk {
+    window: number;
+    portfolio_beta: number | null;
+    beta_confidence: 'full' | 'low' | 'none';
+    value_at_risk: { var_95_1d: number | null; var_99_1d: number | null; var_95_1w: number | null };
+    max_drawdown: number | null;
+    correlation: { tickers: string[]; matrix: number[][]; average_correlation: number | null };
+    per_holding: { ticker: string; beta: number | null; confidence: string }[];
+}
+
 export interface RiskAnalysis {
     radar_data: RadarData[];
     alerts: RiskAlert[];
+    market_risk?: MarketRisk;
     summary: {
         total_value: number;
         risk_level: 'HIGH' | 'MEDIUM' | 'LOW';
@@ -185,5 +196,31 @@ export function RiskDiagnostics({ state }: { state: RiskAnalysisState }) {
                 <AnalyticsTip level={data.summary.risk_level} />
             </CardContent>
         </Card>
+    );
+}
+
+function StatCard({ label, value }: { label: string; value: string }) {
+    return (
+        <Card>
+            <CardContent className="pt-4">
+                <p className="text-sm text-muted-foreground">{label}</p>
+                <p className="text-2xl font-semibold">{value}</p>
+            </CardContent>
+        </Card>
+    );
+}
+
+export function MarketRiskCards({ data }: { data: MarketRisk }) {
+    if (data.portfolio_beta === null) {
+        return <p className="text-sm text-muted-foreground">Market risk: not enough history yet.</p>;
+    }
+    const var95 = data.value_at_risk.var_95_1d;
+    const dd = data.max_drawdown;
+    return (
+        <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
+            <StatCard label="Market beta" value={data.portfolio_beta.toFixed(2)} />
+            <StatCard label="1-day value at risk (95%)" value={var95 !== null ? `${(var95 * 100).toFixed(1)}%` : '—'} />
+            <StatCard label="Max drawdown" value={dd !== null ? `${(Math.abs(dd) * 100).toFixed(1)}%` : '—'} />
+        </div>
     );
 }

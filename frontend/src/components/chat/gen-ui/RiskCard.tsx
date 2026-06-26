@@ -1,11 +1,13 @@
 import React from 'react';
 import { Shield, AlertTriangle } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { MarketRiskCards, MarketRisk } from '@/components/RiskRadar';
 
 interface RiskCardData {
     radar_data?: Array<{ axis: string; value: number; fullMark: number }>;
     alerts?: Array<{ type: string; level: string; message: string }>;
     summary?: { total_value: number; risk_level: 'LOW' | 'MEDIUM' | 'HIGH' };
+    market_risk?: MarketRisk;
 }
 
 const LEVEL_TONE: Record<string, string> = {
@@ -51,6 +53,11 @@ export default function RiskCard(data: RiskCardData) {
                             <span className="text-foreground">{a.message}</span>
                         </div>
                     ))}
+                </div>
+            )}
+            {data.market_risk && (
+                <div className="mt-3">
+                    <MarketRiskCards data={data.market_risk} />
                 </div>
             )}
         </div>

@@ -5,9 +5,14 @@ from ..models.market import DailyStockPrice, Company
 from django.utils import timezone
 from datetime import timedelta
 import pandas as pd
+from stocks.services.risk.market_risk_service import MarketRiskService
 
 _LIQUIDITY_WINDOW_DAYS = 30
 _VOLATILITY_WINDOW_DAYS = 60
+_SYSTEMIC_BETA_SCALE = 5
+_SYSTEMIC_MIN = 1.0
+_SYSTEMIC_MAX = 10.0
+_DEFAULT_WINDOW = 180
 _STOCK_WEIGHT_ALERT_THRESHOLD = 20
 _STOCK_WEIGHT_HIGH_THRESHOLD = 35
 _SECTOR_WEIGHT_ALERT_THRESHOLD = 30
@@ -19,8 +24,8 @@ _DAYS_LIQUIDATE_HIGH = 15
 
 class RiskAnalysisService:
     @staticmethod
-    def get_risk_analysis(user, account_id=None):
-        """Calculates concentrations, liquidity risk, and normalized radar scores."""
+    def get_risk_analysis(user, account_id=None, window=_DEFAULT_WINDOW):
+        """Calculates concentrations, liquidity, market-relative risk, and radar scores."""
         items_qs = PortfolioItem.objects.filter(user=user)
         if account_id and account_id != 'all':
             items_qs = items_qs.filter(account_id=account_id)
@@ -41,10 +46,20 @@ class RiskAnalysisService:
         )
         l_score, l_alerts = RiskAnalysisService._score_liquidity(holdings, tickers)
         v_score = RiskAnalysisService._score_volatility(holdings, tickers)
-        alerts = c_alerts + l_alerts
+        market = MarketRiskService.compute(holdings, window=window)
+        systemic = RiskAnalysisService._systemic_score(market["market_risk"]["portfolio_beta"])
+        alerts = c_alerts + l_alerts + market["alerts"]
         return RiskAnalysisService._build_response(
-            holdings, total_value, c_score, l_score, v_score, alerts
+            holdings, total_value, c_score, l_score, v_score, systemic, alerts,
+            market["market_risk"],
         )
+
+    @staticmethod
+    def _systemic_score(portfolio_beta):
+        if portfolio_beta is None:
+            return 5.0
+        scaled = portfolio_beta * _SYSTEMIC_BETA_SCALE
+        return float(min(_SYSTEMIC_MAX, max(_SYSTEMIC_MIN, scaled)))
 
     @staticmethod
     def _fetch_price_map(tickers):
@@ -181,7 +196,7 @@ class RiskAnalysisService:
         return min(10, max(1.0, weighted_vol / 6))
 
     @staticmethod
-    def _build_response(holdings, total_value, c_score, l_score, v_score, alerts):
+    def _build_response(holdings, total_value, c_score, l_score, v_score, systemic_score, alerts, market_risk):
         risk_level = (
             'HIGH' if (c_score > 7 or l_score > 7)
             else 'MEDIUM' if (c_score > 4 or l_score > 4)
@@ -193,10 +208,11 @@ class RiskAnalysisService:
                 {'axis': 'Liquidity', 'value': round(l_score, 1), 'fullMark': 10},
                 {'axis': 'Volatility', 'value': round(v_score, 1), 'fullMark': 10},
                 {'axis': 'Sector Diversification', 'value': round(max(1, 10 - c_score), 1), 'fullMark': 10},
-                {'axis': 'Systemic Risk', 'value': 5.0, 'fullMark': 10},
+                {'axis': 'Systemic Risk', 'value': round(systemic_score, 1), 'fullMark': 10},
             ],
             'alerts': alerts,
             'holdings_metrics': holdings,
+            'market_risk': market_risk,
             'summary': {
                 'total_value': float(total_value),
                 'risk_level': risk_level,
