@@ -1,8 +1,10 @@
 """Daily scanner: score the liquid universe, persist ranked candidates."""
+import math
 from datetime import date
 from decimal import Decimal
 
 import numpy as np
+import pandas as pd
 
 from stocks.models import AccumulationCandidate, Strategy
 from stocks.services.accumulation.calibration import ACCUMULATION_STRATEGY_NAME
@@ -18,13 +20,19 @@ ATR_PERIOD = 14
 
 def _atr(price_df, period=ATR_PERIOD):
     high, low, close = price_df["High"], price_df["Low"], price_df["Close"]
-    tr = np.maximum(high - low, np.abs(high - close.shift(1))).fillna(high - low)
+    prev_close = close.shift(1)
+    tr = pd.concat([(high - low),
+                    (high - prev_close).abs(),
+                    (low - prev_close).abs()], axis=1).max(axis=1)
+    tr = tr.fillna(high - low)
     return float(tr.rolling(period).mean().iloc[-1])
 
 
 def suggested_levels(price_df):
     entry = float(price_df["Close"].iloc[-1])
-    atr = _atr(price_df) or entry * 0.02
+    atr = _atr(price_df)
+    if not atr or math.isnan(atr):
+        atr = entry * 0.02
     stop = entry - STOP_ATR_MULT * atr
     target = entry + TARGET_RR * (entry - stop)
     return (Decimal(str(round(entry, 2))),
