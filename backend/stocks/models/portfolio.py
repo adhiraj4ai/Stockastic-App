@@ -246,3 +246,32 @@ class PortfolioActionDraft(models.Model):
 
     def __str__(self):
         return f"{self.user.username} - {self.kind} - {self.status}"
+
+
+class AccumulationCandidate(models.Model):
+    """A ranked accumulation setup surfaced by the daily scanner."""
+
+    class Status(models.TextChoices):
+        ACTIVE = "ACTIVE", "Active"
+        EXPIRED = "EXPIRED", "Expired"
+
+    symbol = models.CharField(max_length=20, db_index=True)
+    scan_date = models.DateField(db_index=True)
+    score = models.DecimalField(max_digits=6, decimal_places=2)
+    factors = models.JSONField(default=dict, blank=True)
+    suggested_entry = models.DecimalField(max_digits=12, decimal_places=2)
+    suggested_stop = models.DecimalField(max_digits=12, decimal_places=2)
+    suggested_target = models.DecimalField(max_digits=12, decimal_places=2)
+    validation_state = models.CharField(max_length=12, default="research")
+    status = models.CharField(max_length=10, choices=Status.choices, default=Status.ACTIVE)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        db_table = "accumulation_candidates"
+        ordering = ["-scan_date", "-score"]
+        constraints = [
+            models.UniqueConstraint(fields=["symbol", "scan_date"],
+                                    name="one_candidate_per_symbol_per_scan"),
+        ]
+        indexes = [models.Index(fields=["scan_date", "status"])]

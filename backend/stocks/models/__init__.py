@@ -5,10 +5,10 @@ from .market import (
     DailyIndexValue
 )
 from .fundamentals import StockFundamental, Dividend, CorporateAction, FinancialReport
-from .portfolio import (
+from .portfolio import (  # noqa: F401
     PortfolioAccount, PortfolioItem, TransactionType,
     PortfolioTransaction, WatchlistItem, PortfolioSnapshot, PortfolioTarget,
-    TradePlan, TradePlanLeg,
+    TradePlan, TradePlanLeg, AccumulationCandidate,
 )
 from .strategy import (
     ScopeType, Strategy, StrategyExperiment,
