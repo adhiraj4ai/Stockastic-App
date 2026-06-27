@@ -111,6 +111,16 @@ export default function PipelinePage() {
     const [intelLogId, setIntelLogId] = useState<number | null>(null);
     const [evaluationLogId, setEvaluationLogId] = useState<number | null>(null);
 
+    // Accumulation Calibration State
+    const [calibrateAccumStatus, setCalibrateAccumStatus] = useState<'idle' | 'running' | 'completed' | 'error'>('idle');
+    const [calibrateAccumLogs, setCalibrateAccumLogs] = useState<LogEntry[]>([]);
+    const [showCalibrateAccumLogs, setShowCalibrateAccumLogs] = useState(false);
+
+    // Accumulation Scan State
+    const [scanAccumStatus, setScanAccumStatus] = useState<'idle' | 'running' | 'completed' | 'error'>('idle');
+    const [scanAccumLogs, setScanAccumLogs] = useState<LogEntry[]>([]);
+    const [showScanAccumLogs, setShowScanAccumLogs] = useState(false);
+
     const [currentPage, setCurrentPage] = useState(1);
     const [totalPages, setTotalPages] = useState(1);
 
@@ -851,6 +861,68 @@ export default function PipelinePage() {
         }
     };
 
+    const runCommandStream = async (
+        url: string,
+        setStatus: (s: 'idle' | 'running' | 'completed' | 'error') => void,
+        setLogs: React.Dispatch<React.SetStateAction<LogEntry[]>>,
+        successMessage: string,
+    ) => {
+        try {
+            const response = await fetch(url, { credentials: 'include' });
+            if (!response.ok) {
+                setStatus('error');
+                toast.error(response.status === 401 ? 'Session expired. Please login again.' : `Connection failed: ${response.statusText}`);
+                return;
+            }
+            const reader = response.body?.getReader();
+            const decoder = new TextDecoder();
+            if (!reader) { setStatus('error'); toast.error('Failed to initialize stream reader'); return; }
+
+            let buffer = '';
+            while (true) {
+                const { done, value } = await reader.read();
+                if (done) break;
+                buffer += decoder.decode(value, { stream: true });
+                const lines = buffer.split('\n');
+                buffer = lines.pop() || '';
+                for (const line of lines) {
+                    const trimmed = line.trim();
+                    if (!trimmed || !trimmed.startsWith('data: ')) continue;
+                    try {
+                        const data = JSON.parse(trimmed.substring(6));
+                        if (data.type === 'done') { setStatus('completed'); toast.success(successMessage); fetchHistory(); return; }
+                        if (data.type === 'error') { setStatus('error'); toast.error(data.message || 'An error occurred'); return; }
+                        if (data.type === 'log' || data.type === 'status') {
+                            setLogs(prev => [...prev, { type: data.type as LogEntry['type'], message: data.message, timestamp: new Date() }]);
+                        }
+                    } catch (e) { console.error('Error parsing stream line:', trimmed, e); }
+                }
+            }
+        } catch (err: unknown) {
+            if ((err as { name?: string }).name === 'AbortError') return;
+            setStatus('error');
+            toast.error('Connection to log stream lost');
+        }
+    };
+
+    const handleRunCalibrateAccum = async () => {
+        if (calibrateAccumStatus === 'running') return;
+        setCalibrateAccumStatus('running');
+        setCalibrateAccumLogs([]);
+        setShowCalibrateAccumLogs(true);
+        const url = `${API_BASE_URL}/api/stocks/pipeline/calibrate_accumulation_stream/?trials=20`;
+        await runCommandStream(url, setCalibrateAccumStatus, setCalibrateAccumLogs, 'Accumulation strategy calibrated!');
+    };
+
+    const handleRunScanAccum = async () => {
+        if (scanAccumStatus === 'running') return;
+        setScanAccumStatus('running');
+        setScanAccumLogs([]);
+        setShowScanAccumLogs(true);
+        const url = `${API_BASE_URL}/api/stocks/pipeline/scan_accumulation_stream/`;
+        await runCommandStream(url, setScanAccumStatus, setScanAccumLogs, 'Accumulation scan complete!');
+    };
+
     const handleStopApiIngest = async () => {
         if (apiIngestAbortController.current) {
             apiIngestAbortController.current.abort();
@@ -1036,6 +1108,30 @@ export default function PipelinePage() {
                             logs={evaluationLogs}
                             showLogs={showEvaluationLogs}
                             onToggleLogs={() => setShowEvaluationLogs(!showEvaluationLogs)}
+                        />
+
+                        {/* Step 9: Calibrate Accumulation Strategy */}
+                        <PipelineStep
+                            title="9. Calibrate accumulation strategy"
+                            description="Heavy weekly re-tune that sets strategy weights and thresholds, then runs the OOS validation gate. Takes several minutes."
+                            status={calibrateAccumStatus}
+                            icon={<BarChart3 className="w-5 h-5" />}
+                            onRun={handleRunCalibrateAccum}
+                            logs={calibrateAccumLogs}
+                            showLogs={showCalibrateAccumLogs}
+                            onToggleLogs={() => setShowCalibrateAccumLogs(!showCalibrateAccumLogs)}
+                        />
+
+                        {/* Step 10: Scan Accumulation Candidates */}
+                        <PipelineStep
+                            title="10. Scan accumulation candidates"
+                            description="Scores the liquid universe and refreshes the ranked candidate list shown on the Accumulation Trading page."
+                            status={scanAccumStatus}
+                            icon={<Search className="w-5 h-5" />}
+                            onRun={handleRunScanAccum}
+                            logs={scanAccumLogs}
+                            showLogs={showScanAccumLogs}
+                            onToggleLogs={() => setShowScanAccumLogs(!showScanAccumLogs)}
                         />
 
                         {/* Fetch from NepseAPI */}
