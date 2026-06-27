@@ -28,7 +28,7 @@ function StrategySidebar({ symbol, blocks, direction, tradeable }: {
     symbol: string; blocks: SignalContributor[]; direction?: 'BUY' | 'SELL'; tradeable: boolean;
 }) {
     return (
-        <aside className="flex flex-col gap-3 border-b border-border p-5 overflow-y-auto max-h-[36vh] md:max-h-[90vh] md:border-b-0 md:border-r">
+        <aside className="flex flex-col gap-3 border-b border-border p-5 overflow-y-auto max-h-[38vh] md:max-h-none md:h-full md:border-b-0 md:border-r">
             <DialogHeader className="gap-1">
                 <DialogTitle className="text-xl">{symbol}</DialogTitle>
                 <p className="text-xs text-muted-foreground">
@@ -56,10 +56,10 @@ export function SignalDetailDialog({ symbol, cards, open, onClose }: Props) {
     const tradeable = !cards.some((c) => c.validation_state === 'research');
     return (
         <Dialog open={open} onOpenChange={(o) => { if (!o) onClose(); }}>
-            <DialogContent className="w-[96vw] max-w-6xl max-h-[90vh] overflow-hidden p-0">
-                <div className="grid md:grid-cols-[340px_1fr] max-h-[90vh]">
+            <DialogContent className="w-[88vw] max-w-[88vw] h-[90vh] max-h-[90vh] overflow-hidden p-0">
+                <div className="grid h-full overflow-hidden md:grid-cols-[360px_1fr]">
                     <StrategySidebar symbol={symbol} blocks={blocks} direction={lead?.direction} tradeable={tradeable} />
-                    <div className="p-5 pr-10 overflow-y-auto max-h-[54vh] md:max-h-[90vh]">
+                    <div className="p-5 pr-10 overflow-y-auto max-h-[52vh] md:max-h-none md:h-full">
                         {lead && (
                             <AnalysisTabs symbol={symbol} ladder={{
                                 cmp: num(lead.entry_price), entry: num(lead.entry_price),
