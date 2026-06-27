@@ -95,3 +95,24 @@ def test_board_aggregates_same_symbol_direction_in_a_lane():
     assert len(contributors) == 2
     sources = {c["source"] for c in contributors}
     assert sources == {"SMART_MONEY", "BELOW_COST_REVERSAL"}
+
+
+@pytest.mark.django_db
+def test_board_merges_episode_and_candidate_same_symbol_without_crash():
+    """Mixing a SignalEpisode (freshness=ISO str) with AccumulationCandidate
+    (freshness=date) on the same symbol+direction must not raise TypeError."""
+    SignalEpisode.objects.create(
+        source="SMART_MONEY", producer_key="SMART_MONEY", symbol="CBBL", direction="BUY",
+        start_date=date(2026, 6, 20), last_signal_date=date(2026, 6, 20),
+        entry_price=Decimal("310"), entry_strength=78, status="ACTIVE", metadata={})
+    AccumulationCandidate.objects.create(
+        symbol="CBBL", scan_date=date(2026, 6, 21), score=Decimal("85"),
+        factors={"concentration": 0.9, "coiling": 0.8, "breakout": 1.0, "score": 85.0},
+        suggested_entry=Decimal("310"), suggested_stop=Decimal("295"),
+        suggested_target=Decimal("340"), validation_state="research",
+        status=AccumulationCandidate.Status.ACTIVE)
+    resp = _client().get("/api/stocks/signals/board/")
+    assert resp.status_code == 200
+    cbbl_accum = [c for c in resp.data["cards"] if c["symbol"] == "CBBL" and c["family"] == "accumulation"]
+    assert len(cbbl_accum) == 1
+    assert len(cbbl_accum[0]["contributors"]) == 2

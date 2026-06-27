@@ -29,7 +29,7 @@ def _candidate_card(c):
         "entry_price": str(c.suggested_entry), "stop_loss_price": str(c.suggested_stop),
         "target_price": str(c.suggested_target),
         "conditions": format_conditions(ACCUMULATION_STRATEGY, c.factors or {}),
-        "validation_state": c.validation_state, "freshness_date": c.scan_date,
+        "validation_state": c.validation_state, "freshness_date": c.scan_date.isoformat() if c.scan_date else None,
         "strategy_name": "Accumulation strategy", "rationale": "",
     }
 

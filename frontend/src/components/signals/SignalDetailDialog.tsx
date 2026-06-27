@@ -27,7 +27,7 @@ function EngineBlock({ block }: { block: SignalContributor }) {
 export function SignalDetailDialog({ symbol, cards, open, onClose }: Props) {
     const lead = cards[0];
     const blocks = cards.flatMap((c) => c.contributors ?? []);
-    const tradeable = !blocks.some((b) => b.validation_state === 'research');
+    const tradeable = !cards.some((c) => c.validation_state === 'research');
     return (
         <Dialog open={open} onOpenChange={(o) => { if (!o) onClose(); }}>
             <DialogContent className="max-w-lg max-h-[85vh] overflow-y-auto">
@@ -36,7 +36,7 @@ export function SignalDetailDialog({ symbol, cards, open, onClose }: Props) {
                 </DialogHeader>
                 <div className="flex flex-col gap-3">
                     <h3 className="text-[11px] tracking-wide text-muted-foreground">Why this fired</h3>
-                    {blocks.map((b, i) => <EngineBlock key={i} block={b} />)}
+                    {blocks.map((b) => <EngineBlock key={b.source} block={b} />)}
                     {lead && (
                         <AnalysisTabs symbol={symbol} ladder={{
                             cmp: num(lead.entry_price), entry: num(lead.entry_price),

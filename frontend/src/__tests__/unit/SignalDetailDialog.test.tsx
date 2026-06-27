@@ -26,7 +26,7 @@ describe('SignalDetailDialog', () => {
         expect(screen.getByText('Smart money')).toBeInTheDocument();
         expect(screen.getByText(/4 smart-money brokers/)).toBeInTheDocument();
     });
-    it('disables paper trade when a contributing card has a research contributor', () => {
+    it('disables paper trade when a card has validation_state research (via contributors)', () => {
         render(<SignalDetailDialog symbol="NABIL" open onClose={vi.fn()}
             cards={[card({
                 source: 'ACCUMULATION_STRATEGY',
@@ -42,5 +42,15 @@ describe('SignalDetailDialog', () => {
                 }],
             })]} />);
         expect(screen.getByRole('button', { name: /place paper trade/i })).toBeDisabled();
+    });
+    it('disables paper trade when card validation_state is research and contributors is empty', () => {
+        render(<SignalDetailDialog symbol="NABIL" open onClose={vi.fn()}
+            cards={[card({ validation_state: 'research', contributors: [] })]} />);
+        expect(screen.getByRole('button', { name: /place paper trade/i })).toBeDisabled();
+    });
+    it('enables paper trade when no card has validation_state research', () => {
+        render(<SignalDetailDialog symbol="NABIL" open onClose={vi.fn()}
+            cards={[card({ validation_state: null })]} />);
+        expect(screen.getByRole('button', { name: /place paper trade/i })).not.toBeDisabled();
     });
 });
