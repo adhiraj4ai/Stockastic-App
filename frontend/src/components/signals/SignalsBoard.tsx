@@ -14,13 +14,29 @@ const LANES: { key: SignalCardData['family']; title: string }[] = [
     { key: 'your_strategies', title: 'Your strategies' },
 ];
 
+const DIRECTION_OPTIONS: [string, string][] = [['', 'All'], ['BUY', 'Buy'], ['SELL', 'Sell']];
+
+type Filters = { direction?: string; min_families?: string };
+
+function buildBoardParams(filters: Filters): Record<string, string> {
+    const params: Record<string, string> = {};
+    if (filters.direction) params.direction = filters.direction;
+    if (filters.min_families) params.min_families = filters.min_families;
+    return params;
+}
+
 export default function SignalsBoard() {
     const [board, setBoard] = useState<BoardResponse | null>(null);
     const [glossary, setGlossary] = useState<Glossary | null>(null);
     const [open, setOpen] = useState<SignalCardData | null>(null);
+    const [filters, setFilters] = useState<Filters>({});
 
     useEffect(() => {
-        signalsApi.board().then((r) => setBoard(r.data)).catch(() => setBoard({ cards: [], consensus: {} }));
+        const params = buildBoardParams(filters);
+        signalsApi.board(params).then((r) => setBoard(r.data)).catch(() => setBoard({ cards: [], consensus: {} }));
+    }, [filters]);
+
+    useEffect(() => {
         signalsApi.glossary().then((r) => setGlossary(r.data)).catch(() => setGlossary(null));
     }, []);
 
@@ -28,11 +44,29 @@ export default function SignalsBoard() {
         () => board && open ? board.cards.filter((c) => c.symbol === open.symbol && c.direction === open.direction) : [],
         [board, open]);
 
+    const buys = board?.cards.filter((c) => c.direction === 'BUY').length ?? 0;
+    const sells = (board?.cards.length ?? 0) - buys;
+
     if (!board) return <DashboardLayout title="Signals"><PageLoader /></DashboardLayout>;
 
     return (
         <DashboardLayout title="Signals">
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 pt-4">
+            <div className="flex items-center gap-4 flex-wrap pt-2 pb-3">
+                <p className="text-sm text-muted-foreground tabular-nums">{buys} bullish · {sells} bearish</p>
+                <div className="ml-auto inline-flex rounded-lg border border-border overflow-hidden" role="group" aria-label="Direction">
+                    {DIRECTION_OPTIONS.map(([val, label]) => (
+                        <button
+                            key={label}
+                            onClick={() => setFilters((f) => ({ ...f, direction: val || undefined }))}
+                            aria-pressed={(filters.direction ?? '') === val}
+                            className={`px-3 py-1.5 text-xs ${(filters.direction ?? '') === val ? 'bg-accent text-foreground' : 'text-muted-foreground'}`}
+                        >
+                            {label}
+                        </button>
+                    ))}
+                </div>
+            </div>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                 {LANES.map((lane) => (
                     <SignalLane key={lane.key} title={lane.title} glossary={glossary} consensus={board.consensus}
                         cards={board.cards.filter((c) => c.family === lane.key)} onOpen={setOpen} />))}
