@@ -56,7 +56,7 @@ export function SignalDetailDialog({ symbol, cards, open, onClose }: Props) {
     const tradeable = !cards.some((c) => c.validation_state === 'research');
     return (
         <Dialog open={open} onOpenChange={(o) => { if (!o) onClose(); }}>
-            <DialogContent className="w-[88vw] max-w-[88vw] h-[90vh] max-h-[90vh] overflow-hidden p-0">
+            <DialogContent className="w-[88vw] max-w-[88vw] sm:max-w-[88vw] h-[90vh] max-h-[90vh] overflow-hidden p-0">
                 <div className="grid h-full overflow-hidden md:grid-cols-[360px_1fr]">
                     <StrategySidebar symbol={symbol} blocks={blocks} direction={lead?.direction} tradeable={tradeable} />
                     <div className="p-5 pr-10 overflow-y-auto max-h-[52vh] md:max-h-none md:h-full">
