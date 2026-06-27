@@ -121,7 +121,7 @@ Replaces `SignalsPageClient.tsx` and `IntelHubClient.tsx` with a focused set:
 - `SignalsBoard.tsx` — page shell: posture strip + filter bar + three `SignalLane`s.
 - `SignalLane.tsx` — one family column: header (name, count, buy⇄sell skew), ranked cards.
 - `SignalCard.tsx` — card anatomy (below); consensus chip; quick action.
-- `ConvictionMeter.tsx` — the indigo strength bar (the signature element).
+- `ConvictionMeter.tsx` — the strength bar (neutral `--foreground` fill, theme-bound).
 - `SignalDetailDrawer.tsx` — "why this fired": per-engine condition blocks + existing `AnalysisTabs`.
 - `GlossaryTooltip.tsx` — hover wrapper that looks up `{label, description}` from the glossary.
 - `lib/signals.ts` — types + the `accumulationApi`-style client (`board`, `glossary`).
@@ -154,20 +154,38 @@ place paper trade (existing transactions flow, propose-and-confirm).
 and shows `{label, description}` on hover/focus (keyboard-accessible). Content comes
 from the backend glossary so it stays authored with the engines.
 
-## Visual system
+## Visual system — current app theme, zero deviation
 
-- Inherits the app's warm sans, sentence-case, dark/light surfaces, shadcn primitives,
-  and `lib/numbers`. **No new typeface** — a deliberate type *scale* (heavy large lane
-  headers, bold symbols, small meta) with **tabular figures** for all metrics (keeps the
-  no-monospace rule while aligning columns).
-- **Direction stays semantic:** emerald = buy, rose = sell, amber = watch.
-- **One new accent — "conviction indigo" `#6C5CE7`** — used *only* for the
-  `ConvictionMeter` and the cross-lane consensus rail/chip. Deliberately not a
-  direction color, so "how sure" reads on a separate channel from "buy vs sell".
-- **Lane identity:** a thin top accent per lane (accumulation indigo-tint, technical
-  teal, your-strategies warm slate), header only; everything else quiet.
-- Desktop: three columns; mobile: stacked sections. Quality floor: keyboard focus,
-  reduced-motion respected, responsive to mobile.
+**Hard constraint (user):** the page must match the existing app theme and layout
+with no new palette, no bespoke ground, and no new layout shell. Everything binds to
+the app's existing tokens; rendered inside the standard `DashboardLayout` (sidebar,
+full-width), light **and** the app's warm-dark mode via the existing theme.
+
+- **Tokens only:** surfaces `--background` / `--card`, text `--foreground` /
+  `--muted-foreground`, edges `--border`, focus `--ring`. The app's neutrals are warm
+  (hue ~85); the primary accent is **green** (`oklch(0.596 0.145 163)`).
+- **Type:** inherit the app's warm sans + sentence-case (no all-caps, no monospace).
+  Personality comes from the type *scale* (heavier large lane headers, bold symbols,
+  small meta) and **tabular figures** (`tabular-nums`) on every metric.
+- **Direction stays semantic:** emerald = buy, rose = sell, amber = watch (existing).
+- **No new accent.** The `ConvictionMeter` fills with a **neutral `--foreground`** tone
+  (reads as magnitude, never as direction) over a `--muted` track — deliberately NOT
+  the app's green `--primary`, because that green *is* the buy color and would collide.
+- **Consensus chip is direction-agnostic and neutral** (a `--border` outline + a small
+  `--ring` dot), since families can agree on a sell as readily as a buy. The signature
+  is therefore the **consensus structure** (the cross-lane connector + the stacked
+  "why it fired" drawer), not a color.
+- **Lane identity:** a thin top tick per lane in muted/neutral tints derived from the
+  theme (not new hues); header only, everything else quiet.
+- **Reuse existing components:** `Card`, `Badge`, `Tabs`, `Dialog`/drawer, `Tooltip`,
+  `StockLoader`, `lib/numbers` — so it is indistinguishable in chrome from the rest of
+  the app.
+- Desktop: three columns; mobile: stacked sections. Quality floor: visible keyboard
+  focus (`--ring`), reduced-motion respected, responsive to mobile.
+
+> The published mockup used a dark-slate ground + indigo accent to make the *structure*
+> legible in isolation; that styling is explicitly **not** carried into the build — only
+> the layout, card anatomy, consensus thread, drawer, and glossary behavior are.
 
 ## Page chrome
 
