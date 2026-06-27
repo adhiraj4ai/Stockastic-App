@@ -36,7 +36,7 @@ export function SignalDetailDrawer({ symbol, cards, open, onClose }: Props) {
                     <button className="ml-auto text-muted-foreground" onClick={onClose} aria-label="Close">✕</button>
                 </div>
                 <div className="flex flex-col gap-3 p-5 overflow-auto">
-                    <h3 className="text-[11px] uppercase tracking-wide text-muted-foreground">Why this fired</h3>
+                    <h3 className="text-[11px] tracking-wide text-muted-foreground">Why this fired</h3>
                     {cards.map((c, i) => <EngineBlock key={i} card={c} />)}
                     <AnalysisTabs symbol={symbol} ladder={{
                         cmp: num(lead.entry_price), entry: num(lead.entry_price),
