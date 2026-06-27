@@ -24,29 +24,49 @@ function EngineBlock({ block }: { block: SignalContributor }) {
     );
 }
 
+function StrategySidebar({ symbol, blocks, direction, tradeable }: {
+    symbol: string; blocks: SignalContributor[]; direction?: 'BUY' | 'SELL'; tradeable: boolean;
+}) {
+    return (
+        <aside className="flex flex-col gap-3 border-b border-border p-5 overflow-y-auto max-h-[36vh] md:max-h-[90vh] md:border-b-0 md:border-r">
+            <DialogHeader className="gap-1">
+                <DialogTitle className="text-xl">{symbol}</DialogTitle>
+                <p className="text-xs text-muted-foreground">
+                    {direction === 'SELL' ? 'Sell' : 'Buy'} signal · {blocks.length} {blocks.length === 1 ? 'source' : 'sources'}
+                </p>
+            </DialogHeader>
+            <h3 className="text-[11px] tracking-wide text-muted-foreground">Why this fired</h3>
+            <div className="flex flex-col gap-2">
+                {blocks.map((b) => <EngineBlock key={b.source} block={b} />)}
+            </div>
+            <div className="mt-auto flex flex-col gap-2 pt-2">
+                <Button variant="outline">Add to watchlist</Button>
+                <Button disabled={!tradeable}>Place paper trade</Button>
+                {!tradeable && (
+                    <p className="text-[11px] text-muted-foreground">Strategy not validated against buy-and-hold — review only.</p>
+                )}
+            </div>
+        </aside>
+    );
+}
+
 export function SignalDetailDialog({ symbol, cards, open, onClose }: Props) {
     const lead = cards[0];
     const blocks = cards.flatMap((c) => c.contributors ?? []);
     const tradeable = !cards.some((c) => c.validation_state === 'research');
     return (
         <Dialog open={open} onOpenChange={(o) => { if (!o) onClose(); }}>
-            <DialogContent className="w-[92vw] sm:max-w-3xl lg:max-w-4xl max-h-[88vh] overflow-y-auto">
-                <DialogHeader>
-                    <DialogTitle>{symbol}</DialogTitle>
-                </DialogHeader>
-                <div className="flex flex-col gap-3">
-                    <h3 className="text-[11px] tracking-wide text-muted-foreground">Why this fired</h3>
-                    {blocks.map((b) => <EngineBlock key={b.source} block={b} />)}
-                    {lead && (
-                        <AnalysisTabs symbol={symbol} ladder={{
-                            cmp: num(lead.entry_price), entry: num(lead.entry_price),
-                            stopLoss: num(lead.stop_loss_price) || undefined,
-                            tp1: num(lead.target_price) || undefined, direction: lead.direction,
-                        }} />
-                    )}
-                    <div className="flex gap-2">
-                        <Button variant="outline" className="flex-1">Add to watchlist</Button>
-                        <Button className="flex-1" disabled={!tradeable}>Place paper trade</Button>
+            <DialogContent className="w-[96vw] max-w-6xl max-h-[90vh] overflow-hidden p-0">
+                <div className="grid md:grid-cols-[340px_1fr] max-h-[90vh]">
+                    <StrategySidebar symbol={symbol} blocks={blocks} direction={lead?.direction} tradeable={tradeable} />
+                    <div className="p-5 pr-10 overflow-y-auto max-h-[54vh] md:max-h-[90vh]">
+                        {lead && (
+                            <AnalysisTabs symbol={symbol} ladder={{
+                                cmp: num(lead.entry_price), entry: num(lead.entry_price),
+                                stopLoss: num(lead.stop_loss_price) || undefined,
+                                tp1: num(lead.target_price) || undefined, direction: lead.direction,
+                            }} />
+                        )}
                     </div>
                 </div>
             </DialogContent>
