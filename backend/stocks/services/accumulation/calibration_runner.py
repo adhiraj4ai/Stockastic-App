@@ -42,7 +42,7 @@ def resolve_basket(as_of=None, max_symbols=CALIBRATION_MAX_SYMBOLS):
     as_of = as_of or latest_data_date()
     if as_of is None:
         raise CalibrationError("No accumulation data available to calibrate on.")
-    basket = list(liquid_universe(as_of, limit=max_symbols))
+    basket = list(liquid_universe(as_of, limit=max_symbols, rank_by="accumulation_growth"))
     if not basket:
         raise CalibrationError(f"Liquid universe is empty for {as_of}.")
     return as_of, basket
