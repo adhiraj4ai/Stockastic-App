@@ -104,6 +104,30 @@ def test_buy_episode_hits_target_marks_won():
 
 
 @pytest.mark.django_db
+def test_sell_episode_hits_target_marks_won():
+    # SELL: target BELOW entry, stop ABOVE; a low touching target is a WIN.
+    _ingest(1, "SELL", close="100", target="90", stop="105")
+    _price(1, high="101", low="99", close="100")   # entry day — must NOT trigger
+    _price(2, high="100", low="88", close="92")     # low hits target 90
+    evaluate_active_episodes()
+    ep = SignalEpisode.objects.get(symbol="NABIL")
+    assert ep.status == "WON" and ep.exit_reason == "TARGET"
+    assert ep.exit_price == Decimal("90") and ep.end_date == date(2026, 1, 2)
+    assert ep.pnl_percent == Decimal("10.00")       # (100-90)/100 — positive for a SELL win
+
+
+@pytest.mark.django_db
+def test_sell_episode_hits_stop_marks_lost():
+    # SELL: a high touching the (above-entry) stop is a LOSS with negative pnl.
+    _ingest(1, "SELL", close="100", target="90", stop="105")
+    _price(2, high="106", low="100", close="104")   # high hits stop 105
+    evaluate_active_episodes()
+    ep = SignalEpisode.objects.get(symbol="NABIL")
+    assert ep.status == "LOST" and ep.exit_reason == "STOP"
+    assert ep.exit_price == Decimal("105") and ep.pnl_percent == Decimal("-5.00")
+
+
+@pytest.mark.django_db
 def test_entry_day_is_not_evaluated():
     _ingest(1, "BUY", close="100", target="100.5", stop="95")
     _price(1, high="200", low="100", close="100")  # huge high on entry day

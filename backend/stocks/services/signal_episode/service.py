@@ -61,7 +61,12 @@ def ingest_reading(source, strategy, symbol, reading: SignalReading):
 
 
 def _check_hit(direction, target, stop, high, low):
-    """Return (status, reason, exit_price) for first TP/SL hit, else None."""
+    """Return (status, reason, exit_price) for first TP/SL hit, else None.
+
+    Intrabar tie-break: daily bars carry no intrabar sequence, so when a single
+    bar's range spans BOTH the target and the stop, target is checked first and
+    therefore wins (the episode closes WON). This is deliberate and consistent.
+    """
     if direction == "BUY":
         if target is not None and high >= target:
             return "WON", "TARGET", target
