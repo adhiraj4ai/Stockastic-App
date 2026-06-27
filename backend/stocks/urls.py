@@ -4,6 +4,7 @@ from .views import (
     market, portfolio, strategy, broker, pipeline, watchlist, notifications, recommendations, chart, fibonacci, floorsheet, dividends, risk, sector_rotation, price_forecast, price_action, volume_profile, signal_alerts, opportunity, plan, ticker_verdict, entry_statuses
 )
 from .views.accumulation_candidate_viewset import AccumulationCandidateViewSet
+from .views.signal_glossary_view import signal_glossary
 
 
 router = DefaultRouter()
@@ -113,4 +114,7 @@ urlpatterns = [
 
     # Ticker Verdict
     path('ticker-verdict/<str:symbol>/', ticker_verdict.TickerVerdictView.as_view(), name='ticker_verdict'),
+
+    # Signal Glossary
+    path('signal-glossary/', signal_glossary, name='signal-glossary'),
 ]
