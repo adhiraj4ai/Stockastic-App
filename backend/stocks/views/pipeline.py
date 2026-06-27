@@ -194,6 +194,8 @@ class PipelineViewSet(viewsets.ViewSet):
         'evaluate_signals': 'Evaluate Active Signals',
         'update_indicators': 'Update Technical Indicators',
         'optimize_strategies': 'Global Strategy Optimization',
+        'scan_accumulation': 'Scan Accumulation Candidates',
+        'calibrate_accumulation': 'Calibrate Accumulation Strategy',
     }
 
     @action(detail=False, methods=['get'])
@@ -299,6 +301,19 @@ class PipelineViewSet(viewsets.ViewSet):
     def generate_all_signals_stream(self, request):
         log_entry = DataUploadLog.objects.create(file_name='All Intel Signals', upload_type='SIGNALS', status='PENDING')
         return self._run_manage_command_stream(['generate_all_signals'], log_entry)
+
+    @action(detail=False, methods=['get'])
+    def scan_accumulation_stream(self, request):
+        log_entry = DataUploadLog.objects.create(file_name='Accumulation Scan', upload_type='SIGNALS', status='PENDING')
+        return self._run_manage_command_stream(['scan_accumulation_candidates'], log_entry)
+
+    @action(detail=False, methods=['get'])
+    def calibrate_accumulation_stream(self, request):
+        trials = request.query_params.get('trials', '20')
+        log_entry = DataUploadLog.objects.create(
+            file_name=f'Accumulation Calibration (trials={trials})', upload_type='OPTIMIZATION', status='PENDING')
+        return self._run_manage_command_stream(
+            ['calibrate_accumulation_strategy', '--trials', str(trials)], log_entry)
 
     @action(detail=False, methods=['get'])
     def trigger_evaluation_stream(self, request):

@@ -126,3 +126,23 @@ def test_calibrate_task_handles_calibration_error(monkeypatch):
     monkeypatch.setattr(
         "stocks.services.accumulation.calibration_runner.run_calibration", boom)
     assert tasks.calibrate_accumulation_strategy_task.run() == {"skipped": "no data"}
+
+
+@pytest.mark.django_db
+def test_scan_command_invokes_scanner(monkeypatch):
+    from io import StringIO
+
+    from django.core.management import call_command
+
+    monkeypatch.setattr(
+        "stocks.services.accumulation.scanner.AccumulationScanner.scan_and_save_candidates",
+        staticmethod(lambda as_of=None: 4))
+    out = StringIO()
+    call_command("scan_accumulation_candidates", stdout=out)
+    assert "4 active candidates" in out.getvalue()
+
+
+def test_pipeline_catalog_lists_accumulation_jobs():
+    from stocks.views.pipeline import PipelineViewSet
+    assert "scan_accumulation" in PipelineViewSet.TASKS
+    assert "calibrate_accumulation" in PipelineViewSet.TASKS
