@@ -17,6 +17,17 @@ class StrategySignalViewSet(viewsets.ReadOnlyModelViewSet):
     search_fields = ['symbol']
 
     @action(detail=False, methods=['get'])
+    def board(self, request):
+        from stocks.services.signals.board import build_board
+        q = request.query_params
+        return Response(build_board(
+            direction=q.get('direction') or None,
+            symbol=q.get('symbol') or None,
+            min_families=int(q.get('min_families', 1)),
+            include_historical=q.get('include_historical') == 'true',
+        ))
+
+    @action(detail=False, methods=['get'])
     def tracking(self, request):
         active_qs = SignalEpisode.objects.filter(status='ACTIVE').order_by('start_date')
         closed_qs = SignalEpisode.objects.exclude(status='ACTIVE').order_by('-end_date')
