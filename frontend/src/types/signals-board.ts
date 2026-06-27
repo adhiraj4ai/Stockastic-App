@@ -19,7 +19,7 @@ export interface SignalCardData {
 
 export interface BoardResponse {
     cards: SignalCardData[];
-    consensus: Record<string, { families: Family[]; count: number }>;
+    consensus: Record<string, Record<string, { families: Family[]; count: number }>>;
 }
 
 export interface GlossaryEntry { label: string; description: string; }

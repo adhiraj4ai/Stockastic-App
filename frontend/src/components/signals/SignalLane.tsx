@@ -27,7 +27,7 @@ export function SignalLane({ title, cards, consensus, glossary, onOpen }: Props)
                     ? <p className="text-xs text-muted-foreground text-center py-6">No {title.toLowerCase()} signals today.</p>
                     : cards.map((c, i) => (
                         <SignalCard key={`${c.source}-${c.symbol}-${i}`} card={c} glossary={glossary}
-                            consensusCount={consensus[c.symbol]?.count ?? 1} onOpen={onOpen} />))}
+                            consensusCount={consensus[c.symbol]?.[c.direction]?.count ?? 1} onOpen={onOpen} />))}
             </div>
         </section>
     );

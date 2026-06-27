@@ -26,8 +26,8 @@ def _candidate_card(c):
     return {
         "source": ACCUMULATION_STRATEGY, "family": "accumulation", "symbol": c.symbol,
         "direction": "BUY", "strength": float(c.score), "tier": c.validation_state,
-        "entry_price": c.suggested_entry, "stop_loss_price": c.suggested_stop,
-        "target_price": c.suggested_target,
+        "entry_price": str(c.suggested_entry), "stop_loss_price": str(c.suggested_stop),
+        "target_price": str(c.suggested_target),
         "conditions": format_conditions(ACCUMULATION_STRATEGY, c.factors or {}),
         "validation_state": c.validation_state, "freshness_date": c.scan_date,
         "strategy_name": "Accumulation strategy", "rationale": "",
@@ -48,8 +48,10 @@ def _consensus(cards):
         by_symbol[c["symbol"]][c["direction"]].add(c["family"])
     out = {}
     for sym, by_dir in by_symbol.items():
-        fams = max(by_dir.values(), key=len)
-        out[sym] = {"families": sorted(fams), "count": len(fams)}
+        out[sym] = {
+            direction: {"families": sorted(fams), "count": len(fams)}
+            for direction, fams in by_dir.items()
+        }
     return out
 
 
@@ -61,6 +63,6 @@ def build_board(direction=None, symbol=None, min_families=1, include_historical=
         cards = [c for c in cards if c["symbol"] == symbol.upper()]
     consensus = _consensus(cards)
     if min_families > 1:
-        cards = [c for c in cards if consensus.get(c["symbol"], {}).get("count", 0) >= min_families]
+        cards = [c for c in cards if consensus.get(c["symbol"], {}).get(c["direction"], {}).get("count", 0) >= min_families]
     return {"cards": sorted(cards, key=lambda c: c["strength"] or 0, reverse=True),
             "consensus": consensus}
