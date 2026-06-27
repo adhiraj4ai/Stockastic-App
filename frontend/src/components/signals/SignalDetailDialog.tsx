@@ -30,7 +30,7 @@ export function SignalDetailDialog({ symbol, cards, open, onClose }: Props) {
     const tradeable = !cards.some((c) => c.validation_state === 'research');
     return (
         <Dialog open={open} onOpenChange={(o) => { if (!o) onClose(); }}>
-            <DialogContent className="max-w-lg max-h-[85vh] overflow-y-auto">
+            <DialogContent className="w-[92vw] sm:max-w-3xl lg:max-w-4xl max-h-[88vh] overflow-y-auto">
                 <DialogHeader>
                     <DialogTitle>{symbol}</DialogTitle>
                 </DialogHeader>
