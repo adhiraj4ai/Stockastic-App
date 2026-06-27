@@ -24,29 +24,25 @@ function EngineBlock({ block }: { block: SignalContributor }) {
     );
 }
 
-function StrategySidebar({ symbol, blocks, direction, tradeable }: {
-    symbol: string; blocks: SignalContributor[]; direction?: 'BUY' | 'SELL'; tradeable: boolean;
+function CardHeader({ symbol, direction, sources, tradeable }: {
+    symbol: string; direction?: 'BUY' | 'SELL'; sources: number; tradeable: boolean;
 }) {
     return (
-        <aside className="flex flex-col gap-3 border-b border-border p-5 overflow-y-auto max-h-[38vh] md:max-h-none md:h-full md:border-b-0 md:border-r">
-            <DialogHeader className="gap-1">
-                <DialogTitle className="text-xl">{symbol}</DialogTitle>
+        <DialogHeader className="flex-row items-center gap-3 border-b border-border px-5 py-4 pr-12">
+            <div className="flex flex-col gap-0.5">
+                <DialogTitle className="text-xl leading-none">{symbol}</DialogTitle>
                 <p className="text-xs text-muted-foreground">
-                    {direction === 'SELL' ? 'Sell' : 'Buy'} signal · {blocks.length} {blocks.length === 1 ? 'source' : 'sources'}
+                    {direction === 'SELL' ? 'Sell' : 'Buy'} signal · {sources} {sources === 1 ? 'source' : 'sources'}
                 </p>
-            </DialogHeader>
-            <h3 className="text-[11px] tracking-wide text-muted-foreground">Why this fired</h3>
-            <div className="flex flex-col gap-2">
-                {blocks.map((b) => <EngineBlock key={b.source} block={b} />)}
             </div>
-            <div className="mt-auto flex flex-col gap-2 pt-2">
-                <Button variant="outline">Add to watchlist</Button>
-                <Button disabled={!tradeable}>Place paper trade</Button>
-                {!tradeable && (
-                    <p className="text-[11px] text-muted-foreground">Strategy not validated against buy-and-hold — review only.</p>
-                )}
+            <div className="ml-auto flex items-center gap-2">
+                <Button variant="outline" size="sm">Add to watchlist</Button>
+                <Button size="sm" disabled={!tradeable}
+                    title={tradeable ? undefined : 'Strategy not validated against buy-and-hold — review only'}>
+                    Place paper trade
+                </Button>
             </div>
-        </aside>
+        </DialogHeader>
     );
 }
 
@@ -56,10 +52,14 @@ export function SignalDetailDialog({ symbol, cards, open, onClose }: Props) {
     const tradeable = !cards.some((c) => c.validation_state === 'research');
     return (
         <Dialog open={open} onOpenChange={(o) => { if (!o) onClose(); }}>
-            <DialogContent className="w-[88vw] max-w-[88vw] sm:max-w-[88vw] h-[90vh] max-h-[90vh] overflow-hidden p-0">
-                <div className="grid h-full overflow-hidden md:grid-cols-[360px_1fr]">
-                    <StrategySidebar symbol={symbol} blocks={blocks} direction={lead?.direction} tradeable={tradeable} />
-                    <div className="p-5 pr-10 overflow-y-auto max-h-[52vh] md:max-h-none md:h-full">
+            <DialogContent className="flex flex-col gap-0 w-[88vw] max-w-[88vw] sm:max-w-[88vw] h-[90vh] max-h-[90vh] overflow-hidden p-0">
+                <CardHeader symbol={symbol} direction={lead?.direction} sources={blocks.length} tradeable={tradeable} />
+                <div className="grid flex-1 overflow-hidden md:grid-cols-[360px_1fr]">
+                    <aside className="flex flex-col gap-2 border-b border-border p-5 overflow-y-auto max-h-[34vh] md:max-h-none md:h-full md:border-b-0 md:border-r">
+                        <h3 className="text-[11px] tracking-wide text-muted-foreground">Why this fired</h3>
+                        {blocks.map((b) => <EngineBlock key={b.source} block={b} />)}
+                    </aside>
+                    <div className="p-5 overflow-y-auto max-h-[52vh] md:max-h-none md:h-full">
                         {lead && (
                             <AnalysisTabs symbol={symbol} ladder={{
                                 cmp: num(lead.entry_price), entry: num(lead.entry_price),
