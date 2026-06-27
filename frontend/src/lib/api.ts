@@ -2,6 +2,7 @@ import axios from 'axios';
 import Cookies from 'js-cookie';
 import type { SavedAnalysis, SavedAnalysisDraft } from '@/components/chat/types';
 import type { AccumulationCandidate } from '@/types/accumulation-trading';
+import type { BoardResponse, Glossary } from '@/types/signals-board';
 
 const getApiBaseUrl = () => {
     const url = process.env.NEXT_PUBLIC_API_URL;
@@ -275,6 +276,14 @@ export const accumulationApi = {
     },
     getCandidate: (symbol: string) =>
         api.get<AccumulationCandidate>(`/api/stocks/accumulation-candidates/${symbol}/`),
+};
+
+export const signalsApi = {
+    board: (params: Record<string, string> = {}) => {
+        const qs = new URLSearchParams(params).toString();
+        return api.get<BoardResponse>(`/api/stocks/signals/board/${qs ? `?${qs}` : ''}`);
+    },
+    glossary: () => api.get<Glossary>('/api/stocks/signal-glossary/'),
 };
 
 export default api;
