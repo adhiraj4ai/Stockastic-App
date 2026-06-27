@@ -68,3 +68,16 @@ def test_symbol_with_enough_turnover_but_too_few_brokers_fails():
     _seed_accumulation("SPARSE", d, ["A", "B"])
 
     assert passes_liquidity_floor("SPARSE", d) is False
+
+
+@pytest.mark.django_db
+def test_liquid_universe_limit_returns_most_liquid_first():
+    d = date(2021, 1, 7)
+    # Three liquid symbols with descending turnover; cap to the top 2.
+    for sym, vol in (("HI", 300_000), ("MID", 100_000), ("LO", 60_000)):
+        _seed_price(sym, d, close=1000, volume=vol)
+        _seed_accumulation(sym, d, [str(i) for i in range(6)])
+
+    result = liquid_universe(d, limit=2)
+
+    assert result == ["HI", "MID"]  # ranked by turnover desc, capped to 2

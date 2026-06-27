@@ -309,7 +309,7 @@ class PipelineViewSet(viewsets.ViewSet):
 
     @action(detail=False, methods=['get'])
     def calibrate_accumulation_stream(self, request):
-        trials = request.query_params.get('trials', '20')
+        trials = request.query_params.get('trials', '10')
         log_entry = DataUploadLog.objects.create(
             file_name=f'Accumulation Calibration (trials={trials})', upload_type='OPTIMIZATION', status='PENDING')
         return self._run_manage_command_stream(

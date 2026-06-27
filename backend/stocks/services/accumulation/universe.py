@@ -44,8 +44,18 @@ def latest_data_date():
         d=Max("transaction_date"))["d"]
 
 
-def liquid_universe(as_of):
+def liquid_universe(as_of, limit=None):
+    """Symbols passing the liquidity floor on ``as_of``.
+
+    With ``limit`` set, returns only the ``limit`` most-liquid (highest median
+    turnover) names — used to bound the calibration basket to a stable,
+    representative sample. Without it, returns every passing symbol (the scan).
+    """
     from stocks.models import DailyCumulativeAccumulation
     symbols = (DailyCumulativeAccumulation.objects
                .filter(transaction_date=as_of).values_list("symbol", flat=True).distinct())
-    return [s for s in symbols if passes_liquidity_floor(s, as_of)]
+    passing = [s for s in symbols if passes_liquidity_floor(s, as_of)]
+    if limit is None:
+        return passing
+    ranked = sorted(passing, key=lambda s: _median_turnover(s, as_of), reverse=True)
+    return ranked[:limit]

@@ -910,7 +910,7 @@ export default function PipelinePage() {
         setCalibrateAccumStatus('running');
         setCalibrateAccumLogs([]);
         setShowCalibrateAccumLogs(true);
-        const url = `${API_BASE_URL}/api/stocks/pipeline/calibrate_accumulation_stream/?trials=20`;
+        const url = `${API_BASE_URL}/api/stocks/pipeline/calibrate_accumulation_stream/?trials=10`;
         await runCommandStream(url, setCalibrateAccumStatus, setCalibrateAccumLogs, 'Accumulation strategy calibrated!');
     };
 

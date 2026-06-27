@@ -43,16 +43,26 @@ def test_latest_data_date_none_when_empty():
 def test_resolve_basket_falls_back_to_latest_date(monkeypatch):
     _seed_dca("AAA", date(2026, 6, 17))
     monkeypatch.setattr(cr, "liquid_universe",
-                        lambda d: ["AAA"] if d == date(2026, 6, 17) else [])
+                        lambda d, limit=None: ["AAA"] if d == date(2026, 6, 17) else [])
     as_of, basket = cr.resolve_basket()
     assert as_of == date(2026, 6, 17)
     assert basket == ["AAA"]
 
 
 @pytest.mark.django_db
+def test_resolve_basket_caps_to_max_symbols(monkeypatch):
+    _seed_dca("AAA", date(2026, 6, 17))
+    seen = {}
+    monkeypatch.setattr(cr, "liquid_universe",
+                        lambda d, limit=None: seen.update(limit=limit) or ["AAA"])
+    cr.resolve_basket(max_symbols=25)
+    assert seen["limit"] == 25
+
+
+@pytest.mark.django_db
 def test_resolve_basket_raises_when_universe_empty(monkeypatch):
     _seed_dca("AAA", date(2026, 6, 17))
-    monkeypatch.setattr(cr, "liquid_universe", lambda d: [])
+    monkeypatch.setattr(cr, "liquid_universe", lambda d, limit=None: [])
     with pytest.raises(cr.CalibrationError):
         cr.resolve_basket()
 
@@ -79,7 +89,7 @@ def test_resolve_user_raises_without_superuser():
 def test_run_calibration_persists_validated_spec(monkeypatch):
     User.objects.create_superuser("admin_run", "a@b.c", "x")
     _seed_dca("AAA", date(2026, 6, 17))
-    monkeypatch.setattr(cr, "liquid_universe", lambda d: ["AAA"])
+    monkeypatch.setattr(cr, "liquid_universe", lambda d, limit=None: ["AAA"])
     monkeypatch.setattr(cr, "calibrate",
                         lambda basket, oos, n: ({"top_n": 5, "entry_threshold": 55}, _Card(True)))
     result = cr.run_calibration(n_trials=2)

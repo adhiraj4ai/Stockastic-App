@@ -13,6 +13,11 @@ from stocks.services.accumulation.universe import latest_data_date, liquid_unive
 
 DEFAULT_TRIALS = 40
 OOS_FRACTION = 0.3
+# Calibrate on a bounded, most-liquid sample. The full 263-symbol universe is
+# both slow and unstable to backtest in one process; a representative liquid
+# sample yields sound global weights and runs reliably (the scanner still
+# scores the entire universe).
+CALIBRATION_MAX_SYMBOLS = 60
 
 User = get_user_model()
 
@@ -33,11 +38,11 @@ def resolve_user(username=None):
     return user
 
 
-def resolve_basket(as_of=None):
+def resolve_basket(as_of=None, max_symbols=CALIBRATION_MAX_SYMBOLS):
     as_of = as_of or latest_data_date()
     if as_of is None:
         raise CalibrationError("No accumulation data available to calibrate on.")
-    basket = list(liquid_universe(as_of))
+    basket = list(liquid_universe(as_of, limit=max_symbols))
     if not basket:
         raise CalibrationError(f"Liquid universe is empty for {as_of}.")
     return as_of, basket
@@ -62,10 +67,10 @@ def _persist(strat, best_params, card):
 
 
 def run_calibration(as_of=None, n_trials=DEFAULT_TRIALS, oos_fraction=OOS_FRACTION,
-                    username=None):
+                    username=None, max_symbols=CALIBRATION_MAX_SYMBOLS):
     """Calibrate over the data-current liquid basket; persist and return a summary."""
     user = resolve_user(username)
-    as_of, basket = resolve_basket(as_of)
+    as_of, basket = resolve_basket(as_of, max_symbols=max_symbols)
     strat = _seed_strategy(user)
     best_params, card = calibrate(basket, oos_fraction, n_trials)
     _persist(strat, best_params, card)
