@@ -15,6 +15,7 @@ const LANES: { key: SignalCardData['family']; title: string }[] = [
 ];
 
 const DIRECTION_OPTIONS: [string, string][] = [['', 'All'], ['BUY', 'Buy'], ['SELL', 'Sell']];
+const MIN_FAMILY_OPTIONS: [string | undefined, string][] = [[undefined, '1+'], ['2', '2+'], ['3', '3']];
 
 type Filters = { direction?: string; min_families?: string };
 
@@ -45,7 +46,7 @@ export default function SignalsBoard() {
         [board, open]);
 
     const buys = board?.cards.filter((c) => c.direction === 'BUY').length ?? 0;
-    const sells = (board?.cards.length ?? 0) - buys;
+    const sells = board?.cards.filter((c) => c.direction === 'SELL').length ?? 0;
 
     if (!board) return <DashboardLayout title="Signals"><PageLoader /></DashboardLayout>;
 
@@ -53,17 +54,31 @@ export default function SignalsBoard() {
         <DashboardLayout title="Signals">
             <div className="flex items-center gap-4 flex-wrap pt-2 pb-3">
                 <p className="text-sm text-muted-foreground tabular-nums">{buys} bullish · {sells} bearish</p>
-                <div className="ml-auto inline-flex rounded-lg border border-border overflow-hidden" role="group" aria-label="Direction">
-                    {DIRECTION_OPTIONS.map(([val, label]) => (
-                        <button
-                            key={label}
-                            onClick={() => setFilters((f) => ({ ...f, direction: val || undefined }))}
-                            aria-pressed={(filters.direction ?? '') === val}
-                            className={`px-3 py-1.5 text-xs ${(filters.direction ?? '') === val ? 'bg-accent text-foreground' : 'text-muted-foreground'}`}
-                        >
-                            {label}
-                        </button>
-                    ))}
+                <div className="ml-auto flex items-center gap-2">
+                    <div className="inline-flex rounded-lg border border-border overflow-hidden" role="group" aria-label="Min families">
+                        {MIN_FAMILY_OPTIONS.map(([val, label]) => (
+                            <button
+                                key={label}
+                                onClick={() => setFilters((f) => ({ ...f, min_families: val }))}
+                                aria-pressed={(filters.min_families) === val}
+                                className={`px-3 py-1.5 text-xs ${(filters.min_families) === val ? 'bg-accent text-foreground' : 'text-muted-foreground'}`}
+                            >
+                                {label}
+                            </button>
+                        ))}
+                    </div>
+                    <div className="inline-flex rounded-lg border border-border overflow-hidden" role="group" aria-label="Direction">
+                        {DIRECTION_OPTIONS.map(([val, label]) => (
+                            <button
+                                key={label}
+                                onClick={() => setFilters((f) => ({ ...f, direction: val || undefined }))}
+                                aria-pressed={(filters.direction ?? '') === val}
+                                className={`px-3 py-1.5 text-xs ${(filters.direction ?? '') === val ? 'bg-accent text-foreground' : 'text-muted-foreground'}`}
+                            >
+                                {label}
+                            </button>
+                        ))}
+                    </div>
                 </div>
             </div>
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">

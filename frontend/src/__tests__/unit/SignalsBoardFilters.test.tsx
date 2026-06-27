@@ -16,4 +16,10 @@ describe('SignalsBoard filters', () => {
         fireEvent.click(screen.getByRole('button', { name: /^buy$/i }));
         await waitFor(() => expect(board).toHaveBeenLastCalledWith({ direction: 'BUY' }));
     });
+    it('re-fetches the board with a min_families filter', async () => {
+        render(<SignalsBoard />);
+        await waitFor(() => expect(board).toHaveBeenCalled());
+        fireEvent.click(screen.getByRole('button', { name: /^2\+$/i }));
+        await waitFor(() => expect(board).toHaveBeenLastCalledWith({ min_families: '2' }));
+    });
 });
