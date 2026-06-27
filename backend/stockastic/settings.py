@@ -323,6 +323,12 @@ CELERY_BEAT_SCHEDULE = {
         "task": "stocks.scan_accumulation_candidates",
         "schedule": crontab(hour=17, minute=15),
     },
+    # Weekly re-calibration of the accumulation strategy (heavy offline job):
+    # Sunday 18:00 re-tunes weights/threshold and re-runs the OOS gate.
+    "calibrate-accumulation-strategy-weekly": {
+        "task": "stocks.calibrate_accumulation_strategy",
+        "schedule": crontab(hour=18, minute=0, day_of_week=0),
+    },
 }
 
 # Email Backend

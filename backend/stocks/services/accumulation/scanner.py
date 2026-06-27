@@ -1,6 +1,5 @@
 """Daily scanner: score the liquid universe, persist ranked candidates."""
 import math
-from datetime import date
 from decimal import Decimal
 
 import numpy as np
@@ -9,7 +8,7 @@ import pandas as pd
 from stocks.models import AccumulationCandidate, Strategy
 from stocks.services.accumulation.calibration import ACCUMULATION_STRATEGY_NAME
 from stocks.services.accumulation.score_service import AccumulationScoreService, ScoreParams
-from stocks.services.accumulation.universe import liquid_universe
+from stocks.services.accumulation.universe import latest_data_date, liquid_universe
 from stocks.services.backtest_harness.runner import load_price_df
 
 ENTRY_SCORE_THRESHOLD_DEFAULT = 70.0
@@ -70,7 +69,9 @@ class AccumulationScanner:
 
     @staticmethod
     def scan_and_save_candidates(as_of=None):
-        as_of = as_of or date.today()
+        as_of = as_of or latest_data_date()
+        if as_of is None:
+            return 0
         AccumulationCandidate.objects.filter(
             status=AccumulationCandidate.Status.ACTIVE).update(
             status=AccumulationCandidate.Status.EXPIRED)

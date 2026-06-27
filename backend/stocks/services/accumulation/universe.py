@@ -31,6 +31,19 @@ def passes_liquidity_floor(symbol, as_of, min_turnover=MIN_MEDIAN_TURNOVER,
     return _active_broker_count(symbol, as_of) >= min_brokers
 
 
+def latest_data_date():
+    """Most recent date with accumulation data, or None if there is none.
+
+    Pipeline jobs use this instead of ``date.today()`` so a lagging ingest does
+    not yield an empty universe.
+    """
+    from django.db.models import Max
+
+    from stocks.models import DailyCumulativeAccumulation
+    return DailyCumulativeAccumulation.objects.aggregate(
+        d=Max("transaction_date"))["d"]
+
+
 def liquid_universe(as_of):
     from stocks.models import DailyCumulativeAccumulation
     symbols = (DailyCumulativeAccumulation.objects

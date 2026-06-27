@@ -202,3 +202,16 @@ def scan_accumulation_candidates_task(self):
     """Daily: rank accumulation candidates after broker analysis lands."""
     from stocks.services.accumulation.scanner import AccumulationScanner
     return {"candidates_identified": AccumulationScanner.scan_and_save_candidates()}
+
+
+@shared_task(bind=True, name="stocks.calibrate_accumulation_strategy")
+def calibrate_accumulation_strategy_task(self):
+    """Weekly: re-tune the AccumulationStrength weights/threshold and gate on OOS."""
+    from stocks.services.accumulation.calibration_runner import (
+        CalibrationError, run_calibration)
+    try:
+        result = run_calibration()
+    except CalibrationError as exc:
+        return {"skipped": str(exc)}
+    return {"validation_state": result["validation_state"],
+            "symbols": result["symbols"], "oos_passed": result["oos_passed"]}
