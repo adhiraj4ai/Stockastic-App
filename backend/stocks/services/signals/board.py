@@ -42,6 +42,54 @@ def _collect(include_historical):
     return cards
 
 
+def _contributor_entry(c):
+    return {
+        "source": c["source"], "strategy_name": c["strategy_name"], "tier": c["tier"],
+        "strength": c["strength"], "conditions": c["conditions"],
+        "validation_state": c["validation_state"],
+    }
+
+
+def _merge_validation_state(contributors):
+    if any(c["validation_state"] == "research" for c in contributors):
+        return "research"
+    if any(c["validation_state"] == "validated" for c in contributors):
+        return "validated"
+    return None
+
+
+def _merge_group(contributors):
+    lead = contributors[0]
+    return {
+        "family": lead["family"], "symbol": lead["symbol"], "direction": lead["direction"],
+        "source": lead["source"],
+        "strength": lead["strength"], "tier": lead["tier"],
+        "entry_price": lead["entry_price"], "stop_loss_price": lead["stop_loss_price"],
+        "target_price": lead["target_price"],
+        "freshness_date": max(
+            (c["freshness_date"] for c in contributors if c["freshness_date"]), default=None
+        ),
+        "validation_state": _merge_validation_state(contributors),
+        "strategy_name": lead["strategy_name"],
+        "source_labels": [c["strategy_name"] for c in contributors],
+        "conditions": lead["conditions"],
+        "rationale": lead.get("rationale", ""),
+        "contributors": [_contributor_entry(c) for c in contributors],
+    }
+
+
+def _aggregate(raw_cards):
+    groups = defaultdict(list)
+    for card in raw_cards:
+        key = (card["family"], card["symbol"], card["direction"])
+        groups[key].append(card)
+    result = []
+    for contributors in groups.values():
+        contributors.sort(key=lambda c: c["strength"] or 0, reverse=True)
+        result.append(_merge_group(contributors))
+    return result
+
+
 def _consensus(cards):
     by_symbol = defaultdict(lambda: defaultdict(set))
     for c in cards:
@@ -56,7 +104,7 @@ def _consensus(cards):
 
 
 def build_board(direction=None, symbol=None, min_families=1, include_historical=False):
-    cards = _collect(include_historical)
+    cards = _aggregate(_collect(include_historical))
     if direction:
         cards = [c for c in cards if c["direction"] == direction.upper()]
     if symbol:

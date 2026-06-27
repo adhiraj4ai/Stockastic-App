@@ -35,9 +35,13 @@ def test_board_merges_candidate_into_accumulation_and_computes_consensus():
     fams = {c["family"] for c in resp.data["cards"] if c["symbol"] == "NABIL"}
     assert fams == {"accumulation", "technical"}
     assert resp.data["consensus"]["NABIL"]["BUY"]["count"] == 2
-    acc = next(c for c in resp.data["cards"] if c["source"] == "ACCUMULATION_STRATEGY")
+    acc = next(c for c in resp.data["cards"] if c["family"] == "accumulation")
     assert acc["tier"] == "research" and float(acc["strength"]) == 82.0
     assert any("oncentration" in line for line in acc["conditions"])
+    assert "contributors" in acc
+    assert len(acc["contributors"]) == 1
+    assert acc["contributors"][0]["source"] == "ACCUMULATION_STRATEGY"
+    assert float(acc["contributors"][0]["strength"]) == 82.0
 
 
 @pytest.mark.django_db
@@ -72,3 +76,22 @@ def test_consensus_is_per_direction():
     mixed_consensus = resp.data["consensus"]["MIXED"]
     assert mixed_consensus["BUY"]["count"] == 2
     assert mixed_consensus["SELL"]["count"] == 1
+
+
+@pytest.mark.django_db
+def test_board_aggregates_same_symbol_direction_in_a_lane():
+    # Two BUY accumulation episodes on NABIL from different engines
+    for src in ("SMART_MONEY", "BELOW_COST_REVERSAL"):
+        SignalEpisode.objects.create(
+            source=src, producer_key=src, symbol="NABIL", direction="BUY",
+            start_date=date(2026, 6, 17), last_signal_date=date(2026, 6, 17),
+            entry_price=Decimal("520"), entry_strength=80 if src == "SMART_MONEY" else 70,
+            status="ACTIVE", metadata={})
+    resp = _client().get("/api/stocks/signals/board/")
+    assert resp.status_code == 200
+    accum_cards = [c for c in resp.data["cards"] if c["family"] == "accumulation" and c["symbol"] == "NABIL"]
+    assert len(accum_cards) == 1
+    contributors = accum_cards[0]["contributors"]
+    assert len(contributors) == 2
+    sources = {c["source"] for c in contributors}
+    assert sources == {"SMART_MONEY", "BELOW_COST_REVERSAL"}

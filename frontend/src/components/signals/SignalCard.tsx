@@ -62,11 +62,14 @@ export function SignalCard({ card, consensusCount, glossary, onOpen }: Props) {
                 <DirectionBadge isBuy={isBuy} />
                 <span className="ml-auto text-xs text-muted-foreground">detail ▸</span>
             </div>
-            <div className="text-xs text-muted-foreground">
-                <GlossaryTooltip
-                    entry={glossary?.sources[card.source]}
-                    fallback={card.strategy_name.toLowerCase()}
-                />
+            <div className="text-xs text-muted-foreground flex flex-wrap gap-1.5">
+                {card.contributors.map((c, i) => (
+                    <GlossaryTooltip
+                        key={c.source}
+                        entry={glossary?.sources[c.source]}
+                        fallback={card.source_labels[i]?.toLowerCase() ?? c.strategy_name.toLowerCase()}
+                    />
+                ))}
             </div>
             <div className="flex items-center gap-2">
                 <ConvictionMeter value={card.strength ?? 0} />

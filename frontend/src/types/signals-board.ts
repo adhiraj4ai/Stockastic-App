@@ -1,5 +1,14 @@
 export type Family = 'accumulation' | 'technical' | 'your_strategies';
 
+export interface SignalContributor {
+    source: string;
+    strategy_name: string;
+    tier: string;
+    strength: number | null;
+    conditions: string[];
+    validation_state: 'validated' | 'research' | null;
+}
+
 export interface SignalCardData {
     source: string;
     family: Family;
@@ -15,6 +24,8 @@ export interface SignalCardData {
     freshness_date: string | null;
     strategy_name: string;
     rationale: string;
+    source_labels: string[];
+    contributors: SignalContributor[];
 }
 
 export interface BoardResponse {

@@ -4,7 +4,7 @@ import { useEffect, useMemo, useState } from 'react';
 import DashboardLayout from '@/components/DashboardLayout';
 import { PageLoader } from '@/components/ui/StockLoader';
 import { SignalLane } from './SignalLane';
-import { SignalDetailDrawer } from './SignalDetailDrawer';
+import { SignalDetailDialog } from './SignalDetailDialog';
 import { signalsApi } from '@/lib/api';
 import type { BoardResponse, Glossary, SignalCardData } from '@/types/signals-board';
 
@@ -41,7 +41,7 @@ export default function SignalsBoard() {
         signalsApi.glossary().then((r) => setGlossary(r.data)).catch(() => setGlossary(null));
     }, []);
 
-    const drawerCards = useMemo(
+    const dialogCards = useMemo(
         () => board && open ? board.cards.filter((c) => c.symbol === open.symbol && c.direction === open.direction) : [],
         [board, open]);
 
@@ -86,7 +86,7 @@ export default function SignalsBoard() {
                     <SignalLane key={lane.key} title={lane.title} glossary={glossary} consensus={board.consensus}
                         cards={board.cards.filter((c) => c.family === lane.key)} onOpen={setOpen} />))}
             </div>
-            <SignalDetailDrawer symbol={open?.symbol ?? ''} cards={drawerCards} open={!!open} onClose={() => setOpen(null)} />
+            <SignalDetailDialog symbol={open?.symbol ?? ''} cards={dialogCards} open={!!open} onClose={() => setOpen(null)} />
         </DashboardLayout>
     );
 }

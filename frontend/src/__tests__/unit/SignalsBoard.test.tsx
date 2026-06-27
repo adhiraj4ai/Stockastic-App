@@ -9,7 +9,7 @@ vi.mock('@/lib/api', () => ({
         board: vi.fn().mockResolvedValue({
             data: {
                 cards: [
-                    { source: 'SMART_MONEY', family: 'accumulation', symbol: 'NABIL', direction: 'BUY', strength: 88, tier: 'Platinum Buy', entry_price: '520', stop_loss_price: '500', target_price: '560', conditions: [], validation_state: null, freshness_date: '2026-06-15', strategy_name: 'Smart money', rationale: '' },
+                    { source: 'SMART_MONEY', family: 'accumulation', symbol: 'NABIL', direction: 'BUY', strength: 88, tier: 'Platinum Buy', entry_price: '520', stop_loss_price: '500', target_price: '560', conditions: [], validation_state: null, freshness_date: '2026-06-15', strategy_name: 'Smart money', rationale: '', source_labels: ['Smart money'], contributors: [{ source: 'SMART_MONEY', strategy_name: 'Smart money', tier: 'Platinum Buy', strength: 88, conditions: [], validation_state: null }] },
                 ],
                 consensus: { NABIL: { BUY: { families: ['accumulation'], count: 1 } } },
             },

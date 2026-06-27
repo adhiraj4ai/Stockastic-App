@@ -9,6 +9,8 @@ const base: SignalCardData = {
     strength: 88, tier: 'Platinum Buy', entry_price: '520.00', stop_loss_price: '500.00',
     target_price: '560.00', conditions: [], validation_state: null, freshness_date: '2026-06-15',
     strategy_name: 'Smart money', rationale: '',
+    source_labels: ['Smart money'],
+    contributors: [{ source: 'SMART_MONEY', strategy_name: 'Smart money', tier: 'Platinum Buy', strength: 88, conditions: [], validation_state: null }],
 };
 
 describe('SignalCard', () => {
@@ -26,5 +28,18 @@ describe('SignalCard', () => {
         expect(screen.queryByText(/confirmed by/i)).not.toBeInTheDocument();
         fireEvent.click(screen.getByRole('button'));
         expect(onOpen).toHaveBeenCalledWith(strat);
+    });
+    it('renders two source labels when source_labels has two entries', () => {
+        const twoSrc = {
+            ...base,
+            source_labels: ['Smart money', 'Accumulation strategy'],
+            contributors: [
+                { source: 'SMART_MONEY', strategy_name: 'Smart money', tier: 'Platinum Buy', strength: 88, conditions: [], validation_state: null },
+                { source: 'ACCUMULATION_STRATEGY', strategy_name: 'Accumulation strategy', tier: 'research', strength: 70, conditions: [], validation_state: 'research' as const },
+            ],
+        };
+        render(<SignalCard card={twoSrc} consensusCount={2} glossary={null} onOpen={vi.fn()} />);
+        expect(screen.getByText('smart money')).toBeInTheDocument();
+        expect(screen.getByText('accumulation strategy')).toBeInTheDocument();
     });
 });
