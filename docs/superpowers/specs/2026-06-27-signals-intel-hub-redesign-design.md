@@ -80,13 +80,33 @@ means *unifying heterogeneous sources* — and the strongest version of that is
 
 | Lane | Engines (source keys) |
 |------|------------------------|
-| **Accumulation** | SMART_MONEY, DISTRIBUTION_ALERT, BELOW_COST_REVERSAL, CONCENTRATION_SHIFT, ACC_MOMENTUM, BROKER_ACCUMULATION (hybrid → here) |
+| **Accumulation** | SMART_MONEY, DISTRIBUTION_ALERT, BELOW_COST_REVERSAL, CONCENTRATION_SHIFT, ACC_MOMENTUM, BROKER_ACCUMULATION (hybrid → here), **ACCUMULATION_STRATEGY** (the calibrated accumulation-trading scanner) |
 | **Technical** | VOLUME_BREAKOUT, INSTITUTIONAL_ALERTS, ICHIMOKU (hybrid), SMART_CROSSOVER (hybrid) |
 | **Your strategies** | USER_STRATEGY (FK to Strategy) |
 
 The map is the single backbone shared by the board endpoint and the lanes. Any
 unmapped/new source falls back to the Technical lane with a logged warning (so a
 new engine never silently disappears).
+
+### Accumulation-trading candidates in the board
+
+The accumulation-trading feature (same branch) produces `AccumulationCandidate` rows
+from the calibrated scanner — these must appear in the **Accumulation lane** as a
+first-class source (`ACCUMULATION_STRATEGY`), not only on `/accumulation/trading`.
+The board normalizes each active `AccumulationCandidate` into the common card shape:
+- `direction` = buy (the scanner surfaces accumulation buys), `family` = accumulation;
+- **strength** = the composite score (0–100); **tier** = the `validation_state`
+  (`validated` / `research`);
+- `entry/stop/target` = `suggested_entry/stop/target`;
+- `conditions` (for the drawer) = the stored **factor breakdown** (concentration,
+  coiling, breakout, composite) rendered as labeled lines;
+- the **validated/research gate carries over**: a `research` candidate's "place paper
+  trade" action stays disabled, exactly as on the accumulation-trading page.
+
+It participates in **consensus** like any other source: a symbol that is an
+accumulation-trading candidate *and* fires a Technical engine is "confirmed by 2
+families". The `/accumulation/trading` page remains, but the board becomes the unified
+home where this strategy sits beside the broker-flow engines.
 
 ### Consensus
 
@@ -103,16 +123,21 @@ symbol render a connecting indigo marker + a "confirmed by N families" chip.
    `FAMILIES` ordering. One responsibility: classify a source.
 2. **`signal_glossary.py`** — `GLOSSARY` mapping for sources, tiers, and shared terms →
    `{label, description}`; `describe(kind, key) -> {label, description} | None`.
-   Authored beside the engines; the single source of glossary truth.
+   Authored beside the engines; the single source of glossary truth. Includes the
+   `ACCUMULATION_STRATEGY` source, its `validated`/`research` tiers, and the three
+   score factors (concentration, coiling, breakout).
 3. **`signal_conditions.py`** — `format_conditions(source, metadata) -> list[str]`:
    per-source mapping of known `metadata` keys → labeled plain-language lines
    (e.g. SMART_MONEY: cluster_count → "N smart-money brokers clustered near WAC").
    Falls back to a generic key→"label: value" rendering for unknown keys.
 4. **Board endpoint** — `GET /api/stocks/signals/board/` (action on the existing
-   signals viewset). Returns latest active episodes, each serialized with `family`,
-   `conditions` (from the formatter), glossary-ready `source`/`tier`, and a top-level
-   `consensus: {symbol: {families: [...], count: N}}`. Honors filters: direction,
-   symbol, sector, min_families, include_historical.
+   signals viewset). Merges two data sources into one normalized card list: latest
+   active `SignalEpisode`s (the 10 engines + `USER_STRATEGY`) **and** active
+   `AccumulationCandidate`s (normalized as `ACCUMULATION_STRATEGY`, see above). Each
+   card carries `family`, `conditions` (from the formatter / factor breakdown),
+   glossary-ready `source`/`tier`, and the board adds a top-level
+   `consensus: {symbol: {families: [...], count: N}}` computed across the merged set.
+   Honors filters: direction, symbol, sector, min_families, include_historical.
 5. **Glossary endpoint** — `GET /api/stocks/signal-glossary/` returns the full map.
 
 ### Frontend (`frontend/src/app/(authenticated)/signals/`)
@@ -211,6 +236,10 @@ full-width), light **and** the app's warm-dark mode via the existing theme.
   enumerates engine tiers and asserts a glossary entry exists).
 - `format_conditions` per source: known metadata → expected labeled lines; unknown keys → generic fallback, no throw.
 - Board endpoint: family tagging, consensus grouping (≥2 same-direction families), filter honoring (direction/sector/min_families/historical), auth.
+- `AccumulationCandidate` normalization: appears in the Accumulation lane as
+  `ACCUMULATION_STRATEGY` with score→strength, validation_state→tier, suggested levels,
+  factor-breakdown conditions; a `research` candidate disables the paper-trade action;
+  it counts toward consensus with other families.
 
 **Frontend:**
 - Lane renders ranked cards; buy⇄sell skew correct.
