@@ -2,7 +2,7 @@ FROM python:3.12-slim
 
 WORKDIR /app
 
-# Install system dependencies, build tools for TA-Lib, and uv
+# Install system dependencies, build tools for TA-Lib, Playwright libraries, and Node.js
 RUN apt-get update && apt-get install -y \
     postgresql-client \
     gcc \
@@ -12,6 +12,21 @@ RUN apt-get update && apt-get install -y \
     build-essential \
     wget \
     autotools-dev \
+    libnss3 \
+    libnspr4 \
+    libatk1.0-0 \
+    libatk-bridge2.0-0 \
+    libcups2 \
+    libdrm2 \
+    libdbus-1-3 \
+    libxkbcommon0 \
+    libxcomposite1 \
+    libxdamage1 \
+    libxfixes3 \
+    libxrandr2 \
+    libgbm1 \
+    libpango-1.0-0 \
+    libcairo2 \
     && curl -fsSL https://deb.nodesource.com/setup_20.x | bash - \
     && apt-get install -y nodejs \
     && rm -rf /var/lib/apt/lists/*
@@ -41,6 +56,7 @@ COPY --from=ghcr.io/astral-sh/uv:latest /uv /usr/local/bin/uv
 ENV PYTHONDONTWRITEBYTECODE=1
 ENV PYTHONUNBUFFERED=1
 ENV DJANGO_SETTINGS_MODULE=stockastic.settings
+ENV PLAYWRIGHT_BROWSERS_PATH=/app/.cache/ms-playwright
 
 # Copy requirements file
 COPY requirements.txt .
@@ -53,6 +69,9 @@ RUN uv pip install --system --no-cache \
     django-filter \
     redis \
     celery[redis]
+
+# Pre-install Playwright Chromium browser
+RUN python3 -m playwright install chromium
 
 # Verify TA-Lib installation (ensuring Python wrapper can find C library)
 RUN python3 -c "import talib; print('TA-Lib installed successfully, version:', talib.get_functions()[0])"
