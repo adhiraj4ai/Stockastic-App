@@ -15,6 +15,7 @@ urlpatterns = [
     path("auth/google/", views.GoogleLogin.as_view(), name="google_login"),
     path("auth/apple/", views.AppleLogin.as_view(), name="apple_login"),
     path("auth/microsoft/", views.MicrosoftLogin.as_view(), name="microsoft_login"),
+    path("csrf/", views.csrf_token_view, name="csrf_token"),
     path("auth/", include("dj_rest_auth.urls")),
     path("auth/registration/", include("dj_rest_auth.registration.urls")),
     path("account/login/", views.login_view, name="account_login"),

@@ -192,9 +192,19 @@ SECURE_REFERRER_POLICY = "strict-origin-when-cross-origin"
 # SESSION_COOKIE_SECURE = True
 # CSRF_COOKIE_SECURE = True
 
+# Proxy Settings
+USE_X_FORWARDED_HOST = True
+SECURE_PROXY_SSL_HEADER = ("HTTP_X_FORWARDED_PROTO", "https")
+
 # CORS
-CORS_ALLOW_ALL_ORIGINS = False
-CORS_ALLOWED_ORIGINS = [
+CORS_ALLOW_ALL_ORIGINS = True
+CORS_ALLOW_CREDENTIALS = True
+
+# CSRF Settings
+CSRF_COOKIE_HTTPONLY = False
+CSRF_COOKIE_SAMESITE = "Lax"
+
+_default_csrf_origins = [
     "http://localhost:3000",
     "http://127.0.0.1:3000",
     "http://localhost:3001",
@@ -203,17 +213,20 @@ CORS_ALLOWED_ORIGINS = [
     "http://127.0.0.1:3002",
     "http://localhost:8000",
     "http://127.0.0.1:8000",
+    "http://localhost:8080",
+    "http://127.0.0.1:8080",
+    "https://*.ngrok-free.dev",
+    "https://*.ngrok.io",
 ]
-CORS_ALLOW_CREDENTIALS = True
 
-CSRF_TRUSTED_ORIGINS = [
-    "http://localhost:3000",
-    "http://127.0.0.1:3000",
-    "http://localhost:3001",
-    "http://127.0.0.1:3001",
-    "http://localhost:3002",
-    "http://127.0.0.1:3002",
-]
+_env_csrf_origins = os.environ.get("CSRF_TRUSTED_ORIGINS", "")
+if _env_csrf_origins:
+    CSRF_TRUSTED_ORIGINS = [
+        origin.strip() for origin in _env_csrf_origins.split(",") if origin.strip()
+    ]
+else:
+    CSRF_TRUSTED_ORIGINS = _default_csrf_origins
+
 
 # Authentication
 AUTHENTICATION_BACKENDS = [

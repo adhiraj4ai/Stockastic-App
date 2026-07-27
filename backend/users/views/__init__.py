@@ -1,5 +1,6 @@
 """users.views package — re-exports all public names consumed by urls.py."""
 from .admin_users import AdminUserViewSet, TierPermissionViewSet
+from .csrf import csrf_token_view
 from .current_user import get_current_user
 from .dashboard import dashboard
 from .login import login_view
@@ -29,6 +30,7 @@ __all__ = [
     "TwoFactorThrottle",
     "UserBurstThrottle",
     "change_password",
+    "csrf_token_view",
     "dashboard",
     "disable_2fa",
     "get_current_user",
